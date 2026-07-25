@@ -8,6 +8,8 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.pojo.req.ChangePasswordReq;
 import top.aiolife.sso.pojo.req.LoginReq;
+import top.aiolife.sso.pojo.req.SecondaryVerifyReq;
+import top.aiolife.sso.pojo.req.SetSecondaryPasswordReq;
 import top.aiolife.sso.pojo.req.UpdateUserReq;
 import top.aiolife.sso.pojo.vo.UserBasicInfoVO;
 import top.aiolife.sso.pojo.vo.UserInfoVO;
@@ -122,6 +124,35 @@ public class UserController {
         userEntity.setAvatar(req.getAvatar());
         userService.updateUser(userEntity);
         return ApiResponse.success();
+    }
+
+    /**
+     * 查询是否已设置二级密码
+     */
+    @GetMapping("/auth/secondary-password/status")
+    public ApiResponse<Map<String, Boolean>> secondaryPasswordStatus() {
+        long id = StpUtil.getLoginIdAsLong();
+        return ApiResponse.success(Map.of("hasPassword", userService.hasSecondaryPassword(id)));
+    }
+
+    /**
+     * 设置/修改二级密码
+     */
+    @PutMapping("/auth/secondary-password")
+    public ApiResponse<Void> setSecondaryPassword(@RequestBody SetSecondaryPasswordReq req) {
+        long id = StpUtil.getLoginIdAsLong();
+        userService.setSecondaryPassword(id, req.getPassword(), req.getOldPassword());
+        return ApiResponse.success();
+    }
+
+    /**
+     * 验证二级密码，解锁菜单
+     */
+    @PostMapping("/auth/secondary-verify")
+    public ApiResponse<Map<String, Object>> secondaryVerify(@RequestBody SecondaryVerifyReq req) {
+        long id = StpUtil.getLoginIdAsLong();
+        userService.verifySecondaryPassword(id, req.getPassword(), req.getMenuPath());
+        return ApiResponse.success(Map.of("menuPath", req.getMenuPath()));
     }
 
 }

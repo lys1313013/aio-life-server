@@ -31,6 +31,8 @@ import top.aiolife.sso.util.PasswordUtil;
 import cn.hutool.core.date.DateUtil;
 import org.springframework.beans.factory.annotation.Value;
 
+import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -446,5 +448,74 @@ public class UserServiceImpl implements IUserService {
         
         // 删除验证码
         redisUtil.delete("register:code:" + registerReq.getEmail());
+    }
+
+    @Override
+    public boolean hasSecondaryPassword(long userId) {
+        UserEntity user = userMapper.selectById(userId);
+        return user != null && org.springframework.util.StringUtils.hasText(user.getSecondaryPassword());
+    }
+
+    @Override
+    public void setSecondaryPassword(long userId, String password, String oldPassword) {
+        UserEntity user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        // 如果已有二级密码，需要验证旧密码
+        if (org.springframework.util.StringUtils.hasText(user.getSecondaryPassword())) {
+            if (!org.springframework.util.StringUtils.hasText(oldPassword)) {
+                throw new RuntimeException("请提供旧二级密码");
+            }
+            String encryptedOld = PasswordUtil.encryptPassword(oldPassword, user.getSecondaryPasswordSalt());
+            if (!user.getSecondaryPassword().equals(encryptedOld)) {
+                throw new RuntimeException("旧二级密码错误");
+            }
+        }
+
+        String salt = PasswordUtil.getSalt();
+        user.setSecondaryPasswordSalt(salt);
+        user.setSecondaryPassword(PasswordUtil.encryptPassword(password, salt));
+        userMapper.updateById(user);
+    }
+
+    @Override
+    public String verifySecondaryPassword(long userId, String password, String menuPath) {
+        UserEntity user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        if (!org.springframework.util.StringUtils.hasText(user.getSecondaryPassword())) {
+            throw new RuntimeException("未设置二级密码");
+        }
+
+        // 检查失败次数
+        String failKey = SecondaryLockInterceptor.failCountKey(userId);
+        String failCountStr = redisUtil.get(failKey);
+        int failCount = failCountStr == null ? 0 : Integer.parseInt(failCountStr);
+        if (failCount >= SecondaryLockInterceptor.maxFailCount()) {
+            throw new RuntimeException("尝试次数过多，请" + SecondaryLockInterceptor.failLockMinutes() + "分钟后再试");
+        }
+
+        String encrypted = PasswordUtil.encryptPassword(password, user.getSecondaryPasswordSalt());
+        if (!user.getSecondaryPassword().equals(encrypted)) {
+            failCount++;
+            long ttl = failCount >= SecondaryLockInterceptor.maxFailCount()
+                    ? TimeUnit.MINUTES.toSeconds(SecondaryLockInterceptor.failLockMinutes())
+                    : TimeUnit.MINUTES.toSeconds(SecondaryLockInterceptor.failLockMinutes());
+            redisUtil.set(failKey, String.valueOf(failCount), ttl, TimeUnit.SECONDS);
+            int remaining = SecondaryLockInterceptor.maxFailCount() - failCount;
+            throw new RuntimeException("二级密码错误，还剩" + Math.max(0, remaining) + "次机会");
+        }
+
+        // 验证成功，清除失败计数
+        redisUtil.delete(failKey);
+
+        // 写入解锁凭证
+        String unlockKey = SecondaryLockInterceptor.unlockKey(userId, menuPath);
+        redisUtil.set(unlockKey, "1", SecondaryLockInterceptor.unlockTtlSeconds(), TimeUnit.SECONDS);
+
+        return unlockKey;
     }
 }

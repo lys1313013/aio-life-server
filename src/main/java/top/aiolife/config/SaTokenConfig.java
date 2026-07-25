@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import top.aiolife.sso.interceptor.ApiKeyInterceptor;
+import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
 import top.aiolife.sso.interceptor.UserLastActiveInterceptor;
 
 @Configuration
@@ -24,6 +25,7 @@ import top.aiolife.sso.interceptor.UserLastActiveInterceptor;
 public class SaTokenConfig implements WebMvcConfigurer {
 
     private final ApiKeyInterceptor apiKeyInterceptor;
+    private final SecondaryLockInterceptor secondaryLockInterceptor;
     private final UserLastActiveInterceptor userLastActiveInterceptor;
 
     @PostConstruct
@@ -80,6 +82,17 @@ public class SaTokenConfig implements WebMvcConfigurer {
         })).addPathPatterns("/**")
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
+                        "/actuator/**",
+                        "/file/preview/**",
+                        "/file/download/**",
+                        "/file/migrate/run");
+
+        // 二级锁拦截器，在 Sa-Token 校验通过后执行
+        registry.addInterceptor(secondaryLockInterceptor)
+                .addPathPatterns("/**")
+                .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
+                        "/auth/resetPassword",
+                        "/auth/secondary-verify", "/auth/secondary-password/status", "/auth/secondary-password",
                         "/actuator/**",
                         "/file/preview/**",
                         "/file/download/**",

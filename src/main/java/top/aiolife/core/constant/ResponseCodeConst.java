@@ -23,4 +23,9 @@ public class ResponseCodeConst {
    * 参数校验失败
    */
   public static final String RECODE_PARAM_FAIL = "100400";
+
+  /**
+   * 二级锁未验证
+   */
+  public static final String SECONDARY_LOCK_REQUIRED = "2001";
 }

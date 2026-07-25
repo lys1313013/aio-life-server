@@ -163,24 +163,59 @@ public class BVideoController {
 
     @PostMapping("/tagVideo")
     public ApiResponse<Boolean> tagVideo(@RequestBody BVideoEntity entity) {
-        log.info("tagVideo: {}", entity);
-        entity.setUserId(StpUtil.getLoginIdAsLong());
+        long userId = StpUtil.getLoginIdAsLong();
+        entity.setUserId(userId);
+
+        LambdaQueryWrapper<BVideoEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(BVideoEntity::getBvid, entity.getBvid());
+        queryWrapper.eq(BVideoEntity::getUserId, userId);
+        if (getBaseMapper().selectCount(queryWrapper) > 0) {
+            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "该视频已存在，无法重复添加");
+        }
+
+        entity.setCreateUser(userId);
+        entity.setCreateTime(LocalDateTime.now());
+        entity.setUpdateUser(userId);
+        entity.setUpdateTime(LocalDateTime.now());
+        if (entity.getStatus() == null) {
+            entity.setStatus(StudyEnum.IN_PROGRESS.getValue());
+        }
         getBaseMapper().insert(entity);
         return ApiResponse.success();
     }
 
     @PostMapping("/syncProgress")
     public ApiResponse<Boolean> syncProgress(@RequestBody BVideoEntity entity) {
-        entity.setUserId(StpUtil.getLoginIdAsLong());
-        log.info("bvid: {}", entity.getBvid());
-        log.info("currentEpisode: {}", entity.getCurrentEpisode());
-        LambdaUpdateWrapper<BVideoEntity> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
-        lambdaUpdateWrapper.set(BVideoEntity::getCurrentEpisode, entity.getCurrentEpisode());
-        lambdaUpdateWrapper.set(BVideoEntity::getWatchedDuration, entity.getWatchedDuration());
-        lambdaUpdateWrapper.eq(BVideoEntity::getUserId, entity.getUserId());
-        lambdaUpdateWrapper.eq(BVideoEntity::getBvid, entity.getBvid());
-        int update = getBaseMapper().update(null, lambdaUpdateWrapper);
-        log.info("syncProgress: {}", update);
+        long userId = StpUtil.getLoginIdAsLong();
+        entity.setUserId(userId);
+        log.info("bvid: {}, currentEpisode: {}, watchedDuration: {}", entity.getBvid(),
+                entity.getCurrentEpisode(), entity.getWatchedDuration());
+
+        LambdaQueryWrapper<BVideoEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(BVideoEntity::getUserId, userId);
+        queryWrapper.eq(BVideoEntity::getBvid, entity.getBvid());
+        BVideoEntity exist = getBaseMapper().selectOne(queryWrapper);
+
+        if (exist != null) {
+            LambdaUpdateWrapper<BVideoEntity> updateWrapper = new LambdaUpdateWrapper<>();
+            updateWrapper.set(BVideoEntity::getCurrentEpisode, entity.getCurrentEpisode());
+            updateWrapper.set(BVideoEntity::getWatchedDuration, entity.getWatchedDuration());
+            updateWrapper.set(BVideoEntity::getUpdateTime, LocalDateTime.now());
+            updateWrapper.set(BVideoEntity::getUpdateUser, userId);
+            updateWrapper.eq(BVideoEntity::getId, exist.getId());
+            getBaseMapper().update(null, updateWrapper);
+            log.info("syncProgress updated, id: {}", exist.getId());
+        } else {
+            entity.setCreateUser(userId);
+            entity.setCreateTime(LocalDateTime.now());
+            entity.setUpdateUser(userId);
+            entity.setUpdateTime(LocalDateTime.now());
+            if (entity.getStatus() == null) {
+                entity.setStatus(StudyEnum.IN_PROGRESS.getValue());
+            }
+            getBaseMapper().insert(entity);
+            log.info("syncProgress inserted, bvid: {}", entity.getBvid());
+        }
         return ApiResponse.success();
     }
 }

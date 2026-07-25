@@ -96,4 +96,19 @@ public interface IUserService {
      * 删除用户
      */
     void deleteUser(Long id);
+
+    /**
+     * 是否已设置二级密码
+     */
+    boolean hasSecondaryPassword(long userId);
+
+    /**
+     * 设置二级密码
+     */
+    void setSecondaryPassword(long userId, String password, String oldPassword);
+
+    /**
+     * 验证二级密码，返回解锁 key
+     */
+    String verifySecondaryPassword(long userId, String password, String menuPath);
 }

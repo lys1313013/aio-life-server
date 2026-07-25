@@ -44,6 +44,18 @@ public class UserEntity {
     private String passwordSalt;
 
     /**
+     * 二级密码
+     */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String secondaryPassword;
+
+    /**
+     * 二级密码盐
+     */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String secondaryPasswordSalt;
+
+    /**
      * 昵称
      */
     private String nickname;
