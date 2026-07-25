@@ -21,6 +21,11 @@ import top.aiolife.record.pojo.entity.FileEntity;
 import top.aiolife.record.pojo.vo.FileVO;
 import top.aiolife.record.service.IFileService;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+
+import java.io.ByteArrayInputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -70,6 +75,68 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
         } catch (Exception e) {
             throw new IllegalStateException("上传失败: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public FileVO uploadFromUrl(String imageUrl, FileBizType bizType) {
+        long userId = StpUtil.getLoginIdAsLong();
+        String bucketName = resolveBucketName();
+
+        HttpResponse response = HttpRequest.get(imageUrl)
+                .header("Referer", "https://movie.douban.com/")
+                .header("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1")
+                .timeout(10000)
+                .execute();
+
+        int status = response.getStatus();
+        if (status != 200) {
+            throw new IllegalStateException("下载封面图失败，HTTP " + status + ": " + imageUrl);
+        }
+
+        byte[] bodyBytes = response.bodyBytes();
+        String contentType = response.header("Content-Type");
+        if (StrUtil.isBlank(contentType) || !contentType.startsWith("image/")) {
+            throw new IllegalStateException("下载的不是图片，Content-Type=" + contentType + ", bodySize=" + bodyBytes.length);
+        }
+
+        String extension = extractExtension(imageUrl, contentType);
+        String objectName = buildObjectName(userId, bizType, "cover" + extension);
+
+        try {
+            minioUtil.putObject(bucketName, objectName, new ByteArrayInputStream(bodyBytes), bodyBytes.length, contentType);
+            registerRollbackCleanup(bucketName, objectName);
+
+            FileEntity fileEntity = new FileEntity();
+            fileEntity.setFileName(objectName);
+            fileEntity.setFileSize((long) bodyBytes.length);
+            fileEntity.setFileType(contentType);
+            fileEntity.setBizType(bizType.getBizType());
+            fileEntity.setIsPublic(bizType.getVisibility().getValue());
+            fileEntity.setHashValue("");
+            fileEntity.fillCreateCommonField(userId);
+
+            if (!this.save(fileEntity)) {
+                throw new IllegalStateException("文件记录保存失败");
+            }
+            return toVO(fileEntity);
+        } catch (Exception e) {
+            throw new IllegalStateException("URL 文件上传失败: " + e.getMessage(), e);
+        }
+    }
+
+    private String extractExtension(String imageUrl, String contentType) {
+        String path = imageUrl.contains("?") ? imageUrl.substring(0, imageUrl.indexOf("?")) : imageUrl;
+        String ext = StrUtil.subAfter(path, ".", true);
+        if (StrUtil.isNotBlank(ext) && ext.matches("[A-Za-z0-9]{1,10}")) {
+            return "." + ext.toLowerCase(Locale.ROOT);
+        }
+        return switch (contentType) {
+            case "image/png" -> ".png";
+            case "image/gif" -> ".gif";
+            case "image/webp" -> ".webp";
+            default -> ".jpg";
+        };
     }
 
     private String resolveBucketName() {

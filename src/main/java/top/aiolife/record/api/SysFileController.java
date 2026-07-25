@@ -46,12 +46,12 @@ public class SysFileController {
         return ApiResponse.success(fileService.upload(file, FileBizType.fromBizType(bizType)));
     }
 
-    @GetMapping("/preview/{id}")
+    @GetMapping("/preview/{id:[a-fA-F0-9]{32}}")
     public void preview(@PathVariable("id") String id, HttpServletResponse response) {
         handleFileRequest(id, response, false);
     }
 
-    @GetMapping("/download/{id}")
+    @GetMapping("/download/{id:[a-fA-F0-9]{32}}")
     public void download(@PathVariable("id") String id, HttpServletResponse response) {
         handleFileRequest(id, response, true);
     }

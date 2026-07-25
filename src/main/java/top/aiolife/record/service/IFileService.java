@@ -38,6 +38,15 @@ public interface IFileService extends IService<FileEntity> {
     List<FileVO> getByBiz(String bizType, Long bizId);
     
     /**
+     * 从 URL 下载文件并上传保存
+     *
+     * @param imageUrl 图片 URL
+     * @param bizType  业务类型
+     * @return 文件信息
+     */
+    FileVO uploadFromUrl(String imageUrl, FileBizType bizType);
+
+    /**
      * 将 Entity 转换为 VO
      */
     FileVO toVO(FileEntity entity);

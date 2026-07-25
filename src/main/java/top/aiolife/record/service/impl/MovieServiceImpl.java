@@ -56,7 +56,8 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
                     .like(MovieEntity::getDirector, query.getTitle()));
         }
         wrapper.orderByAsc(MovieEntity::getStatus)
-               .orderByDesc(MovieEntity::getFinishTime);
+               .orderByDesc(MovieEntity::getFinishTime)
+               .orderByDesc(MovieEntity::getCreateTime);
 
         Page<MovieEntity> page = new Page<>(query.getCurrent() == null ? 1 : query.getCurrent(), query.getSize() == null ? 10 : query.getSize());
         Page<MovieEntity> entityPage = this.page(page, wrapper);
@@ -77,40 +78,42 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
     @Override
     public void saveRecord(MovieReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
+        ensureCoverUploaded(req);
         MovieEntity entity = new MovieEntity();
         BeanUtil.copyProperties(req, entity);
         entity.setUserId(userId);
         entity.setCreateUser(userId);
         entity.setUpdateUser(userId);
-        
+
         if (entity.getStatus() != null && entity.getStatus() == 1 && entity.getStartTime() == null) {
             entity.setStartTime(LocalDateTime.now());
         }
         if (entity.getStatus() != null && entity.getStatus() == 2 && entity.getFinishTime() == null) {
             entity.setFinishTime(LocalDateTime.now());
         }
-        
+
         this.save(entity);
     }
 
     @Override
     public void updateRecord(MovieReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
+        ensureCoverUploaded(req);
         MovieEntity entity = this.getById(req.getId());
         if (entity == null || !entity.getUserId().equals(userId)) {
             throw new RuntimeException("记录不存在或无权限");
         }
-        
+
         BeanUtil.copyProperties(req, entity);
         entity.setUpdateUser(userId);
-        
+
         if (entity.getStatus() != null && entity.getStatus() == 1 && entity.getStartTime() == null) {
             entity.setStartTime(LocalDateTime.now());
         }
         if (entity.getStatus() != null && entity.getStatus() == 2 && entity.getFinishTime() == null) {
             entity.setFinishTime(LocalDateTime.now());
         }
-        
+
         this.updateById(entity);
     }
 
@@ -141,6 +144,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
                 }
                 if (apiSuccess && StrUtil.isNotBlank(res.getTitle())) {
                     log.info("Douban Rexxar API parse success: {}", res.getTitle());
+                    ensureCoverUploaded(res);
                     return res;
                 }
             }
@@ -173,6 +177,9 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
                  throw new RuntimeException("豆瓣反爬限制或页面结构改变，解析失败，请手动填写");
             }
 
+            // 4. 下载封面图并上传到 MinIO，解决豆瓣 CDN 防盗链问题
+            ensureCoverUploaded(res);
+
         } catch (Exception e) {
             log.error("解析豆瓣链接失败: {}", url, e);
             throw new RuntimeException("解析豆瓣链接失败，可能触发反爬限制，请稍后再试或手动填写");
@@ -204,8 +211,12 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             if (root.has("title")) {
                 res.setTitle(root.get("title").asText());
             }
-            if (root.has("pic") && root.get("pic").has("normal")) {
-                res.setCoverImgUrl(root.get("pic").get("normal").asText());
+            if (root.has("pic")) {
+                if (root.get("pic").has("large")) {
+                    res.setCoverImgUrl(root.get("pic").get("large").asText());
+                } else if (root.get("pic").has("normal")) {
+                    res.setCoverImgUrl(root.get("pic").get("normal").asText());
+                }
             } else if (root.has("cover") && root.get("cover").has("url")) {
                 res.setCoverImgUrl(root.get("cover").get("url").asText());
             }
@@ -228,6 +239,19 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         } catch (Exception e) {
             log.warn("Douban Rexxar API parse failed for {}/{}: {}", type, id, e.getMessage());
             return false;
+        }
+    }
+
+    private void ensureCoverUploaded(MovieReq res) {
+        if (StrUtil.isBlank(res.getCoverImgUrl()) || StrUtil.isNotBlank(res.getFileId())) {
+            return;
+        }
+        try {
+            var fileVO = fileService.uploadFromUrl(res.getCoverImgUrl(), top.aiolife.record.enums.FileBizType.MOVIE);
+            res.setFileId(fileVO.getId());
+            log.info("封面图已上传至 MinIO: fileId={}", fileVO.getId());
+        } catch (Exception e) {
+            log.warn("封面图上传 MinIO 失败，保留原始 URL: {}", res.getCoverImgUrl(), e);
         }
     }
 

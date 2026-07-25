@@ -55,7 +55,8 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
                     .like(ReadRecordEntity::getAuthor, query.getTitle()));
         }
         wrapper.orderByAsc(ReadRecordEntity::getStatus)
-               .orderByDesc(ReadRecordEntity::getFinishTime);
+               .orderByDesc(ReadRecordEntity::getFinishTime)
+               .orderByDesc(ReadRecordEntity::getCreateTime);
 
         Page<ReadRecordEntity> page = new Page<>(query.getCurrent() == null ? 1 : query.getCurrent(), query.getSize() == null ? 10 : query.getSize());
         Page<ReadRecordEntity> entityPage = this.page(page, wrapper);
@@ -76,6 +77,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
     @Override
     public void saveRecord(ReadRecordReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
+        ensureCoverUploaded(req);
         ReadRecordEntity entity = new ReadRecordEntity();
         BeanUtil.copyProperties(req, entity);
         entity.setUserId(userId);
@@ -95,6 +97,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
     @Override
     public void updateRecord(ReadRecordReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
+        ensureCoverUploaded(req);
         ReadRecordEntity entity = this.getById(req.getId());
         if (entity == null || !entity.getUserId().equals(userId)) {
             throw new RuntimeException("记录不存在或无权限");
@@ -175,7 +178,10 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
                                  .replace("s/pic", "l/pic");
                 res.setCoverImgUrl(coverUrl);
             }
-            
+
+            // 下载封面图并上传到 MinIO，解决豆瓣 CDN 防盗链问题
+            ensureCoverUploaded(res);
+
             // 获取作者
             Element authorElement = doc.selectFirst("meta[property=book:author]");
             if (authorElement != null) {
@@ -203,6 +209,19 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
             throw new RuntimeException("解析豆瓣链接失败，请检查链接是否正确或稍后重试");
         }
         return res;
+    }
+
+    private void ensureCoverUploaded(ReadRecordReq res) {
+        if (StrUtil.isBlank(res.getCoverImgUrl()) || StrUtil.isNotBlank(res.getFileId())) {
+            return;
+        }
+        try {
+            var fileVO = fileService.uploadFromUrl(res.getCoverImgUrl(), top.aiolife.record.enums.FileBizType.READ_RECORD);
+            res.setFileId(fileVO.getId());
+            log.info("封面图已上传至 MinIO: fileId={}", fileVO.getId());
+        } catch (Exception e) {
+            log.warn("封面图上传 MinIO 失败，保留原始 URL: {}", res.getCoverImgUrl(), e);
+        }
     }
 
     @Override
