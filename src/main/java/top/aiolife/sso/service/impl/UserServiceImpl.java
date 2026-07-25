@@ -32,6 +32,9 @@ import cn.hutool.core.date.DateUtil;
 import org.springframework.beans.factory.annotation.Value;
 
 import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
+import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
+import top.aiolife.sso.pojo.entity.UserSecondaryLockMenuEntity;
+import top.aiolife.core.cache.SecondaryLockMenuCache;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -61,6 +64,8 @@ public class UserServiceImpl implements IUserService {
     private final LoginLogMapper loginLogMapper;
     private final IMailService mailService;
     private final RedisUtil redisUtil;
+    private final UserSecondaryLockMenuMapper lockMenuMapper;
+    private final SecondaryLockMenuCache secondaryLockMenuCache;
 
     @Value("${spring.auth.code.interval-seconds:180}")
     private long intervalSeconds;
@@ -490,6 +495,12 @@ public class UserServiceImpl implements IUserService {
             throw new RuntimeException("未设置二级密码");
         }
 
+        // 将前端传入的路径解析为实际的菜单路径（前缀匹配）
+        String resolvedPath = secondaryLockMenuCache.findMatchedPath(userId, menuPath);
+        if (resolvedPath == null) {
+            resolvedPath = menuPath; // 兜底：使用原始路径
+        }
+
         // 检查失败次数
         String failKey = SecondaryLockInterceptor.failCountKey(userId);
         String failCountStr = redisUtil.get(failKey);
@@ -512,10 +523,88 @@ public class UserServiceImpl implements IUserService {
         // 验证成功，清除失败计数
         redisUtil.delete(failKey);
 
-        // 写入解锁凭证
-        String unlockKey = SecondaryLockInterceptor.unlockKey(userId, menuPath);
+        // 写入解锁凭证（使用解析后的菜单路径，与拦截器一致）
+        String unlockKey = SecondaryLockInterceptor.unlockKey(userId, resolvedPath);
         redisUtil.set(unlockKey, "1", SecondaryLockInterceptor.unlockTtlSeconds(), TimeUnit.SECONDS);
 
         return unlockKey;
+    }
+
+    @Override
+    public List<Long> getSecondaryLockMenuIds(long userId) {
+        LambdaQueryWrapper<UserSecondaryLockMenuEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserSecondaryLockMenuEntity::getUserId, userId);
+        List<UserSecondaryLockMenuEntity> list = lockMenuMapper.selectList(wrapper);
+        return list.stream()
+                .map(UserSecondaryLockMenuEntity::getMenuId)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    @Override
+    public void saveSecondaryLockMenus(long userId, List<Long> menuIds) {
+        // 清除旧数据
+        LambdaQueryWrapper<UserSecondaryLockMenuEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserSecondaryLockMenuEntity::getUserId, userId);
+        lockMenuMapper.delete(wrapper);
+
+        // 批量插入新数据
+        if (menuIds != null && !menuIds.isEmpty()) {
+            for (Long menuId : menuIds) {
+                UserSecondaryLockMenuEntity entity = new UserSecondaryLockMenuEntity();
+                entity.setUserId(userId);
+                entity.setMenuId(menuId);
+                entity.fillCreateCommonField(userId);
+                lockMenuMapper.insert(entity);
+            }
+        }
+
+        // 刷新缓存
+        secondaryLockMenuCache.evict(userId);
+    }
+
+    @Override
+    public void sendResetSecondaryPasswordCode(long userId, String ip) {
+        UserEntity user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        String email = user.getEmail();
+        if (!StringUtils.hasText(email)) {
+            throw new RuntimeException("未绑定邮箱，无法找回二级密码");
+        }
+
+        checkRateLimit(email, ip);
+
+        String code = RandomUtil.randomNumbers(6);
+        redisUtil.set("secondary:reset:code:" + email, code, 5, TimeUnit.MINUTES);
+
+        updateRateLimit(email, ip);
+
+        mailService.sendSimpleEmail(email, "重置二级密码验证码", "您的验证码是：" + code + "，有效期5分钟。", "secondary_pwd", ip);
+    }
+
+    @Override
+    public void resetSecondaryPassword(long userId, String code, String password) {
+        UserEntity user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        String email = user.getEmail();
+        if (!StringUtils.hasText(email)) {
+            throw new RuntimeException("未绑定邮箱");
+        }
+
+        String cacheCode = redisUtil.get("secondary:reset:code:" + email);
+        if (cacheCode == null || !cacheCode.equals(code)) {
+            throw new RuntimeException("验证码错误或已过期");
+        }
+
+        String salt = PasswordUtil.getSalt();
+        user.setSecondaryPasswordSalt(salt);
+        user.setSecondaryPassword(PasswordUtil.encryptPassword(password, salt));
+        userMapper.updateById(user);
+
+        redisUtil.delete("secondary:reset:code:" + email);
     }
 }

@@ -72,6 +72,8 @@ public class SecondaryLockInterceptor implements HandlerInterceptor {
      * 解析当前请求对应的二级锁菜单路径。
      */
     private String resolveMenuPath(HttpServletRequest request, Object handler) {
+        long userId = StpUtil.getLoginIdAsLong();
+
         // 优先检查 @SecondaryLock 注解
         if (handler instanceof HandlerMethod hm) {
             SecondaryLock ann = hm.getMethodAnnotation(SecondaryLock.class);
@@ -79,21 +81,20 @@ public class SecondaryLockInterceptor implements HandlerInterceptor {
                 ann = hm.getBeanType().getAnnotation(SecondaryLock.class);
             }
             if (ann != null) {
-                // 注解标记的接口，用请求路径前缀匹配
                 String path = request.getRequestURI();
                 if (path.startsWith("/api/")) {
-                    path = path.substring(4); // 去掉 /api context-path
+                    path = path.substring(4);
                 }
-                return menuCache.findMatchedPath(path);
+                return menuCache.findMatchedPath(userId, path);
             }
         }
 
-        // 非注解模式：通过请求路径匹配菜单
+        // 非注解模式：通过请求路径匹配用户锁定的菜单
         String path = request.getRequestURI();
         if (path.startsWith("/api/")) {
             path = path.substring(4);
         }
-        return menuCache.findMatchedPath(path);
+        return menuCache.findMatchedPath(userId, path);
     }
 
     // ── 以下为 static 工具方法，供 Controller 层调用 ──

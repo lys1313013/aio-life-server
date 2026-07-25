@@ -12,6 +12,8 @@ import top.aiolife.sso.pojo.vo.UserInfoVO;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
 import top.aiolife.sso.pojo.vo.UserVO;
 
+import java.util.List;
+
 /**
  * 用户服务接口
  *
@@ -111,4 +113,24 @@ public interface IUserService {
      * 验证二级密码，返回解锁 key
      */
     String verifySecondaryPassword(long userId, String password, String menuPath);
+
+    /**
+     * 获取用户锁定的菜单 ID 列表
+     */
+    List<Long> getSecondaryLockMenuIds(long userId);
+
+    /**
+     * 保存用户锁定的菜单 ID 列表
+     */
+    void saveSecondaryLockMenus(long userId, List<Long> menuIds);
+
+    /**
+     * 发送重置二级密码验证码（使用当前登录用户的邮箱）
+     */
+    void sendResetSecondaryPasswordCode(long userId, String ip);
+
+    /**
+     * 重置二级密码（使用当前登录用户的邮箱验证码）
+     */
+    void resetSecondaryPassword(long userId, String code, String password);
 }

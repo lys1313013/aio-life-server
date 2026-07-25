@@ -14,6 +14,8 @@ import java.util.Map;
 @Data
 public class MenuRouteVO {
 
+    private Long id;
+
     private String path;
 
     private String name;

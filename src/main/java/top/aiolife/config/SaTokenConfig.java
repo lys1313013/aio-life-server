@@ -93,6 +93,8 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
                         "/auth/secondary-verify", "/auth/secondary-password/status", "/auth/secondary-password",
+                        "/auth/secondary-lock/menus",
+                        "/auth/send-reset-secondary-password-code", "/auth/reset-secondary-password",
                         "/actuator/**",
                         "/file/preview/**",
                         "/file/download/**",

@@ -342,11 +342,17 @@ public class MenuServiceImpl implements IMenuService {
 
     private MenuRouteVO toRoute(SysMenuEntity entity) {
         MenuRouteVO vo = new MenuRouteVO();
+        vo.setId(entity.getId());
         vo.setPath(entity.getPath());
         vo.setName(entity.getName());
         vo.setComponent(entity.getComponent());
         vo.setRedirect(entity.getRedirect());
-        vo.setMeta(readMeta(entity.getMeta()));
+        Map<String, Object> meta = readMeta(entity.getMeta());
+        if (meta == null) {
+            meta = new HashMap<>();
+        }
+        meta.put("menuId", entity.getId());
+        vo.setMeta(meta);
         return vo;
     }
 

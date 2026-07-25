@@ -8,6 +8,8 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.pojo.req.ChangePasswordReq;
 import top.aiolife.sso.pojo.req.LoginReq;
+import top.aiolife.sso.pojo.req.ResetSecondaryPasswordReq;
+import top.aiolife.sso.pojo.req.SaveSecondaryLockMenusReq;
 import top.aiolife.sso.pojo.req.SecondaryVerifyReq;
 import top.aiolife.sso.pojo.req.SetSecondaryPasswordReq;
 import top.aiolife.sso.pojo.req.UpdateUserReq;
@@ -17,6 +19,7 @@ import top.aiolife.sso.pojo.vo.UserLoginVO;
 import top.aiolife.sso.service.IUserService;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -153,6 +156,46 @@ public class UserController {
         long id = StpUtil.getLoginIdAsLong();
         userService.verifySecondaryPassword(id, req.getPassword(), req.getMenuPath());
         return ApiResponse.success(Map.of("menuPath", req.getMenuPath()));
+    }
+
+    /**
+     * 获取当前用户锁定的菜单 ID 列表
+     */
+    @GetMapping("/auth/secondary-lock/menus")
+    public ApiResponse<List<Long>> getSecondaryLockMenus() {
+        long id = StpUtil.getLoginIdAsLong();
+        return ApiResponse.success(userService.getSecondaryLockMenuIds(id));
+    }
+
+    /**
+     * 保存当前用户锁定的菜单 ID 列表
+     */
+    @PutMapping("/auth/secondary-lock/menus")
+    public ApiResponse<Void> saveSecondaryLockMenus(@RequestBody SaveSecondaryLockMenusReq req) {
+        long id = StpUtil.getLoginIdAsLong();
+        userService.saveSecondaryLockMenus(id, req.getMenuIds());
+        return ApiResponse.success();
+    }
+
+    /**
+     * 发送重置二级密码验证码（发到当前用户绑定的邮箱）
+     */
+    @PostMapping("/auth/send-reset-secondary-password-code")
+    public ApiResponse<Void> sendResetSecondaryPasswordCode(HttpServletRequest request) {
+        long id = StpUtil.getLoginIdAsLong();
+        String ip = getIp(request);
+        userService.sendResetSecondaryPasswordCode(id, ip);
+        return ApiResponse.success();
+    }
+
+    /**
+     * 通过邮箱验证码重置二级密码
+     */
+    @PostMapping("/auth/reset-secondary-password")
+    public ApiResponse<Void> resetSecondaryPassword(@RequestBody ResetSecondaryPasswordReq req) {
+        long id = StpUtil.getLoginIdAsLong();
+        userService.resetSecondaryPassword(id, req.getCode(), req.getPassword());
+        return ApiResponse.success();
     }
 
 }
