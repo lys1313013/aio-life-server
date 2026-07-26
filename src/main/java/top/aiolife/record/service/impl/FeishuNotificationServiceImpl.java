@@ -13,6 +13,7 @@ import top.aiolife.record.mapper.NotificationDeliveryMapper;
 import top.aiolife.record.mapper.NotificationPreferenceMapper;
 import top.aiolife.record.notification.FeishuAppClient;
 import top.aiolife.record.notification.NotificationBizType;
+import top.aiolife.record.notification.NotificationChannel;
 import top.aiolife.record.notification.NotificationCryptoService;
 import top.aiolife.record.notification.NotificationRequest;
 import top.aiolife.record.pojo.entity.NotificationChannelConfigEntity;
@@ -25,6 +26,7 @@ import top.aiolife.record.pojo.vo.FeishuRecipientListVO;
 import top.aiolife.record.pojo.vo.FeishuRecipientVO;
 import top.aiolife.record.pojo.vo.NotificationPreferenceVO;
 import top.aiolife.record.service.FeishuNotificationService;
+import top.aiolife.record.service.IUserBindService;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -52,6 +54,7 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
     private final NotificationCryptoService cryptoService;
     private final FeishuAppClient feishuAppClient;
     private final ObjectMapper objectMapper;
+    private final IUserBindService userBindService;
 
     @Override
     public FeishuChannelConfigVO getConfig(long userId) {
@@ -210,19 +213,35 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
 
     @Override
     public List<NotificationPreferenceVO> listPreferences(long userId) {
+        boolean hasLeetCode = hasLeetCodeBinding(userId);
         Map<String, NotificationPreferenceEntity> saved = preferenceMapper.selectList(
                         new LambdaQueryWrapper<NotificationPreferenceEntity>()
-                                .eq(NotificationPreferenceEntity::getUserId, userId)
-                                .eq(NotificationPreferenceEntity::getChannel, CHANNEL))
+                                .eq(NotificationPreferenceEntity::getUserId, userId))
                 .stream()
-                .collect(Collectors.toMap(NotificationPreferenceEntity::getBizType, Function.identity()));
+                .collect(Collectors.toMap(
+                        e -> e.getBizType() + ":" + e.getChannel(),
+                        Function.identity()));
         return Arrays.stream(NotificationBizType.values())
-                .map(type -> NotificationPreferenceVO.builder()
-                        .bizType(type.name())
-                        .description(type.getDescription())
-                        .enabled(!saved.containsKey(type.name())
-                                || Integer.valueOf(1).equals(saved.get(type.name()).getEnabled()))
-                        .build())
+                .map(type -> {
+                    boolean visible = !type.isRequiresLeetCode() || hasLeetCode;
+                    List<NotificationPreferenceVO.ChannelState> channels = NotificationChannel.ALL.stream()
+                            .map(ch -> {
+                                String key = type.name() + ":" + ch;
+                                boolean enabled = !saved.containsKey(key)
+                                        || Integer.valueOf(1).equals(saved.get(key).getEnabled());
+                                return NotificationPreferenceVO.ChannelState.builder()
+                                        .channel(ch)
+                                        .enabled(enabled)
+                                        .build();
+                            })
+                            .toList();
+                    return NotificationPreferenceVO.builder()
+                            .bizType(type.name())
+                            .description(type.getDescription())
+                            .visible(visible)
+                            .channels(channels)
+                            .build();
+                })
                 .toList();
     }
 
@@ -234,12 +253,15 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
         }
         for (NotificationPreferenceUpdateReq.Item item : req.getItems()) {
             NotificationBizType.fromName(item.getBizType());
-            NotificationPreferenceEntity existing = findPreference(userId, item.getBizType());
+            if (item.getChannel() == null || !NotificationChannel.ALL.contains(item.getChannel())) {
+                throw new IllegalArgumentException("不支持的通知渠道：" + item.getChannel());
+            }
+            NotificationPreferenceEntity existing = findPreference(userId, item.getBizType(), item.getChannel());
             if (existing == null) {
                 NotificationPreferenceEntity entity = new NotificationPreferenceEntity();
                 entity.setUserId(userId);
                 entity.setBizType(item.getBizType());
-                entity.setChannel(CHANNEL);
+                entity.setChannel(item.getChannel());
                 entity.setEnabled(Boolean.TRUE.equals(item.getEnabled()) ? 1 : 0);
                 entity.fillCreateCommonField(userId);
                 preferenceMapper.insert(entity);
@@ -263,13 +285,26 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
         }
     }
 
+    @Override
+    public boolean isChannelEnabled(long userId, String bizType, String channel) {
+        NotificationBizType.fromName(bizType);
+        if (NotificationChannel.FEISHU.equals(channel)) {
+            NotificationChannelConfigEntity config = findConfig(userId);
+            if (config == null || !Integer.valueOf(1).equals(config.getEnabled())) {
+                return false;
+            }
+        }
+        NotificationPreferenceEntity preference = findPreference(userId, bizType, channel);
+        return preference == null || Integer.valueOf(1).equals(preference.getEnabled());
+    }
+
     private void doSendIfEnabled(NotificationRequest request) {
         validateNotification(request);
         NotificationChannelConfigEntity config = findConfig(request.receiverUserId());
         if (config == null || !Integer.valueOf(1).equals(config.getEnabled())) {
             return;
         }
-        NotificationPreferenceEntity preference = findPreference(request.receiverUserId(), request.bizType());
+        NotificationPreferenceEntity preference = findPreference(request.receiverUserId(), request.bizType(), CHANNEL);
         if (preference != null && !Integer.valueOf(1).equals(preference.getEnabled())) {
             return;
         }
@@ -382,11 +417,11 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
                 .eq(NotificationChannelConfigEntity::getChannel, CHANNEL));
     }
 
-    private NotificationPreferenceEntity findPreference(long userId, String bizType) {
+    private NotificationPreferenceEntity findPreference(long userId, String bizType, String channel) {
         return preferenceMapper.selectOne(new LambdaQueryWrapper<NotificationPreferenceEntity>()
                 .eq(NotificationPreferenceEntity::getUserId, userId)
                 .eq(NotificationPreferenceEntity::getBizType, bizType)
-                .eq(NotificationPreferenceEntity::getChannel, CHANNEL));
+                .eq(NotificationPreferenceEntity::getChannel, channel));
     }
 
     private String encryptPayload(NotificationRequest request) {
@@ -429,5 +464,10 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
     private void bindRecipient(NotificationChannelConfigEntity entity, String openId, String name) {
         entity.setReceiverOpenId(openId);
         entity.setReceiverName(StringUtils.hasText(name) ? name : null);
+    }
+
+    private boolean hasLeetCodeBinding(long userId) {
+        var bind = userBindService.getBindByUserIdAndPlatform(userId, "leetcode");
+        return bind != null && StringUtils.hasText(bind.getPlatformUsername());
     }
 }

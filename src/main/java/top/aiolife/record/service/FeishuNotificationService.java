@@ -26,5 +26,7 @@ public interface FeishuNotificationService {
 
     void sendIfEnabled(NotificationRequest request);
 
+    boolean isChannelEnabled(long userId, String bizType, String channel);
+
     void retryPending();
 }

@@ -20,6 +20,11 @@ public class EmailNotificationSender extends AbstractNotificationSender {
     private IMailService mailService;
 
     @Override
+    public String getChannel() {
+        return NotificationChannel.EMAIL;
+    }
+
+    @Override
     public void send(UserEntity user, String title, String htmlContent, String textContent) {
         if (user.getEmail() == null || user.getEmail().isEmpty()) {
             log.warn("用户 {} 未设置邮箱，跳过邮件发送", user.getId());

@@ -11,6 +11,7 @@ public class NotificationPreferenceUpdateReq {
     @Data
     public static class Item {
         private String bizType;
+        private String channel;
         private Boolean enabled;
     }
 }

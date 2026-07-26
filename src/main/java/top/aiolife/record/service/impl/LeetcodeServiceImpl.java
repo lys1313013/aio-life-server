@@ -185,7 +185,10 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
                     String title = "leetcode咋还没刷";
                     String content = "leetcode咋还没刷";
                     for (AbstractNotificationSender sender : notificationSenders) {
-                        sender.send(userEntity, title, content, content);
+                        if (feishuNotificationService.isChannelEnabled(
+                                userEntity.getId(), "LEETCODE_REMINDER", sender.getChannel())) {
+                            sender.send(userEntity, title, content, content);
+                        }
                     }
                     feishuNotificationService.sendIfEnabled(new NotificationRequest(
                             userEntity.getId(),
@@ -296,7 +299,10 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
             UserEntity user = userMapper.selectById(bind.getUserId());
             if (user != null) {
                 for (AbstractNotificationSender sender : notificationSenders) {
-                    sender.send(user, title, htmlContent, textContent);
+                    if (feishuNotificationService.isChannelEnabled(
+                            user.getId(), "LEETCODE_DAILY", sender.getChannel())) {
+                        sender.send(user, title, htmlContent, textContent);
+                    }
                 }
                 feishuNotificationService.sendIfEnabled(new NotificationRequest(
                         user.getId(),

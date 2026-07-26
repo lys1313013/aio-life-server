@@ -19,4 +19,6 @@ public abstract class AbstractNotificationSender {
      * @param textContent 纯文本格式内容
      */
     public abstract void send(UserEntity user, String title, String htmlContent, String textContent);
+
+    public abstract String getChannel();
 }

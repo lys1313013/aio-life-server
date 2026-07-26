@@ -21,6 +21,11 @@ public class SystemNotificationSender extends AbstractNotificationSender {
     private IMessageService messageService;
 
     @Override
+    public String getChannel() {
+        return NotificationChannel.STATION;
+    }
+
+    @Override
     public void send(UserEntity user, String title, String htmlContent, String textContent) {
         try {
             MessageEntity message = new MessageEntity();
