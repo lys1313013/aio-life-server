@@ -538,6 +538,7 @@ public class UserServiceImpl implements IUserService {
         return list.stream()
                 .map(UserSecondaryLockMenuEntity::getMenuId)
                 .filter(Objects::nonNull)
+                .distinct()
                 .toList();
     }
 
@@ -548,9 +549,10 @@ public class UserServiceImpl implements IUserService {
         wrapper.eq(UserSecondaryLockMenuEntity::getUserId, userId);
         lockMenuMapper.delete(wrapper);
 
-        // 批量插入新数据
+        // 批量插入新数据（去重）
         if (menuIds != null && !menuIds.isEmpty()) {
-            for (Long menuId : menuIds) {
+            List<Long> uniqueIds = menuIds.stream().distinct().toList();
+            for (Long menuId : uniqueIds) {
                 UserSecondaryLockMenuEntity entity = new UserSecondaryLockMenuEntity();
                 entity.setUserId(userId);
                 entity.setMenuId(menuId);
