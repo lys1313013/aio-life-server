@@ -105,4 +105,14 @@ public class MbtiController {
 
         return ApiResponse.success(response);
     }
+
+    @DeleteMapping("/result/{id}")
+    public ApiResponse<Void> deleteResult(@PathVariable Long id) {
+        long userId = StpUtil.getLoginIdAsLong();
+        boolean deleted = mbtiResultService.deleteResult(id, userId);
+        if (!deleted) {
+            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "记录不存在或无权限");
+        }
+        return ApiResponse.success();
+    }
 }

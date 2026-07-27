@@ -39,4 +39,12 @@ public interface IMbtiResultService extends IService<MbtiResultEntity> {
      * @return 历史记录列表
      */
     List<MbtiResultEntity> getUserHistory(Long userId);
+
+    /**
+     * 删除测试结果（仅本人可删）
+     * @param id 记录ID
+     * @param userId 用户ID
+     * @return 是否删除成功
+     */
+    boolean deleteResult(Long id, Long userId);
 }

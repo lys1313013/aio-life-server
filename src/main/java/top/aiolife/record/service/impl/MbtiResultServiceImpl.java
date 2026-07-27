@@ -157,6 +157,17 @@ public class MbtiResultServiceImpl extends ServiceImpl<IMbtiResultMapper, MbtiRe
     
     @Override
     public void saveResult(MbtiResultEntity result) {
+        // 同一 testId 幂等保存，避免前端自动保存与手动保存重复插入
+        LambdaQueryWrapper<MbtiResultEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(MbtiResultEntity::getUserId, result.getUserId());
+        queryWrapper.eq(MbtiResultEntity::getTestId, result.getTestId());
+        MbtiResultEntity existing = this.getOne(queryWrapper);
+        if (existing != null) {
+            result.setId(existing.getId());
+            this.updateById(result);
+            log.info("更新MBTI测试结果: userId={}, testId={}", result.getUserId(), result.getTestId());
+            return;
+        }
         this.save(result);
         log.info("保存MBTI测试结果: userId={}, mbtiType={}", result.getUserId(), result.getMbtiType());
     }
@@ -167,5 +178,14 @@ public class MbtiResultServiceImpl extends ServiceImpl<IMbtiResultMapper, MbtiRe
         queryWrapper.eq(MbtiResultEntity::getUserId, userId);
         queryWrapper.orderByDesc(MbtiResultEntity::getCreateTime);
         return this.list(queryWrapper);
+    }
+
+    @Override
+    public boolean deleteResult(Long id, Long userId) {
+        MbtiResultEntity entity = this.getById(id);
+        if (entity == null || entity.getUserId() == null || !entity.getUserId().equals(userId)) {
+            return false;
+        }
+        return this.removeById(id);
     }
 }
