@@ -194,7 +194,7 @@ CREATE TABLE IF NOT EXISTS `milestone` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='里程碑表';
 
 CREATE TABLE IF NOT EXISTS `performance` (
-                               `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '唯一标识',
+                               `id` bigint NOT NULL AUTO_INCREMENT COMMENT '唯一标识',
                                `performance_name` varchar(100) NOT NULL COMMENT '演出名称',
                                `performer` varchar(50) DEFAULT NULL,
                                `performance_type` varchar(50) NOT NULL COMMENT '演出类型(演唱会/话剧/音乐会等)',
@@ -206,13 +206,13 @@ CREATE TABLE IF NOT EXISTS `performance` (
                                `duration` int(11) DEFAULT NULL COMMENT '演出时长(分钟)',
                                `rating` tinyint(4) DEFAULT NULL COMMENT '演出评分(1-5)',
                                `review` text COMMENT '演出评价',
-                               `image_url` varchar(255) DEFAULT NULL COMMENT '演出海报/票根图片链接',
                                `purchase_platform` varchar(50) DEFAULT NULL COMMENT '购票平台',
                                `order_number` varchar(50) DEFAULT NULL COMMENT '购票订单号',
-                               `create_by` int(11) DEFAULT NULL COMMENT '创建人',
+                               `create_user` bigint DEFAULT NULL COMMENT '创建人ID',
                                `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                               `update_by` int(11) DEFAULT NULL COMMENT '修改人',
+                               `update_user` bigint DEFAULT NULL COMMENT '更新人ID',
                                `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                               `is_deleted` tinyint DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
                                PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='演出表';
 

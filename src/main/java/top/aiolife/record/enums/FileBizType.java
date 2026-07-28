@@ -17,6 +17,7 @@ public enum FileBizType {
     MOVIE("movie", "movie", FileVisibility.PRIVATE),
     HONOR_RECORD("honor_record", "honor", FileVisibility.PRIVATE),
     READ_RECORD("read", "read", FileVisibility.PRIVATE),
+    PERFORMANCE("performance", "performance", FileVisibility.PRIVATE),
     DEVICE("device", "device", FileVisibility.PRIVATE);
 
     private final String bizType;
