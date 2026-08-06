@@ -1,0 +1,48 @@
+package top.aiolife.membership.pojo.vo;
+
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+/**
+ * 会员视图对象
+ *
+ * @author Lys
+ * @date 2026/08/06
+ */
+@Data
+public class MembershipVO {
+
+    private Long id;
+
+    private String name;
+
+    private String category;
+
+    private String provider;
+
+    private String icon;
+
+    private String color;
+
+    private LocalDate startDate;
+
+    private LocalDate expiryDate;
+
+    private BigDecimal price;
+
+    private Integer autoRenew;
+
+    private String note;
+
+    /**
+     * active-生效中 expiring-即将到期 expired-已过期
+     */
+    private String status;
+
+    /**
+     * 剩余天数，已过期为负数
+     */
+    private Long remainingDays;
+}
