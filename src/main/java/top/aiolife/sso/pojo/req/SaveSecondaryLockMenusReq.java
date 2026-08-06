@@ -14,4 +14,9 @@ import java.util.List;
 public class SaveSecondaryLockMenusReq {
 
     private List<Long> menuIds;
+
+    /**
+     * 二级密码，修改菜单锁前必须验证
+     */
+    private String secondaryPassword;
 }

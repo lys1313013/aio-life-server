@@ -120,9 +120,9 @@ public interface IUserService {
     List<Long> getSecondaryLockMenuIds(long userId);
 
     /**
-     * 保存用户锁定的菜单 ID 列表
+     * 保存用户锁定的菜单 ID 列表（需验证二级密码）
      */
-    void saveSecondaryLockMenus(long userId, List<Long> menuIds);
+    void saveSecondaryLockMenus(long userId, List<Long> menuIds, String secondaryPassword);
 
     /**
      * 发送重置二级密码验证码（使用当前登录用户的邮箱）

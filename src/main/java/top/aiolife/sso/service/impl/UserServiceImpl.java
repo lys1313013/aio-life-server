@@ -501,7 +501,21 @@ public class UserServiceImpl implements IUserService {
             resolvedPath = menuPath; // 兜底：使用原始路径
         }
 
-        // 检查失败次数
+        // 校验二级密码（含失败次数限制）
+        verifySecondaryPasswordOrThrow(user, password);
+
+        // 写入解锁凭证（使用解析后的菜单路径，与拦截器一致）
+        String unlockKey = SecondaryLockInterceptor.unlockKey(userId, resolvedPath);
+        redisUtil.set(unlockKey, "1", SecondaryLockInterceptor.unlockTtlSeconds(), TimeUnit.SECONDS);
+
+        return unlockKey;
+    }
+
+    /**
+     * 校验二级密码是否正确，含失败次数限制；正确后清除失败计数。
+     */
+    private void verifySecondaryPasswordOrThrow(UserEntity user, String password) {
+        long userId = user.getId();
         String failKey = SecondaryLockInterceptor.failCountKey(userId);
         String failCountStr = redisUtil.get(failKey);
         int failCount = failCountStr == null ? 0 : Integer.parseInt(failCountStr);
@@ -512,9 +526,7 @@ public class UserServiceImpl implements IUserService {
         String encrypted = PasswordUtil.encryptPassword(password, user.getSecondaryPasswordSalt());
         if (!user.getSecondaryPassword().equals(encrypted)) {
             failCount++;
-            long ttl = failCount >= SecondaryLockInterceptor.maxFailCount()
-                    ? TimeUnit.MINUTES.toSeconds(SecondaryLockInterceptor.failLockMinutes())
-                    : TimeUnit.MINUTES.toSeconds(SecondaryLockInterceptor.failLockMinutes());
+            long ttl = TimeUnit.MINUTES.toSeconds(SecondaryLockInterceptor.failLockMinutes());
             redisUtil.set(failKey, String.valueOf(failCount), ttl, TimeUnit.SECONDS);
             int remaining = SecondaryLockInterceptor.maxFailCount() - failCount;
             throw new RuntimeException("二级密码错误，还剩" + Math.max(0, remaining) + "次机会");
@@ -522,12 +534,6 @@ public class UserServiceImpl implements IUserService {
 
         // 验证成功，清除失败计数
         redisUtil.delete(failKey);
-
-        // 写入解锁凭证（使用解析后的菜单路径，与拦截器一致）
-        String unlockKey = SecondaryLockInterceptor.unlockKey(userId, resolvedPath);
-        redisUtil.set(unlockKey, "1", SecondaryLockInterceptor.unlockTtlSeconds(), TimeUnit.SECONDS);
-
-        return unlockKey;
     }
 
     @Override
@@ -543,7 +549,17 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public void saveSecondaryLockMenus(long userId, List<Long> menuIds) {
+    public void saveSecondaryLockMenus(long userId, List<Long> menuIds, String secondaryPassword) {
+        UserEntity user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        if (!org.springframework.util.StringUtils.hasText(user.getSecondaryPassword())) {
+            throw new RuntimeException("未设置二级密码，无法保存菜单锁");
+        }
+        // 修改菜单锁必须验证二级密码
+        verifySecondaryPasswordOrThrow(user, secondaryPassword);
+
         // 清除旧数据
         LambdaQueryWrapper<UserSecondaryLockMenuEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserSecondaryLockMenuEntity::getUserId, userId);

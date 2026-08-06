@@ -173,7 +173,7 @@ public class UserController {
     @PutMapping("/auth/secondary-lock/menus")
     public ApiResponse<Void> saveSecondaryLockMenus(@RequestBody SaveSecondaryLockMenusReq req) {
         long id = StpUtil.getLoginIdAsLong();
-        userService.saveSecondaryLockMenus(id, req.getMenuIds());
+        userService.saveSecondaryLockMenus(id, req.getMenuIds(), req.getSecondaryPassword());
         return ApiResponse.success();
     }
 
