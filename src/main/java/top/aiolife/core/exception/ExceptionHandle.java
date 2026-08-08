@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * 全局异常处理
@@ -19,6 +20,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class ExceptionHandle {
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ApiResponse<Object> handleNoResourceFound(NoResourceFoundException e) {
+        String path = e.getResourcePath();
+        log.warn("访问不存在的接口：{}", path);
+        // getResourcePath() 返回不带前导斜杠的路径，如 relationships/graph
+        if (path != null && path.replaceFirst("^/", "").startsWith("relationships")) {
+            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL,
+                    "关系图谱功能未启用，请确认后端已开启 Neo4j 配置（AIO_LIFE_NEO4J_ENABLED=true）后重试");
+        }
+        return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "请求的接口不存在：" + path);
+    }
 
     @ExceptionHandler(Exception.class)
     public ApiResponse<Object> handleException(Exception e) {

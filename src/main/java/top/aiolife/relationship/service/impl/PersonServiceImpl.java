@@ -82,9 +82,11 @@ public class PersonServiceImpl implements IPersonService {
         personRepository.deleteById(personId);
     }
 
-    private String toString(Object value) {
-        if (value == null) return null;
-        return value.toString();
+    private String toString(org.neo4j.driver.Value value) {
+        // Value.toString() 会给字符串带 Cypher 风格的双引号，需先 asObject() 解包
+        if (value == null || value.isNull()) return null;
+        Object obj = value.asObject();
+        return obj == null ? null : obj.toString();
     }
 
     public Map<String, Object> getGraphData(Long userId) {
