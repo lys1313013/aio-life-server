@@ -79,6 +79,12 @@ public class PersonRelationship {
     private String email;
 
     /**
+     * 学校
+     */
+    @Property("school")
+    private String school;
+
+    /**
      * 社交链接，JSON格式
      */
     @Property("socialLinks")

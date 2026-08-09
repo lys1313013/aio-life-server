@@ -25,6 +25,7 @@ public class PersonWithRelationships {
     private String birthday;
     private String phone;
     private String email;
+    private String school;
     private String socialLinks;
     private String notes;
     private String createdAt;

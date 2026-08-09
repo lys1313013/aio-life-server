@@ -155,6 +155,7 @@ public class PersonServiceImpl implements IPersonService {
             result.setBirthday(toString(personNode.get("birthday")));
             result.setPhone(toString(personNode.get("phone")));
             result.setEmail(toString(personNode.get("email")));
+            result.setSchool(toString(personNode.get("school")));
             result.setSocialLinks(toString(personNode.get("socialLinks")));
             result.setNotes(toString(personNode.get("notes")));
             result.setCreatedAt(toString(personNode.get("createdAt")));

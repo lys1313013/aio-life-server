@@ -84,6 +84,7 @@ public class RelationshipController {
         person.setBirthday(req.getBirthday());
         person.setPhone(req.getPhone());
         person.setEmail(req.getEmail());
+        person.setSchool(req.getSchool());
         person.setSocialLinks(req.getSocialLinks());
         person.setNotes(req.getNotes());
         return ApiResponse.success(personService.createPerson(person));
@@ -106,6 +107,7 @@ public class RelationshipController {
         person.setBirthday(req.getBirthday());
         person.setPhone(req.getPhone());
         person.setEmail(req.getEmail());
+        person.setSchool(req.getSchool());
         person.setSocialLinks(req.getSocialLinks());
         person.setNotes(req.getNotes());
         return ApiResponse.success(personService.updatePerson(userId, person));
