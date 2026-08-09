@@ -13,17 +13,21 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
+import top.aiolife.record.pojo.entity.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.enums.RelateTypeEnum;
+import top.aiolife.record.enums.DictTypeEnum;
 import top.aiolife.record.pojo.query.TimeWeekQuery;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.convertor.TimeRecordConvertor;
 import top.aiolife.record.pojo.vo.RecommendNextVO;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
+import top.aiolife.record.pojo.vo.TimeRecordExerciseVO;
 import top.aiolife.record.pojo.vo.TimeRecordVO;
 import top.aiolife.record.service.IExerciseRecordService;
 import top.aiolife.record.service.ITimeRecordService;
 import top.aiolife.record.service.ITimeTrackerCategoryService;
+import top.aiolife.record.service.UserDictDataService;
 
 import java.time.LocalDate;
 import java.util.Collections;
@@ -47,6 +51,7 @@ public class TimeRecordController {
     private final ITimeRecordService timeRecordService;
     private final IExerciseRecordService exerciseRecordService;
     private final ITimeTrackerCategoryService timeTrackerCategoryService;
+    private final UserDictDataService userDictDataService;
 
     public ITimeRecordService getBaseMapper() {
         return timeRecordService;
@@ -95,7 +100,8 @@ public class TimeRecordController {
     @PostMapping("/queryByDateRangeForAI")
     public ApiResponse<List<TimeRecordDateRangeVO>> queryByDateRangeForAI(
             @RequestBody TimeRecordDateRangeMcpReq req) {
-        List<TimeRecordEntity> list = queryByDateRangeForAIList(req);
+        long userId = StpUtil.getLoginIdAsLong();
+        List<TimeRecordEntity> list = queryByDateRangeForAIList(userId, req);
         List<TimeRecordDateRangeVO> voList = TimeRecordConvertor.INSTANCE.toDateRangeVOList(list);
 
         Set<String> categoryIds = list.stream()
@@ -125,6 +131,8 @@ public class TimeRecordController {
             }
         }
 
+        fillExerciseDetails(userId, list, voList);
+
         // 按日期和时间从晚到早排序
         voList.sort(Comparator
                 .comparing(TimeRecordDateRangeVO::getDate, Comparator.reverseOrder())
@@ -134,10 +142,58 @@ public class TimeRecordController {
     }
 
     /**
+     * 批量填充运动明细，仅向 AI 接口暴露运动名称和次数。
+     */
+    private void fillExerciseDetails(long userId, List<TimeRecordEntity> records,
+                                     List<TimeRecordDateRangeVO> voList) {
+        Set<String> timeIds = records.stream()
+                .map(TimeRecordEntity::getId)
+                .filter(id -> id != null && !id.isEmpty())
+                .collect(Collectors.toSet());
+        if (timeIds.isEmpty()) {
+            return;
+        }
+
+        List<ExerciseRecordEntity> exerciseRecords = exerciseRecordService.lambdaQuery()
+                .select(ExerciseRecordEntity::getTimeId,
+                        ExerciseRecordEntity::getExerciseTypeId,
+                        ExerciseRecordEntity::getExerciseCount)
+                .eq(ExerciseRecordEntity::getUserId, userId)
+                .in(ExerciseRecordEntity::getTimeId, timeIds)
+                .list();
+        if (exerciseRecords.isEmpty()) {
+            return;
+        }
+
+        Map<String, String> exerciseNameMap = userDictDataService
+                .listUserVisibleDictData(userId, DictTypeEnum.EXERCISE_TYPE.getValue(), true)
+                .stream()
+                .filter(dict -> dict.getId() != null && dict.getDictLabel() != null)
+                .collect(Collectors.toMap(
+                        dict -> String.valueOf(dict.getId()),
+                        UserDictDataEntity::getDictLabel,
+                        (existing, replacement) -> replacement));
+
+        Map<String, List<TimeRecordExerciseVO>> exercisesByTimeId = exerciseRecords.stream()
+                .collect(Collectors.groupingBy(
+                        ExerciseRecordEntity::getTimeId,
+                        Collectors.mapping(exercise -> new TimeRecordExerciseVO(
+                                exerciseNameMap.getOrDefault(
+                                        exercise.getExerciseTypeId(), "未知运动"),
+                                exercise.getExerciseCount()), Collectors.toList())));
+
+        for (int i = 0; i < records.size(); i++) {
+            List<TimeRecordExerciseVO> exercises = exercisesByTimeId.get(records.get(i).getId());
+            if (exercises != null && !exercises.isEmpty()) {
+                voList.get(i).setExercises(exercises);
+            }
+        }
+    }
+
+    /**
      * 根据日期范围查询记录（AI接口专用）
      */
-    private List<TimeRecordEntity> queryByDateRangeForAIList(TimeRecordDateRangeMcpReq req) {
-        long userId = StpUtil.getLoginIdAsLong();
+    private List<TimeRecordEntity> queryByDateRangeForAIList(long userId, TimeRecordDateRangeMcpReq req) {
         LambdaQueryWrapper<TimeRecordEntity> lambdaQueryWrapper = buildDateRangeForAIQueryWrapper(userId, req);
         return timeRecordService.list(lambdaQueryWrapper);
     }

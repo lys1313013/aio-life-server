@@ -27,6 +27,7 @@ public interface TimeRecordConvertor {
 
     @Mapping(target = "startTime", qualifiedByName = "minutesToLocalDateTime")
     @Mapping(target = "endTime", qualifiedByName = "minutesToLocalDateTime")
+    @Mapping(target = "exercises", ignore = true)
     TimeRecordDateRangeVO toDateRangeVO(TimeRecordEntity entity);
 
     List<TimeRecordDateRangeVO> toDateRangeVOList(List<TimeRecordEntity> entities);

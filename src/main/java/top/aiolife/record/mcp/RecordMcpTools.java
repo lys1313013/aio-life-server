@@ -42,7 +42,7 @@ public class RecordMcpTools {
     private final TaskDetailController taskDetailController;
     private final ITaskService taskService;
 
-    @Tool("查询指定日期范围内的所有时间记录")
+    @Tool("查询指定日期范围内的所有时间记录，包含仅有运动名称和运动次数的运动明细")
     public List<TimeRecordDateRangeVO> time_record_queryByDateRange(TimeRecordDateRangeMcpReq req) {
         return timeRecordController.queryByDateRangeForAI(req).getData();
     }

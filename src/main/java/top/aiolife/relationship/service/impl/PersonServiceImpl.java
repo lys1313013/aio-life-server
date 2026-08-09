@@ -110,7 +110,7 @@ public class PersonServiceImpl implements IPersonService {
             }
 
             Result relResult = session.run(
-                "MATCH (p1:Person {userId: $userId})-[r:RELATES_TO]-(p2:Person) RETURN p1.id as source, p2.id as target, r.relationType as relationType, r.direction as direction, r.description as description",
+                "MATCH (p1:Person {userId: $userId})-[r:RELATES_TO]->(p2:Person {userId: $userId}) RETURN p1.id as source, p2.id as target, r.relationType as relationType, r.direction as direction, r.description as description",
                 Map.of("userId", userId)
             );
 

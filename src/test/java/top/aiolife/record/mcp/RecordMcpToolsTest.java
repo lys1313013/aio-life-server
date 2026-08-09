@@ -71,7 +71,7 @@ class RecordMcpToolsTest {
         savedTimeRecord = null;
         savedTaskDetail = null;
 
-        TimeRecordController timeRecordController = new TimeRecordController(null, null, null) {
+        TimeRecordController timeRecordController = new TimeRecordController(null, null, null, null) {
             @Override
             public ApiResponse<List<TimeRecordDateRangeVO>> queryByDateRangeForAI(TimeRecordDateRangeMcpReq req) {
                 TimeRecordDateRangeVO vo = new TimeRecordDateRangeVO();

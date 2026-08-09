@@ -117,7 +117,7 @@ public class RecordMcpE2ETest {
         @Bean
         @Primary
         public TimeRecordController timeRecordController() {
-            return new TimeRecordController(null, null, null) {
+            return new TimeRecordController(null, null, null, null) {
                 @Override
                 public ApiResponse<List<TimeRecordDateRangeVO>> queryByDateRangeForAI(TimeRecordDateRangeMcpReq req) {
                     TimeRecordDateRangeVO vo = new TimeRecordDateRangeVO();

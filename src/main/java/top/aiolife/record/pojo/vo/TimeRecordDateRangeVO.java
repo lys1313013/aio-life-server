@@ -6,6 +6,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 时间记录查询结果 VO（日期范围查询专用）
@@ -30,4 +31,9 @@ public class TimeRecordDateRangeVO {
     private LocalDateTime endTime;
 
     private String title;
+
+    /**
+     * 运动明细，仅包含运动名称和运动次数。
+     */
+    private List<TimeRecordExerciseVO> exercises;
 }
