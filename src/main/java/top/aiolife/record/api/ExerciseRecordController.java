@@ -70,7 +70,7 @@ public class ExerciseRecordController {
     /**
      * 新增运动记录
      */
-    @PostMapping("/add")
+    @PostMapping
     public ApiResponse<Boolean> add(@RequestBody ExerciseRecordEntity exerciseRecord) {
         Long userId = StpUtil.getLoginIdAsLong();
         exerciseRecord.setUserId(userId);
@@ -81,9 +81,11 @@ public class ExerciseRecordController {
     /**
      * 修改运动记录
      */
-    @PostMapping("/update")
-    public ApiResponse<Boolean> update(@RequestBody ExerciseRecordEntity exerciseRecord) {
+    @PutMapping("/{id}")
+    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @RequestBody ExerciseRecordEntity exerciseRecord) {
         long userId = StpUtil.getLoginIdAsLong();
+        exerciseRecord.setId(id);
+        exerciseRecord.setUserId(null);
         exerciseRecord.setUpdateUser(userId);
         
         LambdaQueryWrapper<ExerciseRecordEntity> wrapper = new LambdaQueryWrapper<>();

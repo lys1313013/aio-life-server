@@ -47,16 +47,31 @@ public class DeviceController {
     }
 
     /**
-     * 插入或更新
+     * 新增
      *
      * @param entity
      */
-    @PostMapping("/insertOrUpdate")
-    public ApiResponse<Boolean> insertOrUpdate(@RequestBody DeviceEntity entity) {
-        // 获取token
+    @PostMapping
+    public ApiResponse<Boolean> add(@RequestBody DeviceEntity entity) {
+        entity.setId(null);
         entity.setUserId(StpUtil.getLoginIdAsLong());
+        return ApiResponse.success(getBaseMapper().insert(entity) > 0);
+    }
 
-        return ApiResponse.success(getBaseMapper().insertOrUpdate(entity));
+    /**
+     * 更新
+     *
+     * @param id
+     * @param entity
+     */
+    @PutMapping("/{id}")
+    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @RequestBody DeviceEntity entity) {
+        entity.setId(id);
+        entity.setUserId(null);
+        LambdaQueryWrapper<DeviceEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(DeviceEntity::getId, id);
+        wrapper.eq(DeviceEntity::getUserId, StpUtil.getLoginIdAsLong());
+        return ApiResponse.success(getBaseMapper().update(entity, wrapper) > 0);
     }
 
     /**
@@ -66,7 +81,7 @@ public class DeviceController {
      * @return
      */
     @DeleteMapping("/{id}")
-    public ApiResponse<Boolean> delete(@PathVariable("id") Integer id) {
+    public ApiResponse<Boolean> delete(@PathVariable("id") Long id) {
         LambdaQueryWrapper<DeviceEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(DeviceEntity::getId, id);
         wrapper.eq(DeviceEntity::getUserId, StpUtil.getLoginIdAsLong());
@@ -74,7 +89,7 @@ public class DeviceController {
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<DeviceEntity> getDevice(@PathVariable("id") Integer id) {
+    public ApiResponse<DeviceEntity> getDevice(@PathVariable("id") Long id) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<DeviceEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(DeviceEntity::getId, id);

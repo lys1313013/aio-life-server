@@ -15,7 +15,10 @@ import top.aiolife.record.pojo.entity.SysDictDataEntity;
 import top.aiolife.record.pojo.entity.SysDictTypeEntity;
 import top.aiolife.record.pojo.query.SysDictTypeQuery;
 import lombok.AllArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -90,18 +93,27 @@ public class SysDictDataController {
     }
 
     @SaCheckRole("admin")
-    @PostMapping("/insertOrUpdate")
-    public ApiResponse<Boolean> insertOrUpdate(@RequestBody SysDictDataEntity entity) {
+    @PostMapping
+    public ApiResponse<Boolean> add(@RequestBody SysDictDataEntity entity) {
+        entity.setDictCode(null);
         entity.setCreateBy(StpUtil.getLoginIdAsString());
         entity.setUpdateBy(StpUtil.getLoginIdAsString());
-        boolean b = getBaseMapper().insertOrUpdate(entity);
-        return ApiResponse.success(b);
+        return ApiResponse.success(getBaseMapper().insert(entity) > 0);
     }
 
     @SaCheckRole("admin")
-    @PostMapping("/delete")
-    public ApiResponse<Boolean> delete(@RequestBody SysDictDataEntity entity) {
-        boolean b = getBaseMapper().deleteById(entity) > 0;
+    @PutMapping("/{dictCode}")
+    public ApiResponse<Boolean> update(@PathVariable("dictCode") Long dictCode, @RequestBody SysDictDataEntity entity) {
+        entity.setDictCode(dictCode);
+        entity.setCreateBy(null);
+        entity.setUpdateBy(StpUtil.getLoginIdAsString());
+        return ApiResponse.success(getBaseMapper().updateById(entity) > 0);
+    }
+
+    @SaCheckRole("admin")
+    @DeleteMapping("/{dictCode}")
+    public ApiResponse<Boolean> delete(@PathVariable("dictCode") Long dictCode) {
+        boolean b = getBaseMapper().deleteById(dictCode) > 0;
         return ApiResponse.success(b);
     }
 }

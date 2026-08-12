@@ -13,7 +13,10 @@ import top.aiolife.record.pojo.entity.TaskColumnEntity;
 import top.aiolife.record.service.ITaskColumnService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -60,7 +63,7 @@ public class TaskColumnController {
      *
      * @param entity
      */
-    @PostMapping("/save")
+    @PostMapping
     public ApiResponse<TaskColumnEntity> save(@RequestBody TaskColumnEntity entity) {
         long userId = StpUtil.getLoginIdAsLong();
         // 查询当前最大的sort_order
@@ -86,13 +89,14 @@ public class TaskColumnController {
      *
      * @param entity
      */
-    @PostMapping("/update")
-    public ApiResponse<Boolean> update(@RequestBody TaskColumnEntity entity) {
+    @PutMapping("/{id}")
+    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @RequestBody TaskColumnEntity entity) {
         Long userId = StpUtil.getLoginIdAsLong();
+        entity.setId(id);
         entity.setUserId(userId);
-        
+
         LambdaQueryWrapper<TaskColumnEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(TaskColumnEntity::getId, entity.getId());
+        wrapper.eq(TaskColumnEntity::getId, id);
         wrapper.eq(TaskColumnEntity::getUserId, userId);
         
         getBaseMapper().update(entity, wrapper);
@@ -104,10 +108,10 @@ public class TaskColumnController {
      *
      * @param entity id
      */
-    @PostMapping("/delete")
-    public ApiResponse<Void> delete(@RequestBody TaskColumnEntity entity) {
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable("id") Long id) {
         LambdaQueryWrapper<TaskColumnEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(TaskColumnEntity::getId, entity.getId());
+        wrapper.eq(TaskColumnEntity::getId, id);
         wrapper.eq(TaskColumnEntity::getUserId, StpUtil.getLoginIdAsLong());
         getBaseMapper().delete(wrapper);
         return ApiResponse.success();

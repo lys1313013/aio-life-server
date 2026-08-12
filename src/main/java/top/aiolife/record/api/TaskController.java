@@ -71,7 +71,7 @@ public class TaskController {
      *
      * @param entity
      */
-    @PostMapping("/save")
+    @PostMapping
     public ApiResponse<TaskEntity> save(@RequestBody TaskEntity entity) {
         entity.setId(null);
         // 获取token
@@ -85,10 +85,12 @@ public class TaskController {
      *
      * @param entity
      */
-    @PostMapping("/update")
-    public ApiResponse<Boolean> update(@RequestBody TaskEntity entity) {
+    @PutMapping("/{id}")
+    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @RequestBody TaskEntity entity) {
+        entity.setId(id);
+        entity.setUserId(null);
         LambdaQueryWrapper<TaskEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(TaskEntity::getId, entity.getId());
+        wrapper.eq(TaskEntity::getId, id);
         wrapper.eq(TaskEntity::getUserId, StpUtil.getLoginIdAsLong());
         getBaseMapper().update(entity, wrapper);
         return ApiResponse.success();
@@ -98,10 +100,10 @@ public class TaskController {
      * 删除
      * @param entity id
      */
-    @PostMapping("/delete")
-    public ApiResponse<Void> delete(@RequestBody TaskEntity entity) {
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable("id") Long id) {
         LambdaQueryWrapper<TaskEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(TaskEntity::getId, entity.getId());
+        wrapper.eq(TaskEntity::getId, id);
         wrapper.eq(TaskEntity::getUserId, StpUtil.getLoginIdAsLong());
         getBaseMapper().delete(wrapper);
         return ApiResponse.success();

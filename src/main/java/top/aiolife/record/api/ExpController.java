@@ -22,6 +22,8 @@ import top.aiolife.record.service.IExpenseService;
 import top.aiolife.record.service.UserDictDataService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -155,10 +157,10 @@ public class ExpController {
         return ApiResponse.success();
     }
 
-    @PostMapping("/delete")
-    public ApiResponse<Boolean> delete(@RequestBody ExpenseEntity entity) {
+    @DeleteMapping("/{id}")
+    public ApiResponse<Boolean> delete(@PathVariable("id") Long id) {
         LambdaQueryWrapper<ExpenseEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ExpenseEntity::getId, entity.getId());
+        wrapper.eq(ExpenseEntity::getId, id);
         wrapper.eq(ExpenseEntity::getUserId, StpUtil.getLoginIdAsLong());
         boolean b = getBaseMapper().delete(wrapper) > 0;
         return ApiResponse.success(b);

@@ -271,14 +271,15 @@ public class TimeRecordController {
         return ApiResponse.success(vo);
     }
 
-    @PostMapping("/save")
+    @PostMapping
     public ApiResponse<Boolean> save(@RequestBody TimeRecordReq timeRecordReq) {
         timeRecordService.saveTimeRecord(timeRecordReq);
         return ApiResponse.success();
     }
 
-    @PostMapping("/update")
-    public ApiResponse<Boolean> update(@RequestBody TimeRecordReq timeRecordReq) {
+    @PutMapping("/{id}")
+    public ApiResponse<Boolean> update(@PathVariable("id") String id, @RequestBody TimeRecordReq timeRecordReq) {
+        timeRecordReq.setId(id);
         timeRecordService.updateTimeRecord(timeRecordReq);
         return ApiResponse.success();
     }
@@ -287,9 +288,9 @@ public class TimeRecordController {
      * 删除
      * @param entity id
      */
-    @PostMapping("/delete")
-    public ApiResponse<Void> delete(@RequestBody TimeRecordEntity entity) {
-        timeRecordService.removeById(entity.getId(),  StpUtil.getLoginIdAsLong());
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable("id") String id) {
+        timeRecordService.removeById(id, StpUtil.getLoginIdAsLong());
         return ApiResponse.success();
     }
 

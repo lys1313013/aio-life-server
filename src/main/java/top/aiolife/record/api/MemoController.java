@@ -11,7 +11,10 @@ import top.aiolife.record.pojo.entity.MemoEntity;
 import top.aiolife.record.service.IMemoService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -57,7 +60,7 @@ public class MemoController {
     /**
      * 新增
      */
-    @PostMapping("/save")
+    @PostMapping
     public ApiResponse<Boolean> save(@RequestBody MemoEntity entity) {
         entity.setUserId(StpUtil.getLoginIdAsLong());
         entity.setCreateUser(StpUtil.getLoginIdAsLong());
@@ -70,9 +73,10 @@ public class MemoController {
     /**
      * 更新
      */
-    @PostMapping("/update")
-    public ApiResponse<Boolean> update(@RequestBody MemoEntity entity) {
+    @PutMapping("/{id}")
+    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @RequestBody MemoEntity entity) {
         Long userId = StpUtil.getLoginIdAsLong();
+        entity.setId(id);
         entity.setUserId(userId);
         entity.setUpdateUser(userId);
         
@@ -92,10 +96,10 @@ public class MemoController {
     /**
      * 删除
      */
-    @PostMapping("/delete")
-    public ApiResponse<Boolean> delete(@RequestBody MemoEntity entity) {
+    @DeleteMapping("/{id}")
+    public ApiResponse<Boolean> delete(@PathVariable("id") Long id) {
         LambdaQueryWrapper<MemoEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(MemoEntity::getId, entity.getId());
+        wrapper.eq(MemoEntity::getId, id);
         wrapper.eq(MemoEntity::getUserId, StpUtil.getLoginIdAsLong());
         memoMapper.delete(wrapper);
         return ApiResponse.success(true);

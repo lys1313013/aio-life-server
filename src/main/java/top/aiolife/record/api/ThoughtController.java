@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
+import top.aiolife.core.util.SysUtil;
 import top.aiolife.record.mapper.IRelaEventMapper;
 import top.aiolife.record.mapper.IThoughtMapper;
 import top.aiolife.record.pojo.entity.ThoughtRelaEventEntity;
@@ -18,7 +19,9 @@ import top.aiolife.record.pojo.req.ThoughtSaveReq;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -52,6 +55,14 @@ public class ThoughtController {
         LambdaQueryWrapper<ThoughtEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ThoughtEntity::getUserId, userId);
         ThoughtEntity condition = query.getCondition();
+        if (condition != null) {
+            lambdaQueryWrapper.eq(condition.getId() != null, ThoughtEntity::getId, condition.getId());
+            lambdaQueryWrapper.eq(condition.getIsPinned() != null, ThoughtEntity::getIsPinned, condition.getIsPinned());
+            lambdaQueryWrapper.eq(condition.getHiddenContent() != null, ThoughtEntity::getHiddenContent,
+                    condition.getHiddenContent());
+            lambdaQueryWrapper.like(SysUtil.isNotEmpty(condition.getContent()), ThoughtEntity::getContent,
+                    condition.getContent());
+        }
 
         lambdaQueryWrapper.orderByDesc(ThoughtEntity::getUpdateTime);
         Page<ThoughtEntity> page = new Page<>(query.getPage(), query.getPageSize());
@@ -76,7 +87,7 @@ public class ThoughtController {
         return ApiResponse.success(objectPageResp);
     }
     
-    @PostMapping("/save")
+    @PostMapping
     public ApiResponse<Boolean> save(@RequestBody ThoughtSaveReq req) {
         Long loginId = StpUtil.getLoginIdAsLong();
         ThoughtEntity entity = new ThoughtEntity();
@@ -100,9 +111,10 @@ public class ThoughtController {
         return ApiResponse.success(true);
     }
 
-    @PostMapping("/update")
-    public ApiResponse<Boolean> update(@RequestBody ThoughtEntity entity) {
+    @PutMapping("/{id}")
+    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @RequestBody ThoughtEntity entity) {
         Long userId = StpUtil.getLoginIdAsLong();
+        entity.setId(id);
         entity.setUserId(userId);
         
         // 只有在修改内容时才更新时间，单纯点击隐藏内容不更新时间

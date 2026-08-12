@@ -18,7 +18,10 @@ import top.aiolife.record.pojo.vo.IncStaticByYearVO;
 import top.aiolife.record.service.UserDictDataService;
 import lombok.AllArgsConstructor;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -68,25 +71,28 @@ public class IncomeController {
     }
 
 
-    @PostMapping("/insertOrUpdate")
-    public ApiResponse<Boolean> insertOrUpdate(@Validated @RequestBody IncomeEntity entity) {
-        Long userId = StpUtil.getLoginIdAsLong();
-        entity.setUserId(userId);
-        if (entity.getIncomeId() == null) {
-            getBaseMapper().insert(entity);
-        } else {
-            LambdaQueryWrapper<IncomeEntity> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(IncomeEntity::getIncomeId, entity.getIncomeId());
-            wrapper.eq(IncomeEntity::getUserId, userId);
-            getBaseMapper().update(entity, wrapper);
-        }
-        return ApiResponse.success(true);
+    @PostMapping
+    public ApiResponse<Boolean> add(@Validated @RequestBody IncomeEntity entity) {
+        entity.setIncomeId(null);
+        entity.setUserId(StpUtil.getLoginIdAsLong());
+        return ApiResponse.success(getBaseMapper().insert(entity) > 0);
     }
 
-    @PostMapping("/delete")
-    public ApiResponse<Boolean> delete(@RequestBody IncomeEntity entity) {
+    @PutMapping("/{incomeId}")
+    public ApiResponse<Boolean> update(@PathVariable("incomeId") Long incomeId, @Validated @RequestBody IncomeEntity entity) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        entity.setIncomeId(incomeId);
+        entity.setUserId(null);
         LambdaQueryWrapper<IncomeEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(IncomeEntity::getIncomeId, entity.getIncomeId());
+        wrapper.eq(IncomeEntity::getIncomeId, incomeId);
+        wrapper.eq(IncomeEntity::getUserId, userId);
+        return ApiResponse.success(getBaseMapper().update(entity, wrapper) > 0);
+    }
+
+    @DeleteMapping("/{incomeId}")
+    public ApiResponse<Boolean> delete(@PathVariable("incomeId") Long incomeId) {
+        LambdaQueryWrapper<IncomeEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(IncomeEntity::getIncomeId, incomeId);
         wrapper.eq(IncomeEntity::getUserId, StpUtil.getLoginIdAsLong());
         boolean b = getBaseMapper().delete(wrapper) > 0;
         return ApiResponse.success(b);
