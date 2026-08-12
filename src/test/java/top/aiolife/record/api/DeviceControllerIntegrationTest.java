@@ -28,7 +28,7 @@ class DeviceControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void testQuery_查询设备列表() {
-        Integer deviceId = (int) (System.currentTimeMillis() % 1000000 + 900000);
+        Long deviceId = System.currentTimeMillis() % 1000000 + 900000;
         deviceMapper.insert(createDevice(deviceId));
 
         CommonQuery<DeviceEntity> query = new CommonQuery<>();
@@ -42,7 +42,7 @@ class DeviceControllerIntegrationTest extends BaseIntegrationTest {
         assertTrue(response.getData().getTotal() >= 1);
     }
 
-    private DeviceEntity createDevice(Integer deviceId) {
+    private DeviceEntity createDevice(Long deviceId) {
         DeviceEntity entity = new DeviceEntity();
         entity.setId(deviceId);
         entity.setUserId(TEST_USER_ID);
