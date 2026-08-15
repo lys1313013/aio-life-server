@@ -51,7 +51,7 @@ public class ExerciseCardProvider implements DashboardCardProvider {
         card.setType(getType());
         card.setIcon(getIcon());
         card.setTitle(getTitle());
-        card.setIconClickUrl("/my-hub/exercise");
+        card.setIconClickUrl("/record/exercise");
         card.setTitleClickUrl("action:open-exercise-modal");
         try {
             int count = exerciseRecordService.countTodayExerciseTypes(userId);
