@@ -59,7 +59,7 @@ public class ExerciseRecordController {
                 condition.getExerciseTypeId());
 //        lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getExerciseDate()), ExerciseRecordEntity::getExerciseDate,
 //                condition.getExerciseDate());
-        lambdaQueryWrapper.orderByDesc(ExerciseRecordEntity::getExerciseDate, ExerciseRecordEntity::getCreateTime);
+        lambdaQueryWrapper.orderByDesc(ExerciseRecordEntity::getExerciseDate, ExerciseRecordEntity::getId);
         // 分页
         Page<ExerciseRecordEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<ExerciseRecordEntity> iPage = getBaseMapper().selectPage(page, lambdaQueryWrapper);
@@ -148,7 +148,7 @@ public class ExerciseRecordController {
         }
 
         // 限制返回数据量，避免性能问题
-        lambdaQueryWrapper.orderByDesc(ExerciseRecordEntity::getExerciseDate, ExerciseRecordEntity::getCreateTime);
+        lambdaQueryWrapper.orderByDesc(ExerciseRecordEntity::getExerciseDate, ExerciseRecordEntity::getId);
         lambdaQueryWrapper.last("LIMIT 1000"); // 限制最多返回1000条记录
 
         List<ExerciseRecordEntity> list = getBaseMapper().selectList(lambdaQueryWrapper);
@@ -186,7 +186,7 @@ public class ExerciseRecordController {
         }
 
         // 限制返回数据量，避免性能问题
-        lambdaQueryWrapper.orderByDesc(ExerciseRecordEntity::getExerciseDate, ExerciseRecordEntity::getCreateTime);
+        lambdaQueryWrapper.orderByDesc(ExerciseRecordEntity::getExerciseDate, ExerciseRecordEntity::getId);
         lambdaQueryWrapper.last("LIMIT 1000"); // 限制最多返回1000条记录
 
         List<ExerciseRecordEntity> entities = getBaseMapper().selectList(lambdaQueryWrapper);
