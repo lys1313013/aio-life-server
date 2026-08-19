@@ -41,6 +41,13 @@ public class MembershipRecordEntity extends BaseEntity {
 
     private BigDecimal price;
 
+    /**
+     * week/two_weeks/month/quarter/half_year/year
+     */
+    private String billingCycle;
+
+    private BigDecimal monthlyAmount;
+
     private Integer autoRenew;
 
     private String note;

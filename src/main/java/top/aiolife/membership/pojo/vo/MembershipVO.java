@@ -32,6 +32,10 @@ public class MembershipVO {
 
     private BigDecimal price;
 
+    private String billingCycle;
+
+    private BigDecimal monthlyAmount;
+
     private Integer autoRenew;
 
     private String note;

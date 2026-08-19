@@ -14,10 +14,13 @@ import top.aiolife.membership.pojo.vo.MembershipStatsVO;
 import top.aiolife.membership.pojo.vo.MembershipVO;
 import top.aiolife.membership.service.IMembershipService;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 会员记录控制器
@@ -34,6 +37,11 @@ public class MembershipController {
     private static final String STATUS_EXPIRING = "expiring";
     private static final String STATUS_EXPIRED = "expired";
     private static final long DEFAULT_REMIND_DAYS = 7;
+    private static final String DEFAULT_BILLING_CYCLE = "month";
+    private static final BigDecimal DAYS_PER_MONTH = BigDecimal.valueOf(30);
+    private static final Set<String> BILLING_CYCLES = Set.of(
+            "week", "two_weeks", "month", "quarter", "half_year", "year"
+    );
 
     private final IMembershipMapper membershipMapper;
     private final IMembershipService membershipService;
@@ -67,6 +75,12 @@ public class MembershipController {
         vo.setExpiringThisMonthCount(entities.stream()
                 .filter(e -> !e.getExpiryDate().isBefore(today) && !e.getExpiryDate().isAfter(monthEnd))
                 .count());
+        vo.setMonthlyAmount(entities.stream()
+                .filter(e -> !e.getExpiryDate().isBefore(today))
+                .filter(e -> e.getStartDate() == null || !e.getStartDate().isAfter(today))
+                .map(MembershipRecordEntity::getMonthlyAmount)
+                .filter(amount -> amount != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
         return ApiResponse.success(vo);
     }
 
@@ -83,6 +97,7 @@ public class MembershipController {
     @PostMapping
     public ApiResponse<MembershipVO> create(@RequestBody MembershipReq req) {
         long userId = StpUtil.getLoginIdAsLong();
+        normalizeCost(req);
         MembershipRecordEntity entity = new MembershipRecordEntity();
         BeanUtil.copyProperties(req, entity);
         entity.setUserId(userId);
@@ -94,6 +109,7 @@ public class MembershipController {
     @PutMapping
     public ApiResponse<MembershipVO> update(@RequestBody MembershipReq req) {
         long userId = StpUtil.getLoginIdAsLong();
+        normalizeCost(req);
         MembershipRecordEntity entity = new MembershipRecordEntity();
         BeanUtil.copyProperties(req, entity);
         entity.setUserId(null);
@@ -140,5 +156,42 @@ public class MembershipController {
             return STATUS_EXPIRING;
         }
         return STATUS_ACTIVE;
+    }
+
+    private void normalizeCost(MembershipReq req) {
+        String billingCycle = req.getBillingCycle();
+        if (billingCycle == null || billingCycle.isBlank()) {
+            billingCycle = DEFAULT_BILLING_CYCLE;
+            req.setBillingCycle(billingCycle);
+        }
+        if (!BILLING_CYCLES.contains(billingCycle)) {
+            throw new IllegalArgumentException("不支持的计费周期");
+        }
+        if (req.getPrice() != null && req.getPrice().signum() < 0) {
+            throw new IllegalArgumentException("支付金额不能小于0");
+        }
+        if (req.getMonthlyAmount() != null && req.getMonthlyAmount().signum() < 0) {
+            throw new IllegalArgumentException("月均金额不能小于0");
+        }
+        if (req.getMonthlyAmount() == null) {
+            req.setMonthlyAmount(calculateMonthlyAmount(req.getPrice(), billingCycle));
+        } else {
+            req.setMonthlyAmount(req.getMonthlyAmount().setScale(2, RoundingMode.HALF_UP));
+        }
+    }
+
+    private BigDecimal calculateMonthlyAmount(BigDecimal price, String billingCycle) {
+        if (price == null) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        BigDecimal monthlyAmount = switch (billingCycle) {
+            case "week" -> price.multiply(DAYS_PER_MONTH).divide(BigDecimal.valueOf(7), 2, RoundingMode.HALF_UP);
+            case "two_weeks" -> price.multiply(DAYS_PER_MONTH).divide(BigDecimal.valueOf(14), 2, RoundingMode.HALF_UP);
+            case "quarter" -> price.divide(BigDecimal.valueOf(3), 2, RoundingMode.HALF_UP);
+            case "half_year" -> price.divide(BigDecimal.valueOf(6), 2, RoundingMode.HALF_UP);
+            case "year" -> price.divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
+            default -> price.setScale(2, RoundingMode.HALF_UP);
+        };
+        return monthlyAmount.setScale(2, RoundingMode.HALF_UP);
     }
 }
