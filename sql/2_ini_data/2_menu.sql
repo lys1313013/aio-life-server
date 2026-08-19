@@ -1,3 +1,4 @@
+USE `aio-life`;
 INSERT IGNORE INTO sys_menu (id, parent_id, name, path, component, redirect, meta, roles, sort, status, create_user, create_time, update_user, update_time, is_deleted) VALUES (1001, 0, 'Analytics', '/analytics', 'dashboard/home/index', null, '{"icon": "lucide:home", "title": "主页", "backTop": false, "affixTab": true, "keepAlive": true, "maxIdleTime": 60}', null, -1, 1, null, null, 13, '2026-06-21 12:45:39', 0);
 INSERT IGNORE INTO sys_menu (id, parent_id, name, path, component, redirect, meta, roles, sort, status, create_user, create_time, update_user, update_time, is_deleted) VALUES (1100, 0, 'Dashboard', '/dashboard', 'BasicLayout', null, '{"icon": "lucide:layout-dashboard", "title": "仪表盘"}', null, 0, 0, null, null, 13, '2026-06-21 12:45:48', 0);
 INSERT IGNORE INTO sys_menu (id, parent_id, name, path, component, redirect, meta, roles, sort, status, create_user, create_time, update_user, update_time, is_deleted) VALUES (1101, 1100, 'Workspace', '/workspace', 'dashboard/workspace/index', null, '{"icon": "carbon:workspace", "title": "工作台"}', null, 0, 1, null, null, null, null, 0);
@@ -52,3 +53,10 @@ INSERT IGNORE INTO sys_menu (id, parent_id, name, path, component, redirect, met
 INSERT IGNORE INTO sys_menu (id, parent_id, name, path, component, redirect, meta, roles, sort, status, create_user, create_time, update_user, update_time, is_deleted) VALUES (2054205291710668802, 1200, 'TaskCenterGoal', '/task/goal', 'task-center/goal/index', null, '{"icon": "mdi:target", "title": "目标"}', null, 0, 1, 13, '2026-05-12 22:21:21', 13, '2026-06-26 21:36:20', 0);
 INSERT IGNORE INTO sys_menu (id, parent_id, name, path, component, redirect, meta, roles, sort, status, create_user, create_time, update_user, update_time, is_deleted) VALUES (2056010094796967937, 1400, 'CsdnDashboard', '/coding/csdn', 'coding/csdn/index', null, '{"icon": "simple-icons:csdn", "title": "CSDN", "backTop": false}', null, 3, 1, 13, '2026-05-17 21:53:00', 13, '2026-06-21 12:43:44', 0);
 INSERT IGNORE INTO sys_menu (id, parent_id, name, path, component, redirect, meta, roles, sort, status, create_user, create_time, update_user, update_time, is_deleted) VALUES (2056010094796967938, 1500, 'readRecord', '/record/read', 'my-hub/read-record/index', null, '{"icon": "mdi:book-open-page-variant", "title": "阅读", "backTop": false}', null, 8, 1, null, null, 13, '2026-06-20 22:03:11', 0);
+
+-- 会员菜单（提取自 1_init_table/2026-08-06_create_membership_record.sql，2026-08-18 合并重建时迁移）
+INSERT IGNORE INTO `sys_menu` (`id`, `parent_id`, `name`, `path`, `component`, `redirect`, `meta`, `roles`, `sort`, `status`, `is_deleted`)
+VALUES
+(1703, 1700, 'Membership', '/membership', 'membership/index', NULL,
+ JSON_OBJECT('icon','ant-design:gift-outlined','title','会员'),
+ NULL, 2, 1, 0);

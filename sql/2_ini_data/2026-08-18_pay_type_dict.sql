@@ -1,4 +1,9 @@
--- 1. 插入字典数据
+-- 依赖 1_init_table 已执行
+USE `aio-life`;
+-- 支付方式（pay_type）公共字典种子数据
+-- 提取自 1_init_table/2026-06-07_migrate_pay_type.sql（2026-08-18 合并重建时迁移）
+-- 共 7 条公共字典（user_id=0 表示公共）
+
 INSERT IGNORE INTO `user_dict_data` (`user_id`, `dict_type`, `dict_sort`, `dict_label`, `dict_value`, `status`, `create_user`, `update_user`)
 VALUES 
 (0, 'pay_type', 1, '支付宝', '1', '0', 0, 0),
@@ -9,6 +14,3 @@ VALUES
 (0, 'pay_type', 6, '招商信号卡', '6', '0', 0, 0),
 (0, 'pay_type', 7, '京东', '7', '0', 0, 0);
 
-
--- 4. 修改 expense 表的 pay_type_id 类型为 bigint
-ALTER TABLE `expense` MODIFY COLUMN `pay_type_id` bigint COMMENT '支付方式ID(关联user_dict_data)';

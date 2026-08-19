@@ -1,1 +1,0 @@
-ALTER TABLE `thought` ADD COLUMN `is_pinned` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否固定(用于在看板等重要位置展示): 0-否, 1-是';

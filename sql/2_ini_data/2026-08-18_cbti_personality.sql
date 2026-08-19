@@ -1,55 +1,8 @@
--- CBTI 人格测试相关表
--- 创建时间: 2026-04-18
--- 作者: Ethan
--- 描述: 存储 CBTI 人格类型数据与用户测试历史
--- 更新功能简介:
--- 1) 新增 cbti_personality 表，用于维护人格基础信息（向量、描述、图片对象路径、是否隐藏等）
--- 2) 新增 cbti_result 表，用于记录用户测试结果、维度得分和答案快照
--- 3) 为查询场景补充必要索引（user_id/personality_code/create_time）
-
-CREATE TABLE IF NOT EXISTS `cbti_personality` (
-    `id` BIGINT NOT NULL COMMENT '主键ID',
-    `code` VARCHAR(20) NOT NULL COMMENT '人格代码（唯一）',
-    `name` VARCHAR(64) NOT NULL COMMENT '人格名称',
-    `motto` VARCHAR(255) DEFAULT NULL COMMENT '座右铭',
-    `color` VARCHAR(20) DEFAULT NULL COMMENT '主题色（HEX）',
-    `vector` JSON DEFAULT NULL COMMENT '人格向量（长度15，数值为-1/0/1/2）',
-    `description` TEXT DEFAULT NULL COMMENT '人格描述',
-    `strengths` JSON DEFAULT NULL COMMENT '优势（字符串数组）',
-    `weaknesses` JSON DEFAULT NULL COMMENT '弱点/注意（字符串数组）',
-    `tech_stack` VARCHAR(255) DEFAULT NULL COMMENT '技术栈',
-    `spirit` TEXT DEFAULT NULL COMMENT '灵魂格言',
-    `image_object` VARCHAR(255) DEFAULT NULL COMMENT 'MinIO对象路径（如 images/cbti/characters/SUDO.png）',
-    `is_special` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否隐藏人格（0-否，1-是）',
-    `create_user` BIGINT DEFAULT NULL COMMENT '创建人',
-    `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
-    `update_user` BIGINT DEFAULT NULL COMMENT '更新人',
-    `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
-    `is_deleted` INT DEFAULT 0 COMMENT '是否删除(0-否,1-是)',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_cbti_personality_code` (`code`),
-    INDEX `idx_cbti_personality_special` (`is_special`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CBTI 人格类型表';
-
-CREATE TABLE IF NOT EXISTS `cbti_result` (
-    `id` BIGINT NOT NULL COMMENT '主键ID',
-    `user_id` BIGINT NOT NULL COMMENT '用户ID',
-    `personality_code` VARCHAR(20) NOT NULL COMMENT '人格代码',
-    `similarity` INT NOT NULL DEFAULT 0 COMMENT '匹配度（0-100）',
-    `dimensions` JSON DEFAULT NULL COMMENT '15维度结果(JSON)',
-    `answers` JSON DEFAULT NULL COMMENT '答题结果(JSON，题号->选项值)',
-    `hidden_answers` JSON DEFAULT NULL COMMENT '彩蛋答题结果(JSON)',
-    `create_user` BIGINT DEFAULT NULL COMMENT '创建人',
-    `create_time` DATETIME DEFAULT NULL COMMENT '创建时间',
-    `update_user` BIGINT DEFAULT NULL COMMENT '更新人',
-    `update_time` DATETIME DEFAULT NULL COMMENT '更新时间',
-    `is_deleted` INT DEFAULT 0 COMMENT '是否删除(0-否,1-是)',
-    PRIMARY KEY (`id`),
-    INDEX `idx_cbti_result_user_id` (`user_id`),
-    INDEX `idx_cbti_result_personality_code` (`personality_code`),
-    INDEX `idx_cbti_result_create_time` (`create_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='CBTI 测试历史表';
-
+-- 依赖 1_init_table 已执行
+USE `aio-life`;
+-- CBTI 人格类型种子数据
+-- 提取自 1_init_table/2026-04-18_create_cbti_tables.sql（2026-08-18 合并重建时迁移）
+-- 共 28 条人格数据（含 1 条隐藏人格 JAVA）
 
 INSERT INTO cbti_personality (id, code, name, motto, color, vector, description, strengths, weaknesses, tech_stack, spirit, image_object, is_special, create_user, create_time, update_user, update_time, is_deleted) VALUES (2047543797787045890, 'SUDO', '万能管理员', '遇事不决，sudo 一下。', '#16A34A', '[2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 1, 1, 2]', '恭喜您，您测出了编程界最罕见的人格——SUDO。您是人形的 root 权限，行走的超级管理员。代码质量高、Bug 处理快、团队协作强、技术热情爆棚，而且从不把锅甩给别人。当所有人都在 Stack Overflow 上搜索答案时，您就是那个写答案的人。当系统崩了、数据库锁死、产品经理又改需求时，全世界都在喊一个名字——SUDO。因为只有 SUDO 能解决一切问题。有人说 SUDO 不存在，这种人格完美到不像真人。确实，选出这个结果的人，要么是在吹牛，要么真的是 AI。', '["全栈能力拉满", "团队核心骨干", "技术影响力强"]', '["可能不存在", "容易让同事产生绝望感"]', '全栈 + DevOps + 架构设计 + AI（大概）', 'Permission granted. 你不是在写代码，你是在用代码重编译宇宙。', 'images/cbti/characters/SUDO.png', 0, 0, '2026-04-24 13:10:58', 0, '2026-04-24 21:41:39', 0);
 INSERT INTO cbti_personality (id, code, name, motto, color, vector, description, strengths, weaknesses, tech_stack, spirit, image_object, is_special, create_user, create_time, update_user, update_time, is_deleted) VALUES (2047543800064552961, 'README', '文档侠', '别问我，看文档。', '#2563EB', '[2, 2, 2, 2, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 2]', '恭喜您！您测出了编程界最被低估的人格——README。在这个连注释都懒得写的年代，您居然会写文档？会写架构图？会画时序图？您简直是数字时代的活化石，代码世界的非物质文化遗产传承人。README 人格的核心技能不是写代码，而是让别人看得懂你的代码——这在整个编程史上的难度系数，大概排在「让产品经理不改需求」的后面，「让设计师出完整标注」的前面。您的 PR 描述比很多人的毕业论文都详细，您的 README.md 比很多公司的产品文档都专业。可惜的是，没人看。', '["文档能力SSS级", "Code Review详尽专业", "知识传承型人才"]', '["写文档的时间比写代码长", "容易被当成\\"管太多\\""]', 'Markdown + Notion + Confluence + 世界上最好的注释', '代码是写给机器跑的，但首先是写给人读的。可惜没人读。', 'images/cbti/characters/README.png', 0, 0, '2026-04-24 13:10:58', 0, '2026-04-24 21:41:40', 0);
