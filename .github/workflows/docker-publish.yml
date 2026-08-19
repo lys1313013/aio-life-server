@@ -73,20 +73,12 @@ jobs:
 
           mysql_args=(--host=127.0.0.1 --port=3306 --user=root --database=aio-life --default-character-set=utf8mb4)
 
-          mysql "${mysql_args[@]}" < sql/1_init_table/2026-03-11_create_table.sql
-          mysql "${mysql_args[@]}" < sql/1_init_table/2026-04-19_create_sys_menu.sql
-          mysql "${mysql_args[@]}" < sql/1_init_table/wardrobe.sql
-
-          while IFS= read -r sql_file; do
-            mysql "${mysql_args[@]}" < "$sql_file"
-          done < <(find sql/1_init_table -maxdepth 1 -type f -name '*.sql' \
-            ! -name '2026-03-11_create_table.sql' \
-            ! -name '2026-04-19_create_sys_menu.sql' \
-            ! -name 'wardrobe.sql' | sort)
-
-          while IFS= read -r sql_file; do
-            mysql "${mysql_args[@]}" < "$sql_file"
-          done < <(find sql/2_ini_data -maxdepth 1 -type f -name '*.sql' | sort)
+          # 先建表，再灌初始化数据（保持 sql/1_init_table、sql/2_ini_data 的执行顺序）
+          for dir in sql/1_init_table sql/2_ini_data; do
+            while IFS= read -r sql_file; do
+              mysql "${mysql_args[@]}" < "$sql_file"
+            done < <(find "$dir" -maxdepth 1 -type f -name '*.sql' | sort)
+          done
 
       - name: Run tests
         run: mvn test -B
