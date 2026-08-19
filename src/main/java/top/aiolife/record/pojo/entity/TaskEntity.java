@@ -2,6 +2,7 @@ package top.aiolife.record.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
 
@@ -12,13 +13,9 @@ import java.time.LocalDateTime;
  * @date 2025/04/10 22:45
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @TableName("task")
-public class TaskEntity {
-    /**
-     * 任务ID
-     */
-    @TableId(type = IdType.ASSIGN_ID)
-    private Long id;
+public class TaskEntity extends BaseEntity {
 
     /**
      * 用户ID
@@ -49,22 +46,6 @@ public class TaskEntity {
      * 排序
      */
     private Integer sortOrder;
-
-    /**
-     * 是否删除
-     */
-    @TableLogic
-    private Integer isDeleted;
-
-    /**
-     * 创建时间
-     */
-    private LocalDateTime createTime;
-
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
 
     @TableField(exist = false)
     private Integer unCompletedCount;

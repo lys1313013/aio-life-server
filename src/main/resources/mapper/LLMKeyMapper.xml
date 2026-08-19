@@ -3,11 +3,11 @@
 <mapper namespace="top.aiolife.llm.mapper.LLMKeyMapper">
 
     <select id="selectByUserId" resultType="top.aiolife.llm.pojo.entity.LLMKeyEntity">
-        SELECT * FROM llm_key WHERE user_id = #{userId} ORDER BY is_default DESC, create_time DESC
+        SELECT * FROM llm_key WHERE user_id = #{userId} AND is_deleted = 0 ORDER BY is_default DESC, create_time DESC
     </select>
 
     <select id="selectDefaultByUserId" resultType="top.aiolife.llm.pojo.entity.LLMKeyEntity">
-        SELECT * FROM llm_key WHERE user_id = #{userId} AND is_default = 1
+        SELECT * FROM llm_key WHERE user_id = #{userId} AND is_default = 1 AND is_deleted = 0
     </select>
 
 </mapper>

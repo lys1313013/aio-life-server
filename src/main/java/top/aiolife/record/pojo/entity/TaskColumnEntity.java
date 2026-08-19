@@ -1,12 +1,8 @@
 package top.aiolife.record.pojo.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
-
-import java.time.LocalDateTime;
+import lombok.EqualsAndHashCode;
 
 /**
  * 任务列实体类
@@ -15,14 +11,9 @@ import java.time.LocalDateTime;
  * @date 2025/04/10 22:44
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @TableName("task_column")
-public class TaskColumnEntity {
-
-    /**
-     * 列ID
-     */
-    @TableId(type = IdType.ASSIGN_ID)
-    private Long id;
+public class TaskColumnEntity extends BaseEntity {
 
     /**
      * 用户ID
@@ -44,19 +35,4 @@ public class TaskColumnEntity {
      */
     private String bgColor;
 
-    /**
-     * 是否删除
-     */
-    @TableLogic
-    private Integer isDeleted;
-
-    /**
-     * 创建时间
-     */
-    private LocalDateTime createTime;
-
-    /**
-     * 更新时间
-     */
-    private LocalDateTime updateTime;
 }

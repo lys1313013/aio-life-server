@@ -86,8 +86,9 @@ public class QuickNavServiceImpl implements IQuickNavService {
 
         validateSavePayload(userId, roles, items);
 
-        // 物理删除旧记录（绕过 @TableLogic，否则唯一索引 (user_id, menu_id) 会与逻辑删除行冲突）
-        userQuickNavMapper.deleteAllByUserIdPhysical(userId);
+        // 先逻辑删除旧布局；请求内 menuId 去重校验保证新布局不存在重复有效记录。
+        userQuickNavMapper.delete(new LambdaQueryWrapper<UserQuickNavEntity>()
+                .eq(UserQuickNavEntity::getUserId, userId));
 
         // 批量插入新记录
         if (!items.isEmpty()) {

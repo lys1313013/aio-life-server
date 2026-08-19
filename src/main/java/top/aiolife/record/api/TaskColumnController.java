@@ -76,9 +76,8 @@ public class TaskColumnController {
         entity.setSortOrder(maxOrder + 1);
 
         entity.setId(null);
-        entity.setIsDeleted(StatusConst.NO_DELETE);
-        // 获取token
         entity.setUserId(userId);
+        entity.fillCreateCommonField(userId);
         getBaseMapper().insertOrUpdate(entity);
 
         return ApiResponse.success(entity);
@@ -94,6 +93,7 @@ public class TaskColumnController {
         Long userId = StpUtil.getLoginIdAsLong();
         entity.setId(id);
         entity.setUserId(userId);
+        entity.fillUpdateCommonField(userId);
 
         LambdaQueryWrapper<TaskColumnEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TaskColumnEntity::getId, id);
@@ -126,6 +126,7 @@ public class TaskColumnController {
     public ApiResponse<Void> reSort(@RequestBody List<TaskColumnEntity> list) {
         Long userId = StpUtil.getLoginIdAsLong();
         for (TaskColumnEntity entity : list) {
+            entity.fillUpdateCommonField(userId);
             LambdaQueryWrapper<TaskColumnEntity> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(TaskColumnEntity::getId, entity.getId());
             wrapper.eq(TaskColumnEntity::getUserId, userId);

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
+import top.aiolife.core.pojo.entity.AuditEntity;
 
 import java.time.LocalDateTime;
 
@@ -19,7 +20,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @TableName("user")
-public class UserEntity {
+public class UserEntity extends AuditEntity {
 
     /**
      * 主键
@@ -85,20 +86,6 @@ public class UserEntity {
      */
     @TableLogic
     private Integer isDeleted;
-
-    /**
-     * 创建时间
-     */
-    @TableField("created_at")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createTime;
-
-    /**
-     * 修改时间
-     */
-    @TableField("updated_at")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updateTime;
 
     /**
      * 最后活跃时间

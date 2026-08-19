@@ -3,12 +3,11 @@ package top.aiolife.record.pojo.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
+import top.aiolife.core.pojo.entity.AuditEntity;
 
 /**
  * 字典数据实体
@@ -19,7 +18,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @TableName("sys_dict_data")
-public class SysDictDataEntity {
+public class SysDictDataEntity extends AuditEntity {
 
     /**
      * 字典代码，作为主键
@@ -79,29 +78,10 @@ public class SysDictDataEntity {
     private String status;
 
     /**
-     * 创建人
-     */
-    private String createBy;
-
-    /**
-     * 创建时间
-     */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createTime;
-
-    /**
-     * 更新人
-     */
-    private String updateBy;
-
-    /**
-     * 更新时间
-     */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updateTime;
-
-    /**
      * 备注
      */
     private String remark;
+
+    @TableLogic
+    private Integer isDeleted;
 }

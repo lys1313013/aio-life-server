@@ -85,8 +85,8 @@ public class SysDictTypeController {
     @PostMapping
     public ApiResponse<Boolean> add(@RequestBody SysDictTypeEntity entity) {
         entity.setDictId(null);
-        entity.setCreateBy(StpUtil.getLoginIdAsString());
-        entity.setUpdateBy(StpUtil.getLoginIdAsString());
+        entity.setCreateUser(StpUtil.getLoginIdAsLong());
+        entity.setUpdateUser(StpUtil.getLoginIdAsLong());
         return ApiResponse.success(getBaseMapper().insert(entity) > 0);
     }
 
@@ -94,8 +94,8 @@ public class SysDictTypeController {
     @PutMapping("/{dictId}")
     public ApiResponse<Boolean> update(@PathVariable("dictId") Long dictId, @RequestBody SysDictTypeEntity entity) {
         entity.setDictId(dictId);
-        entity.setCreateBy(null);
-        entity.setUpdateBy(StpUtil.getLoginIdAsString());
+        entity.setCreateUser(null);
+        entity.setUpdateUser(StpUtil.getLoginIdAsLong());
         return ApiResponse.success(getBaseMapper().updateById(entity) > 0);
     }
 
@@ -104,7 +104,7 @@ public class SysDictTypeController {
     public ApiResponse<Boolean> delete(@PathVariable("dictId") Long dictId) {
         SysDictTypeEntity entity = new SysDictTypeEntity();
         entity.setDictId(dictId);
-        entity.setUpdateBy(StpUtil.getLoginIdAsString());
+        entity.setUpdateUser(StpUtil.getLoginIdAsLong());
         boolean b = getBaseMapper().deleteById(entity) > 0;
         return ApiResponse.success(b);
     }

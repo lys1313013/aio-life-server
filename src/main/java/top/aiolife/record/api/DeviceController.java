@@ -53,8 +53,10 @@ public class DeviceController {
      */
     @PostMapping
     public ApiResponse<Boolean> add(@RequestBody DeviceEntity entity) {
+        long userId = StpUtil.getLoginIdAsLong();
         entity.setId(null);
-        entity.setUserId(StpUtil.getLoginIdAsLong());
+        entity.setUserId(userId);
+        entity.fillCreateCommonField(userId);
         return ApiResponse.success(getBaseMapper().insert(entity) > 0);
     }
 
@@ -66,11 +68,13 @@ public class DeviceController {
      */
     @PutMapping("/{id}")
     public ApiResponse<Boolean> update(@PathVariable("id") Long id, @RequestBody DeviceEntity entity) {
+        long userId = StpUtil.getLoginIdAsLong();
         entity.setId(id);
         entity.setUserId(null);
+        entity.fillUpdateCommonField(userId);
         LambdaQueryWrapper<DeviceEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(DeviceEntity::getId, id);
-        wrapper.eq(DeviceEntity::getUserId, StpUtil.getLoginIdAsLong());
+        wrapper.eq(DeviceEntity::getUserId, userId);
         return ApiResponse.success(getBaseMapper().update(entity, wrapper) > 0);
     }
 

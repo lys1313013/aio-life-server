@@ -74,9 +74,11 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
         long userId = StpUtil.getLoginIdAsLong();
         entity.setUserId(userId);
-        entity.setCreateUser(StpUtil.getLoginIdAsLong());
+        entity.setCreateUser(userId);
+        entity.setUpdateUser(userId);
         entity.setCreateTime(LocalDateTime.now());
         entity.setUpdateTime(LocalDateTime.now());
+        entity.setIsDeleted(0);
 
         // 限制时间最大值为 1439 (23:59)
         if (entity.getStartTime() != null && entity.getStartTime() > 1439) entity.setStartTime(1439);
@@ -124,6 +126,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         }
         // 防止请求方篡改记录归属
         entity.setUserId(null);
+        entity.setUpdateUser(userId);
         entity.setUpdateTime(LocalDateTime.now());
 
         // 限制时间最大值为 1439 (23:59)

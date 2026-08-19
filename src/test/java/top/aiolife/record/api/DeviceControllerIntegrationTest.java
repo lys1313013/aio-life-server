@@ -48,7 +48,8 @@ class DeviceControllerIntegrationTest extends BaseIntegrationTest {
         entity.setUserId(TEST_USER_ID);
         entity.setName("测试设备");
         entity.setType("测试类型");
-        entity.setPurchaseDate(LocalDate.now().toString());
+        entity.setPurchaseDate(LocalDate.now());
+        entity.setEndDate(LocalDate.now().plusDays(1));
         entity.setPurchasePrice(BigDecimal.valueOf(100));
         return entity;
     }

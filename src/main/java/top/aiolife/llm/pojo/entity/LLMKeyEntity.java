@@ -2,18 +2,19 @@ package top.aiolife.llm.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import lombok.Data;
-
-import java.time.LocalDateTime;
+import lombok.EqualsAndHashCode;
+import top.aiolife.core.pojo.entity.AuditEntity;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @TableName("llm_key")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class LLMKeyEntity {
+public class LLMKeyEntity extends AuditEntity {
 
     @TableId(type = IdType.ASSIGN_ID)
     private String id;
@@ -43,17 +44,8 @@ public class LLMKeyEntity {
      */
     private Integer isDefault;
 
-    /**
-     * 创建时间
-     */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createTime;
-
-    /**
-     * 更新时间
-     */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updateTime;
+    @TableLogic
+    private Integer isDeleted;
 
     @JsonSetter
     public void setIsDefault(Object value) {

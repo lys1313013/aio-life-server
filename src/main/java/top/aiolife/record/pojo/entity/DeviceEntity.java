@@ -1,13 +1,12 @@
 package top.aiolife.record.pojo.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * 电子产品
@@ -18,12 +17,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @TableName("device")
-public class DeviceEntity {
-    /**
-     * 唯一标识
-     */
-    @TableId(type = IdType.ASSIGN_ID)
-    private Long id;
+public class DeviceEntity extends BaseEntity {
 
     /**
      * 用户ID
@@ -58,7 +52,8 @@ public class DeviceEntity {
     /**
      * 设备的购买日期
      */
-    private String purchaseDate;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate purchaseDate;
 
     /**
      * 设备的购买价格
@@ -78,5 +73,6 @@ public class DeviceEntity {
     /**
      * 设备的结束日期（用于计算日均费用）
      */
-    private String endDate;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate endDate;
 }

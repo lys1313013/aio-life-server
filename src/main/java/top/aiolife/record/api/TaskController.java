@@ -73,9 +73,10 @@ public class TaskController {
      */
     @PostMapping
     public ApiResponse<TaskEntity> save(@RequestBody TaskEntity entity) {
+        long userId = StpUtil.getLoginIdAsLong();
         entity.setId(null);
-        // 获取token
-        entity.setUserId(StpUtil.getLoginIdAsLong());
+        entity.setUserId(userId);
+        entity.fillCreateCommonField(userId);
         getBaseMapper().insert(entity);
         return ApiResponse.success(entity);
     }
@@ -87,11 +88,13 @@ public class TaskController {
      */
     @PutMapping("/{id}")
     public ApiResponse<Boolean> update(@PathVariable("id") Long id, @RequestBody TaskEntity entity) {
+        long userId = StpUtil.getLoginIdAsLong();
         entity.setId(id);
         entity.setUserId(null);
+        entity.fillUpdateCommonField(userId);
         LambdaQueryWrapper<TaskEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(TaskEntity::getId, id);
-        wrapper.eq(TaskEntity::getUserId, StpUtil.getLoginIdAsLong());
+        wrapper.eq(TaskEntity::getUserId, userId);
         getBaseMapper().update(entity, wrapper);
         return ApiResponse.success();
     }
@@ -118,6 +121,7 @@ public class TaskController {
     public ApiResponse<Void> reSort(@RequestBody List<TaskEntity> list) {
         Long userId = StpUtil.getLoginIdAsLong();
         for (TaskEntity entity : list) {
+            entity.fillUpdateCommonField(userId);
             LambdaQueryWrapper<TaskEntity> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(TaskEntity::getId, entity.getId());
             wrapper.eq(TaskEntity::getUserId, userId);

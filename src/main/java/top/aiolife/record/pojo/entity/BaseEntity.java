@@ -3,8 +3,9 @@ package top.aiolife.record.pojo.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import top.aiolife.core.pojo.entity.AuditEntity;
 
 import java.time.LocalDateTime;
 
@@ -15,34 +16,25 @@ import java.time.LocalDateTime;
  * @date 2025/04/13 14:30
  */
 @Data
-public class BaseEntity {
+@EqualsAndHashCode(callSuper = true)
+public class BaseEntity extends AuditEntity {
 
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
-
-    private Long createUser;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createTime;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updateTime;
-
-    private Long updateUser;
 
     @TableLogic
     private Integer isDeleted;
 
     public void fillCreateCommonField(Long userId) {
-        this.createUser = userId;
-        this.updateUser = userId;
-        this.createTime = LocalDateTime.now();
-        this.updateTime = LocalDateTime.now();
+        this.setCreateUser(userId);
+        this.setUpdateUser(userId);
+        this.setCreateTime(LocalDateTime.now());
+        this.setUpdateTime(LocalDateTime.now());
         this.isDeleted = 0;
     }
 
     public void fillUpdateCommonField(Long userId) {
-        this.updateUser = userId;
-        this.updateTime = LocalDateTime.now();
+        this.setUpdateUser(userId);
+        this.setUpdateTime(LocalDateTime.now());
     }
 }

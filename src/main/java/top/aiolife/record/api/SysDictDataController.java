@@ -96,8 +96,8 @@ public class SysDictDataController {
     @PostMapping
     public ApiResponse<Boolean> add(@RequestBody SysDictDataEntity entity) {
         entity.setDictCode(null);
-        entity.setCreateBy(StpUtil.getLoginIdAsString());
-        entity.setUpdateBy(StpUtil.getLoginIdAsString());
+        entity.setCreateUser(StpUtil.getLoginIdAsLong());
+        entity.setUpdateUser(StpUtil.getLoginIdAsLong());
         return ApiResponse.success(getBaseMapper().insert(entity) > 0);
     }
 
@@ -105,8 +105,8 @@ public class SysDictDataController {
     @PutMapping("/{dictCode}")
     public ApiResponse<Boolean> update(@PathVariable("dictCode") Long dictCode, @RequestBody SysDictDataEntity entity) {
         entity.setDictCode(dictCode);
-        entity.setCreateBy(null);
-        entity.setUpdateBy(StpUtil.getLoginIdAsString());
+        entity.setCreateUser(null);
+        entity.setUpdateUser(StpUtil.getLoginIdAsLong());
         return ApiResponse.success(getBaseMapper().updateById(entity) > 0);
     }
 

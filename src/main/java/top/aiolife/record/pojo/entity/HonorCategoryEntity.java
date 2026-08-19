@@ -1,8 +1,8 @@
 package top.aiolife.record.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 荣誉分类实体
@@ -11,10 +11,9 @@ import lombok.Data;
  * @date 2026/04/11
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @TableName("honor_category")
-public class HonorCategoryEntity {
-
-    private Long id;
+public class HonorCategoryEntity extends BaseEntity {
 
     private Long userId;
 
@@ -26,11 +25,4 @@ public class HonorCategoryEntity {
 
     private Integer sortOrder;
 
-    private Integer isDeleted;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private java.time.LocalDateTime createTime;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private java.time.LocalDateTime updateTime;
 }

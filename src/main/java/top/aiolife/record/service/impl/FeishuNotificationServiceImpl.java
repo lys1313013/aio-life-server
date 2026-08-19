@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -190,8 +189,9 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
 
     @Override
     public void deleteConfig(long userId) {
-        // 密钥配置物理删除，同时避免逻辑删除记录占用唯一键导致无法重新绑定。
-        configMapper.hardDeleteByUserIdAndChannel(userId, CHANNEL);
+        configMapper.delete(new LambdaQueryWrapper<NotificationChannelConfigEntity>()
+                .eq(NotificationChannelConfigEntity::getUserId, userId)
+                .eq(NotificationChannelConfigEntity::getChannel, CHANNEL));
     }
 
     @Override
@@ -309,6 +309,12 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
             return;
         }
 
+        if (deliveryExists(request.dedupKey(), request.receiverUserId(), CHANNEL)) {
+            log.debug("飞书通知已投递，跳过重复请求，userId={}, bizType={}",
+                    request.receiverUserId(), request.bizType());
+            return;
+        }
+
         NotificationDeliveryEntity delivery = new NotificationDeliveryEntity();
         delivery.setDedupKey(request.dedupKey());
         delivery.setUserId(request.receiverUserId());
@@ -318,13 +324,7 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
         delivery.setPayloadCiphertext(encryptPayload(request));
         delivery.setRetryCount(0);
         delivery.fillCreateCommonField(request.receiverUserId());
-        try {
-            deliveryMapper.insert(delivery);
-        } catch (DuplicateKeyException e) {
-            log.debug("飞书通知已投递，跳过重复请求，userId={}, bizType={}",
-                    request.receiverUserId(), request.bizType());
-            return;
-        }
+        deliveryMapper.insert(delivery);
     }
 
     @Override
@@ -422,6 +422,13 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
                 .eq(NotificationPreferenceEntity::getUserId, userId)
                 .eq(NotificationPreferenceEntity::getBizType, bizType)
                 .eq(NotificationPreferenceEntity::getChannel, channel));
+    }
+
+    private boolean deliveryExists(String dedupKey, long userId, String channel) {
+        return deliveryMapper.selectCount(new LambdaQueryWrapper<NotificationDeliveryEntity>()
+                .eq(NotificationDeliveryEntity::getDedupKey, dedupKey)
+                .eq(NotificationDeliveryEntity::getUserId, userId)
+                .eq(NotificationDeliveryEntity::getChannel, channel)) > 0;
     }
 
     private String encryptPayload(NotificationRequest request) {

@@ -22,14 +22,19 @@ public class LLMKeyServiceImpl implements LLMKeyService {
     @Override
     public void saveLLMKey(LLMKeyEntity llmKeyEntity) {
         try {
+            llmKeyEntity.setCreateUser(llmKeyEntity.getUserId());
+            llmKeyEntity.setUpdateUser(llmKeyEntity.getUserId());
             llmKeyEntity.setCreateTime(LocalDateTime.now());
             llmKeyEntity.setUpdateTime(LocalDateTime.now());
+            llmKeyEntity.setIsDeleted(0);
 
             // 如果设置为默认，先将其他配置设为非默认
             if (llmKeyEntity.getIsDefault() != null && llmKeyEntity.getIsDefault() == 1) {
                 LambdaUpdateWrapper<LLMKeyEntity> updateWrapper = new LambdaUpdateWrapper<>();
                 updateWrapper.eq(LLMKeyEntity::getUserId, llmKeyEntity.getUserId())
-                        .set(LLMKeyEntity::getIsDefault, 0);
+                        .set(LLMKeyEntity::getIsDefault, 0)
+                        .set(LLMKeyEntity::getUpdateUser, llmKeyEntity.getUserId())
+                        .set(LLMKeyEntity::getUpdateTime, LocalDateTime.now());
                 llmKeyMapper.update(null, updateWrapper);
             }
 
@@ -48,6 +53,7 @@ public class LLMKeyServiceImpl implements LLMKeyService {
             throw new RuntimeException("LLM Key 不存在或无权限操作");
         }
         try {
+            llmKeyEntity.setUpdateUser(userId);
             llmKeyEntity.setUpdateTime(LocalDateTime.now());
             // 防止请求方篡改记录归属
             llmKeyEntity.setUserId(null);
@@ -56,7 +62,9 @@ public class LLMKeyServiceImpl implements LLMKeyService {
             if (llmKeyEntity.getIsDefault() != null && llmKeyEntity.getIsDefault() == 1) {
                 LambdaUpdateWrapper<LLMKeyEntity> updateWrapper = new LambdaUpdateWrapper<>();
                 updateWrapper.eq(LLMKeyEntity::getUserId, userId)
-                        .set(LLMKeyEntity::getIsDefault, 0);
+                        .set(LLMKeyEntity::getIsDefault, 0)
+                        .set(LLMKeyEntity::getUpdateUser, userId)
+                        .set(LLMKeyEntity::getUpdateTime, LocalDateTime.now());
                 llmKeyMapper.update(null, updateWrapper);
             }
 
@@ -110,13 +118,16 @@ public class LLMKeyServiceImpl implements LLMKeyService {
             // 先将所有配置设为非默认
             LambdaUpdateWrapper<LLMKeyEntity> updateWrapper = new LambdaUpdateWrapper<>();
             updateWrapper.eq(LLMKeyEntity::getUserId, userId)
-                    .set(LLMKeyEntity::getIsDefault, 0);
+                    .set(LLMKeyEntity::getIsDefault, 0)
+                    .set(LLMKeyEntity::getUpdateUser, userId)
+                    .set(LLMKeyEntity::getUpdateTime, LocalDateTime.now());
             llmKeyMapper.update(null, updateWrapper);
 
             // 将指定配置设为默认
             LLMKeyEntity llmKeyEntity = new LLMKeyEntity();
             llmKeyEntity.setId(id);
             llmKeyEntity.setIsDefault(1);
+            llmKeyEntity.setUpdateUser(userId);
             llmKeyEntity.setUpdateTime(LocalDateTime.now());
             llmKeyMapper.updateById(llmKeyEntity);
         } catch (Exception e) {
