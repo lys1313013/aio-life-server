@@ -73,12 +73,12 @@ jobs:
 
           mysql_args=(--host=127.0.0.1 --port=3306 --user=root --database=aio-life --default-character-set=utf8mb4)
 
-          # 先建表，再灌初始化数据（保持 sql/1_init_table、sql/2_ini_data 的执行顺序）
-          for dir in sql/1_init_table sql/2_ini_data; do
-            while IFS= read -r sql_file; do
-              mysql "${mysql_args[@]}" < "$sql_file"
-            done < <(find "$dir" -maxdepth 1 -type f -name '*.sql' | sort)
-          done
+          # 新数据库使用最终全量结构；增量迁移脚本仅用于升级已有数据库，不能在全量结构后重复执行。
+          mysql "${mysql_args[@]}" < sql/1_init_table/2026-08-18_init_all_tables.sql
+
+          while IFS= read -r sql_file; do
+            mysql "${mysql_args[@]}" < "$sql_file"
+          done < <(find sql/2_ini_data -maxdepth 1 -type f -name '*.sql' | sort)
 
       - name: Run tests
         run: mvn test -B

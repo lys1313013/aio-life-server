@@ -35,8 +35,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     `is_deleted` tinyint(4) NOT NULL DEFAULT '0',
     `secondary_password` varchar(128) DEFAULT NULL COMMENT '二级密码（加盐哈希）',
     `secondary_password_salt` varchar(64) DEFAULT NULL COMMENT '二级密码盐值',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_username` (`username`)
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 CREATE TABLE IF NOT EXISTS `user_bind` (
@@ -99,7 +98,6 @@ CREATE TABLE IF NOT EXISTS `user_quick_nav` (
     `update_time` datetime DEFAULT NULL COMMENT '更新时间',
     `is_deleted` int DEFAULT 0 COMMENT '是否删除(0-否,1-是)',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_user_menu` (`user_id`, `menu_id`),
     KEY `idx_user_sort` (`user_id`, `sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户首页快捷导航布局';
 
@@ -115,7 +113,6 @@ CREATE TABLE IF NOT EXISTS `api_key` (
     `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `is_deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否删除',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_api_key` (`api_key`),
     KEY `idx_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API Key 表';
 
@@ -241,6 +238,25 @@ CREATE TABLE IF NOT EXISTS `user_dict_data` (
     KEY `idx_user_dict_template` (`template_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户字典数据表';
 
+CREATE TABLE IF NOT EXISTS `user_dict_type` (
+    `id` bigint(20) NOT NULL COMMENT '主键ID',
+    `user_id` bigint(20) NOT NULL COMMENT '所属用户ID',
+    `sys_dict_id` bigint(20) DEFAULT NULL COMMENT '关联的系统字典类型ID',
+    `dict_name` varchar(100) DEFAULT NULL COMMENT '字典名称',
+    `dict_type` varchar(100) DEFAULT NULL COMMENT '字典类型',
+    `icon` varchar(100) DEFAULT NULL COMMENT '图标',
+    `color` varchar(20) DEFAULT NULL COMMENT '颜色',
+    `status` char(1) DEFAULT '0' COMMENT '状态（0正常 1停用）',
+    `create_user` bigint(20) DEFAULT NULL COMMENT '创建人',
+    `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_user` bigint(20) DEFAULT NULL COMMENT '更新人',
+    `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+    `is_deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否删除',
+    PRIMARY KEY (`id`),
+    KEY `idx_user_dict_type_user` (`user_id`, `dict_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户字典类型表';
+
 CREATE TABLE IF NOT EXISTS `enum_type` (
     `type_id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '类型ID',
     `type_name` varchar(50) NOT NULL COMMENT '类型名称（英文唯一标识）',
@@ -262,8 +278,7 @@ CREATE TABLE IF NOT EXISTS `system_config` (
     `update_time` datetime DEFAULT NULL COMMENT '更新时间',
     `create_user` bigint DEFAULT NULL COMMENT '创建人ID',
     `update_user` bigint DEFAULT NULL COMMENT '更新人ID',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_config_key` (`config_key`)
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置表';
 
 CREATE TABLE IF NOT EXISTS `feedback` (
@@ -557,6 +572,41 @@ CREATE TABLE IF NOT EXISTS `thought_rela_event` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='思考关联事件表';
 
+CREATE TABLE IF NOT EXISTS `record_article` (
+    `id` bigint(20) NOT NULL COMMENT '文章ID',
+    `url` varchar(500) DEFAULT NULL COMMENT '原文链接',
+    `title` varchar(200) DEFAULT NULL COMMENT '标题',
+    `author` varchar(100) DEFAULT NULL COMMENT '作者',
+    `content_html` longtext COMMENT '文章HTML内容',
+    `category` varchar(50) DEFAULT NULL COMMENT '分类',
+    `tags` varchar(200) DEFAULT NULL COMMENT '标签',
+    `create_user` bigint(20) DEFAULT NULL COMMENT '创建人',
+    `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_user` bigint(20) DEFAULT NULL COMMENT '更新人',
+    `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `is_deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否删除',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='收藏文章表';
+
+CREATE TABLE IF NOT EXISTS `record_article_annotation` (
+    `id` bigint(20) NOT NULL COMMENT '标注ID',
+    `article_id` bigint(20) NOT NULL COMMENT '文章ID',
+    `selected_text` text COMMENT '选中文本',
+    `note_content` text COMMENT '标注内容',
+    `start_container_path` varchar(200) DEFAULT NULL COMMENT '起始容器路径',
+    `start_offset` int(11) DEFAULT NULL COMMENT '起始偏移量',
+    `end_container_path` varchar(200) DEFAULT NULL COMMENT '结束容器路径',
+    `end_offset` int(11) DEFAULT NULL COMMENT '结束偏移量',
+    `color` varchar(20) DEFAULT NULL COMMENT '标注颜色',
+    `create_user` bigint(20) DEFAULT NULL COMMENT '创建人',
+    `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_user` bigint(20) DEFAULT NULL COMMENT '更新人',
+    `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `is_deleted` tinyint(4) NOT NULL DEFAULT '0' COMMENT '是否删除',
+    PRIMARY KEY (`id`),
+    KEY `idx_article_id` (`article_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文章标注表';
+
 -- =====================================================
 -- 记录模块（record）—— 财务（账单）
 -- =====================================================
@@ -735,11 +785,11 @@ CREATE TABLE IF NOT EXISTS `device` (
     `type` varchar(255) DEFAULT NULL COMMENT '设备类型',
     `status` varchar(255) DEFAULT NULL COMMENT '设备状态',
     `remark` varchar(255) DEFAULT NULL COMMENT '备注',
-    `purchase_date` varchar(255) DEFAULT NULL COMMENT '购买日期',
+    `purchase_date` date DEFAULT NULL COMMENT '购买日期',
     `purchase_price` decimal(10,2) DEFAULT NULL COMMENT '购买价格',
     `purchase_place` varchar(255) DEFAULT NULL COMMENT '购买地点',
     `purchase_company` varchar(255) DEFAULT NULL COMMENT '购买公司',
-    `end_date` varchar(255) DEFAULT NULL COMMENT '结束日期（用于计算日均费用）',
+    `end_date` date DEFAULT NULL COMMENT '结束日期（用于计算日均费用）',
     `file_id` varchar(32) DEFAULT NULL COMMENT '图片文件ID(UUID)',
     `create_user` bigint(20) DEFAULT NULL COMMENT '创建人',
     `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -760,6 +810,8 @@ CREATE TABLE IF NOT EXISTS `membership_record` (
     `start_date` date DEFAULT NULL COMMENT '开通日期',
     `expiry_date` date NOT NULL COMMENT '到期日期',
     `price` decimal(10,2) DEFAULT NULL COMMENT '支付金额',
+    `billing_cycle` varchar(20) NOT NULL DEFAULT 'month' COMMENT '计费周期:week/two_weeks/month/quarter/half_year/year',
+    `monthly_amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '折算后的月均成本，可手动修改',
     `auto_renew` tinyint DEFAULT 0 COMMENT '是否自动续费:0-否 1-是',
     `note` varchar(500) DEFAULT NULL COMMENT '备注',
     `create_user` bigint DEFAULT NULL COMMENT '创建人',
@@ -808,8 +860,7 @@ CREATE TABLE IF NOT EXISTS `notification_channel_config` (
     `update_user` bigint DEFAULT NULL,
     `update_time` datetime NOT NULL,
     `is_deleted` tinyint NOT NULL DEFAULT 0,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_user_channel` (`user_id`, `channel`)
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户通知渠道配置';
 
 CREATE TABLE IF NOT EXISTS `notification_preference` (
@@ -823,8 +874,7 @@ CREATE TABLE IF NOT EXISTS `notification_preference` (
     `update_user` bigint DEFAULT NULL,
     `update_time` datetime NOT NULL,
     `is_deleted` tinyint NOT NULL DEFAULT 0,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_user_biz_channel` (`user_id`, `biz_type`, `channel`)
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户通知偏好';
 
 CREATE TABLE IF NOT EXISTS `notification_delivery` (
@@ -845,7 +895,6 @@ CREATE TABLE IF NOT EXISTS `notification_delivery` (
     `update_time` datetime NOT NULL,
     `is_deleted` tinyint NOT NULL DEFAULT 0,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_dedup_user_channel` (`dedup_key`, `user_id`, `channel`),
     KEY `idx_retry` (`status`, `next_retry_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知投递记录';
 
@@ -976,6 +1025,19 @@ CREATE TABLE IF NOT EXISTS `llm_key` (
     PRIMARY KEY (`id`),
     KEY `idx_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='大模型密钥表';
+
+CREATE TABLE IF NOT EXISTS `conversation` (
+    `id` bigint(20) NOT NULL COMMENT '会话ID',
+    `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+    `title` varchar(255) DEFAULT NULL COMMENT '会话标题',
+    `create_user` bigint(20) DEFAULT NULL COMMENT '创建人',
+    `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_user` bigint(20) DEFAULT NULL COMMENT '更新人',
+    `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `is_deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否删除',
+    PRIMARY KEY (`id`),
+    KEY `idx_conversation_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI会话表';
 
 CREATE TABLE IF NOT EXISTS `chat_message` (
     `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
