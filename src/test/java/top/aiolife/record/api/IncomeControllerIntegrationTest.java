@@ -65,7 +65,7 @@ class IncomeControllerIntegrationTest extends BaseIntegrationTest {
 
     private IncomeEntity createIncome(Long incomeId) {
         IncomeEntity entity = new IncomeEntity();
-        entity.setIncomeId(incomeId);
+        entity.setId(incomeId);
         entity.setUserId(TEST_USER_ID);
         entity.setIncTypeId(1L);
         entity.setAmt(BigDecimal.valueOf(100));

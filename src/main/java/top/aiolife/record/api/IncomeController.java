@@ -73,7 +73,7 @@ public class IncomeController {
 
     @PostMapping
     public ApiResponse<Boolean> add(@Validated @RequestBody IncomeEntity entity) {
-        entity.setIncomeId(null);
+        entity.setId(null);
         entity.setUserId(StpUtil.getLoginIdAsLong());
         return ApiResponse.success(getBaseMapper().insert(entity) > 0);
     }
@@ -81,10 +81,10 @@ public class IncomeController {
     @PutMapping("/{incomeId}")
     public ApiResponse<Boolean> update(@PathVariable("incomeId") Long incomeId, @Validated @RequestBody IncomeEntity entity) {
         Long userId = StpUtil.getLoginIdAsLong();
-        entity.setIncomeId(incomeId);
+        entity.setId(incomeId);
         entity.setUserId(null);
         LambdaQueryWrapper<IncomeEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(IncomeEntity::getIncomeId, incomeId);
+        wrapper.eq(IncomeEntity::getId, incomeId);
         wrapper.eq(IncomeEntity::getUserId, userId);
         return ApiResponse.success(getBaseMapper().update(entity, wrapper) > 0);
     }
@@ -92,7 +92,7 @@ public class IncomeController {
     @DeleteMapping("/{incomeId}")
     public ApiResponse<Boolean> delete(@PathVariable("incomeId") Long incomeId) {
         LambdaQueryWrapper<IncomeEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(IncomeEntity::getIncomeId, incomeId);
+        wrapper.eq(IncomeEntity::getId, incomeId);
         wrapper.eq(IncomeEntity::getUserId, StpUtil.getLoginIdAsLong());
         boolean b = getBaseMapper().delete(wrapper) > 0;
         return ApiResponse.success(b);

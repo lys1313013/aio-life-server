@@ -635,7 +635,7 @@ CREATE TABLE IF NOT EXISTS `expense` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='支出表';
 
 CREATE TABLE IF NOT EXISTS `income` (
-    `income_id` bigint(20) NOT NULL AUTO_INCREMENT,
+    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `amt` decimal(10,2) NOT NULL COMMENT '收入',
     `inc_date` date NOT NULL COMMENT '收入时间',
     `remark` varchar(255) DEFAULT NULL COMMENT '备注',
@@ -647,7 +647,7 @@ CREATE TABLE IF NOT EXISTS `income` (
     `is_deleted` int(11) DEFAULT '0' COMMENT '是否删除',
     `inc_type_id` int(11) NOT NULL COMMENT '收入类型',
     `tax` decimal(10,2) DEFAULT NULL,
-    PRIMARY KEY (`income_id`)
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='收入表';
 
 -- =====================================================

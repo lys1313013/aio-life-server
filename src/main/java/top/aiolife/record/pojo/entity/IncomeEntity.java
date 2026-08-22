@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class IncomeEntity {
     @TableId(type = IdType.ASSIGN_ID)
-    private Long incomeId;
+    private Long id;
     private BigDecimal amt;
     /**
      * 收入时间
