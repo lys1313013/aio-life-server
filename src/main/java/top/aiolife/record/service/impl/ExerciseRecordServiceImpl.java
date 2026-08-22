@@ -107,10 +107,10 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
                 .list();
 
         // 按日期降序聚合 → 按运动类型聚合（运动量求和）
-        Map<LocalDate, Map<String, Integer>> groupedByDate = new LinkedHashMap<>();
+        Map<LocalDate, Map<Long, Integer>> groupedByDate = new LinkedHashMap<>();
         for (ExerciseRecordEntity record : records) {
             LocalDate date = record.getExerciseDate();
-            String typeId = record.getExerciseTypeId();
+            Long typeId = record.getExerciseTypeId();
             if (date == null || typeId == null) {
                 continue;
             }
@@ -128,14 +128,14 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
         }
 
         // 收集需要查字典的运动类型 id
-        List<String> typeIds = dates.stream()
+        List<Long> typeIds = dates.stream()
                 .flatMap(d -> groupedByDate.get(d).keySet().stream())
                 .distinct()
                 .toList();
-        Map<String, UserDictDataEntity> dictMap = lookupDictMap(userId, typeIds);
+        Map<Long, UserDictDataEntity> dictMap = lookupDictMap(userId, typeIds);
 
         // 计算每个类型上一次（最近一次）运动的次数，用于与本次比较
-        Map<String, NavigableMap<LocalDate, Integer>> prevHistoryByType = buildPrevHistory(
+        Map<Long, NavigableMap<LocalDate, Integer>> prevHistoryByType = buildPrevHistory(
                 userId, typeIds, dates, groupedByDate);
 
         ExerciseDashboardSummaryVO result = new ExerciseDashboardSummaryVO();
@@ -143,12 +143,12 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
         for (LocalDate date : dates) {
             ExerciseDashboardDayVO dayVO = new ExerciseDashboardDayVO();
             dayVO.setDate(date);
-            Map<String, Integer> typeMap = groupedByDate.get(date);
+            Map<Long, Integer> typeMap = groupedByDate.get(date);
             List<ExerciseDashboardItemVO> items = new ArrayList<>(typeMap.size());
             int total = 0;
-            for (Map.Entry<String, Integer> entry : typeMap.entrySet()) {
+            for (Map.Entry<Long, Integer> entry : typeMap.entrySet()) {
                 ExerciseDashboardItemVO item = new ExerciseDashboardItemVO();
-                String typeId = entry.getKey();
+                Long typeId = entry.getKey();
                 int count = entry.getValue();
                 item.setExerciseTypeId(typeId);
                 item.setCount(count);
@@ -182,12 +182,12 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
      * - 页面内更早日期的记录：直接复用已聚合的 groupedByDate（用于在同页靠前日期的 prev）
      * 返回的 Map 按日期降序排列，便于通过 tailMap(date, false) 取到「严格小于 chip 日期」的最新一条
      */
-    private Map<String, NavigableMap<LocalDate, Integer>> buildPrevHistory(
+    private Map<Long, NavigableMap<LocalDate, Integer>> buildPrevHistory(
             Long userId,
-            List<String> typeIds,
+            List<Long> typeIds,
             List<LocalDate> pageDates,
-            Map<LocalDate, Map<String, Integer>> groupedByDate) {
-        Map<String, NavigableMap<LocalDate, Integer>> result = new HashMap<>();
+            Map<LocalDate, Map<Long, Integer>> groupedByDate) {
+        Map<Long, NavigableMap<LocalDate, Integer>> result = new HashMap<>();
         if (typeIds.isEmpty() || pageDates.isEmpty()) {
             return result;
         }
@@ -210,11 +210,11 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
 
         // 2. 页面内所有日期的聚合数据也并入，让靠后 chip 可以引用同页靠前日期作为 prev
         for (LocalDate date : pageDates) {
-            Map<String, Integer> typeMap = groupedByDate.get(date);
+            Map<Long, Integer> typeMap = groupedByDate.get(date);
             if (typeMap == null) {
                 continue;
             }
-            for (Map.Entry<String, Integer> e : typeMap.entrySet()) {
+            for (Map.Entry<Long, Integer> e : typeMap.entrySet()) {
                 result.computeIfAbsent(e.getKey(), k -> new TreeMap<>(Comparator.reverseOrder()))
                         .merge(date, e.getValue(), Integer::sum);
             }
@@ -227,7 +227,7 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
      */
     private void attachPrevDelta(
             ExerciseDashboardItemVO item,
-            String typeId,
+            Long typeId,
             LocalDate date,
             int count,
             NavigableMap<LocalDate, Integer> history) {
@@ -250,15 +250,15 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
         // prevCount == 0 时不计算百分比，前端用 prevCount==0 + deltaCount>0 渲染「新增」
     }
 
-    private Map<String, UserDictDataEntity> lookupDictMap(Long userId, List<String> typeIds) {
+    private Map<Long, UserDictDataEntity> lookupDictMap(Long userId, List<Long> typeIds) {
         if (typeIds.isEmpty()) {
             return Map.of();
         }
         List<UserDictDataEntity> dicts = userDictDataService.listUserVisibleDictData(userId, DictTypeEnum.EXERCISE_TYPE.getValue());
-        Map<String, UserDictDataEntity> map = new java.util.HashMap<>(dicts.size());
+        Map<Long, UserDictDataEntity> map = new java.util.HashMap<>(dicts.size());
         for (UserDictDataEntity dict : dicts) {
             if (dict.getId() != null) {
-                map.put(String.valueOf(dict.getId()), dict);
+                map.put(dict.getId(), dict);
             }
         }
         return map;

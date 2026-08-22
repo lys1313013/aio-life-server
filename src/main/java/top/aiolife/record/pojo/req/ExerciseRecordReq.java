@@ -22,10 +22,10 @@ public class ExerciseRecordReq {
     private String id;
 
     /**
-     * 运动类型
+     * 运动类型ID(关联user_dict_data.id)
      */
     @Description("运动类型ID")
-    private String exerciseTypeId;
+    private Long exerciseTypeId;
 
     /**
      * 运动日期

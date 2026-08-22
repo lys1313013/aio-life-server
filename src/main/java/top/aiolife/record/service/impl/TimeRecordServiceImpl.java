@@ -94,7 +94,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         if (exerciseRecordReqs != null && !exerciseRecordReqs.isEmpty()) {
             List<ExerciseRecordEntity> validExercises = new java.util.ArrayList<>();
             for (ExerciseRecordReq exerciseReq : exerciseRecordReqs) {
-                if (SysUtil.isEmpty(exerciseReq.getExerciseTypeId())) {
+                if (exerciseReq.getExerciseTypeId() == null) {
                     continue;
                 }
                 ExerciseRecordEntity exercise = new ExerciseRecordEntity();
@@ -149,7 +149,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         if (exerciseRecordReqs != null && !exerciseRecordReqs.isEmpty()) {
             List<ExerciseRecordEntity> validExercises = new java.util.ArrayList<>();
             for (ExerciseRecordReq exerciseReq : exerciseRecordReqs) {
-                if (SysUtil.isEmpty(exerciseReq.getExerciseTypeId())) {
+                if (exerciseReq.getExerciseTypeId() == null) {
                     continue;
                 }
                 ExerciseRecordEntity exercise = new ExerciseRecordEntity();

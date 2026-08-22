@@ -55,7 +55,7 @@ public class ExerciseRecordController {
         LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, userId);
         ExerciseRecordEntity condition = query.getCondition();
-        lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getExerciseTypeId()), ExerciseRecordEntity::getExerciseTypeId, 
+        lambdaQueryWrapper.eq(condition.getExerciseTypeId() != null, ExerciseRecordEntity::getExerciseTypeId,
                 condition.getExerciseTypeId());
 //        lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getExerciseDate()), ExerciseRecordEntity::getExerciseDate,
 //                condition.getExerciseDate());
@@ -129,8 +129,8 @@ public class ExerciseRecordController {
         // 处理查询条件
         if (params != null) {
             // 运动类型
-            String exerciseTypeId = (String) params.get("exerciseTypeId");
-            lambdaQueryWrapper.eq(SysUtil.isNotEmpty(exerciseTypeId), ExerciseRecordEntity::getExerciseTypeId, exerciseTypeId);
+            Long exerciseTypeId = toExerciseTypeId(params.get("exerciseTypeId"));
+            lambdaQueryWrapper.eq(exerciseTypeId != null, ExerciseRecordEntity::getExerciseTypeId, exerciseTypeId);
 
             // 日期区间
             String startDate = (String) params.get("startDate");
@@ -167,8 +167,8 @@ public class ExerciseRecordController {
         // 处理查询条件
         if (params != null) {
             // 运动类型
-            String exerciseTypeId = (String) params.get("exerciseTypeId");
-            lambdaQueryWrapper.eq(SysUtil.isNotEmpty(exerciseTypeId), ExerciseRecordEntity::getExerciseTypeId, exerciseTypeId);
+            Long exerciseTypeId = toExerciseTypeId(params.get("exerciseTypeId"));
+            lambdaQueryWrapper.eq(exerciseTypeId != null, ExerciseRecordEntity::getExerciseTypeId, exerciseTypeId);
 
             // 日期区间
             String startDate = (String) params.get("startDate");
@@ -225,5 +225,19 @@ public class ExerciseRecordController {
         }
         int safeLimit = (limit == null || limit <= 0 || limit > 30) ? 7 : limit;
         return ApiResponse.success(exerciseRecordService.getDashboardSummary(userId, cursor, safeLimit));
+    }
+
+    /**
+     * 兼容 number / 数字字符串两种入参，转换为运动类型ID（Long）
+     */
+    private Long toExerciseTypeId(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(String.valueOf(value).trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

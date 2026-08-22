@@ -548,7 +548,7 @@ CREATE TABLE IF NOT EXISTS `memo` (
 
 CREATE TABLE IF NOT EXISTS `thought` (
     `id` bigint(20) NOT NULL AUTO_INCREMENT,
-    `content` mediumtext NOT NULL COMMENT '没人',
+    `content` mediumtext NOT NULL COMMENT '内容',
     `user_id` bigint(19) NOT NULL COMMENT '用户 ID',
     `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `create_user` bigint(20) DEFAULT NULL,
@@ -657,7 +657,7 @@ CREATE TABLE IF NOT EXISTS `income` (
 CREATE TABLE IF NOT EXISTS `exercise_record` (
     `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `user_id` bigint(20) NOT NULL COMMENT '用户ID',
-    `exercise_type_id` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '运动类型',
+    `exercise_type_id` bigint DEFAULT NULL COMMENT '运动类型ID(关联user_dict_data.id)',
     `exercise_date` date NOT NULL COMMENT '运动日期',
     `exercise_count` int(11) NOT NULL DEFAULT '0',
     `description` text COLLATE utf8mb4_unicode_ci COMMENT '运动描述',

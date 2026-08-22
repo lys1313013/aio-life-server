@@ -24,9 +24,9 @@ public class ExerciseRecordEntity extends BaseEntity {
     private Long userId;
 
     /**
-     * 运动类型
+     * 运动类型ID(关联user_dict_data.id)
      */
-    private String exerciseTypeId;
+    private Long exerciseTypeId;
 
     /**
      * 运动数量

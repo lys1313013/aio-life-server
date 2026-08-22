@@ -15,9 +15,9 @@ import java.time.LocalDate;
 public class ExerciseStatisticsDTO {
 
     /**
-     * 运动类型ID
+     * 运动类型ID(关联user_dict_data.id)
      */
-    private String exerciseTypeId;
+    private Long exerciseTypeId;
 
     /**
      * 运动日期

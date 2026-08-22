@@ -19,7 +19,7 @@ public class ExerciseDashboardItemVO {
     /**
      * 运动类型ID（与 user_dict_data.id 一致）
      */
-    private String exerciseTypeId;
+    private Long exerciseTypeId;
 
     /**
      * 运动类型名称

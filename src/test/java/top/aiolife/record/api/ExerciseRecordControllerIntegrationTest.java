@@ -73,7 +73,7 @@ class ExerciseRecordControllerIntegrationTest extends BaseIntegrationTest {
         entity.setId(exerciseId);
         entity.setUserId(TEST_USER_ID);
         entity.setCreateUser(TEST_USER_ID);
-        entity.setExerciseTypeId("1");
+        entity.setExerciseTypeId(1L);
         entity.setExerciseDate(LocalDate.now());
         entity.setExerciseCount(1);
         entity.setDescription("测试运动记录");

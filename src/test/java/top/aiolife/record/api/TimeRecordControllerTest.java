@@ -55,7 +55,7 @@ class TimeRecordControllerTest {
 
         ExerciseRecordEntity exerciseRecord = new ExerciseRecordEntity();
         exerciseRecord.setTimeId("time-1");
-        exerciseRecord.setExerciseTypeId("100");
+        exerciseRecord.setExerciseTypeId(100L);
         exerciseRecord.setExerciseCount(30);
         exerciseRecord.setDescription("不应返回的描述");
 
