@@ -164,6 +164,8 @@ public class RecordMcpE2ETest {
         @Bean @Primary public TimeTrackerCategoryController timeTrackerCategoryController() { return new TimeTrackerCategoryController(null); }
         @Bean @Primary public TaskController taskController() { return new TaskController(null, null, null); }
         @Bean @Primary public TaskDetailController taskDetailController() { return new TaskDetailController(null, null); }
+        @Bean @Primary public MovieController movieController() { return new MovieController(null); }
+        @Bean @Primary public ReadRecordController readRecordController() { return new ReadRecordController(null); }
         @Bean @Primary public ITaskService taskService() { 
             return (ITaskService) java.lang.reflect.Proxy.newProxyInstance(
                 ITaskService.class.getClassLoader(), new Class[]{ITaskService.class}, (p, m, a) -> null); 

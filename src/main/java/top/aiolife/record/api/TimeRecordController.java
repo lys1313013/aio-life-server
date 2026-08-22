@@ -162,12 +162,12 @@ public class TimeRecordController {
             return;
         }
 
-        Map<String, String> exerciseNameMap = userDictDataService
+        Map<Long, String> exerciseNameMap = userDictDataService
                 .listUserVisibleDictData(userId, DictTypeEnum.EXERCISE_TYPE.getValue(), true)
                 .stream()
                 .filter(dict -> dict.getId() != null && dict.getDictLabel() != null)
                 .collect(Collectors.toMap(
-                        dict -> String.valueOf(dict.getId()),
+                        UserDictDataEntity::getId,
                         UserDictDataEntity::getDictLabel,
                         (existing, replacement) -> replacement));
 
