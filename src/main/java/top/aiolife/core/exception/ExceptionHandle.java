@@ -4,6 +4,7 @@ import cn.dev33.satoken.exception.NotLoginException;
 import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.resq.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -37,6 +38,18 @@ public class ExceptionHandle {
     public ApiResponse<Object> handleException(Exception e) {
         log.error("发生异常：{}", e.getMessage(), e);
         return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
+    }
+
+    /**
+     * 数据库/SQL 异常兜底：内部细节（SQL、表名、错误码）只进日志，不返回前端
+     * <p>
+     * MyBatis/Druid SQL 异常统一收敛到 {@link DataAccessException} 父类下，具体类型优先级高于兜底
+     * {@link Exception}，故不会被其透传。
+     */
+    @ExceptionHandler(DataAccessException.class)
+    public ApiResponse<Object> handleDataAccessException(DataAccessException e) {
+        log.error("数据库异常：{}", e.getMessage(), e);
+        return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "系统异常，请稍后重试");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
