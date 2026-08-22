@@ -105,12 +105,12 @@ cd aio-life-server
 ```bash
 # 创建 MySQL 数据库
 mysql -u root -p
-CREATE DATABASE `aio-life` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE `aio_life` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 # 执行初始化脚本
-mysql -u root -p aio-life < sql/1_init_table/2026-03-11_create_table.sql
+mysql -u root -p aio_life < sql/1_init_table/2026-08-18_init_all_tables.sql
 # ... 执行其他 SQL 脚本
-mysql -u root -p aio-life < sql/2_ini_data/*.sql
+mysql -u root -p aio_life < sql/2_ini_data/*.sql
 ```
 
 #### 3. 配置环境变量

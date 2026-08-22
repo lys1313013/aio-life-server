@@ -17,9 +17,9 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
   datasource:
-    username: aio-life
+    username: aio_life
     password: ${AIO_LIFE_DB_PASSWORD:root}
-    url: jdbc:mysql://${AIO_LIFE_DB_URL:127.0.0.1:3306}/aio-life?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&autoReconnect=true&connectTimeout=10000&socketTimeout=30000
+    url: jdbc:mysql://${AIO_LIFE_DB_URL:127.0.0.1:3306}/aio_life?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&autoReconnect=true&connectTimeout=10000&socketTimeout=30000
     driver-class-name: com.mysql.cj.jdbc.Driver
     type: com.alibaba.druid.pool.DruidDataSource
     druid:

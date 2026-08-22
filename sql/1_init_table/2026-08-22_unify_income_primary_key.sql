@@ -8,11 +8,11 @@
 -- 幂等：可从任意库状态执行，不会因重复执行报错。
 -- =====================================================
 
-USE `aio-life`;
+USE `aio_life`;
 
 SET @s = IF(
     EXISTS(SELECT 1 FROM information_schema.COLUMNS
-             WHERE TABLE_SCHEMA = 'aio-life' AND TABLE_NAME = 'income' AND COLUMN_NAME = 'income_id'),
+             WHERE TABLE_SCHEMA = 'aio_life' AND TABLE_NAME = 'income' AND COLUMN_NAME = 'income_id'),
     'ALTER TABLE `income` CHANGE COLUMN `income_id` `id` bigint NOT NULL AUTO_INCREMENT COMMENT ''主键ID''',
     'SELECT 1');
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;

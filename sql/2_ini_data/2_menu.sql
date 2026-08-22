@@ -1,4 +1,4 @@
-USE `aio-life`;
+USE `aio_life`;
 INSERT IGNORE INTO sys_menu (id, parent_id, name, path, component, redirect, meta, roles, sort, status, create_user, create_time, update_user, update_time, is_deleted) VALUES (1001, 0, 'Analytics', '/analytics', 'dashboard/home/index', null, '{"icon": "lucide:home", "title": "主页", "backTop": false, "affixTab": true, "keepAlive": true, "maxIdleTime": 60}', null, -1, 1, null, null, 13, '2026-06-21 12:45:39', 0);
 INSERT IGNORE INTO sys_menu (id, parent_id, name, path, component, redirect, meta, roles, sort, status, create_user, create_time, update_user, update_time, is_deleted) VALUES (1100, 0, 'Dashboard', '/dashboard', 'BasicLayout', null, '{"icon": "lucide:layout-dashboard", "title": "仪表盘"}', null, 0, 0, null, null, 13, '2026-06-21 12:45:48', 0);
 INSERT IGNORE INTO sys_menu (id, parent_id, name, path, component, redirect, meta, roles, sort, status, create_user, create_time, update_user, update_time, is_deleted) VALUES (1101, 1100, 'Workspace', '/workspace', 'dashboard/workspace/index', null, '{"icon": "carbon:workspace", "title": "工作台"}', null, 0, 1, null, null, null, null, 0);

@@ -34,8 +34,8 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_DATABASE: aio-life
-          MYSQL_USER: aio-life
+          MYSQL_DATABASE: aio_life
+          MYSQL_USER: aio_life
           MYSQL_PASSWORD: test_password
           MYSQL_ROOT_PASSWORD: root_password
         ports:
@@ -71,7 +71,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          mysql_args=(--host=127.0.0.1 --port=3306 --user=root --database=aio-life --default-character-set=utf8mb4)
+          mysql_args=(--host=127.0.0.1 --port=3306 --user=root --database=aio_life --default-character-set=utf8mb4)
 
           # 新数据库使用最终全量结构；增量迁移脚本仅用于升级已有数据库，不能在全量结构后重复执行。
           mysql "${mysql_args[@]}" < sql/1_init_table/2026-08-18_init_all_tables.sql

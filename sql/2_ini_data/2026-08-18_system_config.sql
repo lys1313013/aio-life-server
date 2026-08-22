@@ -1,5 +1,5 @@
 -- 依赖 1_init_table 已执行
-USE `aio-life`;
+USE `aio_life`;
 -- 系统配置种子数据
 -- 提取自 1_init_table/2026-07-19_create_feedback.sql（2026-08-18 合并重建时迁移）
 -- 共 1 条：反馈通知接收人配置（默认空列表，需管理员在后台勾选）

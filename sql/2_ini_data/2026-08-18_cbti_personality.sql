@@ -1,5 +1,5 @@
 -- 依赖 1_init_table 已执行
-USE `aio-life`;
+USE `aio_life`;
 -- CBTI 人格类型种子数据
 -- 提取自 1_init_table/2026-04-18_create_cbti_tables.sql（2026-08-18 合并重建时迁移）
 -- 共 28 条人格数据（含 1 条隐藏人格 JAVA）

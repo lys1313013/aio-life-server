@@ -1,5 +1,5 @@
 -- 依赖 1_init_table 已执行
-USE `aio-life`;
+USE `aio_life`;
 -- 荣誉分类系统预设种子数据
 -- 提取自 1_init_table/2026-04-11_create_honor_table.sql（2026-08-18 合并重建时迁移）
 -- 共 7 条系统预设分类

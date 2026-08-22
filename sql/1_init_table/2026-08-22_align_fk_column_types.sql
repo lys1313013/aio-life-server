@@ -9,12 +9,12 @@
 -- 幂等：仅当列当前为 int 类型时执行 MODIFY，可重复执行。
 -- =====================================================
 
-USE `aio-life`;
+USE `aio_life`;
 
 -- 1) task.column_id → task_column.id (bigint)
 SET @s = IF(
     EXISTS(SELECT 1 FROM information_schema.COLUMNS
-             WHERE TABLE_SCHEMA = 'aio-life' AND TABLE_NAME = 'task' AND COLUMN_NAME = 'column_id' AND DATA_TYPE = 'int'),
+             WHERE TABLE_SCHEMA = 'aio_life' AND TABLE_NAME = 'task' AND COLUMN_NAME = 'column_id' AND DATA_TYPE = 'int'),
     'ALTER TABLE `task` MODIFY COLUMN `column_id` bigint DEFAULT NULL',
     'SELECT 1');
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
@@ -22,7 +22,7 @@ PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 -- 2) expense.exp_type_id → user_dict_data.id (bigint)
 SET @s = IF(
     EXISTS(SELECT 1 FROM information_schema.COLUMNS
-             WHERE TABLE_SCHEMA = 'aio-life' AND TABLE_NAME = 'expense' AND COLUMN_NAME = 'exp_type_id' AND DATA_TYPE = 'int'),
+             WHERE TABLE_SCHEMA = 'aio_life' AND TABLE_NAME = 'expense' AND COLUMN_NAME = 'exp_type_id' AND DATA_TYPE = 'int'),
     'ALTER TABLE `expense` MODIFY COLUMN `exp_type_id` bigint NOT NULL COMMENT ''支出类型ID''',
     'SELECT 1');
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
@@ -30,7 +30,7 @@ PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 -- 3) income.inc_type_id → user_dict_data.id (bigint)
 SET @s = IF(
     EXISTS(SELECT 1 FROM information_schema.COLUMNS
-             WHERE TABLE_SCHEMA = 'aio-life' AND TABLE_NAME = 'income' AND COLUMN_NAME = 'inc_type_id' AND DATA_TYPE = 'int'),
+             WHERE TABLE_SCHEMA = 'aio_life' AND TABLE_NAME = 'income' AND COLUMN_NAME = 'inc_type_id' AND DATA_TYPE = 'int'),
     'ALTER TABLE `income` MODIFY COLUMN `inc_type_id` bigint NOT NULL COMMENT ''收入类型''',
     'SELECT 1');
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;

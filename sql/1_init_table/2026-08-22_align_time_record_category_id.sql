@@ -16,7 +16,7 @@
 --       本脚本第 1/3 步会自动跳过，仅第 2 步清洗空跑。
 -- =====================================================
 
-USE `aio-life`;
+USE `aio_life`;
 
 -- 0) 诊断：执行前人工确认将有多少条非法值会被置 NULL
 SELECT COUNT(*) AS illegal_category_id_count
@@ -27,7 +27,7 @@ WHERE `category_id` IS NOT NULL
 -- 1) 放宽 NOT NULL（仅当当前是 varchar 且 NOT NULL）
 SET @s = IF(
     EXISTS(SELECT 1 FROM information_schema.COLUMNS
-             WHERE TABLE_SCHEMA = 'aio-life' AND TABLE_NAME = 'time_record'
+             WHERE TABLE_SCHEMA = 'aio_life' AND TABLE_NAME = 'time_record'
                AND COLUMN_NAME = 'category_id' AND DATA_TYPE = 'varchar' AND IS_NULLABLE = 'NO'),
     'ALTER TABLE `time_record` MODIFY COLUMN `category_id` varchar(32) NULL COMMENT ''分类ID''',
     'SELECT 1');
@@ -42,7 +42,7 @@ WHERE `category_id` IS NOT NULL
 -- 3) 类型对齐 time_record.category_id → time_tracker_category.id (bigint)
 SET @s = IF(
     EXISTS(SELECT 1 FROM information_schema.COLUMNS
-             WHERE TABLE_SCHEMA = 'aio-life' AND TABLE_NAME = 'time_record' AND COLUMN_NAME = 'category_id' AND DATA_TYPE = 'varchar'),
+             WHERE TABLE_SCHEMA = 'aio_life' AND TABLE_NAME = 'time_record' AND COLUMN_NAME = 'category_id' AND DATA_TYPE = 'varchar'),
     'ALTER TABLE `time_record` MODIFY COLUMN `category_id` bigint DEFAULT NULL COMMENT ''分类ID(关联time_tracker_category.id)''',
     'SELECT 1');
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;

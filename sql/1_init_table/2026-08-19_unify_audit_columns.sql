@@ -2,7 +2,7 @@
 -- create_user/update_user BIGINT NULL，create_time/update_time DATETIME。
 -- 本脚本用于从 2026-08-18 全量结构升级已有数据库。
 
-USE `aio-life`;
+USE `aio_life`;
 
 -- 用户表：保留原时间数据，同时补齐可空的操作人字段。
 ALTER TABLE `user`

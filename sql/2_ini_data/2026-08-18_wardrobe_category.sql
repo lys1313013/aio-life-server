@@ -1,5 +1,5 @@
 -- 依赖 1_init_table 已执行
-USE `aio-life`;
+USE `aio_life`;
 -- 衣柜分类系统预设种子数据
 -- 提取自 1_init_table/wardrobe.sql（2026-08-18 合并重建时迁移）
 -- 共 20 条预设分类（5 条一级分类 + 15 条二级分类）

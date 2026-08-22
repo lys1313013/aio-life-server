@@ -1,7 +1,7 @@
 -- 补齐业务表的统一审计字段和逻辑删除字段。
 -- 日志表（api_key_log、login_log、mail_log）及枚举定义表（enum_type）不适用本规范。
 
-USE `aio-life`;
+USE `aio_life`;
 
 ALTER TABLE `sys_dict_type`
     ADD COLUMN `is_deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否删除: 0-未删除, 1-已删除' AFTER `remark`;

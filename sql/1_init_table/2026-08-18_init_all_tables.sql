@@ -8,10 +8,10 @@
 -- =====================================================
 
 -- 创建库
-create database if not exists `aio-life`;
+create database if not exists `aio_life`;
 
 -- 切换库
-use `aio-life`;
+use `aio_life`;
 
 -- =====================================================
 -- 用户与认证
