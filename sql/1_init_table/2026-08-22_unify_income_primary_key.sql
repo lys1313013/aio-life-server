@@ -13,6 +13,6 @@ USE `aio-life`;
 SET @s = IF(
     EXISTS(SELECT 1 FROM information_schema.COLUMNS
              WHERE TABLE_SCHEMA = 'aio-life' AND TABLE_NAME = 'income' AND COLUMN_NAME = 'income_id'),
-    'ALTER TABLE `income` CHANGE COLUMN `income_id` `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT ''主键ID''',
+    'ALTER TABLE `income` CHANGE COLUMN `income_id` `id` bigint NOT NULL AUTO_INCREMENT COMMENT ''主键ID''',
     'SELECT 1');
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
