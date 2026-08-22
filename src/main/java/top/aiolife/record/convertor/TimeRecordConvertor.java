@@ -23,7 +23,20 @@ public interface TimeRecordConvertor {
 
     TimeRecordConvertor INSTANCE = Mappers.getMapper(TimeRecordConvertor.class);
 
+    @Mapping(target = "categoryId", qualifiedByName = "stringToLongNullable")
     TimeRecordEntity Req2Entity(TimeRecordReq timeRecordReq);
+
+    @Named("stringToLongNullable")
+    default Long stringToLongNullable(String s) {
+        if (s == null || s.isEmpty()) {
+            return null;
+        }
+        try {
+            return Long.valueOf(s.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
 
     @Mapping(target = "startTime", qualifiedByName = "minutesToLocalDateTime")
     @Mapping(target = "endTime", qualifiedByName = "minutesToLocalDateTime")

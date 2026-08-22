@@ -15,7 +15,7 @@ USE `aio-life`;
 SET @s = IF(
     EXISTS(SELECT 1 FROM information_schema.COLUMNS
              WHERE TABLE_SCHEMA = 'aio-life' AND TABLE_NAME = 'task' AND COLUMN_NAME = 'column_id' AND DATA_TYPE = 'int'),
-    'ALTER TABLE `task` MODIFY COLUMN `column_id` bigint(20) DEFAULT NULL',
+    'ALTER TABLE `task` MODIFY COLUMN `column_id` bigint DEFAULT NULL',
     'SELECT 1');
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 
@@ -23,7 +23,7 @@ PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 SET @s = IF(
     EXISTS(SELECT 1 FROM information_schema.COLUMNS
              WHERE TABLE_SCHEMA = 'aio-life' AND TABLE_NAME = 'expense' AND COLUMN_NAME = 'exp_type_id' AND DATA_TYPE = 'int'),
-    'ALTER TABLE `expense` MODIFY COLUMN `exp_type_id` bigint(20) NOT NULL COMMENT ''支出类型ID''',
+    'ALTER TABLE `expense` MODIFY COLUMN `exp_type_id` bigint NOT NULL COMMENT ''支出类型ID''',
     'SELECT 1');
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 
@@ -31,6 +31,6 @@ PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;
 SET @s = IF(
     EXISTS(SELECT 1 FROM information_schema.COLUMNS
              WHERE TABLE_SCHEMA = 'aio-life' AND TABLE_NAME = 'income' AND COLUMN_NAME = 'inc_type_id' AND DATA_TYPE = 'int'),
-    'ALTER TABLE `income` MODIFY COLUMN `inc_type_id` bigint(20) NOT NULL COMMENT ''收入类型''',
+    'ALTER TABLE `income` MODIFY COLUMN `inc_type_id` bigint NOT NULL COMMENT ''收入类型''',
     'SELECT 1');
 PREPARE st FROM @s; EXECUTE st; DEALLOCATE PREPARE st;

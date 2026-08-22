@@ -38,7 +38,7 @@ public class ExpenseEntity {
     /**
      * 支付方式
      */
-    private String payTypeId;
+    private Long payTypeId;
     /**
      * 交易对方
      */

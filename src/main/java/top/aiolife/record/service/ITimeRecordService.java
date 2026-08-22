@@ -49,7 +49,7 @@ public interface ITimeRecordService extends IService<TimeRecordEntity> {
      * @param previousCategoryId 紧邻的上一条记录的分类id（可为空）
      * @return 分类id
      */
-    String recommendType(long userId, String date, int time, String previousCategoryId);
+    Long recommendType(long userId, String date, int time, Long previousCategoryId);
 
     /**
      * 推荐下一个时间块

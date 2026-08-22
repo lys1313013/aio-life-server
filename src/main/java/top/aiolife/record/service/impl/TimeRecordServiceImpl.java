@@ -209,7 +209,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     }
 
     @Override
-    public String recommendType(long userId, String date, int time, String previousCategoryId) {
+    public Long recommendType(long userId, String date, int time, Long previousCategoryId) {
         LocalDate localDate = LocalDate.parse(date);
         int dayOfWeek = localDate.getDayOfWeek().getValue();
         boolean isWorkday = dayOfWeek <= 5;
@@ -226,7 +226,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
         // 1. 查参考日期同一时间段是否有记录
         TimeRecordEntity originalRecommend = this.baseMapper.recommendType(userId, targetDate, time);
-        String categoryId = originalRecommend != null ? originalRecommend.getCategoryId() : null;
+        Long categoryId = originalRecommend != null ? originalRecommend.getCategoryId() : null;
 
         // 2. 如果 Step 1 未命中，降级到时间段历史高频（不排除任何分类）
         if (categoryId == null) {
@@ -234,16 +234,16 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         }
 
         // 3. 去重干预：如果推荐分类与上一条记录相同，尝试替换
-        if (categoryId != null && !categoryId.isEmpty() && categoryId.equals(previousCategoryId)) {
+        if (categoryId != null && categoryId.equals(previousCategoryId)) {
             // 3.1 预测后续行为：历史上紧跟在 previousCategoryId 之后最常出现的分类
-            String nextCategory = this.baseMapper.getMostFrequentNextCategory(userId, previousCategoryId, isWorkday);
-            if (nextCategory != null && !nextCategory.isEmpty()) {
+            Long nextCategory = this.baseMapper.getMostFrequentNextCategory(userId, previousCategoryId, isWorkday);
+            if (nextCategory != null) {
                 return nextCategory;
             }
 
             // 3.2 降级：该时间段历史最高频，排除 previousCategoryId
-            String fallbackCategory = this.baseMapper.getMostFrequentCategoryAtTime(userId, time, previousCategoryId, isWorkday);
-            if (fallbackCategory != null && !fallbackCategory.isEmpty()) {
+            Long fallbackCategory = this.baseMapper.getMostFrequentCategoryAtTime(userId, time, previousCategoryId, isWorkday);
+            if (fallbackCategory != null) {
                 return fallbackCategory;
             }
 

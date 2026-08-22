@@ -86,9 +86,9 @@ public class ReadCardProvider implements DashboardCardProvider {
     }
 
     private int sumTodayReadDuration(long userId) {
-        List<String> categoryIds = categoryService.listUserVisibleCategories(userId).stream()
+        List<Long> categoryIds = categoryService.listUserVisibleCategories(userId).stream()
                 .filter(c -> READ_CATEGORY_NAME.equals(c.getName()))
-                .map(c -> String.valueOf(c.getId()))
+                .map(c -> c.getId())
                 .toList();
 
         if (categoryIds.isEmpty()) {

@@ -344,7 +344,7 @@ CREATE TABLE IF NOT EXISTS `time_record` (
     `id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '记录ID',
     `user_id` bigint(20) NOT NULL COMMENT '用户ID',
     `create_user` bigint(20) DEFAULT NULL COMMENT '用户ID',
-    `category_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分类ID',
+    `category_id` bigint DEFAULT NULL COMMENT '分类ID(关联time_tracker_category.id)',
     `date` date NOT NULL COMMENT '日期（YYYY-MM-DD格式）',
     `start_time` smallint(5) unsigned NOT NULL COMMENT '开始时间（分钟，0-1440）',
     `end_time` smallint(5) unsigned NOT NULL COMMENT '结束时间（分钟，0-1440）',
@@ -371,7 +371,7 @@ CREATE TABLE IF NOT EXISTS `task` (
     `user_id` bigint(20) NOT NULL COMMENT '用户ID',
     `content` varchar(100) DEFAULT NULL,
     `detail` varchar(1000) DEFAULT NULL,
-    `column_id` int(11) DEFAULT NULL,
+    `column_id` bigint DEFAULT NULL,
     `due_date` datetime DEFAULT NULL COMMENT '最后时间',
     `sort_order` int(11) DEFAULT NULL COMMENT '排序字段',
     `is_deleted` int(11) NOT NULL DEFAULT '0',
@@ -615,7 +615,7 @@ CREATE TABLE IF NOT EXISTS `expense` (
     `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '账单ID',
     `amt` decimal(10,2) NOT NULL COMMENT '花费金额',
     `transaction_amt` decimal(10,2) DEFAULT NULL COMMENT '交易金额',
-    `exp_type_id` int(11) NOT NULL COMMENT '支出类型ID',
+    `exp_type_id` bigint NOT NULL COMMENT '支出类型ID',
     `pay_type_id` bigint DEFAULT NULL COMMENT '支付方式ID(关联user_dict_data)',
     `remark` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
     `user_id` bigint(20) DEFAULT NULL COMMENT '用户id',
@@ -635,7 +635,7 @@ CREATE TABLE IF NOT EXISTS `expense` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC COMMENT='支出表';
 
 CREATE TABLE IF NOT EXISTS `income` (
-    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `amt` decimal(10,2) NOT NULL COMMENT '收入',
     `inc_date` date NOT NULL COMMENT '收入时间',
     `remark` varchar(255) DEFAULT NULL COMMENT '备注',
@@ -645,7 +645,7 @@ CREATE TABLE IF NOT EXISTS `income` (
     `update_user` bigint(20) DEFAULT NULL COMMENT '修改人',
     `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `is_deleted` int(11) DEFAULT '0' COMMENT '是否删除',
-    `inc_type_id` int(11) NOT NULL COMMENT '收入类型',
+    `inc_type_id` bigint NOT NULL COMMENT '收入类型',
     `tax` decimal(10,2) DEFAULT NULL,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='收入表';

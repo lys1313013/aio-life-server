@@ -23,7 +23,7 @@ public class TimeRecordEntity extends AuditEntity {
     /**
      * 分类id
      */
-    private String categoryId;
+    private Long categoryId;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;

@@ -104,25 +104,22 @@ public class TimeRecordController {
         List<TimeRecordEntity> list = queryByDateRangeForAIList(userId, req);
         List<TimeRecordDateRangeVO> voList = TimeRecordConvertor.INSTANCE.toDateRangeVOList(list);
 
-        Set<String> categoryIds = list.stream()
+        Set<Long> categoryIds = list.stream()
                 .map(TimeRecordEntity::getCategoryId)
-                .filter(id -> id != null && !id.isEmpty())
+                .filter(id -> id != null)
                 .collect(Collectors.toSet());
 
-        Map<String, String> categoryNameMap = Collections.emptyMap();
+        Map<Long, String> categoryNameMap = Collections.emptyMap();
         if (!categoryIds.isEmpty()) {
-            List<Long> ids = categoryIds.stream()
-                    .map(Long::parseLong)
-                    .collect(Collectors.toList());
-            categoryNameMap = timeTrackerCategoryService.listByIds(ids).stream()
+            categoryNameMap = timeTrackerCategoryService.listByIds(categoryIds).stream()
                     .collect(Collectors.toMap(
-                            cat -> String.valueOf(cat.getId()),
+                            top.aiolife.record.pojo.entity.entity.TimeTrackerCategoryEntity::getId,
                             top.aiolife.record.pojo.entity.entity.TimeTrackerCategoryEntity::getName
                     ));
         }
 
         for (int i = 0; i < voList.size(); i++) {
-            String categoryId = list.get(i).getCategoryId();
+            Long categoryId = list.get(i).getCategoryId();
             if (categoryId != null && categoryNameMap.containsKey(categoryId)) {
                 voList.get(i).setCategoryName(categoryNameMap.get(categoryId));
             }
@@ -314,11 +311,11 @@ public class TimeRecordController {
     @GetMapping("/recommendType")
     public ApiResponse<String> recommendType(String date, int time, @RequestParam(required = false) String previousCategoryId) {
         long userId = StpUtil.getLoginIdAsLong();
-        String categoryId = timeRecordService.recommendType(userId, date, time, previousCategoryId);
+        Long categoryId = timeRecordService.recommendType(userId, date, time, toCategoryId(previousCategoryId));
         if (categoryId == null) {
             return ApiResponse.success("");
         }
-        return ApiResponse.success(categoryId);
+        return ApiResponse.success(String.valueOf(categoryId));
     }
 
     /**
@@ -334,7 +331,7 @@ public class TimeRecordController {
         TimeRecordEntity recommend = result.getRecommend();
         
         // 寻找紧邻的上一条记录分类
-        String previousCategoryId = null;
+        Long previousCategoryId = null;
         if (result.getRecords() != null) {
             for (TimeRecordEntity record : result.getRecords()) {
                 if (record.getEndTime() != null && record.getEndTime() == recommend.getStartTime() - 1) {
@@ -343,11 +340,25 @@ public class TimeRecordController {
                 }
             }
         }
-        
-        String categoryId = recommendType(date, recommend.getStartTime(), previousCategoryId).getData();
+
+        Long categoryId = timeRecordService.recommendType(userId, date, recommend.getStartTime(), previousCategoryId);
         recommend.setCategoryId(categoryId);
 
         return ApiResponse.success(result);
+    }
+
+    /**
+     * 将前端传入的分类标识（数字字符串）转为 Long；空串 / 非数字视为未指定。
+     */
+    private Long toCategoryId(String s) {
+        if (s == null || s.isEmpty()) {
+            return null;
+        }
+        try {
+            return Long.valueOf(s);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     /**

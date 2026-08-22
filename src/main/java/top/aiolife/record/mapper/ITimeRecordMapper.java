@@ -19,9 +19,9 @@ public interface ITimeRecordMapper extends BaseMapper<TimeRecordEntity> {
      * @param isWorkday          是否工作日
      * @return 分类id
      */
-    String getMostFrequentNextCategory(@org.apache.ibatis.annotations.Param("userId") long userId,
-                                       @org.apache.ibatis.annotations.Param("previousCategoryId") String previousCategoryId,
-                                       @org.apache.ibatis.annotations.Param("isWorkday") boolean isWorkday);
+    Long getMostFrequentNextCategory(@org.apache.ibatis.annotations.Param("userId") long userId,
+                                     @org.apache.ibatis.annotations.Param("previousCategoryId") Long previousCategoryId,
+                                     @org.apache.ibatis.annotations.Param("isWorkday") boolean isWorkday);
 
     /**
      * 获取历史上同一时间点的最高频分类
@@ -32,10 +32,10 @@ public interface ITimeRecordMapper extends BaseMapper<TimeRecordEntity> {
      * @param isWorkday         是否工作日
      * @return 分类id
      */
-    String getMostFrequentCategoryAtTime(@org.apache.ibatis.annotations.Param("userId") long userId,
-                                         @org.apache.ibatis.annotations.Param("time") int time,
-                                         @org.apache.ibatis.annotations.Param("excludeCategoryId") String excludeCategoryId,
-                                         @org.apache.ibatis.annotations.Param("isWorkday") boolean isWorkday);
+    Long getMostFrequentCategoryAtTime(@org.apache.ibatis.annotations.Param("userId") long userId,
+                                       @org.apache.ibatis.annotations.Param("time") int time,
+                                       @org.apache.ibatis.annotations.Param("excludeCategoryId") Long excludeCategoryId,
+                                       @org.apache.ibatis.annotations.Param("isWorkday") boolean isWorkday);
 
     /**
      * 推荐分类 (原有逻辑)
