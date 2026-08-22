@@ -157,6 +157,21 @@ java -jar target/aio-life-server-1.0.0.jar
 
 服务启动后访问：`http://localhost:45678/api`
 
+#### 快速启动 / 快速测试脚本
+
+```bash
+# 一键启动：校验 MySQL/Redis 连通后直接用现有配置运行服务（不拉起任何容器）
+./start.sh
+./start.sh --clean                 # mvn clean 后启动
+
+# 快速测试：默认跑全部测试，也可指定测试类/方法
+./test.sh
+./test.sh TimeTrackerCategoryControllerIntegrationTest
+./test.sh TimeTrackerCategoryControllerIntegrationTest#testList_获取分类列表
+```
+
+`start.sh` 可选环境变量：`SKIP_DEPS_CHECK=true`（跳过 MySQL/Redis/Neo4j 校验）、`AIO_LIFE_NEO4J_ENABLED=true`（开启 Neo4j 连通校验，详见脚本头部注释）。
+
 ### 使用 Docker 部署
 
 ```bash

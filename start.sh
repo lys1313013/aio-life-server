@@ -1,21 +1,20 @@
 #!/usr/bin/env bash
 # ============================================================
-# start.sh —— 一键启动 aio-life-server（本地开发）
+# start.sh —— 快速启动 aio-life-server（本地开发）
+#
+# 不拉起任何容器，直接使用现有代码与配置（application.yml + AIO_LIFE_* 环境变量）。
 #
 # 用法:
-#   ./start.sh                  默认：拉起 MinIO，校验 MySQL/Redis 后启动服务
+#   ./start.sh                  校验 MySQL/Redis 连通后启动服务
 #   ./start.sh --clean          mvn clean 后再启动（清除编译残留）
 #
-# 可选环境变量（均带默认值，按需覆盖）:
-#   SKIP_MINIO=true             跳过 MinIO 容器（本机已有 MinIO 时使用）
-#   START_NEO4J=true            同时拉起 Neo4j（默认关闭，需配合 AIO_LIFE_NEO4J_ENABLED=true）
-#   SKIP_DEPS_CHECK=true         跳过 MySQL/Redis 连通性校验（远程库或非常规环境）
-#   MINIO_PORT=1300              MinIO 服务端口（对应 application.yml 中 1300）
-#   MINIO_CONSOLE_PORT=1301      MinIO 控制台端口
-#   MINIO_USER=... MINIO_PASSWORD=...   MinIO 账号密码，默认 aio_life / aio_life
-#   AIO_LIFE_DB_URL=...         数据库地址 host:port，也作为连通性校验目标，默认 127.0.0.1:3306
+# 可选环境变量:
+#   SKIP_DEPS_CHECK=true         跳过 MySQL/Redis/Neo4j 连通性校验（远程库或非常规环境）
+#   AIO_LIFE_DB_URL=...         数据库地址 host:port，默认 127.0.0.1:3306
 #   AIO_LIFE_REDIS_HOST/PORT    Redis 地址与端口，默认 127.0.0.1:6379
-#   其余 AIO_LIFE_* 环境变量     直接透传给 Spring Boot（密码、MinIO 等）
+#   AIO_LIFE_NEO4J_ENABLED=true Neo4j 为可选模块，仅开启时校验其连通性
+#   AIO_LIFE_NEO4J_URI=...      Neo4j 地址 bolt://host:port，默认 bolt://localhost:7687
+#   其余 AIO_LIFE_* 环境变量     直接透传给 Spring Boot（数据库密码、MinIO 等）
 # ============================================================
 set -euo pipefail
 
@@ -34,28 +33,7 @@ done
 # ---------- 工具检查 ----------
 command -v mvn >/dev/null 2>&1 || { echo "[错误] 未找到 mvn，请先安装 Maven（要求 Java 21）" >&2; exit 1; }
 
-# ---------- 启动基础依赖容器 ----------
-if [[ "${SKIP_MINIO:-}" != "true" ]]; then
-  command -v docker >/dev/null 2>&1 || { echo "[错误] 启动 MinIO 需要 docker，可设 SKIP_MINIO=true 跳过" >&2; exit 1; }
-  echo ">>> 拉起 MinIO 容器 ..."
-  export MINIO_PORT="${MINIO_PORT:-1300}"
-  export MINIO_CONSOLE_PORT="${MINIO_CONSOLE_PORT:-1301}"
-  export MINIO_USER="${MINIO_USER:-aio_life}"
-  export MINIO_PASSWORD="${MINIO_PASSWORD:-aio_life}"
-  # docker compose 引用 .env 文件，缺失会导致报错，补充空占位（已 gitignore）
-  if [[ ! -f docker/.env ]]; then
-    touch docker/.env
-  fi
-  docker compose -f docker/docker-compose-minio.yml up -d
-fi
-
-if [[ "${START_NEO4J:-}" == "true" ]]; then
-  command -v docker >/dev/null 2>&1 || { echo "[错误] 启动 Neo4j 需要 docker" >&2; exit 1; }
-  echo ">>> 拉起 Neo4j 容器 ..."
-  docker compose -f docker/docker-compose-neo4j.yml up -d
-fi
-
-# ---------- 校验硬依赖：MySQL / Redis ----------
+# ---------- 校验硬依赖：MySQL / Redis / 可选 Neo4j ----------
 port_open() {
   if command -v nc >/dev/null 2>&1; then
     nc -z -w 2 "$1" "$2" >/dev/null 2>&1
@@ -87,9 +65,20 @@ if [[ "${SKIP_DEPS_CHECK:-}" != "true" ]]; then
   REDIS_HOST="${AIO_LIFE_REDIS_HOST:-127.0.0.1}"
   REDIS_PORT="${AIO_LIFE_REDIS_PORT:-6379}"
 
-  echo ">>> 检查 MySQL / Redis 连通性"
+  echo ">>> 检查 MySQL / Redis / Neo4j 连通性"
   wait_port "$DB_HOST" "$DB_PORT" "MySQL"
   wait_port "$REDIS_HOST" "$REDIS_PORT" "Redis"
+
+  # Neo4j 为可选模块：仅当开启时才校验，否则跳过
+  if [[ "${AIO_LIFE_NEO4J_ENABLED:-false}" == "true" ]]; then
+    NEO4J_URI="${AIO_LIFE_NEO4J_URI:-bolt://localhost:7687}"
+    NEO4J_ADDR="${NEO4J_URI##*://}"   # 兼容 bolt:// 前缀
+    NEO4J_HOST="${NEO4J_ADDR%%:*}"
+    NEO4J_PORT="${NEO4J_ADDR##*:}"
+    wait_port "$NEO4J_HOST" "$NEO4J_PORT" "Neo4j"
+  else
+    echo "    - Neo4j 未启用，跳过（设 AIO_LIFE_NEO4J_ENABLED=true 后启用）"
+  fi
 fi
 
 # ---------- 启动服务 ----------
