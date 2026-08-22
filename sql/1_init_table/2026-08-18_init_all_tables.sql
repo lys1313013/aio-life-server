@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS `login_log` (
     `id` bigint(20) NOT NULL AUTO_INCREMENT,
     `user_id` bigint(20) DEFAULT NULL COMMENT '用户ID',
     `username` varchar(50) NOT NULL COMMENT '用户名',
-    `password` varchar(255) DEFAULT NULL COMMENT '密码 密码错误时存储',
+    `password` varchar(255) DEFAULT NULL COMMENT '明文密码（仅登录失败时记录）——【有意保留，勿删勿改】：用于抓取弱密码/常见密码样本构建密码本日常排查。属安全审计功能，非缺陷。',
     `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `ip_address` varchar(45) NOT NULL COMMENT 'IP地址',
     PRIMARY KEY (`id`)

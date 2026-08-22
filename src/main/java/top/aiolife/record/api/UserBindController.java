@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.util.RedisUtil;
 
 import java.util.List;
 
@@ -18,6 +19,18 @@ public class UserBindController {
 
     @Autowired
     private IUserBindService userBindService;
+
+    @Autowired
+    private RedisUtil redisUtil;
+
+    /**
+     * github 绑定变更后失效 Redis 中缓存的「是否展示 GitHub 卡片」决策，使首页判断立即生效
+     */
+    private void evictGithubVisibleCache(long userId, String platform) {
+        if ("github".equals(platform)) {
+            redisUtil.delete("github:visible:" + userId);
+        }
+    }
 
     /**
      * 获取当前用户的绑定列表
@@ -50,7 +63,9 @@ public class UserBindController {
         }
 
         userBindEntity.fillCreateCommonField(userId);
-        return ApiResponse.success(userBindService.save(userBindEntity));
+        boolean success = userBindService.save(userBindEntity);
+        evictGithubVisibleCache(userId, userBindEntity.getPlatform());
+        return ApiResponse.success(success);
     }
 
     /**
@@ -77,7 +92,9 @@ public class UserBindController {
             userBindEntity.setAccessToken(exist.getAccessToken());
         }
         
-        return ApiResponse.success(userBindService.updateById(userBindEntity));
+        boolean success = userBindService.updateById(userBindEntity);
+        evictGithubVisibleCache(userId, exist.getPlatform());
+        return ApiResponse.success(success);
     }
 
     /**
@@ -90,6 +107,8 @@ public class UserBindController {
         if (entity == null || !entity.getUserId().equals(userId)) {
             return ApiResponse.error("无权操作或记录不存在");
         }
-        return ApiResponse.success(userBindService.removeById(id));
+        boolean success = userBindService.removeById(id);
+        evictGithubVisibleCache(userId, entity.getPlatform());
+        return ApiResponse.success(success);
     }
 }

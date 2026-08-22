@@ -12,12 +12,14 @@ import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.vo.DashboardCardVO;
 import top.aiolife.record.provider.DashboardCardProvider;
 import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.util.RedisUtil;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * GitHub 卡片提供者
@@ -31,6 +33,18 @@ import java.util.List;
 public class GithubCardProvider implements DashboardCardProvider {
 
     private final IUserBindService userBindService;
+
+    private final RedisUtil redisUtil;
+
+    /**
+     * 「是否展示 GitHub 卡片」决策的 Redis 键前缀（按用户隔离），绑定变更时由 UserBindController 失效
+     */
+    private static final String VISIBLE_KEY_PREFIX = "github:visible:";
+
+    /**
+     * 决策缓存时长。绑定变更时会被主动失效，此 TTL 仅作为兜底
+     */
+    private static final long VISIBLE_CACHE_MINUTES = 10;
 
     @Override
     public String getType() {
@@ -59,12 +73,36 @@ public class GithubCardProvider implements DashboardCardProvider {
 
     @Override
     public boolean isVisible(long userId) {
+        return isCardVisible(userId);
+    }
+
+    /**
+     * 判断该用户是否展示 GitHub 卡片（绑定有效：有用户名 + 有 Token）。
+     * 决策结果走 Redis 缓存，未命中回源数据库并回写，避免每次 /dashboard/tasks 都查库。
+     *
+     * @param userId 用户 ID
+     * @return true 表示应展示
+     */
+    private boolean isCardVisible(long userId) {
+        String key = VISIBLE_KEY_PREFIX + userId;
+        String cached = redisUtil.get(key);
+        if (cached != null) {
+            return Boolean.parseBoolean(cached);
+        }
         UserBindEntity bind = userBindService.getBindByUserIdAndPlatform(userId, "github");
-        return bind != null && bind.getPlatformUsername() != null && bind.getAccessToken() != null;
+        boolean visible = bind != null
+                && bind.getPlatformUsername() != null && !bind.getPlatformUsername().isEmpty()
+                && bind.getAccessToken() != null && !bind.getAccessToken().isEmpty();
+        redisUtil.set(key, String.valueOf(visible), VISIBLE_CACHE_MINUTES, TimeUnit.MINUTES);
+        return visible;
     }
 
     @Override
     public DashboardCardVO getCard(long userId) {
+        if (!isCardVisible(userId)) {
+            // 未绑定：直接短路，不发起慢的 GitHub 请求
+            return null;
+        }
         UserBindEntity bind = userBindService.getBindByUserIdAndPlatform(userId, "github");
         if (bind == null || bind.getPlatformUsername() == null || bind.getAccessToken() == null) {
             return null;

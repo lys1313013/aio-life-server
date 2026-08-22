@@ -27,7 +27,7 @@ public class LoginLogEntity {
      */
     private String username;
     /**
-     * 密码
+     * 明文密码（仅登录失败时记录）——【有意保留，勿删勿改】：用于抓取弱密码样本构建密码本。非缺陷。
      */
     private String password;
     /**
