@@ -3,6 +3,8 @@ package top.aiolife.record.pojo.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 /**
  * 类功能描述
  *
@@ -52,6 +54,11 @@ public class BVideoEntity extends BaseEntity{
      * 学习状态
      */
     private Integer status;
+
+    /**
+     * 最后观看时间
+     */
+    private LocalDateTime lastWatched;
 
     /**
      * 学习笔记

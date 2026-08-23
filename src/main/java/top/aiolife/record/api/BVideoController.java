@@ -200,6 +200,7 @@ public class BVideoController {
             LambdaUpdateWrapper<BVideoEntity> updateWrapper = new LambdaUpdateWrapper<>();
             updateWrapper.set(BVideoEntity::getCurrentEpisode, entity.getCurrentEpisode());
             updateWrapper.set(BVideoEntity::getWatchedDuration, entity.getWatchedDuration());
+            updateWrapper.set(BVideoEntity::getLastWatched, LocalDateTime.now());
             updateWrapper.set(BVideoEntity::getUpdateTime, LocalDateTime.now());
             updateWrapper.set(BVideoEntity::getUpdateUser, userId);
             updateWrapper.eq(BVideoEntity::getId, exist.getId());
@@ -210,6 +211,7 @@ public class BVideoController {
             entity.setCreateTime(LocalDateTime.now());
             entity.setUpdateUser(userId);
             entity.setUpdateTime(LocalDateTime.now());
+            entity.setLastWatched(LocalDateTime.now());
             if (entity.getStatus() == null) {
                 entity.setStatus(StudyEnum.IN_PROGRESS.getValue());
             }
