@@ -1,7 +1,7 @@
 package top.aiolife.record.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import top.aiolife.record.pojo.entity.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.entity.UserDictDataEntity;
 
 import java.util.List;
 

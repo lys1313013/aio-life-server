@@ -13,7 +13,7 @@ import top.aiolife.core.util.SysUtil;
 import top.aiolife.record.mapper.IExpenseMapper;
 import top.aiolife.record.pojo.entity.ExpenseEntity;
 import top.aiolife.record.pojo.entity.SysDictDataEntity;
-import top.aiolife.record.pojo.entity.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.query.ExpenseQuery;
 import top.aiolife.record.pojo.req.CommonReq;
 import top.aiolife.record.pojo.vo.ExpStaByYearVO;

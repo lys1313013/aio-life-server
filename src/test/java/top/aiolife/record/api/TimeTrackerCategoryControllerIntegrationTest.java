@@ -2,7 +2,7 @@ package top.aiolife.record.api;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import top.aiolife.record.pojo.entity.entity.TimeTrackerCategoryEntity;
+import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.service.ITimeTrackerCategoryService;
 
 import static org.junit.jupiter.api.Assertions.*;

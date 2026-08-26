@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 import top.aiolife.record.mapper.UserDictDataMapper;
-import top.aiolife.record.pojo.entity.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.service.UserDictDataService;
 
 import java.util.*;

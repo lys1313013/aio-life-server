@@ -11,7 +11,7 @@ import top.aiolife.core.resq.PageResp;
 import top.aiolife.core.util.SysUtil;
 import top.aiolife.record.mapper.IIncomeMapper;
 import top.aiolife.record.pojo.entity.IncomeEntity;
-import top.aiolife.record.pojo.entity.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.query.IncomeQuery;
 import top.aiolife.record.pojo.vo.IncStaByYearVO;
 import top.aiolife.record.pojo.vo.IncStaticByYearVO;

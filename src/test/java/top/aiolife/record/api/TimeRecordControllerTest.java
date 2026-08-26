@@ -13,7 +13,7 @@ import org.apache.ibatis.builder.MapperBuilderAssistant;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
-import top.aiolife.record.pojo.entity.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
 import top.aiolife.record.service.IExerciseRecordService;
 import top.aiolife.record.service.ITimeRecordService;

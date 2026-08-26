@@ -5,7 +5,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.record.pojo.entity.entity.TimeTrackerCategoryEntity;
+import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.service.ITimeTrackerCategoryService;
 
 import java.util.List;

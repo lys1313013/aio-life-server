@@ -12,7 +12,7 @@ import top.aiolife.core.resq.PageResp;
 import top.aiolife.core.util.SysUtil;
 
 import top.aiolife.record.mapper.UserDictDataMapper;
-import top.aiolife.record.pojo.entity.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.service.UserDictDataService;
 
 import java.util.List;

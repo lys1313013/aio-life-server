@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import top.aiolife.record.enums.DictTypeEnum;
 import top.aiolife.record.mapper.IExerciseRecordMapper;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
-import top.aiolife.record.pojo.entity.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.vo.ExerciseDashboardDayVO;
 import top.aiolife.record.pojo.vo.ExerciseDashboardItemVO;
 import top.aiolife.record.pojo.vo.ExerciseDashboardSummaryVO;

@@ -8,7 +8,7 @@ import top.aiolife.record.api.TimeRecordController;
 import top.aiolife.record.api.TimeTrackerCategoryController;
 import top.aiolife.record.api.TaskController;
 import top.aiolife.record.api.TaskDetailController;
-import top.aiolife.record.pojo.entity.entity.TimeTrackerCategoryEntity;
+import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.pojo.req.ThoughtSaveReq;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;

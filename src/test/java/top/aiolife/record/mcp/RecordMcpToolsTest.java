@@ -18,7 +18,7 @@ import top.aiolife.record.mcp.vo.TimeTrackerCategoryMcpVO;
 import top.aiolife.record.pojo.entity.TaskDetailEntity;
 import top.aiolife.record.pojo.entity.TaskEntity;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
-import top.aiolife.record.pojo.entity.entity.TimeTrackerCategoryEntity;
+import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.pojo.req.ThoughtSaveReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;

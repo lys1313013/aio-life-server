@@ -1,8 +1,8 @@
 package top.aiolife.record.pojo.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import top.aiolife.record.pojo.entity.entity.UserDictDataEntity;
-import top.aiolife.record.pojo.entity.entity.UserDictTypeEntity;
+import top.aiolife.record.pojo.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.entity.UserDictTypeEntity;
 import lombok.Getter;
 import lombok.Setter;
 

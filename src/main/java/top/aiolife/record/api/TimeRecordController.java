@@ -13,7 +13,7 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
-import top.aiolife.record.pojo.entity.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.enums.RelateTypeEnum;
 import top.aiolife.record.enums.DictTypeEnum;
 import top.aiolife.record.pojo.query.TimeWeekQuery;
@@ -113,8 +113,8 @@ public class TimeRecordController {
         if (!categoryIds.isEmpty()) {
             categoryNameMap = timeTrackerCategoryService.listByIds(categoryIds).stream()
                     .collect(Collectors.toMap(
-                            top.aiolife.record.pojo.entity.entity.TimeTrackerCategoryEntity::getId,
-                            top.aiolife.record.pojo.entity.entity.TimeTrackerCategoryEntity::getName
+                            top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity::getId,
+                            top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity::getName
                     ));
         }
 
