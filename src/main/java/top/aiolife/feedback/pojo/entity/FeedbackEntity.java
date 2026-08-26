@@ -3,7 +3,7 @@ package top.aiolife.feedback.pojo.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Getter;
 import lombok.Setter;
-import top.aiolife.record.pojo.entity.BaseEntity;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
  * 用户反馈主表

@@ -3,7 +3,7 @@ package top.aiolife.system.pojo.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import top.aiolife.record.pojo.entity.BaseEntity;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 /** 用户自定义字典类型。 */
 @Data

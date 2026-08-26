@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import top.aiolife.record.pojo.entity.BaseEntity;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

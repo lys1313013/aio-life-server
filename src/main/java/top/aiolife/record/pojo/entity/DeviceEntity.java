@@ -1,5 +1,7 @@
 package top.aiolife.record.pojo.entity;
 
+import top.aiolife.core.pojo.entity.BaseEntity;
+
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;

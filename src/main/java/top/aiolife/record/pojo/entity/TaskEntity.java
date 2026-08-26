@@ -1,5 +1,7 @@
 package top.aiolife.record.pojo.entity;
 
+import top.aiolife.core.pojo.entity.BaseEntity;
+
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

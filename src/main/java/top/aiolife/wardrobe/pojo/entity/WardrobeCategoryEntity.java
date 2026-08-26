@@ -3,7 +3,7 @@ package top.aiolife.wardrobe.pojo.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import top.aiolife.record.pojo.entity.BaseEntity;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
  * 衣柜分类实体
