@@ -23,7 +23,7 @@ public interface LLMKeyService {
      * @param id 配置ID
      * @param userId 用户ID
      */
-    void deleteLLMKey(String id, Long userId);
+    void deleteLLMKey(Long id, Long userId);
 
     /**
      * 根据用户ID获取大模型配置列表
@@ -44,5 +44,5 @@ public interface LLMKeyService {
      * @param id 配置ID
      * @param userId 用户ID
      */
-    void setDefaultLLMKey(String id, Long userId);
+    void setDefaultLLMKey(Long id, Long userId);
 }

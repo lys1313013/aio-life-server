@@ -46,7 +46,7 @@ public class LLMKeyController {
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> deleteLLMKey(@PathVariable String id) {
+    public ApiResponse<Void> deleteLLMKey(@PathVariable Long id) {
         try {
             long userId = StpUtil.getLoginIdAsLong();
             llmKeyService.deleteLLMKey(id, userId);
@@ -82,7 +82,7 @@ public class LLMKeyController {
     }
 
     @PutMapping("/default/{id}")
-    public ApiResponse<Void> setDefaultLLMKey(@PathVariable String id) {
+    public ApiResponse<Void> setDefaultLLMKey(@PathVariable Long id) {
         try {
             long userId = StpUtil.getLoginIdAsLong();
             llmKeyService.setDefaultLLMKey(id, userId);

@@ -22,11 +22,7 @@ public class LLMKeyServiceImpl implements LLMKeyService {
     @Override
     public void saveLLMKey(LLMKeyEntity llmKeyEntity) {
         try {
-            llmKeyEntity.setCreateUser(llmKeyEntity.getUserId());
-            llmKeyEntity.setUpdateUser(llmKeyEntity.getUserId());
-            llmKeyEntity.setCreateTime(LocalDateTime.now());
-            llmKeyEntity.setUpdateTime(LocalDateTime.now());
-            llmKeyEntity.setIsDeleted(0);
+            llmKeyEntity.fillCreateCommonField(llmKeyEntity.getUserId());
 
             // 如果设置为默认，先将其他配置设为非默认
             if (llmKeyEntity.getIsDefault() != null && llmKeyEntity.getIsDefault() == 1) {
@@ -53,8 +49,7 @@ public class LLMKeyServiceImpl implements LLMKeyService {
             throw new RuntimeException("LLM Key 不存在或无权限操作");
         }
         try {
-            llmKeyEntity.setUpdateUser(userId);
-            llmKeyEntity.setUpdateTime(LocalDateTime.now());
+            llmKeyEntity.fillUpdateCommonField(userId);
             // 防止请求方篡改记录归属
             llmKeyEntity.setUserId(null);
 
@@ -76,7 +71,7 @@ public class LLMKeyServiceImpl implements LLMKeyService {
     }
 
     @Override
-    public void deleteLLMKey(String id, Long userId) {
+    public void deleteLLMKey(Long id, Long userId) {
         try {
             LambdaQueryWrapper<LLMKeyEntity> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(LLMKeyEntity::getId, id)
@@ -109,7 +104,7 @@ public class LLMKeyServiceImpl implements LLMKeyService {
     }
 
     @Override
-    public void setDefaultLLMKey(String id, Long userId) {
+    public void setDefaultLLMKey(Long id, Long userId) {
         LLMKeyEntity existing = llmKeyMapper.selectById(id);
         if (existing == null || !userId.equals(existing.getUserId())) {
             throw new RuntimeException("LLM Key 不存在或无权限操作");
@@ -127,8 +122,7 @@ public class LLMKeyServiceImpl implements LLMKeyService {
             LLMKeyEntity llmKeyEntity = new LLMKeyEntity();
             llmKeyEntity.setId(id);
             llmKeyEntity.setIsDefault(1);
-            llmKeyEntity.setUpdateUser(userId);
-            llmKeyEntity.setUpdateTime(LocalDateTime.now());
+            llmKeyEntity.fillUpdateCommonField(userId);
             llmKeyMapper.updateById(llmKeyEntity);
         } catch (Exception e) {
             log.error("Failed to set default LLM key: {}", e.getMessage(), e);
