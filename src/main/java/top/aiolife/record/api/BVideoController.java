@@ -80,8 +80,7 @@ public class BVideoController {
         }
 
         entity.setUserId(userId);
-        entity.setUpdateUser(userId);
-        entity.setUpdateTime(LocalDateTime.now());
+        entity.fillCreateCommonField(userId);
         if (entity.getStatus() == null) {
             entity.setStatus(StudyEnum.IN_PROGRESS.getValue());
         }

@@ -85,8 +85,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         MovieEntity entity = new MovieEntity();
         BeanUtil.copyProperties(req, entity);
         entity.setUserId(userId);
-        entity.setCreateUser(userId);
-        entity.setUpdateUser(userId);
+        entity.fillCreateCommonField(userId);
 
         if (entity.getStatus() != null && entity.getStatus() == 1 && entity.getStartTime() == null) {
             entity.setStartTime(LocalDateTime.now());
@@ -108,7 +107,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         }
 
         BeanUtil.copyProperties(req, entity);
-        entity.setUpdateUser(userId);
+        entity.fillUpdateCommonField(userId);
 
         if (entity.getStatus() != null && entity.getStatus() == 1 && entity.getStartTime() == null) {
             entity.setStartTime(LocalDateTime.now());

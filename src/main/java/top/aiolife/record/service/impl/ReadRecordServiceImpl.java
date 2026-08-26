@@ -81,8 +81,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         ReadRecordEntity entity = new ReadRecordEntity();
         BeanUtil.copyProperties(req, entity);
         entity.setUserId(userId);
-        entity.setCreateUser(userId);
-        entity.setUpdateUser(userId);
+        entity.fillCreateCommonField(userId);
         
         if (entity.getStatus() != null && entity.getStatus() == 1 && entity.getStartTime() == null) {
             entity.setStartTime(LocalDateTime.now());
@@ -104,7 +103,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         }
         
         BeanUtil.copyProperties(req, entity);
-        entity.setUpdateUser(userId);
+        entity.fillUpdateCommonField(userId);
         
         if (entity.getStatus() != null && entity.getStatus() == 1 && entity.getStartTime() == null) {
             entity.setStartTime(LocalDateTime.now());
