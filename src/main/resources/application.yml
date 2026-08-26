@@ -106,7 +106,8 @@ sa-token:
   active-timeout: 604800 # 临时有效期 （一周），指定时间内无操作则失效，有操作自动续期
   is-concurrent: true # 是否允许同一账号并发登录 (为true时允许一起登录, 为false时新登录挤掉旧登录)
   is-share: false # 在多人登录同一账号时，是否共用一个token (为true时所有登录共用一个token, 为false时每次登录新建token)
-  jwt-secret-key: lys
+  # JWT 签名密钥：生产环境必须通过 AIO_LIFE_JWT_SECRET 环境变量覆盖；默认值仅供本地开发
+  jwt-secret-key: ${AIO_LIFE_JWT_SECRET:aio_life}
 
 mybatis-plus:
   global-config:
