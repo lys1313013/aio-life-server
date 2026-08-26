@@ -26,12 +26,13 @@ class LLMKeyServiceImplTest {
     private LLMKeyServiceImpl llmKeyService;
 
     private LLMKeyEntity testKey;
+    private Long testKeyId = 1L;
     private Long testUserId = 1L;
 
     @BeforeEach
     void setUp() {
         testKey = new LLMKeyEntity();
-        testKey.setId("test-id");
+        testKey.setId(testKeyId);
         testKey.setUserId(testUserId);
         testKey.setModelName("gpt-4");
         testKey.setApiKey("test-api-key");
@@ -53,7 +54,7 @@ class LLMKeyServiceImplTest {
 
     @Test
     void testUpdateLLMKey() {
-        when(llmKeyMapper.selectById("test-id")).thenReturn(testKey);
+        when(llmKeyMapper.selectById(testKeyId)).thenReturn(testKey);
         when(llmKeyMapper.updateById(any(LLMKeyEntity.class))).thenReturn(1);
 
         llmKeyService.updateLLMKey(testKey);
@@ -65,9 +66,9 @@ class LLMKeyServiceImplTest {
     @Test
     void testUpdateLLMKeyWithoutPermission() {
         LLMKeyEntity otherUserKey = new LLMKeyEntity();
-        otherUserKey.setId("test-id");
+        otherUserKey.setId(testKeyId);
         otherUserKey.setUserId(999L);
-        when(llmKeyMapper.selectById("test-id")).thenReturn(otherUserKey);
+        when(llmKeyMapper.selectById(testKeyId)).thenReturn(otherUserKey);
 
         assertThrows(RuntimeException.class, () -> llmKeyService.updateLLMKey(testKey));
 
@@ -78,7 +79,7 @@ class LLMKeyServiceImplTest {
     void testDeleteLLMKey() {
         when(llmKeyMapper.delete(any())).thenReturn(1);
 
-        llmKeyService.deleteLLMKey("test-id", testUserId);
+        llmKeyService.deleteLLMKey(testKeyId, testUserId);
 
         verify(llmKeyMapper, times(1)).delete(any());
     }
