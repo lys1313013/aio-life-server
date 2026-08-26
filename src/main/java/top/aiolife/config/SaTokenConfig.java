@@ -84,8 +84,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                         "/auth/resetPassword",
                         "/actuator/**",
                         "/file/preview/**",
-                        "/file/download/**",
-                        "/file/migrate/run");
+                        "/file/download/**");
 
         // 二级锁拦截器，在 Sa-Token 校验通过后执行
         registry.addInterceptor(secondaryLockInterceptor)
@@ -97,8 +96,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                         "/auth/send-reset-secondary-password-code", "/auth/reset-secondary-password",
                         "/actuator/**",
                         "/file/preview/**",
-                        "/file/download/**",
-                        "/file/migrate/run");
+                        "/file/download/**");
 
         // 记录最后活跃时间（仅 Token 请求），需在 Sa-Token 校验通过后执行
         registry.addInterceptor(userLastActiveInterceptor)
@@ -107,7 +105,6 @@ public class SaTokenConfig implements WebMvcConfigurer {
                         "/auth/resetPassword",
                         "/actuator/**",
                         "/file/preview/**",
-                        "/file/download/**",
-                        "/file/migrate/run");
+                        "/file/download/**");
     }
 }

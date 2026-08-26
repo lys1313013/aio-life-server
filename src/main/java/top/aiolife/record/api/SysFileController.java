@@ -1,6 +1,5 @@
 package top.aiolife.record.api;
 
-import cn.dev33.satoken.stp.StpUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +16,7 @@ import top.aiolife.core.util.MinioUtil;
 import top.aiolife.record.enums.FileBizType;
 import top.aiolife.record.pojo.entity.FileEntity;
 import top.aiolife.record.pojo.vo.FileVO;
+import top.aiolife.record.service.FilePreviewGuard;
 import top.aiolife.record.service.IFileService;
 
 import java.io.InputStream;
@@ -36,6 +36,7 @@ public class SysFileController {
     private final IFileService fileService;
     private final MinioUtil minioUtil;
     private final top.aiolife.config.MinioConfig minioConfig;
+    private final FilePreviewGuard filePreviewGuard;
 
     /**
      * 统一文件上传入口。
@@ -65,43 +66,16 @@ public class SysFileController {
             return;
         }
 
-        // 权限校验
-        if (fileEntity.getIsPublic() != null && fileEntity.getIsPublic() == 0) {
-            long userId = -1;
-            List<String> roles = null;
-
-            if (StpUtil.isLogin()) {
-                userId = StpUtil.getLoginIdAsLong();
-                roles = StpUtil.getRoleList();
-            } else {
-                // 处理 img 标签通过 Cookie 请求时，token 没有 Bearer 前缀导致 StpUtil.isLogin() 为 false 的情况
-                String tokenName = StpUtil.getTokenName();
-                String token = cn.dev33.satoken.context.SaHolder.getRequest().getCookieValue(tokenName);
-                if (token == null) {
-                    token = cn.dev33.satoken.context.SaHolder.getRequest().getParam(tokenName);
-                }
-                if (token != null) {
-                    if (token.startsWith("Bearer ")) {
-                        token = token.substring(7);
-                    }
-                    Object loginIdObj = StpUtil.getLoginIdByToken(token);
-                    if (loginIdObj != null) {
-                        userId = Long.parseLong(loginIdObj.toString());
-                        roles = StpUtil.getRoleList(loginIdObj);
-                    }
-                }
-            }
-
-            if (userId == -1) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                return;
-            }
-
-            boolean isAdmin = roles != null && roles.contains("admin");
-            if (!isAdmin && fileEntity.getCreateUser() != null && !fileEntity.getCreateUser().equals(userId)) {
-                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                return;
-            }
+        // 权限校验（未登录 401，非属主/管理员 403）
+        Long userId = filePreviewGuard.resolveLoginUserId();
+        FilePreviewGuard.AccessDecision decision = filePreviewGuard.check(fileEntity, userId);
+        if (decision == FilePreviewGuard.AccessDecision.UNAUTHORIZED) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+        if (decision == FilePreviewGuard.AccessDecision.FORBIDDEN) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            return;
         }
 
         // 从 MinIO 拿取文件
