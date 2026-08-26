@@ -329,6 +329,40 @@ public class UserServiceImpl implements IUserService {
         mailService.sendSimpleEmail(email, "重置密码验证码", "您的验证码是：" + code + "，有效期5分钟。", "reset_pwd", ip);
     }
 
+    /** 验证码最大错误尝试次数，超过后验证码作废，需重新发送 */
+    private static final int EMAIL_CODE_MAX_ATTEMPTS = 5;
+
+    /**
+     * 校验邮箱验证码。校验失败计入尝试次数（与验证码同生命周期），
+     * 达到上限后作废验证码，防止对 6 位数字验证码的爆破。
+     * 校验成功立即删除验证码（一次性使用）。
+     *
+     * @param codeKey   验证码在 Redis 中的完整 key
+     * @param inputCode 用户输入的验证码
+     */
+    private void verifyEmailCode(String codeKey, String inputCode) {
+        String code = redisUtil.get(codeKey);
+        if (code == null) {
+            throw new RuntimeException("验证码错误或已过期");
+        }
+        if (code.equals(inputCode)) {
+            redisUtil.delete(codeKey);
+            redisUtil.delete(codeKey + ":attempts");
+            return;
+        }
+        String attemptKey = codeKey + ":attempts";
+        Long attempts = redisUtil.increment(attemptKey, 1);
+        if (attempts != null && attempts == 1) {
+            redisUtil.expire(attemptKey, 5, TimeUnit.MINUTES);
+        }
+        if (attempts != null && attempts >= EMAIL_CODE_MAX_ATTEMPTS) {
+            redisUtil.delete(codeKey);
+            redisUtil.delete(attemptKey);
+            throw new RuntimeException("验证码错误次数过多，已失效，请重新获取");
+        }
+        throw new RuntimeException("验证码错误或已过期");
+    }
+
     /**
      * 检查频率限制
      */
@@ -397,11 +431,8 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public void resetPassword(ResetPasswordReq resetPasswordReq) {
-        // 校验验证码
-        String code = redisUtil.get("reset:code:" + resetPasswordReq.getEmail());
-        if (code == null || !code.equals(resetPasswordReq.getCode())) {
-            throw new RuntimeException("验证码错误或已过期");
-        }
+        // 校验验证码（含尝试次数限制，成功即作废）
+        verifyEmailCode("reset:code:" + resetPasswordReq.getEmail(), resetPasswordReq.getCode());
 
         LambdaQueryWrapper<UserEntity> emailWrapper = new LambdaQueryWrapper<>();
         emailWrapper.eq(UserEntity::getEmail, resetPasswordReq.getEmail());
@@ -414,19 +445,12 @@ public class UserServiceImpl implements IUserService {
         userEntity.setPasswordSalt(salt);
         userEntity.setPassword(PasswordUtil.encryptPassword(resetPasswordReq.getPassword(), salt));
         userMapper.updateById(userEntity);
-
-        // 删除验证码
-        redisUtil.delete("reset:code:" + resetPasswordReq.getEmail());
     }
 
     @Override
     public void register(RegisterReq registerReq) {
-        // 校验验证码
-        String code = redisUtil.get("register:code:" + registerReq.getEmail());
-        if (code == null || !code.equals(registerReq.getCode())) {
-            throw new RuntimeException("验证码错误或已过期");
-        }
-        
+        // 校验验证码（含尝试次数限制，成功即作废）
+        verifyEmailCode("register:code:" + registerReq.getEmail(), registerReq.getCode());
         // 校验用户名是否已存在
         LambdaQueryWrapper<UserEntity> usernameWrapper = new LambdaQueryWrapper<>();
         usernameWrapper.eq(UserEntity::getUsername, registerReq.getUsername());
@@ -453,9 +477,6 @@ public class UserServiceImpl implements IUserService {
         userEntity.setPassword(PasswordUtil.encryptPassword(userEntity.getPassword(), salt));
         
         userMapper.insert(userEntity);
-        
-        // 删除验证码
-        redisUtil.delete("register:code:" + registerReq.getEmail());
     }
 
     @Override
@@ -616,16 +637,11 @@ public class UserServiceImpl implements IUserService {
             throw new RuntimeException("未绑定邮箱");
         }
 
-        String cacheCode = redisUtil.get("secondary:reset:code:" + email);
-        if (cacheCode == null || !cacheCode.equals(code)) {
-            throw new RuntimeException("验证码错误或已过期");
-        }
+        verifyEmailCode("secondary:reset:code:" + email, code);
 
         String salt = PasswordUtil.getSalt();
         user.setSecondaryPasswordSalt(salt);
         user.setSecondaryPassword(PasswordUtil.encryptPassword(password, salt));
         userMapper.updateById(user);
-
-        redisUtil.delete("secondary:reset:code:" + email);
     }
 }
