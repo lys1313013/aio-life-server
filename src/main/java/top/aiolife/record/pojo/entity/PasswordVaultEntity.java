@@ -39,22 +39,23 @@ public class PasswordVaultEntity extends BaseEntity {
     private String category;
 
     /**
-     * 账号
+     * 账号（明文存储，便于列表展示）
      */
     private String username;
 
     /**
-     * 密码（SM4加密存储）
+     * 密码密文。由前端使用 SM4-GCM 加密后上传，密钥由用户主密码经 PBKDF2 派生；
+     * 后端仅透传存储，不接触明文与密钥，不保证也无法提供机密性
      */
     private String password;
 
     /**
-     * PBKDF2盐值，每条记录唯一
+     * PBKDF2盐值，每条记录唯一（前端生成）
      */
     private String salt;
 
     /**
-     * 备注（SM4加密存储）
+     * 备注密文。加密方式同 password 字段
      */
     private String remark;
 

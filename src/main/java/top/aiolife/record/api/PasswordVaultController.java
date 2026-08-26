@@ -16,7 +16,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 密码库控制器
+ * 密码库控制器。
+ * 注意：加解密全部在前端完成（SM4-GCM，密钥由用户主密码经 PBKDF2 派生），
+ * 本控制器仅做密文的透传存取，后端不接触明文与密钥，不保证机密性
  *
  * @author Lys
  * @date 2026/04/28

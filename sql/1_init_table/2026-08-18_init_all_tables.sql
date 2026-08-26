@@ -59,10 +59,10 @@ CREATE TABLE IF NOT EXISTS `password_vault` (
     `title` varchar(100) NOT NULL COMMENT '标题，如 GitHub',
     `website` varchar(255) DEFAULT NULL COMMENT '网站/应用名',
     `category` varchar(50) DEFAULT '其他' COMMENT '分类：工作/生活/金融/社交/其他',
-    `username` text COMMENT '账号（SM4加密存储）',
-    `password` text COMMENT '密码（SM4加密存储）',
-    `salt` varchar(64) NOT NULL COMMENT 'PBKDF2盐值，每条记录唯一',
-    `remark` text COMMENT '备注（SM4加密存储）',
+    `username` text COMMENT '账号（明文存储，便于展示）',
+    `password` text COMMENT '密码密文（前端SM4-GCM加密，密钥由用户主密码PBKDF2派生，后端仅存密文）',
+    `salt` varchar(64) NOT NULL COMMENT 'PBKDF2盐值，每条记录唯一（前端生成）',
+    `remark` text COMMENT '备注密文（前端SM4-GCM加密，同password）',
     `favorite` boolean DEFAULT FALSE COMMENT '是否收藏',
     `is_deleted` tinyint DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
     `create_time` datetime DEFAULT NULL COMMENT '创建时间',
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS `password_vault` (
     `update_user` bigint DEFAULT NULL COMMENT '更新人ID',
     PRIMARY KEY (`id`),
     KEY `idx_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='密码库表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='密码库表（加解密在前端完成，后端仅透传存储密文）';
 
 CREATE TABLE IF NOT EXISTS `user_secondary_lock_menu` (
     `id` bigint NOT NULL COMMENT '主键（雪花）',
