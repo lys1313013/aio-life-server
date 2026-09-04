@@ -3,8 +3,10 @@ package top.aiolife.record.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.record.mapper.UserDictDataMapper;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.vo.UserDictDataSortVO;
 import top.aiolife.record.service.UserDictDataService;
 
 import java.util.*;
@@ -198,5 +200,65 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
         } else {
             throw new RuntimeException("无权删除此字典数据");
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<UserDictDataSortVO> reSortBaseDictData(String dictType, Long dragId, Long targetId, String position) {
+        if (dictType == null || dictType.isBlank()) {
+            throw new RuntimeException("字典类型不能为空");
+        }
+        if (dragId == null || targetId == null) {
+            throw new RuntimeException("拖拽记录和目标记录不能为空");
+        }
+        if (!"before".equals(position) && !"after".equals(position)) {
+            throw new RuntimeException("拖拽位置不正确");
+        }
+        if (dragId.equals(targetId)) {
+            return List.of();
+        }
+
+        List<UserDictDataEntity> dictDataList = this.list(
+                new LambdaQueryWrapper<UserDictDataEntity>()
+                        .eq(UserDictDataEntity::getUserId, 0L)
+                        .eq(UserDictDataEntity::getDictType, dictType)
+                        .orderByAsc(UserDictDataEntity::getDictSort, UserDictDataEntity::getId)
+                        .last("FOR UPDATE"));
+
+        UserDictDataEntity draggedItem = dictDataList.stream()
+                .filter(item -> dragId.equals(item.getId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("被拖拽的字典数据不存在"));
+        UserDictDataEntity targetItem = dictDataList.stream()
+                .filter(item -> targetId.equals(item.getId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("目标字典数据不存在"));
+
+        dictDataList.remove(draggedItem);
+        int targetIndex = dictDataList.indexOf(targetItem);
+        int insertIndex = targetIndex + ("after".equals(position) ? 1 : 0);
+        dictDataList.add(insertIndex, draggedItem);
+
+        List<UserDictDataEntity> updates = new ArrayList<>();
+        for (int index = 0; index < dictDataList.size(); index++) {
+            UserDictDataEntity item = dictDataList.get(index);
+            int nextSort = index * 10;
+            if (!Objects.equals(item.getDictSort(), nextSort)) {
+                UserDictDataEntity update = new UserDictDataEntity();
+                update.setId(item.getId());
+                update.setDictSort(nextSort);
+                update.fillUpdateCommonField(0L);
+                updates.add(update);
+            }
+            item.setDictSort(nextSort);
+        }
+
+        if (!updates.isEmpty() && !this.updateBatchById(updates)) {
+            throw new RuntimeException("字典排序更新失败");
+        }
+
+        return dictDataList.stream()
+                .map(item -> new UserDictDataSortVO(item.getId(), item.getDictSort()))
+                .toList();
     }
 }

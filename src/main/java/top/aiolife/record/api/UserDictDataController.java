@@ -13,6 +13,8 @@ import top.aiolife.core.util.SysUtil;
 
 import top.aiolife.record.mapper.UserDictDataMapper;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.req.UserDictDataReSortReq;
+import top.aiolife.record.pojo.vo.UserDictDataSortVO;
 import top.aiolife.record.service.UserDictDataService;
 
 import java.util.List;
@@ -119,7 +121,10 @@ public class UserDictDataController {
             lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getStatus()),
                     UserDictDataEntity::getStatus, condition.getStatus());
         }
-        lambdaQueryWrapper.orderByAsc(UserDictDataEntity::getDictType, UserDictDataEntity::getDictSort);
+        lambdaQueryWrapper.orderByAsc(
+                UserDictDataEntity::getDictType,
+                UserDictDataEntity::getDictSort,
+                UserDictDataEntity::getId);
 
         Page<UserDictDataEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<UserDictDataEntity> iPage = userDictDataMapper.selectPage(page, lambdaQueryWrapper);
@@ -148,6 +153,17 @@ public class UserDictDataController {
         entity.fillUpdateCommonField(0L);
         boolean b = userDictDataService.updateById(entity);
         return ApiResponse.success(b);
+    }
+
+    @cn.dev33.satoken.annotation.SaCheckRole("admin")
+    @PostMapping("/admin/reSort")
+    public ApiResponse<List<UserDictDataSortVO>> adminReSort(@RequestBody UserDictDataReSortReq req) {
+        List<UserDictDataSortVO> result = userDictDataService.reSortBaseDictData(
+                req.getDictType(),
+                req.getDragId(),
+                req.getTargetId(),
+                req.getPosition());
+        return ApiResponse.success(result);
     }
 
     @cn.dev33.satoken.annotation.SaCheckRole("admin")

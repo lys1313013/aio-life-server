@@ -2,6 +2,7 @@ package top.aiolife.record.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.vo.UserDictDataSortVO;
 
 import java.util.List;
 
@@ -38,4 +39,9 @@ public interface UserDictDataService extends IService<UserDictDataEntity> {
      * 删除/隐藏字典数据（支持隐藏基础值）
      */
     void deleteDictData(Long id, Long userId);
+
+    /**
+     * 重新排列基础字典数据。
+     */
+    List<UserDictDataSortVO> reSortBaseDictData(String dictType, Long dragId, Long targetId, String position);
 }
