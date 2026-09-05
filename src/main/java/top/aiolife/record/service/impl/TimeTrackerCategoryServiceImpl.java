@@ -1,6 +1,7 @@
 package top.aiolife.record.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 import top.aiolife.record.mapper.ITimeTrackerCategoryMapper;
@@ -136,6 +137,10 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         category.setUserId(userId);
         category.setTemplateId(null);
         category.setIsDeleted(0);
+        if (category.getSort() == null) {
+            category.setSort(nextSort(listUserVisibleCategories(userId)));
+        }
+        fillCategoryDefaults(category);
         
         this.save(category);
     }
@@ -156,21 +161,9 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
                     .last("LIMIT 1"));
 
             if (existingOverride != null) {
-                // 更新已有的覆盖记录
-                updates.setId(existingOverride.getId());
-                updates.setUserId(userId);
-                updates.setTemplateId(categoryId);
-                updates.setIsDeleted(0); // 确保未删除
-                this.updateById(updates);
+                updateOverrideRecord(existingOverride.getId(), target, updates, userId);
             } else {
-                // 插入新的覆盖记录
-                updates.setId(null);
-                updates.setUserId(userId);
-                updates.setCreateUser(userId);
-                updates.setUpdateUser(userId);
-                updates.setTemplateId(categoryId);
-                updates.setIsDeleted(0);
-                this.save(updates);
+                this.save(buildOverrideRecord(target, updates, userId));
             }
         } else if (target.getUserId().equals(userId)) {
             // 目标是当前用户的记录（私有分类或已有的覆盖记录），直接更新
@@ -179,6 +172,75 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         } else {
             throw new RuntimeException("无权修改此分类");
         }
+    }
+
+    /**
+     * 创建只包含变化字段的用户覆盖记录。
+     *
+     * <p>覆盖记录与公共分类共用一张表。sort、timeType 等覆盖字段必须允许为 null，
+     * 否则数据库默认值会被误认为用户显式覆盖值。</p>
+     */
+    private TimeTrackerCategoryEntity buildOverrideRecord(TimeTrackerCategoryEntity template,
+                                                           TimeTrackerCategoryEntity updates,
+                                                           Long userId) {
+        TimeTrackerCategoryEntity override = new TimeTrackerCategoryEntity();
+        override.setUserId(userId);
+        override.setTemplateId(template.getId());
+        override.setName(changedValue(updates.getName(), template.getName()));
+        override.setColor(changedValue(updates.getColor(), template.getColor()));
+        override.setIcon(changedValue(updates.getIcon(), template.getIcon()));
+        override.setDescription(changedValue(updates.getDescription(), template.getDescription()));
+        override.setIsTrackTime(changedValue(updates.getIsTrackTime(), template.getIsTrackTime()));
+        override.setSort(changedValue(updates.getSort(), template.getSort()));
+        override.setIsEnabled(changedValue(updates.getIsEnabled(), template.getIsEnabled()));
+        override.setTimeType(changedValue(updates.getTimeType(), template.getTimeType()));
+        override.setCreateUser(userId);
+        override.setUpdateUser(userId);
+        override.setIsDeleted(0);
+        return override;
+    }
+
+    /**
+     * 只更新请求中出现的字段；字段恢复成公共值时显式写 null，继续继承公共分类。
+     */
+    private void updateOverrideRecord(Long overrideId,
+                                      TimeTrackerCategoryEntity template,
+                                      TimeTrackerCategoryEntity updates,
+                                      Long userId) {
+        LambdaUpdateWrapper<TimeTrackerCategoryEntity> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(TimeTrackerCategoryEntity::getId, overrideId);
+
+        if (updates.getName() != null) {
+            wrapper.set(TimeTrackerCategoryEntity::getName, changedValue(updates.getName(), template.getName()));
+        }
+        if (updates.getColor() != null) {
+            wrapper.set(TimeTrackerCategoryEntity::getColor, changedValue(updates.getColor(), template.getColor()));
+        }
+        if (updates.getIcon() != null) {
+            wrapper.set(TimeTrackerCategoryEntity::getIcon, changedValue(updates.getIcon(), template.getIcon()));
+        }
+        if (updates.getDescription() != null) {
+            wrapper.set(TimeTrackerCategoryEntity::getDescription, changedValue(updates.getDescription(), template.getDescription()));
+        }
+        if (updates.getIsTrackTime() != null) {
+            wrapper.set(TimeTrackerCategoryEntity::getIsTrackTime, changedValue(updates.getIsTrackTime(), template.getIsTrackTime()));
+        }
+        if (updates.getSort() != null) {
+            wrapper.set(TimeTrackerCategoryEntity::getSort, changedValue(updates.getSort(), template.getSort()));
+        }
+        if (updates.getIsEnabled() != null) {
+            wrapper.set(TimeTrackerCategoryEntity::getIsEnabled, changedValue(updates.getIsEnabled(), template.getIsEnabled()));
+        }
+        if (updates.getTimeType() != null) {
+            wrapper.set(TimeTrackerCategoryEntity::getTimeType, changedValue(updates.getTimeType(), template.getTimeType()));
+        }
+        wrapper.set(TimeTrackerCategoryEntity::getUpdateUser, userId);
+        wrapper.set(TimeTrackerCategoryEntity::getIsDeleted, 0);
+        this.update(wrapper);
+    }
+
+    private <T> T changedValue(T value, T templateValue) {
+        return value != null && !Objects.equals(value, templateValue) ? value : null;
     }
 
     @Override
@@ -239,7 +301,32 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         category.setUserId(0L); // 强制为公共分类
         category.setTemplateId(null);
         category.setIsDeleted(0);
+        if (category.getSort() == null) {
+            category.setSort(nextSort(listAllCategories()));
+        }
+        fillCategoryDefaults(category);
         this.save(category);
+    }
+
+    private int nextSort(List<TimeTrackerCategoryEntity> categories) {
+        return categories.stream()
+                .map(TimeTrackerCategoryEntity::getSort)
+                .filter(Objects::nonNull)
+                .max(Integer::compareTo)
+                .map(maxSort -> maxSort + 10)
+                .orElse(0);
+    }
+
+    private void fillCategoryDefaults(TimeTrackerCategoryEntity category) {
+        if (category.getIsTrackTime() == null) {
+            category.setIsTrackTime(0);
+        }
+        if (category.getIsEnabled() == null) {
+            category.setIsEnabled(1);
+        }
+        if (category.getTimeType() == null) {
+            category.setTimeType(1);
+        }
     }
 
     @Override
