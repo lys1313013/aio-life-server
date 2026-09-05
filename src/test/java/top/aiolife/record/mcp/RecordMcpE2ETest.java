@@ -166,9 +166,27 @@ public class RecordMcpE2ETest {
         @Bean @Primary public TaskDetailController taskDetailController() { return new TaskDetailController(null, null); }
         @Bean @Primary public MovieController movieController() { return new MovieController(null); }
         @Bean @Primary public ReadRecordController readRecordController() { return new ReadRecordController(null); }
-        @Bean @Primary public ITaskService taskService() { 
+        @Bean @Primary public ITaskService taskService() {
             return (ITaskService) java.lang.reflect.Proxy.newProxyInstance(
-                ITaskService.class.getClassLoader(), new Class[]{ITaskService.class}, (p, m, a) -> null); 
+                ITaskService.class.getClassLoader(), new Class[]{ITaskService.class}, (p, m, a) -> null);
+        }
+
+        @Bean @Primary public top.aiolife.record.service.IAnniversaryRecordService anniversaryRecordService() {
+            return (top.aiolife.record.service.IAnniversaryRecordService) java.lang.reflect.Proxy.newProxyInstance(
+                top.aiolife.record.service.IAnniversaryRecordService.class.getClassLoader(),
+                new Class[]{top.aiolife.record.service.IAnniversaryRecordService.class}, (p, m, a) -> null);
+        }
+
+        @Bean @Primary public top.aiolife.record.service.IGoalService goalService() {
+            return (top.aiolife.record.service.IGoalService) java.lang.reflect.Proxy.newProxyInstance(
+                top.aiolife.record.service.IGoalService.class.getClassLoader(),
+                new Class[]{top.aiolife.record.service.IGoalService.class}, (p, m, a) -> null);
+        }
+
+        @Bean @Primary public top.aiolife.record.mapper.IBVideoMapper bVideoMapper() {
+            return (top.aiolife.record.mapper.IBVideoMapper) java.lang.reflect.Proxy.newProxyInstance(
+                top.aiolife.record.mapper.IBVideoMapper.class.getClassLoader(),
+                new Class[]{top.aiolife.record.mapper.IBVideoMapper.class}, (p, m, a) -> null);
         }
     }
 
