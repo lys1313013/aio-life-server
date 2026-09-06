@@ -22,6 +22,7 @@ import top.aiolife.record.pojo.vo.MovieVO;
 import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IFileService;
 import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.util.DoubanSubjectUrl;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -79,9 +80,9 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
     }
 
     @Override
-    public void saveRecord(MovieReq req) {
+    public Long saveRecord(MovieReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
-        ensureCoverUploaded(req);
+        ensureCoverUploaded(req, true);
         MovieEntity entity = new MovieEntity();
         BeanUtil.copyProperties(req, entity);
         entity.setUserId(userId);
@@ -95,12 +96,13 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         }
 
         this.save(entity);
+        return entity.getId();
     }
 
     @Override
     public void updateRecord(MovieReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
-        ensureCoverUploaded(req);
+        ensureCoverUploaded(req, true);
         MovieEntity entity = this.getById(req.getId());
         if (entity == null || !entity.getUserId().equals(userId)) {
             throw new RuntimeException("记录不存在或无权限");
@@ -130,6 +132,11 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
 
     @Override
     public MovieReq parseDouban(String url) {
+        DoubanSubjectUrl.Subject subject = DoubanSubjectUrl.parse(url);
+        if (subject.mediaType() != DoubanSubjectUrl.MediaType.MOVIE) {
+            throw new IllegalArgumentException("该地址不是豆瓣电影条目地址");
+        }
+        url = subject.canonicalUrl();
         MovieReq res = new MovieReq();
         res.setUrl(url);
         res.setType(1); // 默认为电影
@@ -146,7 +153,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
                 }
                 if (apiSuccess && StrUtil.isNotBlank(res.getTitle())) {
                     log.info("Douban Rexxar API parse success: {}", res.getTitle());
-                    ensureCoverUploaded(res);
+                    ensureCoverUploaded(res, false);
                     return res;
                 }
             }
@@ -180,7 +187,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             }
 
             // 4. 下载封面图并上传到 MinIO，解决豆瓣 CDN 防盗链问题
-            ensureCoverUploaded(res);
+            ensureCoverUploaded(res, false);
 
         } catch (Exception e) {
             log.error("解析豆瓣链接失败: {}", url, e);
@@ -188,6 +195,42 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         }
         
         return res;
+    }
+
+    @Override
+    public MovieEntity findByDoubanSubjectId(String subjectId) {
+        if (StrUtil.isBlank(subjectId) || !subjectId.chars().allMatch(Character::isDigit)) {
+            throw new IllegalArgumentException("豆瓣 subjectId 格式不正确");
+        }
+        Long userId = StpUtil.getLoginIdAsLong();
+        return this.lambdaQuery()
+                .eq(MovieEntity::getUserId, userId)
+                .like(MovieEntity::getUrl, "/subject/" + subjectId)
+                .orderByAsc(MovieEntity::getId)
+                .list()
+                .stream()
+                .filter(entity -> DoubanSubjectUrl.matches(
+                        entity.getUrl(), DoubanSubjectUrl.MediaType.MOVIE, subjectId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
+    public void updateCoverFileId(Long id, String fileId) {
+        if (id == null || StrUtil.isBlank(fileId)) {
+            throw new IllegalArgumentException("记录ID和封面文件ID不能为空");
+        }
+        Long userId = StpUtil.getLoginIdAsLong();
+        boolean updated = this.lambdaUpdate()
+                .eq(MovieEntity::getId, id)
+                .eq(MovieEntity::getUserId, userId)
+                .set(MovieEntity::getFileId, fileId)
+                .set(MovieEntity::getUpdateUser, userId)
+                .set(MovieEntity::getUpdateTime, LocalDateTime.now())
+                .update();
+        if (!updated) {
+            throw new IllegalArgumentException("观影记录不存在或无权限");
+        }
     }
 
     /**
@@ -210,33 +253,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
                 return false;
             }
 
-            if (root.has("title")) {
-                res.setTitle(root.get("title").asText());
-            }
-            if (root.has("pic")) {
-                if (root.get("pic").has("large")) {
-                    res.setCoverImgUrl(root.get("pic").get("large").asText());
-                } else if (root.get("pic").has("normal")) {
-                    res.setCoverImgUrl(root.get("pic").get("normal").asText());
-                }
-            } else if (root.has("cover") && root.get("cover").has("url")) {
-                res.setCoverImgUrl(root.get("cover").get("url").asText());
-            }
-            if (root.has("directors") && root.get("directors").isArray() && root.get("directors").size() > 0) {
-                res.setDirector(root.get("directors").get(0).get("name").asText());
-            }
-            
-            // 时长或集数
-            if (root.has("episodes_count") && root.get("episodes_count").asInt() > 0) {
-                res.setTotalProgress(root.get("episodes_count").asInt());
-                res.setType(2); // 电视剧
-            } else if (root.has("durations") && root.get("durations").isArray() && root.get("durations").size() > 0) {
-                String durationStr = root.get("durations").get(0).asText();
-                java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+)").matcher(durationStr);
-                if (m.find()) {
-                    res.setTotalProgress(Integer.parseInt(m.group(1)));
-                }
-            }
+            applyRexxarData(root, res);
             return true;
         } catch (Exception e) {
             log.warn("Douban Rexxar API parse failed for {}/{}: {}", type, id, e.getMessage());
@@ -244,7 +261,54 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         }
     }
 
-    private void ensureCoverUploaded(MovieReq res) {
+    /**
+     * 兼容豆瓣 Rexxar 不同版本的影视字段结构。
+     */
+    void applyRexxarData(com.fasterxml.jackson.databind.JsonNode root, MovieReq res) {
+        if (root.hasNonNull("title")) {
+            res.setTitle(root.get("title").asText());
+        }
+
+        com.fasterxml.jackson.databind.JsonNode pic = root.path("pic");
+        com.fasterxml.jackson.databind.JsonNode cover = root.path("cover");
+        String coverUrl = firstText(
+                pic.path("large"),
+                pic.path("normal"),
+                cover.path("image").path("large").path("url"),
+                cover.path("image").path("normal").path("url"),
+                root.path("cover_url"),
+                cover.path("url"));
+        if (StrUtil.isNotBlank(coverUrl)) {
+            res.setCoverImgUrl(coverUrl);
+        }
+
+        if (root.has("directors") && root.get("directors").isArray() && root.get("directors").size() > 0) {
+            res.setDirector(root.get("directors").get(0).get("name").asText());
+        }
+
+        // 时长或集数
+        if (root.has("episodes_count") && root.get("episodes_count").asInt() > 0) {
+            res.setTotalProgress(root.get("episodes_count").asInt());
+            res.setType(2); // 电视剧
+        } else if (root.has("durations") && root.get("durations").isArray() && root.get("durations").size() > 0) {
+            String durationStr = root.get("durations").get(0).asText();
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+)").matcher(durationStr);
+            if (m.find()) {
+                res.setTotalProgress(Integer.parseInt(m.group(1)));
+            }
+        }
+    }
+
+    private String firstText(com.fasterxml.jackson.databind.JsonNode... nodes) {
+        for (com.fasterxml.jackson.databind.JsonNode node : nodes) {
+            if (node != null && node.isTextual() && StrUtil.isNotBlank(node.asText())) {
+                return node.asText();
+            }
+        }
+        return null;
+    }
+
+    void ensureCoverUploaded(MovieReq res, boolean required) {
         if (StrUtil.isBlank(res.getCoverImgUrl()) || StrUtil.isNotBlank(res.getFileId())) {
             return;
         }
@@ -253,7 +317,10 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             res.setFileId(fileVO.getId());
             log.info("封面图已上传至 MinIO: fileId={}", fileVO.getId());
         } catch (Exception e) {
-            log.warn("封面图上传 MinIO 失败，保留原始 URL: {}", res.getCoverImgUrl(), e);
+            if (required) {
+                throw new IllegalStateException("封面图上传失败，请确认 MinIO 服务可用后重试", e);
+            }
+            log.warn("封面图上传 MinIO 失败，解析结果暂时保留原始 URL: {}", res.getCoverImgUrl(), e);
         }
     }
 

@@ -17,6 +17,7 @@ import top.aiolife.record.pojo.vo.ReadRecordVO;
 import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.service.IFileService;
 import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.util.DoubanSubjectUrl;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -75,9 +76,9 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
     }
 
     @Override
-    public void saveRecord(ReadRecordReq req) {
+    public Long saveRecord(ReadRecordReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
-        ensureCoverUploaded(req);
+        ensureCoverUploaded(req, true);
         ReadRecordEntity entity = new ReadRecordEntity();
         BeanUtil.copyProperties(req, entity);
         entity.setUserId(userId);
@@ -91,12 +92,13 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         }
         
         this.save(entity);
+        return entity.getId();
     }
 
     @Override
     public void updateRecord(ReadRecordReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
-        ensureCoverUploaded(req);
+        ensureCoverUploaded(req, true);
         ReadRecordEntity entity = this.getById(req.getId());
         if (entity == null || !entity.getUserId().equals(userId)) {
             throw new RuntimeException("记录不存在或无权限");
@@ -126,6 +128,11 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
 
     @Override
     public ReadRecordReq parseDouban(String url) {
+        DoubanSubjectUrl.Subject subject = DoubanSubjectUrl.parse(url);
+        if (subject.mediaType() != DoubanSubjectUrl.MediaType.BOOK) {
+            throw new IllegalArgumentException("该地址不是豆瓣书籍条目地址");
+        }
+        url = subject.canonicalUrl();
         ReadRecordReq res = new ReadRecordReq();
         res.setUrl(url);
         res.setType(1); // 默认为书籍
@@ -178,8 +185,12 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
                 res.setCoverImgUrl(coverUrl);
             }
 
+            if (StrUtil.isBlank(res.getTitle())) {
+                throw new RuntimeException("豆瓣反爬限制或页面结构改变，解析失败，请手动填写");
+            }
+
             // 下载封面图并上传到 MinIO，解决豆瓣 CDN 防盗链问题
-            ensureCoverUploaded(res);
+            ensureCoverUploaded(res, false);
 
             // 获取作者
             Element authorElement = doc.selectFirst("meta[property=book:author]");
@@ -210,7 +221,43 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         return res;
     }
 
-    private void ensureCoverUploaded(ReadRecordReq res) {
+    @Override
+    public ReadRecordEntity findByDoubanSubjectId(String subjectId) {
+        if (StrUtil.isBlank(subjectId) || !subjectId.chars().allMatch(Character::isDigit)) {
+            throw new IllegalArgumentException("豆瓣 subjectId 格式不正确");
+        }
+        Long userId = StpUtil.getLoginIdAsLong();
+        return this.lambdaQuery()
+                .eq(ReadRecordEntity::getUserId, userId)
+                .like(ReadRecordEntity::getUrl, "/subject/" + subjectId)
+                .orderByAsc(ReadRecordEntity::getId)
+                .list()
+                .stream()
+                .filter(entity -> DoubanSubjectUrl.matches(
+                        entity.getUrl(), DoubanSubjectUrl.MediaType.BOOK, subjectId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
+    public void updateCoverFileId(Long id, String fileId) {
+        if (id == null || StrUtil.isBlank(fileId)) {
+            throw new IllegalArgumentException("记录ID和封面文件ID不能为空");
+        }
+        Long userId = StpUtil.getLoginIdAsLong();
+        boolean updated = this.lambdaUpdate()
+                .eq(ReadRecordEntity::getId, id)
+                .eq(ReadRecordEntity::getUserId, userId)
+                .set(ReadRecordEntity::getFileId, fileId)
+                .set(ReadRecordEntity::getUpdateUser, userId)
+                .set(ReadRecordEntity::getUpdateTime, LocalDateTime.now())
+                .update();
+        if (!updated) {
+            throw new IllegalArgumentException("阅读记录不存在或无权限");
+        }
+    }
+
+    private void ensureCoverUploaded(ReadRecordReq res, boolean required) {
         if (StrUtil.isBlank(res.getCoverImgUrl()) || StrUtil.isNotBlank(res.getFileId())) {
             return;
         }
@@ -219,7 +266,10 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
             res.setFileId(fileVO.getId());
             log.info("封面图已上传至 MinIO: fileId={}", fileVO.getId());
         } catch (Exception e) {
-            log.warn("封面图上传 MinIO 失败，保留原始 URL: {}", res.getCoverImgUrl(), e);
+            if (required) {
+                throw new IllegalStateException("封面图上传失败，请确认 MinIO 服务可用后重试", e);
+            }
+            log.warn("封面图上传 MinIO 失败，解析结果暂时保留原始 URL: {}", res.getCoverImgUrl(), e);
         }
     }
 

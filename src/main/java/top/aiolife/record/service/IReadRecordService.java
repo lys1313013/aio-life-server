@@ -10,13 +10,17 @@ import top.aiolife.record.pojo.vo.ReadRecordVO;
 public interface IReadRecordService extends IService<ReadRecordEntity> {
     Page<ReadRecordVO> pageList(ReadRecordQuery query);
 
-    void saveRecord(ReadRecordReq req);
+    Long saveRecord(ReadRecordReq req);
 
     void updateRecord(ReadRecordReq req);
 
     void deleteRecord(Long id);
 
     ReadRecordReq parseDouban(String url);
+
+    ReadRecordEntity findByDoubanSubjectId(String subjectId);
+
+    void updateCoverFileId(Long id, String fileId);
 
     java.util.List<ReadRecordVO> listActive();
 

@@ -11,13 +11,17 @@ public interface IMovieService extends IService<MovieEntity> {
 
     Page<MovieVO> pageList(MovieQuery query);
 
-    void saveRecord(MovieReq req);
+    Long saveRecord(MovieReq req);
 
     void updateRecord(MovieReq req);
 
     void deleteRecord(Long id);
 
     MovieReq parseDouban(String url);
+
+    MovieEntity findByDoubanSubjectId(String subjectId);
+
+    void updateCoverFileId(Long id, String fileId);
 
     java.util.List<MovieVO> listActive();
 
