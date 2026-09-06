@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import top.aiolife.record.api.BaseIntegrationTest;
 import top.aiolife.record.pojo.entity.ReadRecordEntity;
 import top.aiolife.record.pojo.req.ReadRecordReq;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.service.IReadRecordService;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,7 +26,7 @@ class ReadRecordServiceImplIntegrationTest extends BaseIntegrationTest {
         ReadRecordReq req = new ReadRecordReq();
         req.setTitle("测试书籍");
         req.setType(1);
-        req.setStatus(0);
+        req.setStatus(ProgressStatusEnum.NOT_STARTED);
 
         readRecordService.saveRecord(req);
 
@@ -46,7 +47,7 @@ class ReadRecordServiceImplIntegrationTest extends BaseIntegrationTest {
         ReadRecordReq saveReq = new ReadRecordReq();
         saveReq.setTitle("待更新书籍");
         saveReq.setType(1);
-        saveReq.setStatus(0);
+        saveReq.setStatus(ProgressStatusEnum.NOT_STARTED);
         readRecordService.saveRecord(saveReq);
 
         ReadRecordEntity saved = readRecordService.lambdaQuery()
@@ -59,7 +60,7 @@ class ReadRecordServiceImplIntegrationTest extends BaseIntegrationTest {
         updateReq.setId(saved.getId());
         updateReq.setTitle("已更新书籍");
         updateReq.setType(1);
-        updateReq.setStatus(1);
+        updateReq.setStatus(ProgressStatusEnum.IN_PROGRESS);
         readRecordService.updateRecord(updateReq);
 
         ReadRecordEntity updated = readRecordService.getById(saved.getId());

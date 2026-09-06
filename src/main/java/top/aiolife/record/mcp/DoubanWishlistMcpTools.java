@@ -10,6 +10,7 @@ import top.aiolife.record.pojo.entity.MovieEntity;
 import top.aiolife.record.pojo.entity.ReadRecordEntity;
 import top.aiolife.record.pojo.req.MovieReq;
 import top.aiolife.record.pojo.req.ReadRecordReq;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.util.DoubanSubjectUrl;
@@ -51,7 +52,7 @@ public class DoubanWishlistMcpTools {
         MovieReq parsed = movieService.parseDouban(subject.canonicalUrl());
         requireCoverFileId(parsed.getFileId(), "电影");
         parsed.setUrl(subject.canonicalUrl());
-        parsed.setStatus(0);
+        parsed.setStatus(ProgressStatusEnum.NOT_STARTED);
         if (parsed.getCurrentProgress() == null) {
             parsed.setCurrentProgress(0);
         }
@@ -82,7 +83,7 @@ public class DoubanWishlistMcpTools {
         ReadRecordReq parsed = readRecordService.parseDouban(subject.canonicalUrl());
         requireCoverFileId(parsed.getFileId(), "书籍");
         parsed.setUrl(subject.canonicalUrl());
-        parsed.setStatus(0);
+        parsed.setStatus(ProgressStatusEnum.NOT_STARTED);
         if (parsed.getCurrentProgress() == null) {
             parsed.setCurrentProgress(0);
         }
@@ -128,29 +129,27 @@ public class DoubanWishlistMcpTools {
         }
     }
 
-    private String movieStatus(Integer status) {
+    private String movieStatus(ProgressStatusEnum status) {
         if (status == null) {
             return null;
         }
         return switch (status) {
-            case 0 -> "想看";
-            case 1 -> "在看";
-            case 2 -> "看过";
-            case 3 -> "搁置";
-            default -> String.valueOf(status);
+            case NOT_STARTED -> "想看";
+            case IN_PROGRESS -> "在看";
+            case COMPLETED -> "看过";
+            case ON_HOLD -> "搁置";
         };
     }
 
-    private String bookStatus(Integer status) {
+    private String bookStatus(ProgressStatusEnum status) {
         if (status == null) {
             return null;
         }
         return switch (status) {
-            case 0 -> "想读";
-            case 1 -> "阅读中";
-            case 2 -> "已读完";
-            case 3 -> "搁置";
-            default -> String.valueOf(status);
+            case NOT_STARTED -> "想读";
+            case IN_PROGRESS -> "阅读中";
+            case COMPLETED -> "已读完";
+            case ON_HOLD -> "搁置";
         };
     }
 }

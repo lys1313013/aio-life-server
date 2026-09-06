@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 
 import java.time.LocalDateTime;
 
@@ -34,7 +35,7 @@ public class ReadRecordEntity extends BaseEntity {
     @TableField(exist = false)
     private String coverImgUrl;
 
-    private Integer status;
+    private ProgressStatusEnum status;
 
     private Integer totalProgress;
 

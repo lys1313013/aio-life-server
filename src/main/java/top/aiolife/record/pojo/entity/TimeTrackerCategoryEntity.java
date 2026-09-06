@@ -1,7 +1,5 @@
 package top.aiolife.record.pojo.entity;
 
-import com.baomidou.mybatisplus.annotation.FieldStrategy;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import top.aiolife.core.pojo.entity.BaseEntity;
@@ -42,17 +40,14 @@ public class TimeTrackerCategoryEntity extends BaseEntity {
     /**
      * 是否记录时间
      */
-    @TableField(insertStrategy = FieldStrategy.ALWAYS)
     private Integer isTrackTime;
     /**
      * 排序权重
      */
-    @TableField(insertStrategy = FieldStrategy.ALWAYS)
     private Integer sort;
     /**
      * 是否启用：1-启用，0-禁用
      */
-    @TableField(insertStrategy = FieldStrategy.ALWAYS)
     private Integer isEnabled;
     /**
      * 是否删除
@@ -61,6 +56,5 @@ public class TimeTrackerCategoryEntity extends BaseEntity {
     /**
      * 时间类型：1-必须时间，2-积极时间，3-消极时间
      */
-    @TableField(insertStrategy = FieldStrategy.ALWAYS)
     private Integer timeType;
 }

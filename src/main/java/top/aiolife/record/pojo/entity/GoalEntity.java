@@ -6,8 +6,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
-import top.aiolife.record.pojo.enums.GoalStatusEnum;
 import top.aiolife.record.pojo.enums.GoalTypeEnum;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 
 import java.time.LocalDateTime;
 
@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
  * @author Lys
  * @date 2026/03/30
  * @see GoalTypeEnum
- * @see GoalStatusEnum
+ * @see ProgressStatusEnum
  */
 @Data
 @TableName("goal")
@@ -59,11 +59,11 @@ public class GoalEntity {
     private String content;
 
     /**
-     * 目标状态：0=待开始，1=进行中，2=已完成，3=已放弃
+     * 目标状态：not_started/in_progress/completed/on_hold
      *
-     * @see GoalStatusEnum
+     * @see ProgressStatusEnum
      */
-    private Integer status;
+    private ProgressStatusEnum status;
 
     /**
      * 目标值（如：100本书）

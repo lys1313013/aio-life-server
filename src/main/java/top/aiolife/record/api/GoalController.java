@@ -9,6 +9,7 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.mapper.IGoalMapper;
 import top.aiolife.record.pojo.entity.GoalEntity;
 import top.aiolife.record.pojo.req.CommonReq;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.service.IGoalService;
 
 import java.time.LocalDateTime;
@@ -31,7 +32,7 @@ public class GoalController {
     @GetMapping
     public ApiResponse<List<GoalEntity>> queryGoals(
             @RequestParam(required = false) Integer type,
-            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String keyword) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<GoalEntity> queryWrapper = new LambdaQueryWrapper<>();
@@ -40,8 +41,8 @@ public class GoalController {
         if (type != null) {
             queryWrapper.eq(GoalEntity::getType, type);
         }
-        if (status != null) {
-            queryWrapper.eq(GoalEntity::getStatus, status);
+        if (status != null && !status.isBlank()) {
+            queryWrapper.eq(GoalEntity::getStatus, ProgressStatusEnum.fromCode(status));
         }
         if (keyword != null && !keyword.trim().isEmpty()) {
             queryWrapper.and(wrapper -> 

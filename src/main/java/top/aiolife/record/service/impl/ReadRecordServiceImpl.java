@@ -13,6 +13,7 @@ import top.aiolife.record.mapper.ReadRecordMapper;
 import top.aiolife.record.pojo.entity.ReadRecordEntity;
 import top.aiolife.record.pojo.query.ReadRecordQuery;
 import top.aiolife.record.pojo.req.ReadRecordReq;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.vo.ReadRecordVO;
 import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.service.IFileService;
@@ -49,7 +50,8 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         } else if (query.getStatus() != null) {
             wrapper.eq(ReadRecordEntity::getStatus, query.getStatus());
         } else if (Boolean.TRUE.equals(query.getActiveOnly())) {
-            wrapper.in(ReadRecordEntity::getStatus, 0, 1);
+            wrapper.in(ReadRecordEntity::getStatus,
+                    ProgressStatusEnum.NOT_STARTED, ProgressStatusEnum.IN_PROGRESS);
         }
         if (StrUtil.isNotBlank(query.getTitle())) {
             wrapper.and(condition -> condition
@@ -57,9 +59,8 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
                     .or()
                     .like(ReadRecordEntity::getAuthor, query.getTitle()));
         }
-        wrapper.orderByAsc(ReadRecordEntity::getStatus)
-               .orderByDesc(ReadRecordEntity::getFinishTime)
-               .orderByDesc(ReadRecordEntity::getCreateTime);
+        wrapper.last("ORDER BY FIELD(status, 'not_started', 'in_progress', 'completed', 'on_hold'), "
+                + "finish_time DESC, create_time DESC");
 
         Page<ReadRecordEntity> page = new Page<>(query.getCurrent() == null ? 1 : query.getCurrent(), query.getSize() == null ? 10 : query.getSize());
         Page<ReadRecordEntity> entityPage = this.page(page, wrapper);
@@ -86,10 +87,10 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         entity.setUserId(userId);
         entity.fillCreateCommonField(userId);
         
-        if (entity.getStatus() != null && entity.getStatus() == 1 && entity.getStartTime() == null) {
+        if (entity.getStatus() == ProgressStatusEnum.IN_PROGRESS && entity.getStartTime() == null) {
             entity.setStartTime(LocalDateTime.now());
         }
-        if (entity.getStatus() != null && entity.getStatus() == 2 && entity.getFinishTime() == null) {
+        if (entity.getStatus() == ProgressStatusEnum.COMPLETED && entity.getFinishTime() == null) {
             entity.setFinishTime(LocalDateTime.now());
         }
         
@@ -109,10 +110,10 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         BeanUtil.copyProperties(req, entity);
         entity.fillUpdateCommonField(userId);
         
-        if (entity.getStatus() != null && entity.getStatus() == 1 && entity.getStartTime() == null) {
+        if (entity.getStatus() == ProgressStatusEnum.IN_PROGRESS && entity.getStartTime() == null) {
             entity.setStartTime(LocalDateTime.now());
         }
-        if (entity.getStatus() != null && entity.getStatus() == 2 && entity.getFinishTime() == null) {
+        if (entity.getStatus() == ProgressStatusEnum.COMPLETED && entity.getFinishTime() == null) {
             entity.setFinishTime(LocalDateTime.now());
         }
         
@@ -280,7 +281,8 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         Long userId = cn.dev33.satoken.stp.StpUtil.getLoginIdAsLong();
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ReadRecordEntity> wrapper = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
         wrapper.eq(ReadRecordEntity::getUserId, userId);
-        wrapper.in(ReadRecordEntity::getStatus, 0, 1); // 想看, 在看
+        wrapper.in(ReadRecordEntity::getStatus,
+                ProgressStatusEnum.NOT_STARTED, ProgressStatusEnum.IN_PROGRESS); // 想看, 在看
         wrapper.orderByDesc(ReadRecordEntity::getUpdateTime);
         
         java.util.List<ReadRecordEntity> entities = this.list(wrapper);

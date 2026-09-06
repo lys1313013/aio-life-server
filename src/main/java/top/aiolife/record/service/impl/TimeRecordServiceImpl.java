@@ -50,15 +50,15 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
             log.info("Check relate status, type: {}, id: {}", entity.getRelateType(), entity.getRelateId());
             if (entity.getRelateType().equals(RelateTypeEnum.READ.getValue())) {
                 ReadRecordEntity readRecord = readRecordService.getById(entity.getRelateId());
-                if (readRecord != null && readRecord.getStatus() != null && readRecord.getStatus().equals(ProgressStatusEnum.NOT_STARTED.getCode())) {
-                    readRecord.setStatus(ProgressStatusEnum.IN_PROGRESS.getCode());
+                if (readRecord != null && readRecord.getStatus() == ProgressStatusEnum.NOT_STARTED) {
+                    readRecord.setStatus(ProgressStatusEnum.IN_PROGRESS);
                     log.info("Updating read record {} status from NOT_STARTED to IN_PROGRESS", readRecord.getId());
                     readRecordService.updateById(readRecord);
                 }
             } else if (entity.getRelateType().equals(RelateTypeEnum.MOVIE.getValue())) {
                 MovieEntity movie = movieService.getById(entity.getRelateId());
-                if (movie != null && movie.getStatus() != null && movie.getStatus().equals(ProgressStatusEnum.NOT_STARTED.getCode())) {
-                    movie.setStatus(ProgressStatusEnum.IN_PROGRESS.getCode());
+                if (movie != null && movie.getStatus() == ProgressStatusEnum.NOT_STARTED) {
+                    movie.setStatus(ProgressStatusEnum.IN_PROGRESS);
                     log.info("Updating movie {} status from NOT_STARTED to IN_PROGRESS", movie.getId());
                     movieService.updateById(movie);
                 }

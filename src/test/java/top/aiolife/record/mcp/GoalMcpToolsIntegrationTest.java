@@ -9,8 +9,8 @@ import top.aiolife.record.mcp.req.GoalQueryMcpReq;
 import top.aiolife.record.mcp.vo.GoalMcpVO;
 import top.aiolife.record.mcp.vo.GoalPageMcpVO;
 import top.aiolife.record.pojo.entity.GoalEntity;
-import top.aiolife.record.pojo.enums.GoalStatusEnum;
 import top.aiolife.record.pojo.enums.GoalTypeEnum;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 
 import java.time.LocalDateTime;
 
@@ -46,7 +46,7 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
                 .findFirst()
                 .orElseThrow();
         assertEquals(GoalTypeEnum.DAY.getDesc(), vo.getType());
-        assertEquals(GoalStatusEnum.PENDING.getDesc(), vo.getStatus());
+        assertEquals("待开始", vo.getStatus());
         assertEquals(0, vo.getTotalCount());
         assertEquals(0, vo.getCompletedCount());
     }
@@ -59,7 +59,7 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
         goalMapper.insert(createGoal(parentId, "MCP父目标"));
         GoalEntity child1 = createGoal(childId1, "MCP子目标1");
         child1.setParentId(parentId);
-        child1.setStatus(GoalStatusEnum.COMPLETED.getCode());
+        child1.setStatus(ProgressStatusEnum.COMPLETED);
         GoalEntity child2 = createGoal(childId2, "MCP子目标2");
         child2.setParentId(parentId);
         goalMapper.insert(child1);
@@ -82,7 +82,7 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
         Long goalId = System.currentTimeMillis() % 1000000 + 900000L;
         GoalEntity goal = createGoal(goalId, "MCP测试目标-进度");
         goal.setTargetValue(12);
-        goal.setStatus(GoalStatusEnum.IN_PROGRESS.getCode());
+        goal.setStatus(ProgressStatusEnum.IN_PROGRESS);
         goalMapper.insert(goal);
 
         GoalProgressUpdateMcpReq req = new GoalProgressUpdateMcpReq();
@@ -93,7 +93,7 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
         assertTrue(message.contains("进度已更新：7/12"));
         GoalEntity updated = goalMapper.selectById(goalId);
         assertEquals(7, updated.getCurrentValue());
-        assertEquals(GoalStatusEnum.IN_PROGRESS.getCode(), updated.getStatus());
+        assertEquals(ProgressStatusEnum.IN_PROGRESS, updated.getStatus());
         assertNull(updated.getCompletedAt());
     }
 
@@ -103,7 +103,7 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
         GoalEntity goal = createGoal(goalId, "MCP测试目标-完成");
         goal.setTargetValue(12);
         goal.setCurrentValue(7);
-        goal.setStatus(GoalStatusEnum.IN_PROGRESS.getCode());
+        goal.setStatus(ProgressStatusEnum.IN_PROGRESS);
         goalMapper.insert(goal);
 
         GoalProgressUpdateMcpReq req = new GoalProgressUpdateMcpReq();
@@ -113,7 +113,7 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
 
         assertTrue(message.contains("状态已变更为：已完成"));
         GoalEntity updated = goalMapper.selectById(goalId);
-        assertEquals(GoalStatusEnum.COMPLETED.getCode(), updated.getStatus());
+        assertEquals(ProgressStatusEnum.COMPLETED, updated.getStatus());
         assertEquals(12, updated.getCurrentValue());
         assertNotNull(updated.getCompletedAt());
     }
@@ -122,13 +122,13 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
     void testGoalProgressUpdate_已完成目标不允许再流转() {
         Long goalId = System.currentTimeMillis() % 1000000 + 900000L;
         GoalEntity goal = createGoal(goalId, "MCP测试目标-已完成");
-        goal.setStatus(GoalStatusEnum.COMPLETED.getCode());
+        goal.setStatus(ProgressStatusEnum.COMPLETED);
         goal.setCompletedAt(LocalDateTime.now());
         goalMapper.insert(goal);
 
         GoalProgressUpdateMcpReq req = new GoalProgressUpdateMcpReq();
         req.setGoalId(goalId);
-        req.setStatus("已放弃");
+        req.setStatus("搁置");
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> goalMcpTools.goal_progress_update(req));
@@ -154,7 +154,7 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
         entity.setUserId(TEST_USER_ID);
         entity.setType(GoalTypeEnum.DAY.getCode());
         entity.setTitle(title);
-        entity.setStatus(GoalStatusEnum.PENDING.getCode());
+        entity.setStatus(ProgressStatusEnum.NOT_STARTED);
         entity.setIsDeleted(0);
         entity.setCreateTime(LocalDateTime.now());
         entity.setUpdateTime(LocalDateTime.now());

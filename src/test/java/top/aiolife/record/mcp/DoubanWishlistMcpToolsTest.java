@@ -12,6 +12,7 @@ import top.aiolife.record.pojo.entity.MovieEntity;
 import top.aiolife.record.pojo.entity.ReadRecordEntity;
 import top.aiolife.record.pojo.req.MovieReq;
 import top.aiolife.record.pojo.req.ReadRecordReq;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IReadRecordService;
 
@@ -58,7 +59,7 @@ class DoubanWishlistMcpToolsTest {
         ArgumentCaptor<MovieReq> captor = ArgumentCaptor.forClass(MovieReq.class);
         verify(movieService).saveRecord(captor.capture());
         assertEquals("https://movie.douban.com/subject/36354085/", captor.getValue().getUrl());
-        assertEquals(0, captor.getValue().getStatus());
+        assertEquals(ProgressStatusEnum.NOT_STARTED, captor.getValue().getStatus());
         assertEquals(0, captor.getValue().getCurrentProgress());
         verify(readRecordService, never()).parseDouban(any());
     }
@@ -68,7 +69,7 @@ class DoubanWishlistMcpToolsTest {
         MovieEntity existing = new MovieEntity();
         existing.setId(1002L);
         existing.setTitle("已有电影");
-        existing.setStatus(2);
+        existing.setStatus(ProgressStatusEnum.COMPLETED);
         existing.setFileId("existing-movie-cover");
         when(movieService.findByDoubanSubjectId("36354085")).thenReturn(existing);
 
@@ -104,7 +105,7 @@ class DoubanWishlistMcpToolsTest {
         ArgumentCaptor<ReadRecordReq> captor = ArgumentCaptor.forClass(ReadRecordReq.class);
         verify(readRecordService).saveRecord(captor.capture());
         assertEquals("https://book.douban.com/subject/4913064/", captor.getValue().getUrl());
-        assertEquals(0, captor.getValue().getStatus());
+        assertEquals(ProgressStatusEnum.NOT_STARTED, captor.getValue().getStatus());
         assertEquals(0, captor.getValue().getCurrentProgress());
         verify(movieService, never()).parseDouban(any());
     }
@@ -114,7 +115,7 @@ class DoubanWishlistMcpToolsTest {
         ReadRecordEntity existing = new ReadRecordEntity();
         existing.setId(2002L);
         existing.setTitle("已有书籍");
-        existing.setStatus(1);
+        existing.setStatus(ProgressStatusEnum.IN_PROGRESS);
         existing.setFileId("existing-book-cover");
         when(readRecordService.findByDoubanSubjectId("4913064")).thenReturn(existing);
 
@@ -142,7 +143,7 @@ class DoubanWishlistMcpToolsTest {
         MovieEntity existing = new MovieEntity();
         existing.setId(1003L);
         existing.setTitle("待补封面电影");
-        existing.setStatus(0);
+        existing.setStatus(ProgressStatusEnum.NOT_STARTED);
         when(movieService.findByDoubanSubjectId("36354085")).thenReturn(existing);
         MovieReq parsed = new MovieReq();
         parsed.setFileId("repaired-cover-file-id");

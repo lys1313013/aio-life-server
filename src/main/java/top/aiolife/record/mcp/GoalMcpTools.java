@@ -14,8 +14,8 @@ import top.aiolife.record.mcp.req.GoalQueryMcpReq;
 import top.aiolife.record.mcp.vo.GoalMcpVO;
 import top.aiolife.record.mcp.vo.GoalPageMcpVO;
 import top.aiolife.record.pojo.entity.GoalEntity;
-import top.aiolife.record.pojo.enums.GoalStatusEnum;
 import top.aiolife.record.pojo.enums.GoalTypeEnum;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.service.IGoalService;
 
 import java.time.LocalDateTime;
@@ -46,7 +46,7 @@ public class GoalMcpTools {
             queryWrapper.eq(GoalEntity::getType, req.getType());
         }
         if (req.getStatus() != null) {
-            queryWrapper.eq(GoalEntity::getStatus, req.getStatus());
+            queryWrapper.eq(GoalEntity::getStatus, ProgressStatusEnum.fromCode(req.getStatus()));
         }
         if (StringUtils.hasText(req.getKeyword())) {
             String keyword = req.getKeyword().trim();
@@ -79,7 +79,7 @@ public class GoalMcpTools {
                 .collect(Collectors.groupingBy(
                         GoalEntity::getParentId,
                         Collectors.collectingAndThen(Collectors.toList(), children -> new long[]{
-                                children.stream().filter(c -> GoalStatusEnum.COMPLETED.getCode().equals(c.getStatus())).count(),
+                                children.stream().filter(c -> c.getStatus() == ProgressStatusEnum.COMPLETED).count(),
                                 children.size()
                         })));
 
@@ -92,7 +92,7 @@ public class GoalMcpTools {
                 .build();
     }
 
-    @Tool("更新目标进展：修改当前进度值和/或状态（进行中/已完成/已放弃），目标须属于当前用户；已完成时自动记录完成时间并补齐进度，进行中时清除完成时间")
+    @Tool("更新目标进展：修改当前进度值和/或状态（进行中/已完成/搁置），目标须属于当前用户；已完成时自动记录完成时间并补齐进度，进行中时清除完成时间")
     public String goal_progress_update(GoalProgressUpdateMcpReq req) {
         if (req.getGoalId() == null) {
             throw new IllegalArgumentException("目标ID不能为空");
@@ -111,13 +111,13 @@ public class GoalMcpTools {
             throw new IllegalArgumentException("目标不存在或无权限访问该目标");
         }
 
-        GoalStatusEnum targetStatus = null;
+        ProgressStatusEnum targetStatus = null;
         if (StringUtils.hasText(req.getStatus())) {
             targetStatus = parseStatus(req.getStatus());
-            Integer currentStatus = goal.getStatus();
-            // 仅允许「待开始 / 进行中」状态流转，已完成/已放弃需先恢复为进行中
-            if (!GoalStatusEnum.PENDING.getCode().equals(currentStatus)
-                    && !GoalStatusEnum.IN_PROGRESS.getCode().equals(currentStatus)) {
+            ProgressStatusEnum currentStatus = goal.getStatus();
+            // 仅允许「未开始 / 进行中」状态流转，已完成/搁置需先恢复为进行中
+            if (currentStatus != ProgressStatusEnum.NOT_STARTED
+                    && currentStatus != ProgressStatusEnum.IN_PROGRESS) {
                 throw new IllegalArgumentException("目标当前状态为「" + statusLabel(currentStatus) + "」，不允许直接变更状态");
             }
         }
@@ -129,19 +129,19 @@ public class GoalMcpTools {
         updateWrapper.set(GoalEntity::getUpdateUser, userId);
 
         Integer currentValue = req.getCurrentValue();
-        if (targetStatus == GoalStatusEnum.COMPLETED) {
+        if (targetStatus == ProgressStatusEnum.COMPLETED) {
             updateWrapper.set(GoalEntity::getCompletedAt, LocalDateTime.now());
             if (currentValue == null && goal.getTargetValue() != null) {
                 currentValue = goal.getTargetValue();
             }
-        } else if (targetStatus == GoalStatusEnum.IN_PROGRESS) {
+        } else if (targetStatus == ProgressStatusEnum.IN_PROGRESS) {
             updateWrapper.set(GoalEntity::getCompletedAt, null);
         }
         if (currentValue != null) {
             updateWrapper.set(GoalEntity::getCurrentValue, currentValue);
         }
         if (targetStatus != null) {
-            updateWrapper.set(GoalEntity::getStatus, targetStatus.getCode());
+            updateWrapper.set(GoalEntity::getStatus, targetStatus);
         }
         goalService.update(updateWrapper);
 
@@ -188,14 +188,15 @@ public class GoalMcpTools {
         return vo;
     }
 
-    private GoalStatusEnum parseStatus(String label) {
-        // 本工具仅允许流转到 进行中 / 已完成 / 已放弃，不支持回退为待开始
-        for (GoalStatusEnum value : new GoalStatusEnum[]{GoalStatusEnum.IN_PROGRESS, GoalStatusEnum.COMPLETED, GoalStatusEnum.ABANDONED}) {
+    private ProgressStatusEnum parseStatus(String label) {
+        // 本工具仅允许流转到 进行中 / 已完成 / 搁置，不支持回退为未开始
+        for (ProgressStatusEnum value : new ProgressStatusEnum[]{
+                ProgressStatusEnum.IN_PROGRESS, ProgressStatusEnum.COMPLETED, ProgressStatusEnum.ON_HOLD}) {
             if (value.getDesc().equals(label)) {
                 return value;
             }
         }
-        throw new IllegalArgumentException("状态仅支持：进行中 / 已完成 / 已放弃");
+        throw new IllegalArgumentException("状态仅支持：进行中 / 已完成 / 搁置");
     }
 
     private String typeLabel(Integer code) {
@@ -210,16 +211,16 @@ public class GoalMcpTools {
         return String.valueOf(code);
     }
 
-    private String statusLabel(Integer code) {
-        if (code == null) {
+    private String statusLabel(ProgressStatusEnum status) {
+        if (status == null) {
             return null;
         }
-        for (GoalStatusEnum value : GoalStatusEnum.values()) {
-            if (value.getCode().equals(code)) {
-                return value.getDesc();
-            }
-        }
-        return String.valueOf(code);
+        return switch (status) {
+            case NOT_STARTED -> "待开始";
+            case IN_PROGRESS -> "进行中";
+            case COMPLETED -> "已完成";
+            case ON_HOLD -> "搁置";
+        };
     }
 
     private List<String> parseTags(String tags) {

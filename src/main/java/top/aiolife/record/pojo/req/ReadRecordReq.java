@@ -2,6 +2,7 @@ package top.aiolife.record.pojo.req;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 
 import java.time.LocalDateTime;
 
@@ -14,7 +15,7 @@ public class ReadRecordReq {
     private String url;
     private String fileId;
     private String coverImgUrl;
-    private Integer status;
+    private ProgressStatusEnum status;
     private Integer totalProgress;
     private Integer currentProgress;
     

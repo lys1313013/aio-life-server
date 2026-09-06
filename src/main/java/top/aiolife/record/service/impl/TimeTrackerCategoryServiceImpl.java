@@ -175,10 +175,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
     }
 
     /**
-     * 创建只包含变化字段的用户覆盖记录。
-     *
-     * <p>覆盖记录与公共分类共用一张表。sort、timeType 等覆盖字段必须允许为 null，
-     * 否则数据库默认值会被误认为用户显式覆盖值。</p>
+     * 创建用户覆盖记录。可空的展示字段只保存变化值，非空业务字段保存当前有效值。
      */
     private TimeTrackerCategoryEntity buildOverrideRecord(TimeTrackerCategoryEntity template,
                                                            TimeTrackerCategoryEntity updates,
@@ -190,10 +187,10 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         override.setColor(changedValue(updates.getColor(), template.getColor()));
         override.setIcon(changedValue(updates.getIcon(), template.getIcon()));
         override.setDescription(changedValue(updates.getDescription(), template.getDescription()));
-        override.setIsTrackTime(changedValue(updates.getIsTrackTime(), template.getIsTrackTime()));
-        override.setSort(changedValue(updates.getSort(), template.getSort()));
-        override.setIsEnabled(changedValue(updates.getIsEnabled(), template.getIsEnabled()));
-        override.setTimeType(changedValue(updates.getTimeType(), template.getTimeType()));
+        override.setIsTrackTime(valueOrTemplate(updates.getIsTrackTime(), template.getIsTrackTime()));
+        override.setSort(valueOrTemplate(updates.getSort(), template.getSort()));
+        override.setIsEnabled(valueOrTemplate(updates.getIsEnabled(), template.getIsEnabled()));
+        override.setTimeType(valueOrTemplate(updates.getTimeType(), template.getTimeType()));
         override.setCreateUser(userId);
         override.setUpdateUser(userId);
         override.setIsDeleted(0);
@@ -201,7 +198,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
     }
 
     /**
-     * 只更新请求中出现的字段；字段恢复成公共值时显式写 null，继续继承公共分类。
+     * 只更新请求中出现的字段。非空业务字段直接保存有效值。
      */
     private void updateOverrideRecord(Long overrideId,
                                       TimeTrackerCategoryEntity template,
@@ -223,16 +220,16 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
             wrapper.set(TimeTrackerCategoryEntity::getDescription, changedValue(updates.getDescription(), template.getDescription()));
         }
         if (updates.getIsTrackTime() != null) {
-            wrapper.set(TimeTrackerCategoryEntity::getIsTrackTime, changedValue(updates.getIsTrackTime(), template.getIsTrackTime()));
+            wrapper.set(TimeTrackerCategoryEntity::getIsTrackTime, updates.getIsTrackTime());
         }
         if (updates.getSort() != null) {
-            wrapper.set(TimeTrackerCategoryEntity::getSort, changedValue(updates.getSort(), template.getSort()));
+            wrapper.set(TimeTrackerCategoryEntity::getSort, updates.getSort());
         }
         if (updates.getIsEnabled() != null) {
-            wrapper.set(TimeTrackerCategoryEntity::getIsEnabled, changedValue(updates.getIsEnabled(), template.getIsEnabled()));
+            wrapper.set(TimeTrackerCategoryEntity::getIsEnabled, updates.getIsEnabled());
         }
         if (updates.getTimeType() != null) {
-            wrapper.set(TimeTrackerCategoryEntity::getTimeType, changedValue(updates.getTimeType(), template.getTimeType()));
+            wrapper.set(TimeTrackerCategoryEntity::getTimeType, updates.getTimeType());
         }
         wrapper.set(TimeTrackerCategoryEntity::getUpdateUser, userId);
         wrapper.set(TimeTrackerCategoryEntity::getIsDeleted, 0);
@@ -241,6 +238,10 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
 
     private <T> T changedValue(T value, T templateValue) {
         return value != null && !Objects.equals(value, templateValue) ? value : null;
+    }
+
+    private <T> T valueOrTemplate(T value, T templateValue) {
+        return value != null ? value : templateValue;
     }
 
     @Override

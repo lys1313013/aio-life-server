@@ -18,6 +18,6 @@ public class GoalProgressUpdateMcpReq {
     @Description("更新当前值；与 status 至少传一个")
     private Integer currentValue;
 
-    @Description("状态：进行中 / 已完成 / 已放弃")
+    @Description("状态：进行中 / 已完成 / 搁置")
     private String status;
 }

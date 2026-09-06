@@ -18,6 +18,7 @@ import top.aiolife.record.mapper.IMovieMapper;
 import top.aiolife.record.pojo.entity.MovieEntity;
 import top.aiolife.record.pojo.query.MovieQuery;
 import top.aiolife.record.pojo.req.MovieReq;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.vo.MovieVO;
 import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IFileService;
@@ -50,7 +51,8 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         } else if (query.getStatus() != null) {
             wrapper.eq(MovieEntity::getStatus, query.getStatus());
         } else if (Boolean.TRUE.equals(query.getActiveOnly())) {
-            wrapper.in(MovieEntity::getStatus, 0, 1);
+            wrapper.in(MovieEntity::getStatus,
+                    ProgressStatusEnum.NOT_STARTED, ProgressStatusEnum.IN_PROGRESS);
         }
         if (StrUtil.isNotBlank(query.getTitle())) {
             wrapper.and(condition -> condition
@@ -61,9 +63,8 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         if (StrUtil.isNotBlank(query.getDirector())) {
             wrapper.like(MovieEntity::getDirector, query.getDirector());
         }
-        wrapper.orderByAsc(MovieEntity::getStatus)
-               .orderByDesc(MovieEntity::getFinishTime)
-               .orderByDesc(MovieEntity::getCreateTime);
+        wrapper.last("ORDER BY FIELD(status, 'not_started', 'in_progress', 'completed', 'on_hold'), "
+                + "finish_time DESC, create_time DESC");
 
         Page<MovieEntity> page = new Page<>(query.getCurrent() == null ? 1 : query.getCurrent(), query.getSize() == null ? 10 : query.getSize());
         Page<MovieEntity> entityPage = this.page(page, wrapper);
@@ -90,10 +91,10 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         entity.setUserId(userId);
         entity.fillCreateCommonField(userId);
 
-        if (entity.getStatus() != null && entity.getStatus() == 1 && entity.getStartTime() == null) {
+        if (entity.getStatus() == ProgressStatusEnum.IN_PROGRESS && entity.getStartTime() == null) {
             entity.setStartTime(LocalDateTime.now());
         }
-        if (entity.getStatus() != null && entity.getStatus() == 2 && entity.getFinishTime() == null) {
+        if (entity.getStatus() == ProgressStatusEnum.COMPLETED && entity.getFinishTime() == null) {
             entity.setFinishTime(LocalDateTime.now());
         }
 
@@ -113,10 +114,10 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         BeanUtil.copyProperties(req, entity);
         entity.fillUpdateCommonField(userId);
 
-        if (entity.getStatus() != null && entity.getStatus() == 1 && entity.getStartTime() == null) {
+        if (entity.getStatus() == ProgressStatusEnum.IN_PROGRESS && entity.getStartTime() == null) {
             entity.setStartTime(LocalDateTime.now());
         }
-        if (entity.getStatus() != null && entity.getStatus() == 2 && entity.getFinishTime() == null) {
+        if (entity.getStatus() == ProgressStatusEnum.COMPLETED && entity.getFinishTime() == null) {
             entity.setFinishTime(LocalDateTime.now());
         }
 
@@ -446,7 +447,8 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         Long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<MovieEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(MovieEntity::getUserId, userId);
-        wrapper.in(MovieEntity::getStatus, 0, 1); // 未开始, 进行中
+        wrapper.in(MovieEntity::getStatus,
+                ProgressStatusEnum.NOT_STARTED, ProgressStatusEnum.IN_PROGRESS); // 想看, 在看
         wrapper.orderByDesc(MovieEntity::getUpdateTime);
         
         List<MovieEntity> entities = this.list(wrapper);

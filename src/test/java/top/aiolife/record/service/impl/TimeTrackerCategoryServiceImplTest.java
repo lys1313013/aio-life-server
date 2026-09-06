@@ -1,7 +1,5 @@
 package top.aiolife.record.service.impl;
 
-import com.baomidou.mybatisplus.annotation.FieldStrategy;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
@@ -29,16 +27,6 @@ class TimeTrackerCategoryServiceImplTest {
         MapperBuilderAssistant builderAssistant = new MapperBuilderAssistant(
                 new MybatisConfiguration(), "TimeTrackerCategoryServiceImplTest");
         TableInfoHelper.initTableInfo(builderAssistant, TimeTrackerCategoryEntity.class);
-    }
-
-    @Test
-    void overrideFields_shouldInsertExplicitNullInsteadOfDatabaseDefaults() throws NoSuchFieldException {
-        for (String fieldName : new String[]{"isTrackTime", "sort", "isEnabled", "timeType"}) {
-            TableField tableField = TimeTrackerCategoryEntity.class
-                    .getDeclaredField(fieldName)
-                    .getAnnotation(TableField.class);
-            assertEquals(FieldStrategy.ALWAYS, tableField.insertStrategy());
-        }
     }
 
     @Test
@@ -78,7 +66,7 @@ class TimeTrackerCategoryServiceImplTest {
     }
 
     @Test
-    void updateCategory_shouldStoreOnlyChangedFieldsWhenCreatingPartialOverride() {
+    void updateCategory_shouldStoreEffectiveNonNullFieldsWhenCreatingOverride() {
         TimeTrackerCategoryServiceImpl service = spy(new TimeTrackerCategoryServiceImpl());
         TimeTrackerCategoryEntity template = createPublicCategory();
         TimeTrackerCategoryEntity updates = new TimeTrackerCategoryEntity();
@@ -99,9 +87,9 @@ class TimeTrackerCategoryServiceImplTest {
         assertNull(saved.getName());
         assertNull(saved.getColor());
         assertEquals(0, saved.getIsTrackTime());
-        assertNull(saved.getSort());
-        assertNull(saved.getTimeType());
-        assertNull(saved.getIsEnabled());
+        assertEquals(template.getSort(), saved.getSort());
+        assertEquals(template.getTimeType(), saved.getTimeType());
+        assertEquals(template.getIsEnabled(), saved.getIsEnabled());
         assertEquals(0, saved.getIsDeleted());
     }
 
@@ -121,11 +109,11 @@ class TimeTrackerCategoryServiceImplTest {
         ArgumentCaptor<TimeTrackerCategoryEntity> captor = ArgumentCaptor.forClass(TimeTrackerCategoryEntity.class);
         verify(service).save(captor.capture());
         assertEquals(0, captor.getValue().getSort());
-        assertNull(captor.getValue().getTimeType());
+        assertEquals(template.getTimeType(), captor.getValue().getTimeType());
     }
 
     @Test
-    void updateCategory_shouldClearOverrideWhenValueMatchesTemplate() {
+    void updateCategory_shouldStoreNonNullValueWhenValueMatchesTemplate() {
         TimeTrackerCategoryServiceImpl service = spy(new TimeTrackerCategoryServiceImpl());
         TimeTrackerCategoryEntity template = createPublicCategory();
         TimeTrackerCategoryEntity existingOverride = new TimeTrackerCategoryEntity();
@@ -147,7 +135,7 @@ class TimeTrackerCategoryServiceImplTest {
                 (LambdaUpdateWrapper<TimeTrackerCategoryEntity>) captor.getValue();
         String sqlSet = wrapper.getSqlSet();
         assertTrue(sqlSet.contains("sort="));
-        assertTrue(wrapper.getParamNameValuePairs().containsValue(null));
+        assertTrue(wrapper.getParamNameValuePairs().containsValue(template.getSort()));
     }
 
     private TimeTrackerCategoryEntity createPublicCategory() {

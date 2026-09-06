@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import top.aiolife.record.api.BaseIntegrationTest;
 import top.aiolife.record.pojo.entity.MovieEntity;
 import top.aiolife.record.pojo.req.MovieReq;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.service.IMovieService;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,7 +26,7 @@ class MovieServiceImplIntegrationTest extends BaseIntegrationTest {
         MovieReq req = new MovieReq();
         req.setTitle("测试电影");
         req.setType(1);
-        req.setStatus(0);
+        req.setStatus(ProgressStatusEnum.NOT_STARTED);
 
         movieService.saveRecord(req);
 
@@ -46,7 +47,7 @@ class MovieServiceImplIntegrationTest extends BaseIntegrationTest {
         MovieReq saveReq = new MovieReq();
         saveReq.setTitle("待更新电影");
         saveReq.setType(1);
-        saveReq.setStatus(0);
+        saveReq.setStatus(ProgressStatusEnum.NOT_STARTED);
         movieService.saveRecord(saveReq);
 
         MovieEntity saved = movieService.lambdaQuery()
@@ -59,7 +60,7 @@ class MovieServiceImplIntegrationTest extends BaseIntegrationTest {
         updateReq.setId(saved.getId());
         updateReq.setTitle("已更新电影");
         updateReq.setType(1);
-        updateReq.setStatus(1);
+        updateReq.setStatus(ProgressStatusEnum.IN_PROGRESS);
         movieService.updateRecord(updateReq);
 
         MovieEntity updated = movieService.getById(saved.getId());

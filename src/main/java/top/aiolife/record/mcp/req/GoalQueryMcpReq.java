@@ -15,8 +15,8 @@ public class GoalQueryMcpReq {
     @Description("目标类型筛选：1-日目标，2-周目标，3-月度目标，4-季度目标，5-半年目标，6-年度目标，7-三年目标，8-五年目标，9-十年目标，10-人生目标")
     private Integer type;
 
-    @Description("状态筛选：0-待开始，1-进行中，2-已完成，3-已放弃")
-    private Integer status;
+    @Description("状态筛选：not_started/in_progress/completed/on_hold")
+    private String status;
 
     @Description("关键词，模糊匹配标题/描述/标签")
     private String keyword;

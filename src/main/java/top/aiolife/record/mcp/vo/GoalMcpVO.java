@@ -36,7 +36,7 @@ public class GoalMcpVO {
     private String description;
 
     /**
-     * 状态（中文）：待开始 / 进行中 / 已完成 / 已放弃
+     * 状态（中文）：待开始 / 进行中 / 已完成 / 搁置
      */
     private String status;
 

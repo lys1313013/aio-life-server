@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import top.aiolife.record.mapper.IGoalMapper;
 import top.aiolife.record.pojo.entity.GoalEntity;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 
 import java.time.LocalDateTime;
 
@@ -51,7 +52,7 @@ class GoalControllerIntegrationTest extends BaseIntegrationTest {
         entity.setUserId(TEST_USER_ID);
         entity.setType(1);
         entity.setTitle("测试目标");
-        entity.setStatus(0);
+        entity.setStatus(ProgressStatusEnum.NOT_STARTED);
         entity.setIsDeleted(0);
         entity.setCreateTime(LocalDateTime.now());
         entity.setUpdateTime(LocalDateTime.now());

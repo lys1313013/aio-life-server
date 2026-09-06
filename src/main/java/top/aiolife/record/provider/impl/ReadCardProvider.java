@@ -114,7 +114,7 @@ public class ReadCardProvider implements DashboardCardProvider {
         LocalDateTime end = now.atTime(LocalTime.MAX);
         return readRecordService.lambdaQuery()
                 .eq(ReadRecordEntity::getUserId, userId)
-                .eq(ReadRecordEntity::getStatus, ProgressStatusEnum.COMPLETED.getCode())
+                .eq(ReadRecordEntity::getStatus, ProgressStatusEnum.COMPLETED)
                 .ge(ReadRecordEntity::getFinishTime, start)
                 .le(ReadRecordEntity::getFinishTime, end)
                 .count();
