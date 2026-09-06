@@ -23,6 +23,8 @@ import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
+import top.aiolife.record.service.IMovieService;
+import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.service.ITaskService;
 import top.aiolife.record.service.ITimeRecordService;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -169,6 +171,16 @@ public class RecordMcpE2ETest {
         @Bean @Primary public ITaskService taskService() {
             return (ITaskService) java.lang.reflect.Proxy.newProxyInstance(
                 ITaskService.class.getClassLoader(), new Class[]{ITaskService.class}, (p, m, a) -> null);
+        }
+
+        @Bean @Primary public IMovieService movieService() {
+            return (IMovieService) java.lang.reflect.Proxy.newProxyInstance(
+                IMovieService.class.getClassLoader(), new Class[]{IMovieService.class}, (p, m, a) -> null);
+        }
+
+        @Bean @Primary public IReadRecordService readRecordService() {
+            return (IReadRecordService) java.lang.reflect.Proxy.newProxyInstance(
+                IReadRecordService.class.getClassLoader(), new Class[]{IReadRecordService.class}, (p, m, a) -> null);
         }
 
         @Bean @Primary public top.aiolife.record.service.IAnniversaryRecordService anniversaryRecordService() {
