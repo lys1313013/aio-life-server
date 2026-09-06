@@ -34,7 +34,7 @@ public class BVideoStatisticsMcpVO {
     private double progressPercentage;
 
     /**
-     * 各状态数量，key 为中文状态标签（未开始 / 进行中 / 已暂停 / 部分完成 / 已完成）
+     * 各状态数量，key 为中文状态标签（未开始 / 进行中 / 已暂停 / 已完成）
      */
     private Map<String, Integer> statusCounts;
 }

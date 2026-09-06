@@ -4,6 +4,7 @@ import top.aiolife.core.pojo.entity.BaseEntity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 
 import java.time.LocalDateTime;
 
@@ -55,7 +56,7 @@ public class BVideoEntity extends BaseEntity{
     /**
      * 学习状态
      */
-    private Integer status;
+    private ProgressStatusEnum status;
 
     /**
      * 最后观看时间

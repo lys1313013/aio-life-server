@@ -10,10 +10,9 @@ import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
-import top.aiolife.core.util.SysUtil;
-import top.aiolife.record.enums.StudyEnum;
 import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.pojo.entity.BVideoEntity;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.vo.BVideoStatisticsVO;
 import top.aiolife.record.pojo.vo.StatusCount;
 import lombok.AllArgsConstructor;
@@ -37,6 +36,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/b-video")
 public class BVideoController {
 
+    private static final List<String> STATUS_ORDER_CODES = List.of(
+            ProgressStatusEnum.NOT_STARTED.getCode(),
+            ProgressStatusEnum.IN_PROGRESS.getCode(),
+            ProgressStatusEnum.ON_HOLD.getCode(),
+            ProgressStatusEnum.COMPLETED.getCode());
+
     private IBVideoMapper bVideoMapper;
 
     public IBVideoMapper getBaseMapper() {
@@ -51,18 +56,13 @@ public class BVideoController {
         lambdaQueryWrapper.eq(BVideoEntity::getUserId, userId);
         lambdaQueryWrapper.eq(BVideoEntity::getIsDeleted, StatusConst.NO_DELETE);
         BVideoEntity condition = query.getCondition();
-        if (SysUtil.isNotEmpty(condition.getStatus())) {
-            // 0 为查询全部状态
-            if (0 != condition.getStatus()) {
-                lambdaQueryWrapper.eq(BVideoEntity::getStatus,
-                        condition.getStatus());
-            }
+        if (condition.getStatus() != null) {
+            lambdaQueryWrapper.eq(BVideoEntity::getStatus, condition.getStatus());
         }
 
-        lambdaQueryWrapper.orderByAsc(BVideoEntity::getStatus);
-        lambdaQueryWrapper.orderByDesc(BVideoEntity::getUpdateTime);
         Page<BVideoEntity> page = new Page<>(query.getPage(), query.getPageSize());
-        IPage<BVideoEntity> iPage = bVideoMapper.selectPage(page, lambdaQueryWrapper);
+        IPage<BVideoEntity> iPage = bVideoMapper.selectPageWithStatusOrder(
+                page, lambdaQueryWrapper, STATUS_ORDER_CODES);
         PageResp<BVideoEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
         return ApiResponse.success(objectPageResp);
     }
@@ -82,9 +82,9 @@ public class BVideoController {
         entity.setUserId(userId);
         entity.fillCreateCommonField(userId);
         if (entity.getStatus() == null) {
-            entity.setStatus(StudyEnum.IN_PROGRESS.getValue());
+            entity.setStatus(ProgressStatusEnum.IN_PROGRESS);
         }
-        if (entity.getStatus() == StudyEnum.COMPLETED.getValue()) {
+        if (entity.getStatus() == ProgressStatusEnum.COMPLETED) {
             entity.setWatchedDuration(entity.getDuration());
         }
         boolean b = getBaseMapper().insert(entity) > 0;
@@ -108,7 +108,7 @@ public class BVideoController {
         entity.setUserId(userId);
         entity.setUpdateUser(userId);
         entity.setUpdateTime(LocalDateTime.now());
-        if (entity.getStatus() != null && entity.getStatus() == StudyEnum.COMPLETED.getValue()) {
+        if (entity.getStatus() == ProgressStatusEnum.COMPLETED) {
             entity.setWatchedDuration(entity.getDuration());
         }
         
@@ -133,11 +133,11 @@ public class BVideoController {
     }
 
     @GetMapping("/getStatusCount")
-    public ApiResponse<Map> getStatusCount() {
+    public ApiResponse<Map<String, Integer>> getStatusCount() {
         long userId = StpUtil.getLoginIdAsLong();
         List<StatusCount> statusCount = getBaseMapper().getStatusCount(userId);
-        Map<Integer, Integer> map = statusCount.stream().collect(
-                Collectors.toMap(StatusCount::getStatus, StatusCount::getCount));
+        Map<String, Integer> map = statusCount.stream().collect(
+                Collectors.toMap(item -> item.getStatus().getCode(), StatusCount::getCount));
         return ApiResponse.success(map);
     }
 
@@ -145,7 +145,7 @@ public class BVideoController {
     public ApiResponse<BVideoStatisticsVO> statistics() {
         long userId = StpUtil.getLoginIdAsLong();
         BVideoStatisticsVO statisticsVO = new BVideoStatisticsVO();
-        Integer watchTime = bVideoMapper.getWatchTime(userId);
+        Integer watchTime = bVideoMapper.getWatchTime(userId, ProgressStatusEnum.COMPLETED.getCode());
         Integer totalTime = bVideoMapper.getTotalTime(userId);
         if (watchTime != null) {
             statisticsVO.setStudiedSeconds(watchTime);
@@ -177,7 +177,7 @@ public class BVideoController {
         entity.setUpdateUser(userId);
         entity.setUpdateTime(LocalDateTime.now());
         if (entity.getStatus() == null) {
-            entity.setStatus(StudyEnum.IN_PROGRESS.getValue());
+            entity.setStatus(ProgressStatusEnum.IN_PROGRESS);
         }
         getBaseMapper().insert(entity);
         return ApiResponse.success();
@@ -212,7 +212,7 @@ public class BVideoController {
             entity.setUpdateTime(LocalDateTime.now());
             entity.setLastWatched(LocalDateTime.now());
             if (entity.getStatus() == null) {
-                entity.setStatus(StudyEnum.IN_PROGRESS.getValue());
+                entity.setStatus(ProgressStatusEnum.IN_PROGRESS);
             }
             getBaseMapper().insert(entity);
             log.info("syncProgress inserted, bvid: {}", entity.getBvid());

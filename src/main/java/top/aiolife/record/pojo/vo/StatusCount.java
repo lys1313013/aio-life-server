@@ -1,6 +1,7 @@
 package top.aiolife.record.pojo.vo;
 
 import lombok.Data;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 
 /**
  * 类功能描述
@@ -10,6 +11,6 @@ import lombok.Data;
  */
 @Data
 public class StatusCount {
-    private Integer status;
+    private ProgressStatusEnum status;
     private Integer count;
 }

@@ -724,7 +724,7 @@ CREATE TABLE IF NOT EXISTS `b_video` (
     `watched_duration` int(11) NOT NULL DEFAULT '0' COMMENT '观看时长',
     `episodes` int(11) DEFAULT '1' COMMENT '总集数',
     `current_episode` int(11) DEFAULT '1' COMMENT '当前观看集数',
-    `status` int(11) DEFAULT NULL COMMENT '学习状态',
+    `status` varchar(32) NOT NULL DEFAULT 'in_progress' COMMENT '学习状态：not_started/in_progress/on_hold/completed',
     `last_watched` datetime DEFAULT NULL COMMENT '最后观看时间（syncProgress 同步时写入）',
     `notes` text COLLATE utf8mb4_unicode_ci COMMENT '学习笔记',
     `bvid` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'BV号',

@@ -15,8 +15,8 @@ public class BVideoQueryMcpReq {
     @Description("标题模糊搜索")
     private String title;
 
-    @Description("状态筛选：1-未开始，2-进行中，3-已暂停，4-部分完成，5-已完成")
-    private Integer status;
+    @Description("状态筛选：not_started/in_progress/on_hold/completed")
+    private String status;
 
     @Description("页码，默认 1")
     private Integer page;

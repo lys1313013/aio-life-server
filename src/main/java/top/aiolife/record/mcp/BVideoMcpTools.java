@@ -7,13 +7,13 @@ import dev.langchain4j.agent.tool.Tool;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 import top.aiolife.mcp.annotation.McpToolProvider;
-import top.aiolife.record.enums.StudyEnum;
 import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.mcp.req.BVideoQueryMcpReq;
 import top.aiolife.record.mcp.vo.BVideoMcpVO;
 import top.aiolife.record.mcp.vo.BVideoPageMcpVO;
 import top.aiolife.record.mcp.vo.BVideoStatisticsMcpVO;
 import top.aiolife.record.pojo.entity.BVideoEntity;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.vo.StatusCount;
 
 import java.math.BigDecimal;
@@ -43,8 +43,8 @@ public class BVideoMcpTools {
         if (StringUtils.hasText(req.getTitle())) {
             queryWrapper.like(BVideoEntity::getTitle, req.getTitle().trim());
         }
-        if (req.getStatus() != null) {
-            queryWrapper.eq(BVideoEntity::getStatus, req.getStatus());
+        if (StringUtils.hasText(req.getStatus())) {
+            queryWrapper.eq(BVideoEntity::getStatus, ProgressStatusEnum.fromCode(req.getStatus()));
         }
         queryWrapper.orderByDesc(BVideoEntity::getLastWatched);
 
@@ -65,7 +65,7 @@ public class BVideoMcpTools {
     public BVideoStatisticsMcpVO b_video_statistics() {
         long userId = StpUtil.getLoginIdAsLong();
 
-        Integer watchTime = bVideoMapper.getWatchTime(userId);
+        Integer watchTime = bVideoMapper.getWatchTime(userId, ProgressStatusEnum.COMPLETED.getCode());
         Integer totalTime = bVideoMapper.getTotalTime(userId);
         int studiedSeconds = watchTime == null ? 0 : watchTime;
         int totalSeconds = totalTime == null ? 0 : totalTime;
@@ -114,15 +114,15 @@ public class BVideoMcpTools {
                 .doubleValue();
     }
 
-    private String statusLabel(Integer code) {
-        if (code == null) {
+    private String statusLabel(ProgressStatusEnum status) {
+        if (status == null) {
             return null;
         }
-        for (StudyEnum value : StudyEnum.values()) {
-            if (value.getValue() == code) {
-                return value.getLabel();
-            }
-        }
-        return String.valueOf(code);
+        return switch (status) {
+            case NOT_STARTED -> "未开始";
+            case IN_PROGRESS -> "进行中";
+            case ON_HOLD -> "已暂停";
+            case COMPLETED -> "已完成";
+        };
     }
 }

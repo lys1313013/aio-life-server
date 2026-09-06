@@ -3,13 +3,13 @@ package top.aiolife.record.mcp;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import top.aiolife.record.api.BaseIntegrationTest;
-import top.aiolife.record.enums.StudyEnum;
 import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.mcp.req.BVideoQueryMcpReq;
 import top.aiolife.record.mcp.vo.BVideoMcpVO;
 import top.aiolife.record.mcp.vo.BVideoPageMcpVO;
 import top.aiolife.record.mcp.vo.BVideoStatisticsMcpVO;
 import top.aiolife.record.pojo.entity.BVideoEntity;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 
 import java.time.LocalDateTime;
 
@@ -32,7 +32,7 @@ class BVideoMcpToolsIntegrationTest extends BaseIntegrationTest {
     @Test
     void testBVideoQuery_查询学习视频_状态返回中文标签() {
         Long id = System.currentTimeMillis() % 1000000 + 900000L;
-        bVideoMapper.insert(createVideo(id, "MCP测试视频-查询", StudyEnum.IN_PROGRESS));
+        bVideoMapper.insert(createVideo(id, "MCP测试视频-查询", ProgressStatusEnum.IN_PROGRESS));
 
         BVideoQueryMcpReq req = new BVideoQueryMcpReq();
         req.setTitle("MCP测试视频-查询");
@@ -51,11 +51,11 @@ class BVideoMcpToolsIntegrationTest extends BaseIntegrationTest {
     @Test
     void testBVideoQuery_状态筛选() {
         Long id = System.currentTimeMillis() % 1000000 + 900000L;
-        bVideoMapper.insert(createVideo(id, "MCP测试视频-已完成", StudyEnum.COMPLETED));
+        bVideoMapper.insert(createVideo(id, "MCP测试视频-已完成", ProgressStatusEnum.COMPLETED));
 
         BVideoQueryMcpReq req = new BVideoQueryMcpReq();
         req.setTitle("MCP测试视频-已完成");
-        req.setStatus(StudyEnum.COMPLETED.getValue());
+        req.setStatus(ProgressStatusEnum.COMPLETED.getCode());
         BVideoPageMcpVO result = bVideoMcpTools.b_video_query(req);
 
         BVideoMcpVO vo = result.getRecords().stream()
@@ -64,7 +64,7 @@ class BVideoMcpToolsIntegrationTest extends BaseIntegrationTest {
                 .orElseThrow();
         assertEquals("已完成", vo.getStatus());
 
-        req.setStatus(StudyEnum.NOT_START.getValue());
+        req.setStatus(ProgressStatusEnum.NOT_STARTED.getCode());
         assertTrue(bVideoMcpTools.b_video_query(req).getRecords().stream()
                 .noneMatch(v -> id.equals(v.getId())));
     }
@@ -72,7 +72,7 @@ class BVideoMcpToolsIntegrationTest extends BaseIntegrationTest {
     @Test
     void testBVideoQuery_未观看进度为0() {
         Long id = System.currentTimeMillis() % 1000000 + 900000L;
-        BVideoEntity entity = createVideo(id, "MCP测试视频-未观看", StudyEnum.NOT_START);
+        BVideoEntity entity = createVideo(id, "MCP测试视频-未观看", ProgressStatusEnum.NOT_STARTED);
         entity.setWatchedDuration(null);
         bVideoMapper.insert(entity);
 
@@ -88,7 +88,7 @@ class BVideoMcpToolsIntegrationTest extends BaseIntegrationTest {
     @Test
     void testBVideoStatistics_统计返回状态中文标签() {
         Long id = System.currentTimeMillis() % 1000000 + 900000L;
-        bVideoMapper.insert(createVideo(id, "MCP测试视频-统计", StudyEnum.IN_PROGRESS));
+        bVideoMapper.insert(createVideo(id, "MCP测试视频-统计", ProgressStatusEnum.IN_PROGRESS));
 
         BVideoStatisticsMcpVO vo = bVideoMcpTools.b_video_statistics();
 
@@ -98,12 +98,12 @@ class BVideoMcpToolsIntegrationTest extends BaseIntegrationTest {
         assertTrue(vo.getProgressPercentage() >= 0 && vo.getProgressPercentage() <= 100);
         if (vo.getStatusCounts() != null) {
             vo.getStatusCounts().keySet().forEach(key ->
-                    assertTrue(key.matches("未开始|进行中|已暂停|部分完成|已完成|\\d+"),
+                    assertTrue(key.matches("未开始|进行中|已暂停|已完成"),
                             "状态 key 应为中文标签: " + key));
         }
     }
 
-    private BVideoEntity createVideo(Long id, String title, StudyEnum status) {
+    private BVideoEntity createVideo(Long id, String title, ProgressStatusEnum status) {
         BVideoEntity entity = new BVideoEntity();
         entity.setId(id);
         entity.setUserId(TEST_USER_ID);
@@ -112,7 +112,7 @@ class BVideoMcpToolsIntegrationTest extends BaseIntegrationTest {
         entity.setUrl("https://www.bilibili.com/video/BV" + id);
         entity.setDuration(600);
         entity.setWatchedDuration(300);
-        entity.setStatus(status.getValue());
+        entity.setStatus(status);
         entity.setLastWatched(LocalDateTime.now());
         entity.setIsDeleted(0);
         entity.setCreateTime(LocalDateTime.now());

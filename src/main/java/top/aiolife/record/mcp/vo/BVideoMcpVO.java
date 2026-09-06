@@ -35,7 +35,7 @@ public class BVideoMcpVO {
     private String bvid;
 
     /**
-     * 状态（中文）：未开始 / 进行中 / 已暂停 / 部分完成 / 已完成
+     * 状态（中文）：未开始 / 进行中 / 已暂停 / 已完成
      */
     private String status;
 

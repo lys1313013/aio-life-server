@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.pojo.entity.BVideoEntity;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -61,7 +62,7 @@ class BVideoControllerIntegrationTest extends BaseIntegrationTest {
         entity.setTitle("测试视频");
         entity.setUrl("https://www.bilibili.com/video/BV1test" + videoId);
         entity.setDuration(3600);
-        entity.setStatus(0);
+        entity.setStatus(ProgressStatusEnum.NOT_STARTED);
         entity.setIsDeleted(0);
         return entity;
     }
