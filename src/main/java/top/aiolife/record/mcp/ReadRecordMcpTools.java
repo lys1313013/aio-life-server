@@ -6,15 +6,14 @@ import dev.langchain4j.agent.tool.Tool;
 import lombok.RequiredArgsConstructor;
 import top.aiolife.mcp.annotation.McpToolProvider;
 import top.aiolife.record.api.ReadRecordController;
-import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.query.ReadRecordQuery;
 import top.aiolife.record.pojo.vo.ReadRecordVO;
 import top.aiolife.record.mcp.req.ReadRecordQueryMcpReq;
 import top.aiolife.record.mcp.vo.ReadRecordMcpVO;
 import top.aiolife.record.mcp.vo.ReadRecordPageMcpVO;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 阅读记录 MCP 工具
@@ -25,6 +24,12 @@ import java.util.List;
 @McpToolProvider
 @RequiredArgsConstructor
 public class ReadRecordMcpTools {
+
+    private static final Map<Integer, String> READ_STATUS_LABELS = Map.of(
+            0, "想看",
+            1, "在看",
+            2, "看过",
+            3, "搁置");
 
     private final ReadRecordController readRecordController;
 
@@ -61,10 +66,6 @@ public class ReadRecordMcpTools {
         if (code == null) {
             return null;
         }
-        return Arrays.stream(ProgressStatusEnum.values())
-                .filter(e -> e.getCode().equals(code))
-                .map(ProgressStatusEnum::getDesc)
-                .findFirst()
-                .orElse(String.valueOf(code));
+        return READ_STATUS_LABELS.getOrDefault(code, String.valueOf(code));
     }
 }

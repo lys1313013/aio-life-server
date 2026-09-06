@@ -280,7 +280,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         Long userId = cn.dev33.satoken.stp.StpUtil.getLoginIdAsLong();
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ReadRecordEntity> wrapper = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
         wrapper.eq(ReadRecordEntity::getUserId, userId);
-        wrapper.in(ReadRecordEntity::getStatus, 0, 1); // 未开始, 进行中
+        wrapper.in(ReadRecordEntity::getStatus, 0, 1); // 想看, 在看
         wrapper.orderByDesc(ReadRecordEntity::getUpdateTime);
         
         java.util.List<ReadRecordEntity> entities = this.list(wrapper);

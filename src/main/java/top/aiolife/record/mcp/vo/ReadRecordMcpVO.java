@@ -35,7 +35,7 @@ public class ReadRecordMcpVO {
     private Integer type;
 
     /**
-     * 状态（中文）：未开始 / 进行中 / 已完成 / 搁置
+     * 状态（中文）：想看 / 在看 / 看过 / 搁置
      */
     private String status;
 

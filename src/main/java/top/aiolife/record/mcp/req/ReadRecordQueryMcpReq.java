@@ -15,7 +15,7 @@ public class ReadRecordQueryMcpReq {
     @Description("书名模糊搜索")
     private String title;
 
-    @Description("状态筛选：0-未开始，1-进行中，2-已完成，3-搁置")
+    @Description("状态筛选：0-想看，1-在看，2-看过，3-搁置")
     private Integer status;
 
     @Description("页码，默认 1")
