@@ -45,7 +45,9 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         if (query.getType() != null) {
             wrapper.eq(MovieEntity::getType, query.getType());
         }
-        if (query.getStatus() != null) {
+        if (query.getStatuses() != null && !query.getStatuses().isEmpty()) {
+            wrapper.in(MovieEntity::getStatus, query.getStatuses());
+        } else if (query.getStatus() != null) {
             wrapper.eq(MovieEntity::getStatus, query.getStatus());
         } else if (Boolean.TRUE.equals(query.getActiveOnly())) {
             wrapper.in(MovieEntity::getStatus, 0, 1);

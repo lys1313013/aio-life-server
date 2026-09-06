@@ -44,7 +44,9 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         if (query.getType() != null) {
             wrapper.eq(ReadRecordEntity::getType, query.getType());
         }
-        if (query.getStatus() != null) {
+        if (query.getStatuses() != null && !query.getStatuses().isEmpty()) {
+            wrapper.in(ReadRecordEntity::getStatus, query.getStatuses());
+        } else if (query.getStatus() != null) {
             wrapper.eq(ReadRecordEntity::getStatus, query.getStatus());
         } else if (Boolean.TRUE.equals(query.getActiveOnly())) {
             wrapper.in(ReadRecordEntity::getStatus, 0, 1);
