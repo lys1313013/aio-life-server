@@ -7,7 +7,11 @@ import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.pojo.query.MovieQuery;
 import top.aiolife.record.pojo.req.MovieReq;
+import top.aiolife.record.pojo.req.DoubanMovieImportReq;
+import top.aiolife.record.pojo.vo.DoubanMovieImportPreviewVO;
+import top.aiolife.record.pojo.vo.DoubanMovieImportResultVO;
 import top.aiolife.record.pojo.vo.MovieVO;
+import top.aiolife.record.service.IDoubanMovieImportService;
 import top.aiolife.record.service.IMovieService;
 
 /**
@@ -23,6 +27,8 @@ import top.aiolife.record.service.IMovieService;
 public class MovieController {
 
     private final IMovieService movieService;
+
+    private final IDoubanMovieImportService doubanMovieImportService;
 
     @PostMapping("/page")
     public ApiResponse<Page<MovieVO>> pageList(@RequestBody MovieQuery query) {
@@ -55,6 +61,18 @@ public class MovieController {
     @GetMapping("/parse-douban")
     public ApiResponse<MovieReq> parseDouban(@RequestParam String url) {
         return ApiResponse.success(movieService.parseDouban(url));
+    }
+
+    @PostMapping("/import/douban/preview")
+    public ApiResponse<DoubanMovieImportPreviewVO> previewDoubanImport(
+            @RequestBody DoubanMovieImportReq request) {
+        return ApiResponse.success(doubanMovieImportService.preview(request));
+    }
+
+    @PostMapping("/import/douban")
+    public ApiResponse<DoubanMovieImportResultVO> importDouban(
+            @RequestBody DoubanMovieImportReq request) {
+        return ApiResponse.success(doubanMovieImportService.importRecords(request));
     }
 
     @GetMapping("/active")

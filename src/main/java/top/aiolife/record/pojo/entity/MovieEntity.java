@@ -47,6 +47,11 @@ public class MovieEntity extends BaseEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime finishTime;
 
+    /**
+     * 个人评分：1-5
+     */
+    private Integer rating;
+
     private String remark;
 
     private Long userId;

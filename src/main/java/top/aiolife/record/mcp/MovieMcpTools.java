@@ -68,6 +68,7 @@ public class MovieMcpTools {
         mcp.setTotalProgress(vo.getTotalProgress());
         mcp.setStartTime(vo.getStartTime());
         mcp.setFinishTime(vo.getFinishTime());
+        mcp.setRating(vo.getRating());
         mcp.setRemark(vo.getRemark());
         mcp.setStatus(statusLabel(vo.getStatus()));
         return mcp;

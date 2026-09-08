@@ -703,6 +703,7 @@ CREATE TABLE IF NOT EXISTS `movie` (
     `current_progress` int(11) DEFAULT '0' COMMENT '当前进度（当前集数或观看时长）',
     `start_time` datetime DEFAULT NULL COMMENT '开始观看时间',
     `finish_time` datetime DEFAULT NULL COMMENT '看完时间',
+    `rating` tinyint DEFAULT NULL COMMENT '个人评分：1-5',
     `remark` varchar(1000) DEFAULT NULL COMMENT '短评/备注',
     `user_id` bigint(20) NOT NULL COMMENT '归属用户ID',
     `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

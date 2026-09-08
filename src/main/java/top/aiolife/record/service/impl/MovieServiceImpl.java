@@ -85,6 +85,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
     @Override
     public Long saveRecord(MovieReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
+        validateRating(req.getRating());
         ensureCoverUploaded(req, true);
         MovieEntity entity = new MovieEntity();
         BeanUtil.copyProperties(req, entity);
@@ -105,6 +106,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
     @Override
     public void updateRecord(MovieReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
+        validateRating(req.getRating());
         ensureCoverUploaded(req, true);
         MovieEntity entity = this.getById(req.getId());
         if (entity == null || !entity.getUserId().equals(userId)) {
@@ -122,6 +124,12 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         }
 
         this.updateById(entity);
+    }
+
+    private void validateRating(Integer rating) {
+        if (rating != null && (rating < 1 || rating > 5)) {
+            throw new IllegalArgumentException("个人评分必须为 1-5 的整数");
+        }
     }
 
     @Override

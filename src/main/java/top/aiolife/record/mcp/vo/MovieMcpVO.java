@@ -62,6 +62,11 @@ public class MovieMcpVO {
     private LocalDateTime finishTime;
 
     /**
+     * 个人评分：1-5
+     */
+    private Integer rating;
+
+    /**
      * 备注
      */
     private String remark;
