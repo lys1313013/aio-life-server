@@ -4,7 +4,9 @@ import cn.dev33.satoken.stp.StpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.record.client.DoubanAccountClient;
 import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.vo.DoubanAccountVO;
 import top.aiolife.record.service.IUserBindService;
 import top.aiolife.record.util.RedisUtil;
 
@@ -22,6 +24,9 @@ public class UserBindController {
 
     @Autowired
     private RedisUtil redisUtil;
+
+    @Autowired
+    private DoubanAccountClient doubanAccountClient;
 
     /**
      * github 绑定变更后失效 Redis 中缓存的「是否展示 GitHub 卡片」决策，使首页判断立即生效
@@ -46,6 +51,14 @@ public class UserBindController {
             }
         });
         return ApiResponse.success(list);
+    }
+
+    /**
+     * 根据豆瓣账号 ID 查询公开主页昵称，仅用于辅助用户确认账号。
+     */
+    @GetMapping("/douban/verify")
+    public ApiResponse<DoubanAccountVO> verifyDoubanAccount(@RequestParam String accountId) {
+        return ApiResponse.success(doubanAccountClient.verify(accountId));
     }
 
     /**
