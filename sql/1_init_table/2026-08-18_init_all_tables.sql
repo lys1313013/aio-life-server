@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS `user` (
 CREATE TABLE IF NOT EXISTS `user_bind` (
     `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
     `user_id` bigint(20) NOT NULL COMMENT '本系统用户ID',
-    `platform` varchar(32) NOT NULL COMMENT '平台类型：github, leetcode, shanbay',
+    `platform` varchar(32) NOT NULL COMMENT '平台类型：github, leetcode, csdn, shanbay, douban, weread',
     `platform_username` varchar(128) DEFAULT NULL COMMENT '第三方平台的用户名/账号',
     `access_token` text COMMENT '访问令牌',
     `meta_fields` json DEFAULT NULL COMMENT '额外配置(JSON)',

@@ -69,6 +69,11 @@ public class UserBindController {
         long userId = StpUtil.getLoginIdAsLong();
         userBindEntity.setUserId(userId);
 
+        if ("weread".equals(userBindEntity.getPlatform())
+                && (userBindEntity.getAccessToken() == null || userBindEntity.getAccessToken().isBlank())) {
+            return ApiResponse.error("微信读书 API Key 不能为空");
+        }
+
         // 检查是否存在同平台绑定
         UserBindEntity exist = userBindService.getBindByUserIdAndPlatform(userId, userBindEntity.getPlatform());
         if (exist != null) {

@@ -22,7 +22,7 @@ public class UserBindEntity extends BaseEntity {
     private Long userId;
 
     /**
-     * 平台类型：github, leetcode, csdn, shanbay, douban
+     * 平台类型：github, leetcode, csdn, shanbay, douban, weread
      */
     private String platform;
 
