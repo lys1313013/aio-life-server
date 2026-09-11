@@ -24,6 +24,11 @@ public class DashboardCardVO {
     private String icon = "svg:card";
 
     /**
+     * 图标颜色（CSS 颜色值），未设置时使用前端默认颜色
+     */
+    private String iconColor;
+
+    /**
      * 点击图标跳转链接
      */
     private String iconClickUrl;

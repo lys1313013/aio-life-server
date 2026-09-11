@@ -50,6 +50,7 @@ public class DashboardController {
                     card.setTitle(provider.getTitle());
                     card.setTotalTitle(provider.getTotalTitle());
                     card.setIcon(provider.getIcon());
+                    card.setIconColor(provider.getIconColor());
                     return card;
                 })
                 .collect(Collectors.toList());
@@ -67,6 +68,10 @@ public class DashboardController {
             return ApiResponse.error("未知任务类型");
         }
         long userId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(provider.getCard(userId));
+        DashboardCardVO card = provider.getCard(userId);
+        if (card != null && card.getIconColor() == null) {
+            card.setIconColor(provider.getIconColor());
+        }
+        return ApiResponse.success(card);
     }
 }
