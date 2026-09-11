@@ -1,5 +1,6 @@
 package top.aiolife.record.provider.impl;
 
+import cn.hutool.crypto.digest.DigestUtil;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,10 +10,13 @@ import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.vo.DashboardCardVO;
 import top.aiolife.record.provider.DashboardCardProvider;
 import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.util.RedisUtil;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.YearMonth;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 阅读卡片提供者
@@ -27,9 +31,14 @@ public class ReadCardProvider implements DashboardCardProvider {
 
     private static final String PLATFORM = "weread";
     private static final ZoneId WE_READ_ZONE_ID = ZoneId.of("Asia/Shanghai");
+    private static final long EFFECTIVE_READ_SECONDS = 60;
+    private static final String STREAK_CACHE_KEY_PREFIX = "weread:streak:";
+    private static final long STREAK_CACHE_HOURS = 72;
+    private static final int MAX_HISTORY_MONTHS = 24;
 
     private final IUserBindService userBindService;
     private final WeReadClient weReadClient;
+    private final RedisUtil redisUtil;
 
     @Override
     public String getType() {
@@ -43,7 +52,7 @@ public class ReadCardProvider implements DashboardCardProvider {
 
     @Override
     public String getTotalTitle() {
-        return "本月阅读";
+        return "连续阅读";
     }
 
     @Override
@@ -78,11 +87,18 @@ public class ReadCardProvider implements DashboardCardProvider {
 
         try {
             JSONObject data = weReadClient.getCurrentMonthReadData(bind.getAccessToken());
-            long todaySeconds = getTodayReadSeconds(data, LocalDate.now(WE_READ_ZONE_ID), WE_READ_ZONE_ID);
-            long monthSeconds = data.getLongValue("totalReadTime");
+            LocalDate today = LocalDate.now(WE_READ_ZONE_ID);
+            long todaySeconds = getReadSeconds(data, today, WE_READ_ZONE_ID);
+            int previousStreak = getStreakEndingOn(
+                    userId, bind.getAccessToken(), today.minusDays(1), today, data);
+            boolean readToday = todaySeconds >= EFFECTIVE_READ_SECONDS;
+            int todayStreak = readToday ? previousStreak + 1 : 0;
+            int displayedStreak = readToday ? todayStreak : previousStreak;
+
+            cacheStreak(userId, bind.getAccessToken(), today, todayStreak);
             card.setValue(formatDuration(todaySeconds));
             card.setValueColor(todaySeconds == 0 ? "red" : "#3FB27F");
-            card.setTotalValue(formatDuration(monthSeconds));
+            card.setTotalValue(displayedStreak + " 天");
 
             card.setRefreshInterval(300);
         } catch (Exception e) {
@@ -93,7 +109,93 @@ public class ReadCardProvider implements DashboardCardProvider {
         return card;
     }
 
-    static long getTodayReadSeconds(JSONObject data, LocalDate today, ZoneId zoneId) {
+    int getStreakEndingOn(
+            long userId,
+            String apiKey,
+            LocalDate targetDate,
+            LocalDate currentDate,
+            JSONObject currentMonthData) {
+        Integer cached = getCachedStreak(userId, apiKey, targetDate);
+        if (cached != null) {
+            return cached;
+        }
+
+        int streak = 0;
+        int historicalRequests = 0;
+        LocalDate cursor = targetDate;
+        YearMonth loadedMonth = YearMonth.from(currentDate);
+        JSONObject loadedData = currentMonthData;
+
+        while (historicalRequests <= MAX_HISTORY_MONTHS) {
+            if (!cursor.equals(targetDate)) {
+                Integer olderCachedStreak = getCachedStreak(userId, apiKey, cursor);
+                if (olderCachedStreak != null) {
+                    streak += olderCachedStreak;
+                    cacheStreak(userId, apiKey, targetDate, streak);
+                    return streak;
+                }
+            }
+
+            YearMonth cursorMonth = YearMonth.from(cursor);
+            if (!cursorMonth.equals(loadedMonth)) {
+                if (historicalRequests == MAX_HISTORY_MONTHS) {
+                    log.warn("微信读书连续阅读回溯达到上限，userId={}, months={}",
+                            userId, MAX_HISTORY_MONTHS);
+                    break;
+                }
+                long baseTime = cursor.withDayOfMonth(1)
+                        .atStartOfDay(WE_READ_ZONE_ID)
+                        .toEpochSecond();
+                loadedData = weReadClient.getMonthlyReadData(apiKey, baseTime);
+                loadedMonth = cursorMonth;
+                historicalRequests++;
+            }
+
+            while (YearMonth.from(cursor).equals(loadedMonth)) {
+                if (getReadSeconds(loadedData, cursor, WE_READ_ZONE_ID) < EFFECTIVE_READ_SECONDS) {
+                    cacheStreak(userId, apiKey, targetDate, streak);
+                    return streak;
+                }
+                streak++;
+                cursor = cursor.minusDays(1);
+            }
+        }
+
+        cacheStreak(userId, apiKey, targetDate, streak);
+        return streak;
+    }
+
+    private Integer getCachedStreak(long userId, String apiKey, LocalDate date) {
+        try {
+            String value = redisUtil.get(streakCacheKey(userId, apiKey, date));
+            return value == null ? null : Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            log.warn("微信读书连续阅读缓存格式无效，userId={}, date={}", userId, date);
+            return null;
+        } catch (Exception e) {
+            log.warn("读取微信读书连续阅读缓存失败，userId={}, date={}", userId, date, e);
+            return null;
+        }
+    }
+
+    private void cacheStreak(long userId, String apiKey, LocalDate date, int streak) {
+        try {
+            redisUtil.set(
+                    streakCacheKey(userId, apiKey, date),
+                    String.valueOf(streak),
+                    STREAK_CACHE_HOURS,
+                    TimeUnit.HOURS);
+        } catch (Exception e) {
+            log.warn("写入微信读书连续阅读缓存失败，userId={}, date={}", userId, date, e);
+        }
+    }
+
+    static String streakCacheKey(long userId, String apiKey, LocalDate date) {
+        String apiKeyFingerprint = DigestUtil.sha256Hex(apiKey.trim()).substring(0, 12);
+        return STREAK_CACHE_KEY_PREFIX + userId + ":" + apiKeyFingerprint + ":" + date;
+    }
+
+    static long getReadSeconds(JSONObject data, LocalDate date, ZoneId zoneId) {
         JSONObject readTimes = data.getJSONObject("readTimes");
         if (readTimes == null) {
             return 0;
@@ -104,7 +206,7 @@ public class ReadCardProvider implements DashboardCardProvider {
                         LocalDate bucketDate = Instant.ofEpochSecond(Long.parseLong(timestamp))
                                 .atZone(zoneId)
                                 .toLocalDate();
-                        return today.equals(bucketDate);
+                        return date.equals(bucketDate);
                     } catch (NumberFormatException e) {
                         return false;
                     }

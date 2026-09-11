@@ -25,6 +25,17 @@ public class WeReadClient {
      * @return 微信读书阅读统计数据
      */
     public JSONObject getCurrentMonthReadData(String apiKey) {
+        return getMonthlyReadData(apiKey, 0);
+    }
+
+    /**
+     * 查询指定时间所在自然月的阅读统计。
+     *
+     * @param apiKey   用户在微信读书获取的 API Key
+     * @param baseTime 月份内任意时间的 Unix 秒级时间戳，0 表示当前月
+     * @return 微信读书阅读统计数据
+     */
+    public JSONObject getMonthlyReadData(String apiKey, long baseTime) {
         String normalizedApiKey = apiKey == null ? "" : apiKey.trim();
         if (normalizedApiKey.isEmpty()) {
             throw new IllegalArgumentException("请先配置微信读书 API Key");
@@ -33,7 +44,7 @@ public class WeReadClient {
         JSONObject requestBody = new JSONObject();
         requestBody.put("api_name", "/readdata/detail");
         requestBody.put("mode", "monthly");
-        requestBody.put("baseTime", 0);
+        requestBody.put("baseTime", baseTime);
         requestBody.put("skill_version", SKILL_VERSION);
 
         try (HttpResponse response = HttpRequest.post(GATEWAY_URL)
