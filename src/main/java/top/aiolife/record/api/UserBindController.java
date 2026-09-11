@@ -8,6 +8,7 @@ import top.aiolife.record.client.DoubanAccountClient;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.vo.DoubanAccountVO;
 import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.service.IWereadService;
 import top.aiolife.record.util.RedisUtil;
 
 import java.util.List;
@@ -21,6 +22,9 @@ public class UserBindController {
 
     @Autowired
     private IUserBindService userBindService;
+
+    @Autowired
+    private IWereadService wereadService;
 
     @Autowired
     private RedisUtil redisUtil;
@@ -45,8 +49,8 @@ public class UserBindController {
         long userId = StpUtil.getLoginIdAsLong();
         List<UserBindEntity> list = userBindService.getBindsByUserId(userId);
         list.forEach(item -> {
-            // 如果不要求包含Token，则隐藏Token
-            if (includeToken == null || !includeToken) {
+            // 微信读书凭证始终隐藏，其他平台保留原 includeToken 行为。
+            if ("weread".equalsIgnoreCase(item.getPlatform()) || includeToken == null || !includeToken) {
                 item.setAccessToken(null);
             }
         });
@@ -69,7 +73,7 @@ public class UserBindController {
         long userId = StpUtil.getLoginIdAsLong();
         userBindEntity.setUserId(userId);
 
-        if ("weread".equals(userBindEntity.getPlatform())
+        if ("weread".equalsIgnoreCase(userBindEntity.getPlatform())
                 && (userBindEntity.getAccessToken() == null || userBindEntity.getAccessToken().isBlank())) {
             return ApiResponse.error("微信读书 API Key 不能为空");
         }
@@ -78,6 +82,11 @@ public class UserBindController {
         UserBindEntity exist = userBindService.getBindByUserIdAndPlatform(userId, userBindEntity.getPlatform());
         if (exist != null) {
             return ApiResponse.error("该平台账号已绑定，请勿重复添加");
+        }
+
+        if ("weread".equalsIgnoreCase(userBindEntity.getPlatform())) {
+            wereadService.connect(userBindEntity.getAccessToken().trim());
+            return ApiResponse.success(true);
         }
 
         userBindEntity.fillCreateCommonField(userId);
@@ -103,6 +112,17 @@ public class UserBindController {
             return ApiResponse.error("记录不存在或无权操作");
         }
 
+        if ("weread".equalsIgnoreCase(exist.getPlatform()) || "weread".equalsIgnoreCase(userBindEntity.getPlatform())) {
+            if (userBindEntity.getPlatform() != null && !exist.getPlatform().equalsIgnoreCase(userBindEntity.getPlatform())) {
+                return ApiResponse.error("请先解绑，再添加其他平台账号");
+            }
+            // 留空保留原 Key；不接受客户端回写服务端同步元数据。
+            if (userBindEntity.getAccessToken() != null && !userBindEntity.getAccessToken().isBlank()) {
+                wereadService.connect(userBindEntity.getAccessToken().trim());
+            }
+            return ApiResponse.success(true);
+        }
+
         userBindEntity.fillUpdateCommonField(userId);
         
         // 如果Access Token为空，则保留原值（不更新）
@@ -124,6 +144,10 @@ public class UserBindController {
         UserBindEntity entity = userBindService.getById(id);
         if (entity == null || !entity.getUserId().equals(userId)) {
             return ApiResponse.error("无权操作或记录不存在");
+        }
+        if ("weread".equalsIgnoreCase(entity.getPlatform())) {
+            wereadService.disconnect();
+            return ApiResponse.success(true);
         }
         boolean success = userBindService.removeById(id);
         evictGithubVisibleCache(userId, entity.getPlatform());

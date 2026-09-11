@@ -34,6 +34,8 @@ public class UserBindEntity extends BaseEntity {
     /**
      * 访问令牌
      */
+    @com.alibaba.fastjson2.annotation.JSONField(serialize = false)
+    @ToString.Exclude
     private String accessToken;
 
     /**
