@@ -17,7 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 public class RecommendNextVO {
     /**
-     * 推荐的时间块
+     * 推荐的时间块；当天没有剩余分钟时为 null
      */
     private TimeRecordEntity recommend;
     

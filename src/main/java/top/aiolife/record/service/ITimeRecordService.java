@@ -55,7 +55,7 @@ public interface ITimeRecordService extends IService<TimeRecordEntity> {
      * 推荐下一个时间块
      * @param userId 用户ID
      * @param date 日期 yyyy-MM-dd
-     * @return 推荐结果及当日记录
+     * @return 推荐结果及当日记录；当天没有剩余分钟时 recommend 为 null
      */
     RecommendNextVO recommendNext(long userId, String date);
 }

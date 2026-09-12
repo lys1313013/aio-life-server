@@ -272,6 +272,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
     /**
      * 计算推荐的下一个时间块
+     * @return 推荐时间块；当天没有剩余分钟时返回 null
      */
     public TimeRecordEntity calculateRecommendNext(List<TimeRecordEntity> records, LocalDate targetDate) {
         records.sort(Comparator.comparingInt(TimeRecordEntity::getStartTime));
@@ -294,11 +295,14 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
         if (!foundGap) {
             startTime = lastEndTime + 1;
+            if (startTime > 1439) {
+                return null;
+            }
             if (isToday) {
                 LocalDateTime now = LocalDateTime.now();
                 endTime = now.getHour() * 60 + now.getMinute();
             } else {
-                endTime = startTime + 30;
+                endTime = startTime + 29;
             }
         }
 
@@ -307,9 +311,6 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         }
 
         // 限制最大值为 1439 (23:59)
-        if (startTime > 1439) {
-            startTime = 1439;
-        }
         if (endTime > 1439) {
             endTime = 1439;
         }

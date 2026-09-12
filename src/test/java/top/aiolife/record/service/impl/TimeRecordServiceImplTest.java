@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @ExtendWith(MockitoExtension.class)
 class TimeRecordServiceImplTest {
@@ -47,9 +48,10 @@ class TimeRecordServiceImplTest {
         // When
         TimeRecordEntity result = timeRecordService.calculateRecommendNext(records, targetDate);
 
-        // Then: Should recommend 11 - 41
+        // Then: Should recommend 30 minutes (11 - 40, inclusive)
         assertEquals(11, result.getStartTime());
-        assertEquals(41, result.getEndTime());
+        assertEquals(40, result.getEndTime());
+        assertEquals(30, result.getDuration());
     }
 
     @Test
@@ -62,9 +64,10 @@ class TimeRecordServiceImplTest {
         // When
         TimeRecordEntity result = timeRecordService.calculateRecommendNext(records, targetDate);
 
-        // Then: Should recommend 0 - 30
+        // Then: Should recommend 30 minutes (0 - 29, inclusive)
         assertEquals(0, result.getStartTime());
-        assertEquals(30, result.getEndTime());
+        assertEquals(29, result.getEndTime());
+        assertEquals(30, result.getDuration());
     }
 
     @Test
@@ -85,7 +88,7 @@ class TimeRecordServiceImplTest {
     }
 
     @Test
-    void testRecommendNextAtEndOfDay() {
+    void testRecommendNext_全天已满时不推荐已占用的最后一分钟() {
         // Given: Record ending at 1439 (23:59)
         List<TimeRecordEntity> records = new ArrayList<>();
         records.add(createRecord(0, 1439));
@@ -95,9 +98,37 @@ class TimeRecordServiceImplTest {
         // When
         TimeRecordEntity result = timeRecordService.calculateRecommendNext(records, targetDate);
 
-        // Then: Should recommend 1439 - 1439 (since we cap at 1439)
+        assertNull(result);
+    }
+
+    @Test
+    void testRecommendNext_今日多条连续记录占满全天时无推荐() {
+        List<TimeRecordEntity> records = new ArrayList<>(List.of(
+                createRecord(720, 1439), createRecord(0, 719)));
+
+        assertNull(timeRecordService.calculateRecommendNext(records, LocalDate.now()));
+    }
+
+    @Test
+    void testRecommendNext_最后一分钟空闲时仍可推荐() {
+        List<TimeRecordEntity> records = new ArrayList<>(List.of(createRecord(0, 1438)));
+
+        TimeRecordEntity result = timeRecordService.calculateRecommendNext(records, LocalDate.now());
+
         assertEquals(1439, result.getStartTime());
         assertEquals(1439, result.getEndTime());
+        assertEquals(1, result.getDuration());
+    }
+
+    @Test
+    void testRecommendNext_末尾已满但中间有一分钟空隙时仍可推荐() {
+        List<TimeRecordEntity> records = new ArrayList<>(List.of(
+                createRecord(601, 1439), createRecord(0, 599)));
+
+        TimeRecordEntity result = timeRecordService.calculateRecommendNext(records, LocalDate.now());
+
+        assertEquals(600, result.getStartTime());
+        assertEquals(600, result.getEndTime());
         assertEquals(1, result.getDuration());
     }
 

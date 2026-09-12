@@ -330,6 +330,9 @@ public class TimeRecordController {
         
         // 获取推荐分类
         TimeRecordEntity recommend = result.getRecommend();
+        if (recommend == null) {
+            return ApiResponse.success(result);
+        }
         
         // 寻找紧邻的上一条记录分类
         Long previousCategoryId = null;
