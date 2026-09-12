@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -48,9 +49,9 @@ public class BVideoController {
         return bVideoMapper;
     }
 
-    @PostMapping("/query")
+    @GetMapping("/query")
     public ApiResponse<PageResp<BVideoEntity>> query(
-            @RequestBody CommonQuery<BVideoEntity> query) {
+            @QueryParams CommonQuery<BVideoEntity> query) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<BVideoEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(BVideoEntity::getUserId, userId);

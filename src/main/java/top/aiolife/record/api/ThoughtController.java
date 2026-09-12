@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -48,9 +49,9 @@ public class ThoughtController {
         return thoughtMapper;
     }
 
-    @PostMapping("/query")
+    @GetMapping("/query")
     public ApiResponse<PageResp<ThoughtEntity>> query(
-            @RequestBody CommonQuery<ThoughtEntity> query) {
+            @QueryParams CommonQuery<ThoughtEntity> query) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<ThoughtEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ThoughtEntity::getUserId, userId);

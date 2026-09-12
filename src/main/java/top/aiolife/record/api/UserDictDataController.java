@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -32,8 +33,8 @@ public class UserDictDataController {
     private UserDictDataMapper userDictDataMapper;
     private UserDictDataService userDictDataService;
 
-    @PostMapping("/query")
-    public ApiResponse<PageResp<UserDictDataEntity>> query(@RequestBody CommonQuery<UserDictDataEntity> query) {
+    @GetMapping("/query")
+    public ApiResponse<PageResp<UserDictDataEntity>> query(@QueryParams CommonQuery<UserDictDataEntity> query) {
         Long userId = StpUtil.getLoginIdAsLong();
 
         UserDictDataEntity condition = query.getCondition();
@@ -105,8 +106,8 @@ public class UserDictDataController {
     // ================= 管理员 API =================
 
     @cn.dev33.satoken.annotation.SaCheckRole("admin")
-    @PostMapping("/admin/query")
-    public ApiResponse<PageResp<UserDictDataEntity>> adminQuery(@RequestBody CommonQuery<UserDictDataEntity> query) {
+    @GetMapping("/admin/query")
+    public ApiResponse<PageResp<UserDictDataEntity>> adminQuery(@QueryParams CommonQuery<UserDictDataEntity> query) {
         LambdaQueryWrapper<UserDictDataEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         
         // 强制只能查询基础值 (userId = 0)

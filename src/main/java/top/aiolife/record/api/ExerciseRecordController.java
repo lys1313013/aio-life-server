@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -48,9 +49,9 @@ public class ExerciseRecordController {
     /**
      * 查询运动记录列表
      */
-    @PostMapping("/query")
+    @GetMapping("/query")
     public ApiResponse<PageResp<ExerciseRecordEntity>> query(
-            @RequestBody CommonQuery<ExerciseRecordEntity> query) {
+            @QueryParams CommonQuery<ExerciseRecordEntity> query) {
         Long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, userId);
@@ -120,14 +121,14 @@ public class ExerciseRecordController {
      * 获取运动记录统计数据（限制时间范围和数据量），用于统计图表
      * 返回完整的实体对象
      */
-    @PostMapping("/statistics")
-    public ApiResponse<List<ExerciseRecordEntity>> getStatistics(@RequestBody(required = false) Map<String, Object> params) {
+    @GetMapping("/statistics")
+    public ApiResponse<List<ExerciseRecordEntity>> getStatistics(@RequestParam Map<String, Object> params) {
         Long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, userId);
 
         // 处理查询条件
-        if (params != null) {
+        if (params != null && !params.isEmpty()) {
             // 运动类型
             Long exerciseTypeId = toExerciseTypeId(params.get("exerciseTypeId"));
             lambdaQueryWrapper.eq(exerciseTypeId != null, ExerciseRecordEntity::getExerciseTypeId, exerciseTypeId);
@@ -158,14 +159,14 @@ public class ExerciseRecordController {
     /**
      * 获取轻量级运动记录统计数据，仅包含统计所需字段
      */
-    @PostMapping("/statistics/light")
-    public ApiResponse<List<ExerciseStatisticsDTO>> getLightStatistics(@RequestBody(required = false) Map<String, Object> params) {
+    @GetMapping("/statistics/light")
+    public ApiResponse<List<ExerciseStatisticsDTO>> getLightStatistics(@RequestParam Map<String, Object> params) {
         Long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, userId);
 
         // 处理查询条件
-        if (params != null) {
+        if (params != null && !params.isEmpty()) {
             // 运动类型
             Long exerciseTypeId = toExerciseTypeId(params.get("exerciseTypeId"));
             lambdaQueryWrapper.eq(exerciseTypeId != null, ExerciseRecordEntity::getExerciseTypeId, exerciseTypeId);

@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -30,8 +31,8 @@ public class MovieController {
 
     private final IDoubanMovieImportService doubanMovieImportService;
 
-    @PostMapping("/page")
-    public ApiResponse<Page<MovieVO>> pageList(@RequestBody MovieQuery query) {
+    @GetMapping("/page")
+    public ApiResponse<Page<MovieVO>> pageList(@QueryParams MovieQuery query) {
         return ApiResponse.success(movieService.pageList(query));
     }
 

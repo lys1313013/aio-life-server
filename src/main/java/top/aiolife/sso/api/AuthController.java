@@ -2,8 +2,11 @@ package top.aiolife.sso.api;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.sso.pojo.req.RegisterReq;
+import top.aiolife.sso.pojo.req.SendEmailCodeReq;
 import top.aiolife.sso.pojo.req.ResetPasswordReq;
 import top.aiolife.sso.service.IUserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,25 +27,33 @@ public class AuthController {
     /**
      * 发送注册验证码
      *
-     * @param email 邮箱
+     * @param body 邮箱参数
      */
-    @GetMapping("/sendEmailCode")
-    public ApiResponse<Void> sendEmailCode(@RequestParam String email, HttpServletRequest request) {
+    @PostMapping("/sendEmailCode")
+    public ApiResponse<Void> sendEmailCode(@RequestBody SendEmailCodeReq body, HttpServletRequest request) {
+        validateEmail(body);
         String ip = getIp(request);
-        userService.sendRegisterCode(email, ip);
+        userService.sendRegisterCode(body.getEmail(), ip);
         return ApiResponse.success();
     }
 
     /**
      * 发送重置密码验证码
      *
-     * @param email 邮箱
+     * @param body 邮箱参数
      */
-    @GetMapping("/sendResetPasswordCode")
-    public ApiResponse<Void> sendResetPasswordCode(@RequestParam String email, HttpServletRequest request) {
+    @PostMapping("/sendResetPasswordCode")
+    public ApiResponse<Void> sendResetPasswordCode(@RequestBody SendEmailCodeReq body, HttpServletRequest request) {
+        validateEmail(body);
         String ip = getIp(request);
-        userService.sendResetPasswordCode(email, ip);
+        userService.sendResetPasswordCode(body.getEmail(), ip);
         return ApiResponse.success();
+    }
+
+    private void validateEmail(SendEmailCodeReq body) {
+        if (body.getEmail() == null || body.getEmail().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "邮箱不能为空");
+        }
     }
 
     /**

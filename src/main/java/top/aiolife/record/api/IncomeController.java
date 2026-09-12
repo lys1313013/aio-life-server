@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import org.springframework.web.bind.annotation.GetMapping;
+import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -51,9 +53,9 @@ public class IncomeController {
     }
 
 
-    @PostMapping("/query")
+    @GetMapping("/query")
     public ApiResponse<PageResp<IncomeEntity>> query(
-            @RequestBody CommonQuery<IncomeQuery> query) {
+            @QueryParams CommonQuery<IncomeQuery> query) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<IncomeEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(IncomeEntity::getUserId, userId);
@@ -98,7 +100,7 @@ public class IncomeController {
         return ApiResponse.success(b);
     }
 
-    @PostMapping("/statisticsByYear")
+    @GetMapping("/statisticsByYear")
     public ApiResponse<Object> statisticsByYear() {
         long userId = StpUtil.getLoginIdAsLong();
         List<IncStaByYearVO> list = incomeMapper.statisticsByYear(userId);
@@ -125,7 +127,7 @@ public class IncomeController {
         return ApiResponse.success(ans);
     }
     
-    @PostMapping("/statisticsByMonth")
+    @GetMapping("/statisticsByMonth")
     public ApiResponse<Object> statisticsByMonth() {
         long userId = StpUtil.getLoginIdAsLong();
         List<IncStaByYearVO> list = incomeMapper.statisticsByMonth(userId);

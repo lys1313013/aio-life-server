@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import org.springframework.web.bind.annotation.GetMapping;
+import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -39,8 +41,8 @@ public class MemoController {
     /**
      * 查询列表
      */
-    @PostMapping("/query")
-    public ApiResponse<PageResp<MemoEntity>> query(@RequestBody CommonQuery<MemoEntity> query) {
+    @GetMapping("/query")
+    public ApiResponse<PageResp<MemoEntity>> query(@QueryParams CommonQuery<MemoEntity> query) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<MemoEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(MemoEntity::getUserId, userId);

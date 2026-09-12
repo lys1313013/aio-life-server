@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -63,9 +64,9 @@ public class SysDictTypeController {
     }
 
     @SaCheckRole("admin")
-    @PostMapping("/query")
+    @GetMapping("/query")
     public ApiResponse<PageResp<SysDictTypeEntity>> query(
-            @RequestBody CommonQuery<SysDictTypeEntity> query) {
+            @QueryParams CommonQuery<SysDictTypeEntity> query) {
         LambdaQueryWrapper<SysDictTypeEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
 
         SysDictTypeEntity condition = query.getCondition();

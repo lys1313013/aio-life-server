@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import org.springframework.web.bind.annotation.GetMapping;
+import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -43,9 +45,9 @@ public class TaskColumnController {
         return taskColumnMapper;
     }
 
-    @PostMapping("/query")
+    @GetMapping("/query")
     public ApiResponse<PageResp<TaskColumnEntity>> query(
-            @RequestBody CommonQuery<TaskColumnEntity> query) {
+            @QueryParams CommonQuery<TaskColumnEntity> query) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<TaskColumnEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(TaskColumnEntity::getUserId, userId);

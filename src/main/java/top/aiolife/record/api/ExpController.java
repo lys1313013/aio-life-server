@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import org.springframework.web.bind.annotation.GetMapping;
+import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -57,9 +59,9 @@ public class ExpController {
         return expenseMapper;
     }
 
-    @PostMapping("/query")
+    @GetMapping("/query")
     public ApiResponse<PageResp<ExpenseEntity>> query(
-            @RequestBody CommonQuery<ExpenseQuery> query) {
+            @QueryParams CommonQuery<ExpenseQuery> query) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<ExpenseEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ExpenseEntity::getUserId, userId);
@@ -179,7 +181,7 @@ public class ExpController {
     /**
      * 按年度统计支出
      */
-    @PostMapping("/statisticsByYear")
+    @GetMapping("/statisticsByYear")
     public ApiResponse<Object> statisticsByYear() {
         long userId = StpUtil.getLoginIdAsLong();
         List<ExpStaByYearVO> list = expenseMapper.statisticsByYear(userId);
@@ -209,7 +211,7 @@ public class ExpController {
     /**
      * 按月度统计支出
      */
-    @PostMapping("/statisticsByMonth")
+    @GetMapping("/statisticsByMonth")
     public ApiResponse<Object> statisticsByMonth() {
         long userId = StpUtil.getLoginIdAsLong();
         List<ExpStaByYearVO> list = expenseMapper.statisticsByMonth(userId);

@@ -6,7 +6,7 @@ import top.aiolife.record.service.ILeetcodeService;
 import jakarta.mail.MessagingException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,7 +21,7 @@ public class LeetcodeController {
     /**
      * 没啥地方使用，只是用来手动触发
      */
-    @GetMapping("/notifyTodayQuestion")
+    @PostMapping("/notifyTodayQuestion")
     public ApiResponse<Void> notifyTodayQuestion() throws MessagingException {
         StpUtil.getLoginIdAsLong();
         leetcodeService.notifyTodayQuestion();

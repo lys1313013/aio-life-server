@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -30,9 +31,9 @@ public class DeviceController {
         return eleDeviceMapper;
     }
 
-    @PostMapping("/query")
+    @GetMapping("/query")
     public ApiResponse<PageResp<DeviceEntity>> query(
-            @RequestBody CommonQuery<DeviceEntity> query) {
+            @QueryParams CommonQuery<DeviceEntity> query) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<DeviceEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(DeviceEntity::getUserId, userId);

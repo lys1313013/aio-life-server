@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -57,9 +58,9 @@ public class TimeRecordController {
         return timeRecordService;
     }
 
-    @PostMapping("/query")
+    @GetMapping("/query")
     public ApiResponse<PageResp<TimeRecordEntity>> query(
-            @RequestBody CommonQuery<TimeRecordEntity> query) {
+            @QueryParams CommonQuery<TimeRecordEntity> query) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<TimeRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.select(
@@ -86,9 +87,9 @@ public class TimeRecordController {
      * 查询指定日期的记录
      * @param query 查询参数
      */
-    @PostMapping("/queryByDateRange")
+    @GetMapping("/queryByDateRange")
     public ApiResponse<List<TimeRecordEntity>> queryByDateRange(
-            @RequestBody CommonQuery<TimeWeekQuery> query) {
+            @QueryParams CommonQuery<TimeWeekQuery> query) {
         List<TimeRecordEntity> list = queryByDateRangeList(query);
         return ApiResponse.success(list);
     }
@@ -97,9 +98,9 @@ public class TimeRecordController {
      * 查询指定日期的记录（格式化时间返回）
      * @param req 查询参数（包含startDate和endDate）
      */
-    @PostMapping("/queryByDateRangeForAI")
+    @GetMapping("/queryByDateRangeForAI")
     public ApiResponse<List<TimeRecordDateRangeVO>> queryByDateRangeForAI(
-            @RequestBody TimeRecordDateRangeMcpReq req) {
+            @QueryParams TimeRecordDateRangeMcpReq req) {
         long userId = StpUtil.getLoginIdAsLong();
         List<TimeRecordEntity> list = queryByDateRangeForAIList(userId, req);
         List<TimeRecordDateRangeVO> voList = TimeRecordConvertor.INSTANCE.toDateRangeVOList(list);

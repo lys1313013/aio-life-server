@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +19,8 @@ public class ReadRecordController {
 
     private final IReadRecordService readRecordService;
 
-    @PostMapping("/page")
-    public ApiResponse<Page<ReadRecordVO>> pageList(@RequestBody ReadRecordQuery query) {
+    @GetMapping("/page")
+    public ApiResponse<Page<ReadRecordVO>> pageList(@QueryParams ReadRecordQuery query) {
         return ApiResponse.success(readRecordService.pageList(query));
     }
 

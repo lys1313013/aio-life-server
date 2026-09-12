@@ -1,5 +1,6 @@
 package top.aiolife.sso.api;
 
+import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -18,8 +19,8 @@ public class UserCenterController {
 
     private final IUserService userService;
 
-    @PostMapping("/list")
-    public ApiResponse<PageResp<UserVO>> list(@RequestBody CommonQuery query) {
+    @GetMapping("/list")
+    public ApiResponse<PageResp<UserVO>> list(@QueryParams CommonQuery query) {
         return ApiResponse.success(userService.getUserList(query));
     }
 
