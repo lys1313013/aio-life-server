@@ -21,7 +21,7 @@ public interface ITimeRecordService extends IService<TimeRecordEntity> {
      *
      * @param timeRecordReq 请求参数
      */
-    void saveTimeRecord(TimeRecordReq timeRecordReq);
+    String saveTimeRecord(TimeRecordReq timeRecordReq);
 
     /**
      * 更新时间记录

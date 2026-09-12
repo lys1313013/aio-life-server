@@ -68,8 +68,10 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void saveTimeRecord(TimeRecordReq timeRecordReq) {
+    public String saveTimeRecord(TimeRecordReq timeRecordReq) {
         TimeRecordEntity entity = TimeRecordConvertor.INSTANCE.Req2Entity(timeRecordReq);
+        // 新增时始终由服务端生成 ID，兼容旧客户端携带的临时 ID。
+        entity.setId(null);
         List<ExerciseRecordReq> exerciseRecordReqs = timeRecordReq.getExercises();
 
         long userId = StpUtil.getLoginIdAsLong();
@@ -88,7 +90,9 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
             entity.setDuration(entity.getEndTime() - entity.getStartTime() + 1);
         }
 
-        this.save(entity);
+        if (!this.save(entity)) {
+            throw new IllegalStateException("保存时间记录失败");
+        }
         updateRelateStatusIfNecessary(entity);
 
         if (exerciseRecordReqs != null && !exerciseRecordReqs.isEmpty()) {
@@ -111,6 +115,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
                 exerciseRecordService.saveBatch(validExercises);
             }
         }
+        return entity.getId();
     }
 
     @Override

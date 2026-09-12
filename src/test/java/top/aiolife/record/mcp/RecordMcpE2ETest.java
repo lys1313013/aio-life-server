@@ -128,8 +128,8 @@ public class RecordMcpE2ETest {
                 }
 
                 @Override
-                public ApiResponse<Boolean> save(TimeRecordReq req) {
-                    return ApiResponse.success(true);
+                public ApiResponse<String> save(TimeRecordReq req) {
+                    return ApiResponse.success("2099999999999999999");
                 }
             };
         }

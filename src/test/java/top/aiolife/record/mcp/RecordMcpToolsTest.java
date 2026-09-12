@@ -80,9 +80,9 @@ class RecordMcpToolsTest {
             }
 
             @Override
-            public ApiResponse<Boolean> save(TimeRecordReq req) {
+            public ApiResponse<String> save(TimeRecordReq req) {
                 savedTimeRecord = req;
-                return ApiResponse.success(true);
+                return ApiResponse.success("2099999999999999999");
             }
         };
 

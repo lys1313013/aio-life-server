@@ -20,6 +20,26 @@ class TimeRecordServiceImplTest {
     private TimeRecordServiceImpl timeRecordService;
 
     @Test
+    void testSave_忽略客户端ID并返回生成ID() {
+        var service = org.mockito.Mockito.spy(timeRecordService);
+        var req = new top.aiolife.record.pojo.req.TimeRecordReq();
+        req.setId("client-id");
+        req.setStartTime(540);
+        req.setEndTime(569);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            TimeRecordEntity entity = invocation.getArgument(0);
+            assertNull(entity.getId());
+            assertEquals(30, entity.getDuration());
+            entity.setId("2099999999999999999");
+            return true;
+        }).when(service).save(org.mockito.ArgumentMatchers.any(TimeRecordEntity.class));
+        try (var stp = org.mockito.Mockito.mockStatic(cn.dev33.satoken.stp.StpUtil.class)) {
+            stp.when(cn.dev33.satoken.stp.StpUtil::getLoginIdAsLong).thenReturn(1L);
+            assertEquals("2099999999999999999", service.saveTimeRecord(req));
+        }
+    }
+
+    @Test
     void testRecommendNextWithGap() {
         // Given: 0-10, 11-12, 15-20
         List<TimeRecordEntity> records = new ArrayList<>();

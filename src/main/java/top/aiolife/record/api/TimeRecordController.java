@@ -270,9 +270,8 @@ public class TimeRecordController {
     }
 
     @PostMapping
-    public ApiResponse<Boolean> save(@RequestBody TimeRecordReq timeRecordReq) {
-        timeRecordService.saveTimeRecord(timeRecordReq);
-        return ApiResponse.success();
+    public ApiResponse<String> save(@RequestBody TimeRecordReq timeRecordReq) {
+        return ApiResponse.success(timeRecordService.saveTimeRecord(timeRecordReq));
     }
 
     @PutMapping("/{id}")
