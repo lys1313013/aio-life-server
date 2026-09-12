@@ -37,11 +37,6 @@ class QueryHttpContractTest {
 
     private final ObjectMapper mapper = new JsonConfig().jacksonObjectMapper(Jackson2ObjectMapperBuilder.json());
 
-    private <T> T mock(Class<T> type) {
-        // 此处不需要静态或 final mock，避免测试依赖 JVM 动态 attach 权限。
-        return org.mockito.Mockito.mock(type, withSettings().mockMaker(org.mockito.MockMakers.SUBCLASS));
-    }
-
     private MockMvc mvc(Object controller) {
         return MockMvcBuilders.standaloneSetup(controller)
                 .setCustomArgumentResolvers(new QueryParamsArgumentResolver(mapper))
