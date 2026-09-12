@@ -1,0 +1,21 @@
+# CI 使用测试任务生成的 JAR；两个目标架构共用同一份 Java 字节码。
+FROM eclipse-temurin:21-jre-alpine
+
+RUN apk add --no-cache tzdata \
+    && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
+    && echo "Asia/Shanghai" > /etc/timezone
+
+WORKDIR /app
+
+RUN addgroup -g 1001 -S appgroup \
+    && adduser -u 1001 -S appuser -G appgroup
+
+COPY --chown=appuser:appgroup app.jar app.jar
+
+USER appuser
+
+EXPOSE 45678
+
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

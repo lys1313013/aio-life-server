@@ -80,8 +80,17 @@ jobs:
             mysql "${mysql_args[@]}" < "$sql_file"
           done < <(find sql/2_ini_data -maxdepth 1 -type f -name '*.sql' | sort)
 
-      - name: Run tests
-        run: mvn test -B
+      - name: Test and package
+        run: mvn package -B -ntp
+
+      - name: Upload application JAR
+        uses: actions/upload-artifact@v6
+        with:
+          name: application-jar
+          path: target/*.jar
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
 
       - name: Upload test reports
         if: always()
@@ -103,6 +112,20 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Download tested application JAR
+        uses: actions/download-artifact@v6
+        with:
+          name: application-jar
+          path: ${{ runner.temp }}/server-image
+
+      - name: Prepare Docker context
+        run: |
+          set -euo pipefail
+          jars=("$RUNNER_TEMP/server-image/"*.jar)
+          test "${#jars[@]}" -eq 1
+          mv "${jars[0]}" "$RUNNER_TEMP/server-image/app.jar"
+          cp Dockerfile.runtime "$RUNNER_TEMP/server-image/Dockerfile"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -143,8 +166,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: ./Dockerfile
+          context: ${{ runner.temp }}/server-image
+          file: ${{ runner.temp }}/server-image/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           # 关闭 attestation，避免阿里云 ACR 拒绝 application/vnd.oci.empty.v1+json 类型的 manifest
@@ -155,5 +178,5 @@ jobs:
             ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/aio-life-server:latest
             ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/aio-life-server:${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=server-runtime
+          cache-to: type=gha,scope=server-runtime,mode=min

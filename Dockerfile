@@ -1,7 +1,8 @@
 # ================================
 # Stage 1: Build
 # ================================
-FROM maven:3.9-eclipse-temurin-21-alpine AS builder
+# Java 字节码与目标 CPU 无关，使用构建机原生平台，避免 QEMU 模拟编译。
+FROM --platform=$BUILDPLATFORM maven:3.9-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /app
 
