@@ -26,7 +26,7 @@ public class SystemNotificationSender extends AbstractNotificationSender {
     }
 
     @Override
-    public void send(UserEntity user, String title, String htmlContent, String textContent) {
+    public boolean send(UserEntity user, String title, String htmlContent, String textContent) {
         try {
             MessageEntity message = new MessageEntity();
             // 系统管理账号ID为1
@@ -44,8 +44,10 @@ public class SystemNotificationSender extends AbstractNotificationSender {
 
             messageService.createMessage(message);
             log.info("系统通知发送成功，用户ID：{}", user.getId());
+            return true;
         } catch (Exception e) {
             log.error("系统通知发送失败，用户ID：" + user.getId(), e);
+            return false;
         }
     }
 }

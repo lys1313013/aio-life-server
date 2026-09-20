@@ -22,6 +22,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sa-token.version>1.40.0</sa-token.version>
         <mcp.version>0.14.0</mcp.version>
+        <redisson.version>3.52.0</redisson.version>
         <spring.profiles.active>test</spring.profiles.active>
         <test.excludedGroups>external</test.excludedGroups>
     </properties>
@@ -141,6 +142,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <!-- 仅引入锁客户端，保留现有 Lettuce / Spring Data Redis 连接与缓存配置 -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>${redisson.version}</version>
         </dependency>
         <!-- Cache 依赖 -->
         <dependency>

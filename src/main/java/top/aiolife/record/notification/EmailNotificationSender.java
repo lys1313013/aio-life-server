@@ -25,17 +25,19 @@ public class EmailNotificationSender extends AbstractNotificationSender {
     }
 
     @Override
-    public void send(UserEntity user, String title, String htmlContent, String textContent) {
+    public boolean send(UserEntity user, String title, String htmlContent, String textContent) {
         if (user.getEmail() == null || user.getEmail().isEmpty()) {
             log.warn("用户 {} 未设置邮箱，跳过邮件发送", user.getId());
-            return;
+            return false;
         }
         try {
             // 使用HTML内容发送邮件
             mailService.sendHtmlEmail(user.getEmail(), title, htmlContent, "leetcode_daily_question", "system");
             log.info("邮件通知发送成功，用户ID：{}", user.getId());
+            return true;
         } catch (Exception e) {
             log.error("邮件通知发送失败，用户ID：" + user.getId(), e);
+            return false;
         }
     }
 }

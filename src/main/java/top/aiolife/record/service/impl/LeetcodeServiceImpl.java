@@ -15,10 +15,12 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.core.util.DateUtil;
 import top.aiolife.record.client.LeetcodeClient;
 import top.aiolife.record.notification.AbstractNotificationSender;
 import top.aiolife.record.notification.NotificationRequest;
+import top.aiolife.record.notification.NotificationSendGuard;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.leetcode.QuestionDataResponse;
 import top.aiolife.record.pojo.leetcode.RecentACSubmissionsResponse;
@@ -63,6 +65,10 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
     private final FeishuNotificationService feishuNotificationService;
 
     private final RedisUtil redisUtil;
+
+    private final DistributedLockExecutor locks;
+
+    private final NotificationSendGuard sendGuard;
 
     private final LeetcodeClient leetcodeClient;
 
@@ -118,6 +124,10 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
 
     @Override
     public void check() {
+        locks.tryRun("leetcode:check:lock", this::checkUsers);
+    }
+
+    private void checkUsers() {
         // Find all users with leetcode bind
         List<UserBindEntity> binds = userBindService.list(new LambdaQueryWrapper<UserBindEntity>()
                 .eq(UserBindEntity::getPlatform, "leetcode"));
@@ -184,20 +194,9 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
                     log.info("给 userId: {} 发送通知提醒", userEntity.getId());
                     String title = "leetcode咋还没刷";
                     String content = "leetcode咋还没刷";
-                    for (AbstractNotificationSender sender : notificationSenders) {
-                        if (feishuNotificationService.isChannelEnabled(
-                                userEntity.getId(), "LEETCODE_REMINDER", sender.getChannel())) {
-                            sender.send(userEntity, title, content, content);
-                        }
-                    }
-                    feishuNotificationService.sendIfEnabled(new NotificationRequest(
-                            userEntity.getId(),
-                            "LEETCODE_REMINDER",
-                            title,
-                            content,
-                            todayUrl,
-                            "leetcode:reminder:" + LocalDate.now() + ":" + userEntity.getId()
-                    ));
+                    sendNotification(userEntity, new NotificationRequest(
+                            userEntity.getId(), "LEETCODE_REMINDER", title, content, todayUrl,
+                            "leetcode:reminder:" + now + ":" + userEntity.getId()), content);
                 } catch (Exception e) {
                     log.error("发送通知失败", e);
                 }
@@ -275,6 +274,11 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
 
     @Override
     public void notifyTodayQuestion() {
+        locks.tryRun("leetcode:daily:lock", this::notifyTodayQuestionUsers);
+    }
+
+    private void notifyTodayQuestionUsers() {
+        LocalDate notificationDate = LocalDate.now();
         // Find all bindings for leetcode
         List<UserBindEntity> binds = userBindService.list(new LambdaQueryWrapper<UserBindEntity>()
                 .eq(UserBindEntity::getPlatform, "leetcode"));
@@ -298,22 +302,25 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
         for (UserBindEntity bind : binds) {
             UserEntity user = userMapper.selectById(bind.getUserId());
             if (user != null) {
-                for (AbstractNotificationSender sender : notificationSenders) {
-                    if (feishuNotificationService.isChannelEnabled(
-                            user.getId(), "LEETCODE_DAILY", sender.getChannel())) {
-                        sender.send(user, title, htmlContent, textContent);
-                    }
-                }
-                feishuNotificationService.sendIfEnabled(new NotificationRequest(
-                        user.getId(),
-                        "LEETCODE_DAILY",
-                        title,
-                        textContent,
+                sendNotification(user, new NotificationRequest(
+                        user.getId(), "LEETCODE_DAILY", title, textContent,
                         "https://leetcode.cn/problems/" + questionData.getData().getQuestion().getTitleSlug() + "/",
-                        "leetcode:daily:" + LocalDate.now() + ":" + user.getId()
-                ));
+                        "leetcode:daily:" + notificationDate + ":" + user.getId()), htmlContent);
             }
         }
+    }
+
+    private void sendNotification(UserEntity user, NotificationRequest request, String htmlContent) {
+        for (AbstractNotificationSender sender : notificationSenders) {
+            try {
+                if (feishuNotificationService.isChannelEnabled(user.getId(), request.bizType(), sender.getChannel())) {
+                    sendGuard.sendOnce(sender, user, request, htmlContent);
+                }
+            } catch (Exception e) {
+                log.error("通知渠道处理失败，userId={}, channel={}", user.getId(), sender.getChannel(), e);
+            }
+        }
+        feishuNotificationService.sendIfEnabled(request);
     }
 
     public QuestionDataResponse getTodayQuestion() {

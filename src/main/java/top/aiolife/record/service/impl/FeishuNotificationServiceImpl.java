@@ -5,8 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
+import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.record.mapper.NotificationChannelConfigMapper;
 import top.aiolife.record.mapper.NotificationDeliveryMapper;
 import top.aiolife.record.mapper.NotificationPreferenceMapper;
@@ -54,6 +59,8 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
     private final FeishuAppClient feishuAppClient;
     private final ObjectMapper objectMapper;
     private final IUserBindService userBindService;
+    private final DistributedLockExecutor locks;
+    private final DataSourceTransactionManager transactionManager;
 
     @Override
     public FeishuChannelConfigVO getConfig(long userId) {
@@ -277,7 +284,9 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
     @Override
     public void sendIfEnabled(NotificationRequest request) {
         try {
-            doSendIfEnabled(request);
+            validateNotification(request);
+            String lockKey = "notification:feishu:enqueue:lock:" + request.receiverUserId() + ":" + request.dedupKey();
+            locks.tryRun(lockKey, () -> doSendIfEnabled(request));
         } catch (Exception e) {
             Long userId = request == null ? null : request.receiverUserId();
             String bizType = request == null ? null : request.bizType();
@@ -425,10 +434,30 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
     }
 
     private boolean deliveryExists(String dedupKey, long userId, String channel) {
-        return deliveryMapper.selectCount(new LambdaQueryWrapper<NotificationDeliveryEntity>()
+        // 先查询当前事务，识别本事务尚未提交的入队，避免同一事务内重复插入。
+        if (deliveryExistsInCurrentContext(dedupKey, userId, channel)) {
+            return true;
+        }
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            return false;
+        }
+
+        // 外层事务可能持有旧的 REPEATABLE READ 快照。仅挂起事务进行一次普通查询，
+        // 读取最新已提交记录；恢复后仍在原事务中插入，回滚语义保持不变。
+        // 此时仍持有 Redisson 事件锁，其他实例不能并发插入同一事件。
+        TransactionTemplate committedRead = new TransactionTemplate(transactionManager);
+        committedRead.setPropagationBehavior(TransactionDefinition.PROPAGATION_NOT_SUPPORTED);
+        return Boolean.TRUE.equals(committedRead.execute(status ->
+                deliveryExistsInCurrentContext(dedupKey, userId, channel)));
+    }
+
+    private boolean deliveryExistsInCurrentContext(String dedupKey, long userId, String channel) {
+        return !deliveryMapper.selectList(new LambdaQueryWrapper<NotificationDeliveryEntity>()
+                .select(NotificationDeliveryEntity::getId)
                 .eq(NotificationDeliveryEntity::getDedupKey, dedupKey)
                 .eq(NotificationDeliveryEntity::getUserId, userId)
-                .eq(NotificationDeliveryEntity::getChannel, channel)) > 0;
+                .eq(NotificationDeliveryEntity::getChannel, channel)
+                .last("LIMIT 1")).isEmpty();
     }
 
     private String encryptPayload(NotificationRequest request) {

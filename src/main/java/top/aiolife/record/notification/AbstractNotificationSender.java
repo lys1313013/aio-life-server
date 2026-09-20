@@ -17,8 +17,9 @@ public abstract class AbstractNotificationSender {
      * @param title       标题
      * @param htmlContent HTML格式内容
      * @param textContent 纯文本格式内容
+     * @return 是否实际发送成功；跳过或失败返回 false
      */
-    public abstract void send(UserEntity user, String title, String htmlContent, String textContent);
+    public abstract boolean send(UserEntity user, String title, String htmlContent, String textContent);
 
     public abstract String getChannel();
 }
