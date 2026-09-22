@@ -5,6 +5,7 @@
     <select id="getMostFrequentNextCategory" resultType="java.lang.Long">
         SELECT next_record.category_id
         FROM time_record prev_record
+        JOIN sys_work_calendar calendar ON calendar.calendar_date = prev_record.date
         JOIN time_record next_record 
           ON prev_record.user_id = next_record.user_id 
           AND prev_record.date = next_record.date
@@ -15,10 +16,10 @@
           AND prev_record.is_deleted = 0
           AND next_record.is_deleted = 0
           <if test="isWorkday">
-              AND DAYOFWEEK(prev_record.date) IN (2, 3, 4, 5, 6)
+              AND calendar.day_type IN (0, 3)
           </if>
           <if test="!isWorkday">
-              AND DAYOFWEEK(prev_record.date) IN (1, 7)
+              AND calendar.day_type IN (1, 2)
           </if>
         GROUP BY next_record.category_id
         ORDER BY COUNT(*) DESC
@@ -28,6 +29,7 @@
     <select id="getMostFrequentCategoryAtTime" resultType="java.lang.Long">
         SELECT category_id
         FROM time_record
+        JOIN sys_work_calendar calendar ON calendar.calendar_date = time_record.date
         WHERE user_id = #{userId}
           AND start_time &lt;= #{time} AND end_time &gt;= #{time}
           AND is_deleted = 0
@@ -35,10 +37,10 @@
               AND category_id != #{excludeCategoryId}
           </if>
           <if test="isWorkday">
-              AND DAYOFWEEK(date) IN (2, 3, 4, 5, 6)
+              AND calendar.day_type IN (0, 3)
           </if>
           <if test="!isWorkday">
-              AND DAYOFWEEK(date) IN (1, 7)
+              AND calendar.day_type IN (1, 2)
           </if>
         GROUP BY category_id
         ORDER BY COUNT(*) DESC

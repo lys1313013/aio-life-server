@@ -33,4 +33,49 @@ class TaskDetailControllerIntegrationTest extends BaseIntegrationTest {
         assertSuccess(response);
         assertNotNull(response.getData());
     }
+
+    @Test
+    void testGetWatched_只回填当前用户任务名称() {
+        TaskEntity ownTask = new TaskEntity();
+        ownTask.setUserId(TEST_USER_ID);
+        ownTask.setContent("自己的任务");
+        ownTask.fillCreateCommonField(TEST_USER_ID);
+        taskService.save(ownTask);
+
+        TaskEntity otherTask = new TaskEntity();
+        otherTask.setUserId(2L);
+        otherTask.setContent("其他用户的任务");
+        otherTask.fillCreateCommonField(2L);
+        taskService.save(otherTask);
+
+        TaskDetailEntity ownDetail = watchedDetail(ownTask.getId());
+        TaskDetailEntity mismatchedDetail = watchedDetail(otherTask.getId());
+
+        var watched = assertSuccessWithData(taskDetailController.getWatched()).stream()
+                .filter(detail -> ownDetail.getId().equals(detail.getId())
+                        || mismatchedDetail.getId().equals(detail.getId()))
+                .toList();
+
+        assertEquals(2, watched.size());
+        assertEquals("自己的任务", watched.stream()
+                .filter(detail -> ownDetail.getId().equals(detail.getId()))
+                .findFirst().orElseThrow().getTaskName());
+        assertNull(watched.stream()
+                .filter(detail -> mismatchedDetail.getId().equals(detail.getId()))
+                .findFirst().orElseThrow().getTaskName());
+    }
+
+    private TaskDetailEntity watchedDetail(Long taskId) {
+        TaskDetailEntity detail = new TaskDetailEntity();
+        detail.setTaskId(taskId);
+        detail.setUserId(TEST_USER_ID);
+        detail.setContent("关注明细");
+        detail.setIsCompleted(0);
+        detail.setIsStarred(1);
+        detail.setSort(0);
+        detail.setPriority(20);
+        detail.fillCreateCommonField(TEST_USER_ID);
+        taskDetailService.save(detail);
+        return detail;
+    }
 }

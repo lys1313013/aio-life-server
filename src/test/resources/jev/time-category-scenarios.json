@@ -1,0 +1,410 @@
+[
+  {
+    "id": "weekday",
+    "name": "普通工作日参考上一工作日",
+    "target": {
+      "date": "2026-09-22",
+      "minute": 540,
+      "timezone": "Asia/Shanghai"
+    },
+    "expectedReferenceDate": "2026-09-21",
+    "categories": {
+      "101": "洗漱",
+      "102": "早餐",
+      "103": "通勤",
+      "104": "工作",
+      "105": "运动",
+      "106": "休息",
+      "107": "睡觉"
+    },
+    "records": [
+      {
+        "date": "2026-09-22",
+        "startMinute": 600,
+        "endMinute": 659,
+        "durationMinutes": 60,
+        "categoryId": "106"
+      },
+      {
+        "date": "2026-09-22",
+        "startMinute": 540,
+        "endMinute": 599,
+        "durationMinutes": 60,
+        "categoryId": "105"
+      },
+      {
+        "date": "2026-09-22",
+        "startMinute": 480,
+        "endMinute": 539,
+        "durationMinutes": 60,
+        "categoryId": "103"
+      },
+      {
+        "date": "2026-09-22",
+        "startMinute": 450,
+        "endMinute": 479,
+        "durationMinutes": 30,
+        "categoryId": "102"
+      },
+      {
+        "date": "2026-09-21",
+        "startMinute": 540,
+        "endMinute": 719,
+        "durationMinutes": 180,
+        "categoryId": "104"
+      },
+      {
+        "date": "2026-09-21",
+        "startMinute": 480,
+        "endMinute": 539,
+        "durationMinutes": 60,
+        "categoryId": "103"
+      },
+      {
+        "date": "2026-09-21",
+        "startMinute": 450,
+        "endMinute": 479,
+        "durationMinutes": 30,
+        "categoryId": "102"
+      }
+    ],
+    "expectedCategoryId": "104",
+    "expectedTodayCount": 2,
+    "expectedReferenceCount": 3,
+    "expectedPreviousCategoryId": "103",
+    "expectedIsWorkday": true
+  },
+  {
+    "id": "monday",
+    "name": "工作日参考最近补班日",
+    "target": {
+      "date": "2026-09-21",
+      "minute": 540,
+      "timezone": "Asia/Shanghai"
+    },
+    "expectedReferenceDate": "2026-09-20",
+    "categories": {
+      "101": "洗漱",
+      "102": "早餐",
+      "103": "通勤",
+      "104": "工作",
+      "105": "运动",
+      "106": "休息",
+      "107": "睡觉"
+    },
+    "records": [
+      {
+        "date": "2026-09-19",
+        "startMinute": 540,
+        "endMinute": 719,
+        "durationMinutes": 180,
+        "categoryId": "106"
+      },
+      {
+        "date": "2026-09-21",
+        "startMinute": 600,
+        "endMinute": 659,
+        "durationMinutes": 60,
+        "categoryId": "106"
+      },
+      {
+        "date": "2026-09-21",
+        "startMinute": 540,
+        "endMinute": 599,
+        "durationMinutes": 60,
+        "categoryId": "105"
+      },
+      {
+        "date": "2026-09-21",
+        "startMinute": 480,
+        "endMinute": 539,
+        "durationMinutes": 60,
+        "categoryId": "103"
+      },
+      {
+        "date": "2026-09-21",
+        "startMinute": 450,
+        "endMinute": 479,
+        "durationMinutes": 30,
+        "categoryId": "102"
+      },
+      {
+        "date": "2026-09-20",
+        "startMinute": 540,
+        "endMinute": 719,
+        "durationMinutes": 180,
+        "categoryId": "104"
+      },
+      {
+        "date": "2026-09-20",
+        "startMinute": 480,
+        "endMinute": 539,
+        "durationMinutes": 60,
+        "categoryId": "103"
+      },
+      {
+        "date": "2026-09-20",
+        "startMinute": 450,
+        "endMinute": 479,
+        "durationMinutes": 30,
+        "categoryId": "102"
+      }
+    ],
+    "expectedCategoryId": "104",
+    "expectedTodayCount": 2,
+    "expectedReferenceCount": 3,
+    "expectedPreviousCategoryId": "103",
+    "expectedIsWorkday": true
+  },
+  {
+    "id": "saturday",
+    "name": "非工作日参考最近假期日",
+    "target": {
+      "date": "2026-09-26",
+      "minute": 600,
+      "timezone": "Asia/Shanghai"
+    },
+    "expectedReferenceDate": "2026-09-25",
+    "categories": {
+      "101": "洗漱",
+      "102": "早餐",
+      "103": "通勤",
+      "104": "工作",
+      "105": "运动",
+      "106": "休息",
+      "107": "睡觉"
+    },
+    "records": [
+      {
+        "date": "2026-09-20",
+        "startMinute": 600,
+        "endMinute": 719,
+        "durationMinutes": 120,
+        "categoryId": "104"
+      },
+      {
+        "date": "2026-09-26",
+        "startMinute": 570,
+        "endMinute": 599,
+        "durationMinutes": 30,
+        "categoryId": "102"
+      },
+      {
+        "date": "2026-09-26",
+        "startMinute": 540,
+        "endMinute": 569,
+        "durationMinutes": 30,
+        "categoryId": "101"
+      },
+      {
+        "date": "2026-09-26",
+        "startMinute": 0,
+        "endMinute": 539,
+        "durationMinutes": 540,
+        "categoryId": "107"
+      },
+      {
+        "date": "2026-09-25",
+        "startMinute": 600,
+        "endMinute": 659,
+        "durationMinutes": 60,
+        "categoryId": "105"
+      },
+      {
+        "date": "2026-09-25",
+        "startMinute": 570,
+        "endMinute": 599,
+        "durationMinutes": 30,
+        "categoryId": "102"
+      },
+      {
+        "date": "2026-09-25",
+        "startMinute": 540,
+        "endMinute": 569,
+        "durationMinutes": 30,
+        "categoryId": "101"
+      },
+      {
+        "date": "2026-09-25",
+        "startMinute": 0,
+        "endMinute": 539,
+        "durationMinutes": 540,
+        "categoryId": "107"
+      }
+    ],
+    "expectedCategoryId": "105",
+    "expectedTodayCount": 3,
+    "expectedReferenceCount": 4,
+    "expectedPreviousCategoryId": "102",
+    "expectedIsWorkday": false
+  },
+  {
+    "id": "sunday",
+    "name": "连续非工作日参考前一日",
+    "target": {
+      "date": "2026-09-27",
+      "minute": 600,
+      "timezone": "Asia/Shanghai"
+    },
+    "expectedReferenceDate": "2026-09-26",
+    "categories": {
+      "101": "洗漱",
+      "102": "早餐",
+      "103": "通勤",
+      "104": "工作",
+      "105": "运动",
+      "106": "休息",
+      "107": "睡觉"
+    },
+    "records": [
+      {
+        "date": "2026-09-20",
+        "startMinute": 600,
+        "endMinute": 719,
+        "durationMinutes": 120,
+        "categoryId": "106"
+      },
+      {
+        "date": "2026-09-27",
+        "startMinute": 570,
+        "endMinute": 599,
+        "durationMinutes": 30,
+        "categoryId": "102"
+      },
+      {
+        "date": "2026-09-27",
+        "startMinute": 540,
+        "endMinute": 569,
+        "durationMinutes": 30,
+        "categoryId": "101"
+      },
+      {
+        "date": "2026-09-27",
+        "startMinute": 0,
+        "endMinute": 539,
+        "durationMinutes": 540,
+        "categoryId": "107"
+      },
+      {
+        "date": "2026-09-26",
+        "startMinute": 600,
+        "endMinute": 659,
+        "durationMinutes": 60,
+        "categoryId": "105"
+      },
+      {
+        "date": "2026-09-26",
+        "startMinute": 570,
+        "endMinute": 599,
+        "durationMinutes": 30,
+        "categoryId": "102"
+      },
+      {
+        "date": "2026-09-26",
+        "startMinute": 540,
+        "endMinute": 569,
+        "durationMinutes": 30,
+        "categoryId": "101"
+      },
+      {
+        "date": "2026-09-26",
+        "startMinute": 0,
+        "endMinute": 539,
+        "durationMinutes": 540,
+        "categoryId": "107"
+      }
+    ],
+    "expectedCategoryId": "105",
+    "expectedTodayCount": 3,
+    "expectedReferenceCount": 4,
+    "expectedPreviousCategoryId": "102",
+    "expectedIsWorkday": false
+  },
+  {
+    "id": "continue-category",
+    "name": "允许继续工作",
+    "target": {
+      "date": "2026-09-23",
+      "minute": 600,
+      "timezone": "Asia/Shanghai"
+    },
+    "expectedReferenceDate": "2026-09-22",
+    "categories": {
+      "101": "洗漱",
+      "102": "早餐",
+      "103": "通勤",
+      "104": "工作",
+      "105": "运动",
+      "106": "休息",
+      "107": "睡觉"
+    },
+    "records": [
+      {
+        "date": "2026-09-23",
+        "startMinute": 540,
+        "endMinute": 599,
+        "durationMinutes": 60,
+        "categoryId": "104"
+      },
+      {
+        "date": "2026-09-22",
+        "startMinute": 540,
+        "endMinute": 719,
+        "durationMinutes": 180,
+        "categoryId": "104"
+      }
+    ],
+    "expectedCategoryId": "104",
+    "expectedTodayCount": 1,
+    "expectedReferenceCount": 1,
+    "expectedPreviousCategoryId": "104",
+    "expectedIsWorkday": true
+  },
+  {
+    "id": "empty-reference",
+    "name": "已知非工作参考日但没有时迹",
+    "target": {
+      "date": "2026-09-26",
+      "minute": 600,
+      "timezone": "Asia/Shanghai"
+    },
+    "expectedReferenceDate": "2026-09-25",
+    "categories": {
+      "101": "洗漱",
+      "102": "早餐",
+      "103": "通勤",
+      "104": "工作",
+      "105": "运动",
+      "106": "休息",
+      "107": "睡觉"
+    },
+    "records": [
+      {
+        "date": "2026-09-26",
+        "startMinute": 500,
+        "endMinute": 539,
+        "durationMinutes": 40,
+        "categoryId": "999999"
+      },
+      {
+        "date": "2026-09-20",
+        "startMinute": 600,
+        "endMinute": 719,
+        "durationMinutes": 120,
+        "categoryId": "104"
+      },
+      {
+        "date": "2026-09-26",
+        "startMinute": 540,
+        "endMinute": 599,
+        "durationMinutes": 60,
+        "categoryId": "105"
+      }
+    ],
+    "expectedCategoryId": "105",
+    "expectedTodayCount": 1,
+    "expectedReferenceCount": 0,
+    "expectedPreviousCategoryId": "105",
+    "expectedIsWorkday": false
+  }
+]

@@ -3,7 +3,7 @@
 > 记录、统计、分析人生的所有数据
 
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.10-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.16-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## 📖 项目简介
@@ -20,7 +20,7 @@
 ### 核心框架
 
 - **Java 21** — 现代化 Java 特性
-- **Spring Boot 3.3.10** — 快速开发框架
+- **Spring Boot 3.5.16** — 快速开发框架
 - **MyBatis Plus 3.5.11** — 增强版 MyBatis ORM
 - **Druid 1.2.24** — 高性能数据库连接池
 

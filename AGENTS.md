@@ -8,7 +8,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## 技术栈
 
-- **Java 21** + **Spring Boot 3.3.10**
+- **Java 21** + **Spring Boot 3.5.16**
 - **MyBatis Plus 3.5.11** + **Druid 1.2.24** (ORM + 连接池)
 - **MySQL 8.x** (主数据库)
 - **Redis** (分布式缓存、Session、Sa-Token 存储)

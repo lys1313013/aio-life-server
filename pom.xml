@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.10</version>
+        <version>3.5.16</version>
         <relativePath/>
     </parent>
 
@@ -23,9 +23,23 @@
         <sa-token.version>1.40.0</sa-token.version>
         <mcp.version>0.14.0</mcp.version>
         <redisson.version>3.52.0</redisson.version>
+        <okhttp.version>4.12.0</okhttp.version>
         <spring.profiles.active>test</spring.profiles.active>
         <test.excludedGroups>external</test.excludedGroups>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Boot 3.4 起不再管理 OkHttp；保留原有 4.12.0，统一 MinIO 与 LangChain4j 的依赖。 -->
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp-bom</artifactId>
+                <version>${okhttp.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- jsoup HTML parser library -->

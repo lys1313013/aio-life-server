@@ -2,6 +2,7 @@ package top.aiolife.record.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ import top.aiolife.record.pojo.entity.MovieEntity;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.enums.RelateTypeEnum;
 import top.aiolife.record.service.ITimeRecordService;
+import top.aiolife.system.service.IWorkCalendarService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -44,24 +46,23 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     private final IExerciseRecordService exerciseRecordService;
     private final IReadRecordService readRecordService;
     private final IMovieService movieService;
+    private final IWorkCalendarService workCalendarService;
 
-    private void updateRelateStatusIfNecessary(TimeRecordEntity entity) {
+    private void updateRelateStatusIfNecessary(TimeRecordEntity entity, long userId) {
         if (entity.getRelateId() != null && entity.getRelateType() != null) {
             log.info("Check relate status, type: {}, id: {}", entity.getRelateType(), entity.getRelateId());
             if (entity.getRelateType().equals(RelateTypeEnum.READ.getValue())) {
-                ReadRecordEntity readRecord = readRecordService.getById(entity.getRelateId());
-                if (readRecord != null && readRecord.getStatus() == ProgressStatusEnum.NOT_STARTED) {
-                    readRecord.setStatus(ProgressStatusEnum.IN_PROGRESS);
-                    log.info("Updating read record {} status from NOT_STARTED to IN_PROGRESS", readRecord.getId());
-                    readRecordService.updateById(readRecord);
-                }
+                readRecordService.update(new LambdaUpdateWrapper<ReadRecordEntity>()
+                        .eq(ReadRecordEntity::getId, entity.getRelateId())
+                        .eq(ReadRecordEntity::getUserId, userId)
+                        .eq(ReadRecordEntity::getStatus, ProgressStatusEnum.NOT_STARTED)
+                        .set(ReadRecordEntity::getStatus, ProgressStatusEnum.IN_PROGRESS));
             } else if (entity.getRelateType().equals(RelateTypeEnum.MOVIE.getValue())) {
-                MovieEntity movie = movieService.getById(entity.getRelateId());
-                if (movie != null && movie.getStatus() == ProgressStatusEnum.NOT_STARTED) {
-                    movie.setStatus(ProgressStatusEnum.IN_PROGRESS);
-                    log.info("Updating movie {} status from NOT_STARTED to IN_PROGRESS", movie.getId());
-                    movieService.updateById(movie);
-                }
+                movieService.update(new LambdaUpdateWrapper<MovieEntity>()
+                        .eq(MovieEntity::getId, entity.getRelateId())
+                        .eq(MovieEntity::getUserId, userId)
+                        .eq(MovieEntity::getStatus, ProgressStatusEnum.NOT_STARTED)
+                        .set(MovieEntity::getStatus, ProgressStatusEnum.IN_PROGRESS));
             }
         }
     }
@@ -93,7 +94,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         if (!this.save(entity)) {
             throw new IllegalStateException("保存时间记录失败");
         }
-        updateRelateStatusIfNecessary(entity);
+        updateRelateStatusIfNecessary(entity, userId);
 
         if (exerciseRecordReqs != null && !exerciseRecordReqs.isEmpty()) {
             List<ExerciseRecordEntity> validExercises = new java.util.ArrayList<>();
@@ -143,7 +144,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         }
 
         this.updateById(entity);
-        updateRelateStatusIfNecessary(entity);
+        updateRelateStatusIfNecessary(entity, userId);
 
         // 删除旧的运动记录
         exerciseRecordService.remove(new LambdaQueryWrapper<ExerciseRecordEntity>()
@@ -216,21 +217,16 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     @Override
     public Long recommendType(long userId, String date, int time, Long previousCategoryId) {
         LocalDate localDate = LocalDate.parse(date);
-        int dayOfWeek = localDate.getDayOfWeek().getValue();
-        boolean isWorkday = dayOfWeek <= 5;
-
-        // 0. 计算参考日期：周一参考上周五，周六参考上周日，其他参考前一天
-        String targetDate;
-        if (dayOfWeek == 6) {
-            targetDate = localDate.minusDays(6).toString();
-        } else if (dayOfWeek == 1) {
-            targetDate = localDate.minusDays(3).toString();
-        } else {
-            targetDate = localDate.minusDays(1).toString();
+        Boolean isWorkday = workCalendarService.isWorkday(localDate);
+        if (isWorkday == null) {
+            // 日历尚未初始化时不猜测类型，保留时间块，暂不推荐分类。
+            return null;
         }
+        LocalDate targetDate = workCalendarService.findPreviousComparableDate(localDate);
 
         // 1. 查参考日期同一时间段是否有记录
-        TimeRecordEntity originalRecommend = this.baseMapper.recommendType(userId, targetDate, time);
+        TimeRecordEntity originalRecommend = targetDate == null ? null
+                : this.baseMapper.recommendType(userId, targetDate.toString(), time);
         Long categoryId = originalRecommend != null ? originalRecommend.getCategoryId() : null;
 
         // 2. 如果 Step 1 未命中，降级到时间段历史高频（不排除任何分类）

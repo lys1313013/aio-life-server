@@ -3,8 +3,12 @@ package top.aiolife.record.service.impl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+import top.aiolife.record.mapper.ITimeRecordMapper;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
+import top.aiolife.system.service.IWorkCalendarService;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -12,12 +16,55 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TimeRecordServiceImplTest {
 
     @InjectMocks
     private TimeRecordServiceImpl timeRecordService;
+
+    @Mock
+    private ITimeRecordMapper mapper;
+
+    @Mock
+    private IWorkCalendarService calendar;
+
+    @Test
+    void testRecommendType_日历缺失不按星期猜测且不查询历史() {
+        LocalDate date = LocalDate.of(2027, 1, 4);
+        when(calendar.isWorkday(date)).thenReturn(null);
+
+        assertNull(timeRecordService.recommendType(1L, date.toString(), 600, null));
+        verifyNoInteractions(mapper);
+        verify(calendar, never()).findPreviousComparableDate(any());
+    }
+
+    @Test
+    void testRecommendType_跨年参考日缺失仍可查询已知同类日历史() {
+        LocalDate date = LocalDate.of(2026, 1, 1);
+        when(calendar.isWorkday(date)).thenReturn(false);
+        when(calendar.findPreviousComparableDate(date)).thenReturn(null);
+        ReflectionTestUtils.setField(timeRecordService, "baseMapper", mapper);
+        when(mapper.getMostFrequentCategoryAtTime(1L, 600, null, false)).thenReturn(105L);
+
+        assertEquals(105L, timeRecordService.recommendType(1L, date.toString(), 600, null));
+        verify(mapper, never()).recommendType(anyLong(), anyString(), anyInt());
+    }
+
+    @Test
+    void testRecommendType_周日补班按工作日查询高频及后续分类() {
+        LocalDate date = LocalDate.of(2026, 9, 20);
+        when(calendar.isWorkday(date)).thenReturn(true);
+        when(calendar.findPreviousComparableDate(date)).thenReturn(LocalDate.of(2026, 9, 18));
+        ReflectionTestUtils.setField(timeRecordService, "baseMapper", mapper);
+        when(mapper.getMostFrequentCategoryAtTime(1L, 600, null, true)).thenReturn(104L);
+        when(mapper.getMostFrequentNextCategory(1L, 104L, true)).thenReturn(103L);
+
+        assertEquals(103L, timeRecordService.recommendType(1L, date.toString(), 600, 104L));
+        verify(mapper).recommendType(1L, "2026-09-18", 600);
+        verify(mapper).getMostFrequentNextCategory(1L, 104L, true);
+    }
 
     @Test
     void testSave_忽略客户端ID并返回生成ID() {

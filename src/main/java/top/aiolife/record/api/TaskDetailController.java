@@ -12,6 +12,7 @@ import top.aiolife.record.service.ITaskService;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -164,11 +165,17 @@ public class TaskDetailController {
         List<TaskDetailEntity> list = taskDetailService.list(queryWrapper);
         
         if (!list.isEmpty()) {
-            List<Long> taskIds = list.stream().map(TaskDetailEntity::getTaskId).distinct().collect(Collectors.toList());
-            Map<Long, String> taskNameMap = taskService.listByIds(taskIds).stream()
-                    .collect(Collectors.toMap(TaskEntity::getId, TaskEntity::getContent, (v1, v2) -> v1));
-            for (TaskDetailEntity detail : list) {
-                detail.setTaskName(taskNameMap.get(detail.getTaskId()));
+            List<Long> taskIds = list.stream().map(TaskDetailEntity::getTaskId)
+                    .filter(Objects::nonNull).distinct().collect(Collectors.toList());
+            if (!taskIds.isEmpty()) {
+                LambdaQueryWrapper<TaskEntity> taskQuery = new LambdaQueryWrapper<>();
+                taskQuery.in(TaskEntity::getId, taskIds);
+                taskQuery.eq(TaskEntity::getUserId, userId);
+                Map<Long, String> taskNameMap = taskService.list(taskQuery).stream()
+                        .collect(Collectors.toMap(TaskEntity::getId, TaskEntity::getContent, (v1, v2) -> v1));
+                for (TaskDetailEntity detail : list) {
+                    detail.setTaskName(taskNameMap.get(detail.getTaskId()));
+                }
             }
         }
         
