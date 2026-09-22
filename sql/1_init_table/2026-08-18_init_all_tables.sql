@@ -167,6 +167,29 @@ CREATE TABLE IF NOT EXISTS `sys_work_calendar` (
     CONSTRAINT `chk_sys_work_calendar_day_type` CHECK (`day_type` IN (0, 1, 2, 3))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='中国大陆工作日历表';
 
+CREATE TABLE IF NOT EXISTS `sys_activity_log` (
+    `id` bigint NOT NULL COMMENT '主键ID',
+    `log_type` varchar(16) NOT NULL COMMENT 'OPERATION 操作 / ACCESS 访问',
+    `user_id` bigint DEFAULT NULL COMMENT '操作用户ID',
+    `username` varchar(100) NOT NULL DEFAULT '' COMMENT '用户名',
+    `nickname` varchar(100) NOT NULL DEFAULT '' COMMENT '昵称',
+    `ip_address` varchar(64) NOT NULL DEFAULT '' COMMENT 'IP 地址',
+    `browser` varchar(100) NOT NULL DEFAULT '' COMMENT '浏览器',
+    `function_name` varchar(200) DEFAULT NULL COMMENT '功能名称',
+    `function_item` varchar(100) DEFAULT NULL COMMENT '功能项',
+    `access_type` varchar(32) DEFAULT NULL COMMENT '访问类型',
+    `request_path` varchar(255) DEFAULT NULL COMMENT '接口路由模板，不含查询参数',
+    `success` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否成功',
+    `create_user` bigint DEFAULT NULL COMMENT '创建人',
+    `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_user` bigint DEFAULT NULL COMMENT '更新人',
+    `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
+    `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '是否删除(0-否,1-是)',
+    PRIMARY KEY (`id`),
+    KEY `idx_activity_type_time` (`log_type`, `is_deleted`, `create_time`, `id`),
+    KEY `idx_activity_type_id` (`log_type`, `is_deleted`, `id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作和访问日志';
+
 CREATE TABLE IF NOT EXISTS `sys_menu` (
     `id` bigint NOT NULL COMMENT '主键ID',
     `parent_id` bigint DEFAULT 0 COMMENT '父级ID（0为根）',
