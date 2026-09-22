@@ -65,7 +65,14 @@ class JevCategoryRecommendationServiceTest {
         var state = request.getValue().path("state");
         assertTrue(state.path("target").path("isWorkday").asBoolean());
         assertEquals(1, state.path("todayRecords").size());
-        assertEquals("104", state.path("previousCategoryId").asText());
+        assertFalse(state.has("previousCategoryId"));
+        assertFalse(state.path("todayRecords").get(0).has("categoryId"));
+        assertFalse(state.path("previousComparableDay").path("records").get(0).has("categoryId"));
+        assertEquals("用户覆盖后的工作分类", state.path("previousCategoryName").asText());
+        assertEquals("10:00", state.path("target").path("time").asText());
+        assertEquals("09:00", state.path("todayRecords").get(0).path("startTime").asText());
+        assertEquals("09:59", state.path("todayRecords").get(0).path("endTime").asText());
+        assertEquals("用户覆盖后的工作分类", state.path("todayRecords").get(0).path("categoryName").asText());
         assertEquals(reference.toString(), state.path("previousComparableDay").path("date").asText());
         assertEquals(1, state.path("previousComparableDay").path("records").size());
         assertEquals("用户覆盖后的工作分类", request.getValue().path("questions")

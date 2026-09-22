@@ -33,6 +33,22 @@
 
 ## 模拟返回与业务判断
 
+### 发送给 Jev 的时间和分类格式
+
+业务存储和历史记录筛选仍使用分钟数；仅在 `JevCategoryProtocol` 组装外部请求时转换为 24 小时制 `HH:mm`。目标使用 `target.time`（例如 `811` → `13:31`），记录使用 `startTime` / `endTime`，不再发送 `minute` / `startMinute` / `endMinute`。首尾分钟均包含在记录内，不给结束时间加一分钟。
+
+每条记录只携带日期、起止时间和用户可见的中文 `categoryName`，不发送 `categoryId`；上一分类只发送 `previousCategoryName`，不发送 `previousCategoryId`。候选集合仍为 `criteria` 的 ID → 名称映射，模型仍返回分类 ID。
+
+例如原始 `startMinute=1286, endMinute=1310, categoryId="10"` 发给模型时为：
+
+```json
+{"date":"2026-09-21","startTime":"21:26","endTime":"21:50","categoryName":"理财"}
+```
+
+本地测试覆盖午夜、整点、用户给出的时刻、23:59、结束分钟语义、中文名称及不修改原始数据。格式更直观，但尚未验证它对真实模型置信度或准确率的影响。
+
+### 响应判断
+
 每组合法 Mock 响应采用选中项概率 `1.0`、其他项 `0.0`、置信度 `1.0`；`model` 明确标记为 `mock-only`。这些值是固定测试数据，不是模型效果。
 
 | 返回情况 | 本地测试结果 |
@@ -102,9 +118,9 @@ mvn -q -Dtest=JevTimeCategoryLiveTest -Djev.live=true test
 - `AIO_LIFE_TYPESAFE_ENABLED`：默认 `true`，设为 `false` 可关闭模型调用。
 - `AIO_LIFE_TYPESAFE_MODEL`：默认 `jev-latest`。
 - 两个入口：`GET /timeRecord/recommendType`、`GET /timeRecord/recommendNext`。
-- Jev 总等待上限默认 1000 毫秒，由 `aio.life.server.typesafe.request-timeout-ms` 配置（环境变量 `AIO_LIFE_TYPESAFE_REQUEST_TIMEOUT_MS`）。连接和读取超时也不超过该值；不重试。总等待超时、HTTP 失败、无效响应、置信度低于 0.65、无可用上下文或请求过大时回退现有规则。模型命中直接返回，允许延续上一分类。
+- Jev 总等待上限默认 1500 毫秒（1.5 秒），由 `aio.life.server.typesafe.request-timeout-ms` 配置（环境变量 `AIO_LIFE_TYPESAFE_REQUEST_TIMEOUT_MS`）。连接和读取超时也不超过该值；不重试。总等待超时、HTTP 失败、无效响应、置信度低于 0.65、无可用上下文或请求过大时回退现有规则。模型命中直接返回，允许延续上一分类。
 - 日历缺失仍返回空分类；工作日/非工作日及最近同类日均由服务端日历决定。
-- 不发送用户 ID、记录标题、备注或关联业务详情；仅发送日期、分钟、分类 ID 和候选分类名称。不记录上游响应正文或 Key。
+- 不发送用户 ID、记录标题、备注或关联业务详情；发送日期、`HH:mm` 时间、分类 ID、中文分类名称和候选分类集合。不记录上游响应正文或 Key。
 - 本次使用 `test` 账号在本地运行的真实后端完成登录及普通工作日、调休补班日、非工作日、推荐下一时间块接口验证，均返回 `rscode=0`。未新增或修改时迹记录。当前环境无 Key，实际接口验证的是规则回退，不能据此声称 Jev 真实调用已通过。
 
 生产链路回归命令：
@@ -127,4 +143,43 @@ mvn -q -Dtest=JevCategoryRecommendationServiceTest,JevCategoryClientTest,JevTime
 - Jev 执行线程上限 8，无等待队列；超时取消等待并直接兜底，迟到响应不覆盖本次结果、不进入缓存。连接层若未立即响应中断，剩余 I/O 仍受连接/读取超时限制。
 - 已用用户提供的请求复测：优化前 1886 / 1091 / 1141 毫秒；优化后冷请求 1833 毫秒，随后 802 / 750 / 1026 / 738 毫秒。网络采样仅供本地比较，不代表稳定 SLA。
 - 优化后 5 次请求对应 5 次真实 Jev 调用，模型耗时分别为 819 / 382 / 315 / 548 / 307 毫秒；这些请求合计执行 4 次时迹/分类 SQL（不含未开启 SQL 日志的日历查询），证明只复用了数据库数据。
-- 无效 Token 实测返回 HTTP 401。1 秒限制针对 Jev 等待，不是整个接口的总耗时上限。
+- 无效 Token 实测返回 HTTP 401。上述性能采样时的 Jev 等待上限为 1 秒，现默认调整为 1.5 秒；该限制针对 Jev 等待，不是整个接口的总耗时上限。
+
+## 运行日志
+
+无需开启 DEBUG。按同一次 HTTP 请求的 `traceId` 串联日志；客户端的开始、完成日志另有同一个 `callId`，便于区分重复调用。
+
+| 日志 | 级别 | 排查内容 |
+|---|---|---|
+| `Jev category context` | INFO | 用户 ID、目标日期/分钟、工作日类型、参考日、分类数、历史条数和有效条数 |
+| `Jev category started` | INFO | 调用 ID、端点、请求模型、超时上限、请求字节数、当天及参考日记录数，以及完整 `requestBody` JSON；代表开始尝试调用，不代表上游已接收 |
+| `Jev category completed` | 成功 INFO，降级 WARN | 调用 ID、`ACCEPTED/FALLBACK`、原因、HTTP 状态、实际模型、置信度、采用的分类 ID、总耗时、超时上限及异常类型 |
+| `Jev category skipped` | 正常短路 INFO，请求过大 WARN | 未发送模型请求及其原因 |
+| `Time category recommendation completed` | INFO | 最终分类 ID 和来源；`JEV` 才表示采用了模型结果 |
+| `Time next recommendation skipped` | INFO | `NO_REMAINING_TIME` 表示当天无剩余时间块，不调用分类推荐 |
+
+最终分类来源仅有：`JEV`（模型）、`REFERENCE_DAY`（参考日）、`NONE`（无可用分类）。日历缺失时还会输出 `reason=WORK_CALENDAR_MISSING`。
+
+跳过原因：`DISABLED`、`MISSING_API_KEY`、`NO_CATEGORIES`、`NO_VALID_HISTORY`、`HISTORY_LIMIT_EXCEEDED`、`REQUEST_TOO_LARGE`。
+
+调用结果原因：`PREDICTED`、`LOW_CONFIDENCE`、`INVALID_RESPONSE`、`HTTP_ERROR`、`NETWORK_TIMEOUT`、`TOTAL_TIMEOUT`、`CAPACITY_REACHED`、`INTERRUPTED`、`CLIENT_ERROR`、`EXECUTION_ERROR`。`httpStatus=null` 表示未取得可记录的状态，例如网络失败或响应解析失败；它不表示 HTTP 成功。
+
+完成日志在等待请求的线程输出，保留原 traceId/spanId；超过总等待时限只记录一次 `TOTAL_TIMEOUT`，迟到成功不会再打印 `ACCEPTED`。`elapsedMs` 是本次客户端调用到决定采用/降级的耗时，不是整个业务接口耗时。
+
+按排查要求，INFO 日志中的 `requestBody` 打印与实际发送相同的完整 JSON（包含最终模型、目标日期/分钟、当天和参考日记录、候选分类名称、预测问题与约束），不截断。JSON 使用单行序列化，文本中的换行转义后输出。请求超过 64 KiB 被跳过时不输出正文。
+
+成功、失败及超时均在完成日志打印 `elapsedMs`（毫秒）；超时表示截至决定降级时的等待耗时，不表示底层网络连接已结束。日志不输出 Authorization、Cookie、API Key 或上游响应正文；异常仅记录类型，不输出可能包含上游正文的异常消息。元数据中的模型名称限制长度并过滤特殊字符，`requestBody` 保留实际请求参数。
+
+`JevCategoryClientTest` 验证日志 JSON 与实际发送正文完全一致、最终模型配置、成功/失败/超时耗时、HTTP 状态、置信度、调用 ID 关联、traceId 保留、鉴权凭证不泄露，以及超时后迟到结果不误报成功。上述日志在后端加载新代码后生效。
+
+## 参考日降级规则修复
+
+- 推荐顺序：Jev → 上一个同类日同一时段 → 空分类。已删除历史高频、历史后继分类及强制换类逻辑和对应 Mapper SQL；允许与上一条记录分类相同。`previousCategoryId` 参数保留兼容旧调用，不再影响分类选择。
+- 参考日必须早于目标日，且不能晚于实际今天。参考日是今天时，只使用结束分钟严格早于当前分钟的完整记录；目标时段尚未发生则不查询。
+- 参考日候选只允许使用 `listUserVisibleCategories` 返回的分类，公共分类覆盖、隐藏、禁用和删除规则与 Jev 一致。只有一条有效匹配记录才推荐；无匹配或多条有效记录重叠时返回空，不按频次猜测、不任意选取第一条。
+- 参考日 Mapper 返回列表，避免重叠记录触发单结果查询异常；SQL 继续限定当前用户、指定日期和未删除记录，并排除非法起始分钟及未结束记录。
+- 参考查询缓存包含截止分钟；在今天作为参考日的场景下，时间推进后重新查询，不复用较早截止时刻的空结果。
+- `recommendNext` 查询补上 `category_id`，返回的当天记录携带分类，Controller 可正确取得上一分类。
+- 空分类日志原因：`NO_PAST_REFERENCE_DAY`、`REFERENCE_TIME_NOT_PAST`、`NO_VISIBLE_CATEGORIES`、`NO_VALID_REFERENCE_RECORD`、`OVERLAPPING_REFERENCE_RECORDS`。
+
+相关单元回归覆盖 Jev 优先、参考日唯一命中、延续上一分类、无参考日、隐藏分类、重叠、未来截止和查询投影；`WorkCalendarIntegrationTest` 已同步新 Mapper，仍需显式提供临时 MySQL/Redis 端口才会运行。

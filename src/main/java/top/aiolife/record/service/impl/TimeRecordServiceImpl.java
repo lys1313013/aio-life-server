@@ -25,6 +25,8 @@ import top.aiolife.record.pojo.entity.MovieEntity;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.enums.RelateTypeEnum;
 import top.aiolife.record.service.ITimeRecordService;
+import top.aiolife.record.service.ITimeTrackerCategoryService;
+import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.system.service.IWorkCalendarService;
 import org.springframework.stereotype.Service;
 
@@ -51,6 +53,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     private final IWorkCalendarService workCalendarService;
     private final JevCategoryRecommendationService jevRecommendationService;
     private final RecommendationDataCache recommendationDataCache;
+    private final ITimeTrackerCategoryService timeTrackerCategoryService;
 
     private void updateRelateStatusIfNecessary(TimeRecordEntity entity, long userId) {
         if (entity.getRelateId() != null && entity.getRelateType() != null) {
@@ -226,49 +229,55 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
                 () -> workCalendarService.isWorkday(localDate), localDate);
         if (isWorkday == null) {
             // 日历尚未初始化时不猜测类型，保留时间块，暂不推荐分类。
+            log.info("Time category recommendation completed: userId={}, date={}, minute={}, "
+                    + "source=NONE, reason=WORK_CALENDAR_MISSING, categoryId=null", userId, date, time);
             return null;
         }
         LocalDate targetDate = recommendationDataCache.get("comparableDate",
                 () -> workCalendarService.findPreviousComparableDate(localDate), localDate);
 
         Long predicted = jevRecommendationService.recommend(userId, localDate, time, isWorkday, targetDate);
-        if (predicted != null) return predicted;
+        if (predicted != null) return logRecommendation(userId, date, time, "JEV", predicted);
 
-        // 1. 查参考日期同一时间段是否有记录
-        TimeRecordEntity originalRecommend = targetDate == null ? null
-                : recommendationDataCache.get("referenceRecord",
-                        () -> this.baseMapper.recommendType(userId, targetDate.toString(), time), userId, targetDate, time);
-        Long categoryId = originalRecommend != null ? originalRecommend.getCategoryId() : null;
+        return recommendFromReferenceDay(userId, localDate, time, targetDate, LocalDateTime.now());
+    }
 
-        // 2. 如果 Step 1 未命中，降级到时间段历史高频（不排除任何分类）
-        if (categoryId == null) {
-            categoryId = recommendationDataCache.get("frequentCategory",
-                    () -> this.baseMapper.getMostFrequentCategoryAtTime(userId, time, null, isWorkday),
-                    userId, time, null, isWorkday);
+    /** 仅参考上一个同类日；无有效记录或存在重叠时不猜测分类，允许延续上一分类。 */
+    Long recommendFromReferenceDay(long userId, LocalDate date, int minute,
+                                  LocalDate reference, LocalDateTime now) {
+        if (reference == null || !reference.isBefore(date) || reference.isAfter(now.toLocalDate())) {
+            return noReferenceRecommendation(userId, date, minute, "NO_PAST_REFERENCE_DAY");
         }
-
-        // 3. 去重干预：如果推荐分类与上一条记录相同，尝试替换
-        if (categoryId != null && categoryId.equals(previousCategoryId)) {
-            // 3.1 预测后续行为：历史上紧跟在 previousCategoryId 之后最常出现的分类
-            Long nextCategory = recommendationDataCache.get("nextCategory",
-                    () -> this.baseMapper.getMostFrequentNextCategory(userId, previousCategoryId, isWorkday),
-                    userId, previousCategoryId, isWorkday);
-            if (nextCategory != null) {
-                return nextCategory;
-            }
-
-            // 3.2 降级：该时间段历史最高频，排除 previousCategoryId
-            Long fallbackCategory = recommendationDataCache.get("frequentCategory",
-                    () -> this.baseMapper.getMostFrequentCategoryAtTime(userId, time, previousCategoryId, isWorkday),
-                    userId, time, previousCategoryId, isWorkday);
-            if (fallbackCategory != null) {
-                return fallbackCategory;
-            }
-
-            // 3.3 实在没有其他分类可选，返回原推荐（允许连续相同）
-            return categoryId;
+        int endBefore = reference.equals(now.toLocalDate()) ? now.getHour() * 60 + now.getMinute() : 1440;
+        if (minute >= endBefore) {
+            return noReferenceRecommendation(userId, date, minute, "REFERENCE_TIME_NOT_PAST");
         }
+        List<TimeTrackerCategoryEntity> categories = recommendationDataCache.get("visibleCategories",
+                () -> timeTrackerCategoryService.listUserVisibleCategories(userId), userId);
+        var visibleIds = categories.stream().filter(c -> c.getId() != null && c.getName() != null)
+                .map(TimeTrackerCategoryEntity::getId).collect(java.util.stream.Collectors.toSet());
+        if (visibleIds.isEmpty()) return noReferenceRecommendation(userId, date, minute, "NO_VISIBLE_CATEGORIES");
 
+        List<TimeRecordEntity> records = recommendationDataCache.get("referenceRecords",
+                () -> timeRecordMapper.findReferenceRecords(userId, reference.toString(), minute, endBefore),
+                userId, reference, minute, endBefore);
+        var candidates = records.stream().filter(record -> visibleIds.contains(record.getCategoryId())).toList();
+        if (candidates.size() != 1) {
+            return noReferenceRecommendation(userId, date, minute,
+                    candidates.isEmpty() ? "NO_VALID_REFERENCE_RECORD" : "OVERLAPPING_REFERENCE_RECORDS");
+        }
+        return logRecommendation(userId, date.toString(), minute, "REFERENCE_DAY", candidates.getFirst().getCategoryId());
+    }
+
+    private Long noReferenceRecommendation(long userId, LocalDate date, int minute, String reason) {
+        log.info("Time category recommendation completed: userId={}, date={}, minute={}, "
+                + "source=NONE, reason={}, categoryId=null", userId, date, minute, reason);
+        return null;
+    }
+
+    private Long logRecommendation(long userId, String date, int minute, String source, Long categoryId) {
+        log.info("Time category recommendation completed: userId={}, date={}, minute={}, source={}, categoryId={}",
+                userId, date, minute, source, categoryId);
         return categoryId;
     }
 
@@ -276,7 +285,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     public RecommendNextVO recommendNext(long userId, String date) {
         LocalDate targetDate = LocalDate.parse(date);
         LambdaQueryWrapper<TimeRecordEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.select(TimeRecordEntity::getStartTime, TimeRecordEntity::getEndTime)
+        queryWrapper.select(TimeRecordEntity::getStartTime, TimeRecordEntity::getEndTime, TimeRecordEntity::getCategoryId)
                 .eq(TimeRecordEntity::getUserId, userId)
                 .eq(TimeRecordEntity::getDate, targetDate);
         List<TimeRecordEntity> records = new java.util.ArrayList<>(recommendationDataCache.get("nextRecords",

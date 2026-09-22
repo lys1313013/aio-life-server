@@ -331,6 +331,7 @@ public class TimeRecordController {
         // 获取推荐分类
         TimeRecordEntity recommend = result.getRecommend();
         if (recommend == null) {
+            log.info("Time next recommendation skipped: userId={}, date={}, reason=NO_REMAINING_TIME", userId, date);
             return ApiResponse.success(result);
         }
         

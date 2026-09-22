@@ -1,56 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="top.aiolife.record.mapper.ITimeRecordMapper">
-
-    <select id="getMostFrequentNextCategory" resultType="java.lang.Long">
-        SELECT next_record.category_id
-        FROM time_record prev_record
-        JOIN sys_work_calendar calendar ON calendar.calendar_date = prev_record.date
-        JOIN time_record next_record 
-          ON prev_record.user_id = next_record.user_id 
-          AND prev_record.date = next_record.date
-        WHERE prev_record.user_id = #{userId}
-          AND prev_record.category_id = #{previousCategoryId}
-          AND next_record.start_time = prev_record.end_time + 1
-          AND next_record.category_id != #{previousCategoryId}
-          AND prev_record.is_deleted = 0
-          AND next_record.is_deleted = 0
-          <if test="isWorkday">
-              AND calendar.day_type IN (0, 3)
-          </if>
-          <if test="!isWorkday">
-              AND calendar.day_type IN (1, 2)
-          </if>
-        GROUP BY next_record.category_id
-        ORDER BY COUNT(*) DESC
-        LIMIT 1
-    </select>
-
-    <select id="getMostFrequentCategoryAtTime" resultType="java.lang.Long">
-        SELECT category_id
+    <select id="findReferenceRecords" resultType="top.aiolife.record.pojo.entity.TimeRecordEntity">
+        SELECT date, start_time, end_time, category_id
         FROM time_record
-        JOIN sys_work_calendar calendar ON calendar.calendar_date = time_record.date
-        WHERE user_id = #{userId}
-          AND start_time &lt;= #{time} AND end_time &gt;= #{time}
-          AND is_deleted = 0
-          <if test="excludeCategoryId != null">
-              AND category_id != #{excludeCategoryId}
-          </if>
-          <if test="isWorkday">
-              AND calendar.day_type IN (0, 3)
-          </if>
-          <if test="!isWorkday">
-              AND calendar.day_type IN (1, 2)
-          </if>
-        GROUP BY category_id
-        ORDER BY COUNT(*) DESC
-        LIMIT 1
+        WHERE is_deleted = 0 AND user_id = #{userId} AND date = #{date}
+          AND start_time >= 0 AND start_time &lt;= #{time}
+          AND end_time >= #{time} AND end_time &lt; #{endBefore}
     </select>
-
-    <select id="recommendType" resultType="top.aiolife.record.pojo.entity.TimeRecordEntity">
-        SELECT *
-        FROM time_record
-        WHERE is_deleted = 0 and user_id = #{userId} and date = #{date} and start_time &lt;= #{time} and end_time >= #{time}
-    </select>
-
 </mapper>

@@ -81,15 +81,30 @@ class WorkCalendarIntegrationTest {
             verifyNoInteractions(calendarMapper);
 
             var timeMapper = session.getMapper(ITimeRecordMapper.class);
-            var service = new TimeRecordServiceImpl(timeMapper, null, null, null, calendar, org.mockito.Mockito.mock(top.aiolife.record.prediction.JevCategoryRecommendationService.class, invocation -> null), new top.aiolife.record.prediction.RecommendationDataCache(15000));
+            var categories = mock(top.aiolife.record.service.ITimeTrackerCategoryService.class);
+            when(categories.listUserVisibleCategories(1L)).thenReturn(java.util.stream.Stream.of(104L, 105L, 106L, 107L)
+                    .map(id -> {
+                        var category = new top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity();
+                        category.setId(id);
+                        category.setName("分类" + id);
+                        return category;
+                    }).toList());
+            var service = new TimeRecordServiceImpl(timeMapper, null, null, null, calendar, org.mockito.Mockito.mock(top.aiolife.record.prediction.JevCategoryRecommendationService.class, invocation -> null), new top.aiolife.record.prediction.RecommendationDataCache(15000), categories);
             ReflectionTestUtils.setField(service, "baseMapper", timeMapper);
-            assertEquals(104L, service.recommendType(1L, "2026-09-21", 600, null));
-            assertEquals(105L, service.recommendType(1L, "2026-09-26", 600, null));
-            assertEquals(104L, timeMapper.getMostFrequentCategoryAtTime(1L, 600, null, true));
-            assertEquals(105L, timeMapper.getMostFrequentCategoryAtTime(1L, 600, null, false));
-            assertNull(timeMapper.getMostFrequentCategoryAtTime(1L, 600, 105L, false));
-            assertEquals(106L, timeMapper.getMostFrequentNextCategory(1L, 104L, true));
-            assertEquals(107L, timeMapper.getMostFrequentNextCategory(1L, 104L, false));
+            try (var clock = mockStatic(java.time.LocalDateTime.class, CALLS_REAL_METHODS)) {
+                var now = java.time.LocalDateTime.of(2026, 12, 31, 12, 0);
+                clock.when(java.time.LocalDateTime::now).thenReturn(now);
+                assertEquals(104L, service.recommendType(1L, "2026-09-21", 600, null));
+                assertEquals(105L, service.recommendType(1L, "2026-09-26", 600, null));
+                assertEquals(1, timeMapper.findReferenceRecords(1L, "2026-09-20", 600, 1440).size());
+                assertTrue(timeMapper.findReferenceRecords(1L, "2026-09-20", 600, 699).isEmpty());
+                assertTrue(timeMapper.findReferenceRecords(1L, "2026-09-19", 600, 1440).isEmpty());
+                // 单实体查询改为列表，重叠数据不会抛 TooManyResultsException。
+                jdbc.update("INSERT INTO time_record VALUES ('9',1,'2026-09-20',106,600,699,0)");
+                session.clearCache();
+                assertEquals(2, timeMapper.findReferenceRecords(1L, "2026-09-20", 601, 1440).size());
+                assertNull(service.recommendType(1L, "2026-09-21", 601, null));
+            }
 
             // 修正日历后只清除受影响的目标日期缓存，下次请求重新查库。
             jdbc.update("UPDATE sys_work_calendar SET day_type=1 WHERE calendar_date='2026-09-20'");

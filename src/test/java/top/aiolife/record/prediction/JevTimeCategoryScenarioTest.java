@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -48,14 +49,23 @@ class JevTimeCategoryScenarioTest {
     void testReferenceDate_生产推荐使用日历服务返回的参考日期(String target, String expected) {
         var mapper = mock(ITimeRecordMapper.class);
         var calendar = spy(JevCalendarFixture.calendar());
-        var service = new TimeRecordServiceImpl(mapper, null, null, null, calendar, org.mockito.Mockito.mock(top.aiolife.record.prediction.JevCategoryRecommendationService.class, invocation -> null), new top.aiolife.record.prediction.RecommendationDataCache(15000));
+        var categories = mock(top.aiolife.record.service.ITimeTrackerCategoryService.class);
+        var category = new top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity();
+        category.setId(104L);
+        category.setName("工作");
+        when(categories.listUserVisibleCategories(1L)).thenReturn(java.util.List.of(category));
+        var service = new TimeRecordServiceImpl(mapper, null, null, null, calendar, org.mockito.Mockito.mock(top.aiolife.record.prediction.JevCategoryRecommendationService.class, invocation -> null), new top.aiolife.record.prediction.RecommendationDataCache(15000), categories);
         ReflectionTestUtils.setField(service, "baseMapper", mapper);
         var referenceRecord = new TimeRecordEntity();
         referenceRecord.setCategoryId(104L);
-        when(mapper.recommendType(1L, expected, 600)).thenReturn(referenceRecord);
+        when(mapper.findReferenceRecords(1L, expected, 600, 1440)).thenReturn(java.util.List.of(referenceRecord));
 
-        assertEquals(104L, service.recommendType(1L, target, 600, null));
-        verify(mapper).recommendType(1L, expected, 600);
+        try (var clock = mockStatic(java.time.LocalDateTime.class, CALLS_REAL_METHODS)) {
+            var now = java.time.LocalDateTime.of(2026, 12, 31, 12, 0);
+            clock.when(java.time.LocalDateTime::now).thenReturn(now);
+            assertEquals(104L, service.recommendType(1L, target, 600, null));
+        }
+        verify(mapper).findReferenceRecords(1L, expected, 600, 1440);
         verifyNoMoreInteractions(mapper);
         verify(calendar).findPreviousComparableDate(LocalDate.parse(target));
     }
@@ -68,23 +78,69 @@ class JevTimeCategoryScenarioTest {
         assertEquals(scenario.path("expectedReferenceDate").asText(), state.path("previousComparableDay").path("date").asText());
         assertEquals(scenario.path("expectedTodayCount").asInt(), state.path("todayRecords").size());
         assertEquals(scenario.path("expectedReferenceCount").asInt(), state.path("previousComparableDay").path("records").size());
-        assertEquals(scenario.path("expectedPreviousCategoryId"), state.path("previousCategoryId"));
+        assertFalse(state.has("previousCategoryId"));
+        if (scenario.path("expectedPreviousCategoryId").isNull()) {
+            assertTrue(state.path("previousCategoryName").isNull());
+        } else {
+            assertEquals(scenario.path("categories").path(scenario.path("expectedPreviousCategoryId").asText()),
+                    state.path("previousCategoryName"));
+        }
         assertEquals(scenario.path("expectedIsWorkday").asBoolean(), state.path("target").path("isWorkday").asBoolean());
         assertFalse(state.path("target").has("dayOfWeek"));
         assertFalse(state.path("target").has("isWeekday"));
+        assertFalse(state.path("target").has("minute"));
+        LocalTime targetTime = LocalTime.parse(state.path("target").path("time").asText());
+        assertEquals(scenario.path("target").path("minute").asInt(), targetTime.toSecondOfDay() / 60);
         var criteria = request.path("questions").path("current_category").path("criteria");
         assertFalse(criteria.has("unknown"));
         assertEquals(scenario.path("categories"), criteria);
         for (JsonNode record : state.path("todayRecords")) {
             assertEquals(scenario.path("target").path("date"), record.path("date"));
-            assertTrue(record.path("endMinute").asInt() < scenario.path("target").path("minute").asInt());
+            assertTrue(LocalTime.parse(record.path("endTime").asText()).isBefore(targetTime));
+            assertModelRecord(scenario, record);
+            assertFalse(record.has("startMinute"));
+            assertFalse(record.has("endMinute"));
         }
         for (JsonNode record : state.path("previousComparableDay").path("records")) {
             assertEquals(scenario.path("expectedReferenceDate"), record.path("date"));
+            assertModelRecord(scenario, record);
+            assertFalse(record.has("startMinute"));
+            assertFalse(record.has("endMinute"));
         }
         Path file = Path.of("target/jev-calendar-scenarios", scenario.path("id").asText() + ".request.json");
         Files.createDirectories(file.getParent());
         JevScenarioSupport.JSON.writerWithDefaultPrettyPrinter().writeValue(file.toFile(), request);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0,00:00", "59,00:59", "60,01:00", "811,13:31", "1286,21:26", "1310,21:50", "1439,23:59"})
+    void testRequest_目标和记录均转换为钟表时间且保留原始分钟(int minute, String expected) {
+        var scenario = JevScenarioSupport.JSON.createObjectNode();
+        scenario.putObject("target").put("date", "2026-09-22").put("minute", minute);
+        scenario.putObject("categories").put("10", "理财");
+        scenario.putArray("records").addObject().put("date", "2026-09-21")
+                .put("startMinute", minute).put("endMinute", minute).put("categoryId", "10");
+        var original = scenario.deepCopy();
+        var state = JevCategoryProtocol.request(scenario, true, LocalDate.of(2026, 9, 21)).path("state");
+        assertEquals(expected, state.path("target").path("time").asText());
+        var record = state.path("previousComparableDay").path("records").get(0);
+        assertEquals(expected, record.path("startTime").asText());
+        assertEquals(expected, record.path("endTime").asText(), "保留包含末分钟的语义，不加一分钟");
+        assertFalse(record.has("categoryId"));
+        assertEquals("理财", record.path("categoryName").asText());
+        assertTrue(state.path("previousCategoryName").isNull());
+        assertEquals(original, scenario, "模型格式转换不能修改业务分钟数据");
+    }
+
+    private void assertModelRecord(JsonNode scenario, JsonNode record) {
+        assertFalse(record.has("categoryId"));
+        assertEquals(4, record.size(), "模型记录仅包含日期、起止时间及中文分类");
+        int minute = LocalTime.parse(record.path("startTime").asText()).toSecondOfDay() / 60;
+        var original = java.util.stream.StreamSupport.stream(scenario.path("records").spliterator(), false)
+                .filter(item -> item.path("date").equals(record.path("date"))
+                        && item.path("startMinute").asInt() == minute)
+                .findFirst().orElseThrow();
+        assertEquals(scenario.path("categories").path(original.path("categoryId").asText()), record.path("categoryName"));
     }
 
     @ParameterizedTest

@@ -130,7 +130,7 @@ aio:
         api-key: ${AIO_LIFE_TYPESAFE_API_KEY:}
         model: ${AIO_LIFE_TYPESAFE_MODEL:jev-latest}
         # 单次 Jev 调用总等待上限，毫秒；超时立即使用日历规则兜底。
-        request-timeout-ms: ${AIO_LIFE_TYPESAFE_REQUEST_TIMEOUT_MS:1000}
+        request-timeout-ms: ${AIO_LIFE_TYPESAFE_REQUEST_TIMEOUT_MS:1500}
         # 仅缓存数据库查询，默认 5 小时；修改记录或分类后清理。0 表示关闭。
         data-cache-ttl-ms: ${AIO_LIFE_TYPESAFE_DATA_CACHE_TTL_MS:18000000}
       leetcode-corn: 0 30 23 * * ?

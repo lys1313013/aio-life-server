@@ -16,6 +16,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,6 +33,9 @@ class TimeRecordServiceImplTest {
 
     @Mock
     private top.aiolife.record.prediction.JevCategoryRecommendationService jev;
+
+    @Mock
+    private top.aiolife.record.service.ITimeTrackerCategoryService categories;
 
     @org.junit.jupiter.api.BeforeEach
     void setupJevFallback() {
@@ -62,29 +66,128 @@ class TimeRecordServiceImplTest {
     }
 
     @Test
-    void testRecommendType_跨年参考日缺失仍可查询已知同类日历史() {
+    void testRecommendType_参考日缺失直接返回空分类不再查询高频() {
         LocalDate date = LocalDate.of(2026, 1, 1);
         when(calendar.isWorkday(date)).thenReturn(false);
         when(calendar.findPreviousComparableDate(date)).thenReturn(null);
-        ReflectionTestUtils.setField(timeRecordService, "baseMapper", mapper);
-        when(mapper.getMostFrequentCategoryAtTime(1L, 600, null, false)).thenReturn(105L);
-
-        assertEquals(105L, timeRecordService.recommendType(1L, date.toString(), 600, null));
-        verify(mapper, never()).recommendType(anyLong(), anyString(), anyInt());
+        assertNull(timeRecordService.recommendType(1L, date.toString(), 600, null));
+        verifyNoInteractions(mapper, categories);
     }
 
     @Test
-    void testRecommendType_周日补班按工作日查询高频及后续分类() {
-        LocalDate date = LocalDate.of(2026, 9, 20);
+    void testRecommendType_参考日命中允许延续上一分类() {
+        LocalDate date = LocalDate.of(2020, 9, 20);
         when(calendar.isWorkday(date)).thenReturn(true);
-        when(calendar.findPreviousComparableDate(date)).thenReturn(LocalDate.of(2026, 9, 18));
-        ReflectionTestUtils.setField(timeRecordService, "baseMapper", mapper);
-        when(mapper.getMostFrequentCategoryAtTime(1L, 600, null, true)).thenReturn(104L);
-        when(mapper.getMostFrequentNextCategory(1L, 104L, true)).thenReturn(103L);
+        when(calendar.findPreviousComparableDate(date)).thenReturn(date.minusDays(2));
+        visibleCategories(104L);
+        when(mapper.findReferenceRecords(1L, "2020-09-18", 600, 1440))
+                .thenReturn(List.of(referenceRecord(104L)));
+        assertEquals(104L, timeRecordService.recommendType(1L, date.toString(), 600, 104L));
+        verify(mapper).findReferenceRecords(1L, "2020-09-18", 600, 1440);
+        verifyNoMoreInteractions(mapper);
+    }
 
-        assertEquals(103L, timeRecordService.recommendType(1L, date.toString(), 600, 104L));
-        verify(mapper).recommendType(1L, "2026-09-18", 600);
-        verify(mapper).getMostFrequentNextCategory(1L, 104L, true);
+    @Test
+    void testRecommendType_隐藏删除分类不能回退且无可用记录时返回空() {
+        visibleCategories(104L);
+        when(mapper.findReferenceRecords(1L, "2020-09-18", 600, 1440))
+                .thenReturn(List.of(referenceRecord(999L)));
+        assertNull(referenceFallback());
+    }
+
+    @Test
+    void testRecommendType_过滤不可见分类后可采用唯一有效记录() {
+        visibleCategories(104L);
+        when(mapper.findReferenceRecords(1L, "2020-09-18", 600, 1440))
+                .thenReturn(List.of(referenceRecord(999L), referenceRecord(104L)));
+        assertEquals(104L, referenceFallback());
+    }
+
+    @Test
+    void testRecommendType_重叠记录返回空分类不抛单结果异常() {
+        visibleCategories(104L, 105L);
+        when(mapper.findReferenceRecords(1L, "2020-09-18", 600, 1440))
+                .thenReturn(List.of(referenceRecord(104L), referenceRecord(105L)));
+        assertNull(referenceFallback());
+    }
+
+    @Test
+    void testRecommendType_没有可见分类不查询记录() {
+        visibleCategories();
+        assertNull(referenceFallback());
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
+    void testRecommendType_参考日没有记录时不猜测分类() {
+        visibleCategories(104L);
+        when(mapper.findReferenceRecords(1L, "2020-09-18", 600, 1440)).thenReturn(List.of());
+        assertNull(referenceFallback());
+    }
+
+    @Test
+    void testRecommendType_未来参考日或不早于目标日均不读取() {
+        var now = java.time.LocalDateTime.of(2020, 9, 19, 12, 0);
+        assertNull(timeRecordService.recommendFromReferenceDay(1L, LocalDate.of(2020, 9, 22),
+                600, LocalDate.of(2020, 9, 21), now));
+        assertNull(timeRecordService.recommendFromReferenceDay(1L, LocalDate.of(2020, 9, 18),
+                600, LocalDate.of(2020, 9, 18), now));
+        verifyNoInteractions(mapper, categories);
+    }
+
+    @Test
+    void testRecommendType_参考日是今天时仅查已结束记录且缓存区分截止分钟() {
+        visibleCategories(104L);
+        var date = LocalDate.of(2020, 9, 20);
+        var now = java.time.LocalDateTime.of(2020, 9, 19, 12, 0);
+        when(mapper.findReferenceRecords(1L, "2020-09-19", 600, 720)).thenReturn(List.of());
+        when(mapper.findReferenceRecords(1L, "2020-09-19", 600, 721))
+                .thenReturn(List.of(referenceRecord(104L)));
+        assertNull(timeRecordService.recommendFromReferenceDay(1L, date, 600, now.toLocalDate(), now));
+        assertEquals(104L, timeRecordService.recommendFromReferenceDay(1L, date, 600, now.toLocalDate(), now.plusMinutes(1)));
+        assertNull(timeRecordService.recommendFromReferenceDay(1L, date, 720, now.toLocalDate(), now));
+        verify(mapper).findReferenceRecords(1L, "2020-09-19", 600, 720);
+        verify(mapper).findReferenceRecords(1L, "2020-09-19", 600, 721);
+        verifyNoMoreInteractions(mapper);
+    }
+
+    @Test
+    void testRecommendNext_实际查询字段包含上一分类() {
+        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
+                new org.apache.ibatis.builder.MapperBuilderAssistant(new com.baomidou.mybatisplus.core.MybatisConfiguration(), ""),
+                TimeRecordEntity.class);
+        var service = spy(timeRecordService);
+        var previous = createRecord(0, 599);
+        previous.setCategoryId(104L);
+        doAnswer(invocation -> {
+            var query = (com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<TimeRecordEntity>) invocation.getArgument(0);
+            assertTrue(query.getSqlSelect().contains("category_id"), "必须查询分类供 Controller 读取");
+            return List.of(previous);
+        }).when(service).list(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class));
+        var result = service.recommendNext(1L, "2020-09-19");
+        assertEquals(600, result.getRecommend().getStartTime());
+        assertEquals(104L, result.getRecords().getFirst().getCategoryId());
+    }
+
+    private Long referenceFallback() {
+        return timeRecordService.recommendFromReferenceDay(1L, LocalDate.of(2020, 9, 20), 600,
+                LocalDate.of(2020, 9, 18), java.time.LocalDateTime.of(2020, 9, 21, 12, 0));
+    }
+
+    private void visibleCategories(Long... ids) {
+        var visible = java.util.Arrays.stream(ids).map(id -> {
+            var category = new top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity();
+            category.setId(id);
+            category.setName("分类" + id);
+            return category;
+        }).toList();
+        when(categories.listUserVisibleCategories(1L)).thenReturn(visible);
+    }
+
+    private TimeRecordEntity referenceRecord(Long categoryId) {
+        var record = createRecord(540, 659);
+        record.setCategoryId(categoryId);
+        return record;
     }
 
     @Test
