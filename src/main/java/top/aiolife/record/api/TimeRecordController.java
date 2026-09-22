@@ -1,6 +1,7 @@
 package top.aiolife.record.api;
 
 import top.aiolife.core.query.QueryParams;
+import top.aiolife.sso.util.RequestLoginContext;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -310,7 +311,7 @@ public class TimeRecordController {
      */
     @GetMapping("/recommendType")
     public ApiResponse<String> recommendType(String date, int time, @RequestParam(required = false) String previousCategoryId) {
-        long userId = StpUtil.getLoginIdAsLong();
+        long userId = RequestLoginContext.requireUserId();
         Long categoryId = timeRecordService.recommendType(userId, date, time, toCategoryId(previousCategoryId));
         if (categoryId == null) {
             return ApiResponse.success("");
@@ -324,7 +325,7 @@ public class TimeRecordController {
      */
     @GetMapping("/recommendNext")
     public ApiResponse<RecommendNextVO> recommendNext(String date) {
-        long userId = StpUtil.getLoginIdAsLong();
+        long userId = RequestLoginContext.requireUserId();
         RecommendNextVO result = timeRecordService.recommendNext(userId, date);
         
         // 获取推荐分类

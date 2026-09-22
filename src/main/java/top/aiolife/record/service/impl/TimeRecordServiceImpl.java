@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.core.util.SysUtil;
 import top.aiolife.record.convertor.TimeRecordConvertor;
+import top.aiolife.record.prediction.JevCategoryRecommendationService;
+import top.aiolife.record.prediction.RecommendationDataCache;
 import top.aiolife.record.mapper.ITimeRecordMapper;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
@@ -47,6 +49,8 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     private final IReadRecordService readRecordService;
     private final IMovieService movieService;
     private final IWorkCalendarService workCalendarService;
+    private final JevCategoryRecommendationService jevRecommendationService;
+    private final RecommendationDataCache recommendationDataCache;
 
     private void updateRelateStatusIfNecessary(TimeRecordEntity entity, long userId) {
         if (entity.getRelateId() != null && entity.getRelateType() != null) {
@@ -216,34 +220,47 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
     @Override
     public Long recommendType(long userId, String date, int time, Long previousCategoryId) {
+        if (time < 0 || time > 1439) throw new IllegalArgumentException("时间必须在 0 到 1439 之间");
         LocalDate localDate = LocalDate.parse(date);
-        Boolean isWorkday = workCalendarService.isWorkday(localDate);
+        Boolean isWorkday = recommendationDataCache.get("workday",
+                () -> workCalendarService.isWorkday(localDate), localDate);
         if (isWorkday == null) {
             // 日历尚未初始化时不猜测类型，保留时间块，暂不推荐分类。
             return null;
         }
-        LocalDate targetDate = workCalendarService.findPreviousComparableDate(localDate);
+        LocalDate targetDate = recommendationDataCache.get("comparableDate",
+                () -> workCalendarService.findPreviousComparableDate(localDate), localDate);
+
+        Long predicted = jevRecommendationService.recommend(userId, localDate, time, isWorkday, targetDate);
+        if (predicted != null) return predicted;
 
         // 1. 查参考日期同一时间段是否有记录
         TimeRecordEntity originalRecommend = targetDate == null ? null
-                : this.baseMapper.recommendType(userId, targetDate.toString(), time);
+                : recommendationDataCache.get("referenceRecord",
+                        () -> this.baseMapper.recommendType(userId, targetDate.toString(), time), userId, targetDate, time);
         Long categoryId = originalRecommend != null ? originalRecommend.getCategoryId() : null;
 
         // 2. 如果 Step 1 未命中，降级到时间段历史高频（不排除任何分类）
         if (categoryId == null) {
-            categoryId = this.baseMapper.getMostFrequentCategoryAtTime(userId, time, null, isWorkday);
+            categoryId = recommendationDataCache.get("frequentCategory",
+                    () -> this.baseMapper.getMostFrequentCategoryAtTime(userId, time, null, isWorkday),
+                    userId, time, null, isWorkday);
         }
 
         // 3. 去重干预：如果推荐分类与上一条记录相同，尝试替换
         if (categoryId != null && categoryId.equals(previousCategoryId)) {
             // 3.1 预测后续行为：历史上紧跟在 previousCategoryId 之后最常出现的分类
-            Long nextCategory = this.baseMapper.getMostFrequentNextCategory(userId, previousCategoryId, isWorkday);
+            Long nextCategory = recommendationDataCache.get("nextCategory",
+                    () -> this.baseMapper.getMostFrequentNextCategory(userId, previousCategoryId, isWorkday),
+                    userId, previousCategoryId, isWorkday);
             if (nextCategory != null) {
                 return nextCategory;
             }
 
             // 3.2 降级：该时间段历史最高频，排除 previousCategoryId
-            Long fallbackCategory = this.baseMapper.getMostFrequentCategoryAtTime(userId, time, previousCategoryId, isWorkday);
+            Long fallbackCategory = recommendationDataCache.get("frequentCategory",
+                    () -> this.baseMapper.getMostFrequentCategoryAtTime(userId, time, previousCategoryId, isWorkday),
+                    userId, time, previousCategoryId, isWorkday);
             if (fallbackCategory != null) {
                 return fallbackCategory;
             }
@@ -262,7 +279,8 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         queryWrapper.select(TimeRecordEntity::getStartTime, TimeRecordEntity::getEndTime)
                 .eq(TimeRecordEntity::getUserId, userId)
                 .eq(TimeRecordEntity::getDate, targetDate);
-        List<TimeRecordEntity> records = this.list(queryWrapper);
+        List<TimeRecordEntity> records = new java.util.ArrayList<>(recommendationDataCache.get("nextRecords",
+                () -> this.list(queryWrapper), userId, targetDate));
         
         TimeRecordEntity recommend = calculateRecommendNext(records, targetDate);
         return RecommendNextVO.builder()

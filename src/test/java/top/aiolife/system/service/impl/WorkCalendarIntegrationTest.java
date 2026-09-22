@@ -81,7 +81,7 @@ class WorkCalendarIntegrationTest {
             verifyNoInteractions(calendarMapper);
 
             var timeMapper = session.getMapper(ITimeRecordMapper.class);
-            var service = new TimeRecordServiceImpl(timeMapper, null, null, null, calendar);
+            var service = new TimeRecordServiceImpl(timeMapper, null, null, null, calendar, org.mockito.Mockito.mock(top.aiolife.record.prediction.JevCategoryRecommendationService.class, invocation -> null), new top.aiolife.record.prediction.RecommendationDataCache(15000));
             ReflectionTestUtils.setField(service, "baseMapper", timeMapper);
             assertEquals(104L, service.recommendType(1L, "2026-09-21", 600, null));
             assertEquals(105L, service.recommendType(1L, "2026-09-26", 600, null));

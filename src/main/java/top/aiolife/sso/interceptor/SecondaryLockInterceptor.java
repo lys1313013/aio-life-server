@@ -1,7 +1,7 @@
 package top.aiolife.sso.interceptor;
 
 import cn.dev33.satoken.context.SaHolder;
-import cn.dev33.satoken.stp.StpUtil;
+import top.aiolife.sso.util.RequestLoginContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -44,16 +44,16 @@ public class SecondaryLockInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         // 未登录则跳过
-        if (!StpUtil.isLogin()) {
+        Long userId = RequestLoginContext.userIdOrNull();
+        if (userId == null) {
             return true;
         }
 
-        String menuPath = resolveMenuPath(request, handler);
+        String menuPath = resolveMenuPath(request, handler, userId);
         if (menuPath == null) {
             return true;
         }
 
-        long userId = StpUtil.getLoginIdAsLong();
         String unlockKey = UNLOCK_KEY_PREFIX + userId + ":" + menuPath;
 
         if (redisUtil.hasKey(unlockKey)) {
@@ -71,8 +71,7 @@ public class SecondaryLockInterceptor implements HandlerInterceptor {
     /**
      * 解析当前请求对应的二级锁菜单路径。
      */
-    private String resolveMenuPath(HttpServletRequest request, Object handler) {
-        long userId = StpUtil.getLoginIdAsLong();
+    private String resolveMenuPath(HttpServletRequest request, Object handler, long userId) {
 
         // 优先检查 @SecondaryLock 注解
         if (handler instanceof HandlerMethod hm) {

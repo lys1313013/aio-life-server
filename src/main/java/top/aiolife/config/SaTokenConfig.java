@@ -8,7 +8,7 @@ import cn.dev33.satoken.context.model.SaStorage;
 import cn.dev33.satoken.context.second.SaTokenSecondContext;
 import cn.dev33.satoken.interceptor.SaInterceptor;
 import cn.dev33.satoken.SaManager;
-import cn.dev33.satoken.stp.StpUtil;
+import top.aiolife.sso.util.RequestLoginContext;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
@@ -78,7 +78,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
             if (Boolean.TRUE.equals(SaHolder.getStorage().get("IS_API_KEY_AUTH"))) {
                 return;
             }
-            StpUtil.checkLogin();
+            RequestLoginContext.checkLogin();
         })).addPathPatterns("/**")
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",

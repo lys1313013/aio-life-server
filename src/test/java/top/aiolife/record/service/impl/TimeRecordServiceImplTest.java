@@ -30,6 +30,27 @@ class TimeRecordServiceImplTest {
     @Mock
     private IWorkCalendarService calendar;
 
+    @Mock
+    private top.aiolife.record.prediction.JevCategoryRecommendationService jev;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setupJevFallback() {
+        ReflectionTestUtils.setField(timeRecordService, "recommendationDataCache",
+                new top.aiolife.record.prediction.RecommendationDataCache(15000));
+        lenient().when(jev.recommend(anyLong(), any(), anyInt(), anyBoolean(), any())).thenReturn(null);
+    }
+
+    @Test
+    void testRecommendType_Jev命中直接返回且允许延续上一分类() {
+        var date = LocalDate.of(2026, 9, 21);
+        var reference = date.minusDays(1);
+        when(calendar.isWorkday(date)).thenReturn(true);
+        when(calendar.findPreviousComparableDate(date)).thenReturn(reference);
+        when(jev.recommend(1L, date, 600, true, reference)).thenReturn(104L);
+        assertEquals(104L, timeRecordService.recommendType(1L, date.toString(), 600, 104L));
+        verifyNoInteractions(mapper);
+    }
+
     @Test
     void testRecommendType_日历缺失不按星期猜测且不查询历史() {
         LocalDate date = LocalDate.of(2027, 1, 4);

@@ -48,7 +48,7 @@ class JevTimeCategoryScenarioTest {
     void testReferenceDate_生产推荐使用日历服务返回的参考日期(String target, String expected) {
         var mapper = mock(ITimeRecordMapper.class);
         var calendar = spy(JevCalendarFixture.calendar());
-        var service = new TimeRecordServiceImpl(mapper, null, null, null, calendar);
+        var service = new TimeRecordServiceImpl(mapper, null, null, null, calendar, org.mockito.Mockito.mock(top.aiolife.record.prediction.JevCategoryRecommendationService.class, invocation -> null), new top.aiolife.record.prediction.RecommendationDataCache(15000));
         ReflectionTestUtils.setField(service, "baseMapper", mapper);
         var referenceRecord = new TimeRecordEntity();
         referenceRecord.setCategoryId(104L);
