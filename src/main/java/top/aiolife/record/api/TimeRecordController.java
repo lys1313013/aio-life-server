@@ -303,19 +303,27 @@ public class TimeRecordController {
     }
 
     /**
-     * 推荐分类
-     * @param date 日期
-     * @param time 时间
-     * @param previousCategoryId 紧邻的上一条记录分类id（可选）
-     * @return 分类id
+     * 为当前登录用户推荐指定日期、指定时刻的时迹分类，不创建或修改时间记录。
+     *
+     * <p>优先使用 Jev AI 推荐；未得到分类时，尝试参考最近一个同类日
+     * （工作日或非工作日）覆盖该时刻的记录。日历缺失或无法得到有效分类时返回空字符串。</p>
+     *
+     * @param date 目标日期，格式 yyyy-MM-dd，例如 2026-09-25
+     * @param time 目标时刻距当天 00:00 的分钟数，范围 0～1439，例如 600 表示 10:00；不是时长或时间戳
+     * @param previousCategoryId 紧邻上一条记录的分类 ID（可选，数字字符串）；当前仅保留兼容，
+     *                           不参与推荐计算，允许推荐与上一条相同的分类；空串或无法解析为 Long 时按未指定处理
+     * @return 成功响应的 data 为分类 ID 字符串；无推荐时 data 为 ""，仍返回成功码 "0"
      */
     @GetMapping("/recommendType")
     public ApiResponse<String> recommendType(String date, int time, @RequestParam(required = false) String previousCategoryId) {
+        // 从登录上下文确定用户，推荐所用的分类和历史记录均按该用户查询。
         long userId = RequestLoginContext.requireUserId();
         Long categoryId = timeRecordService.recommendType(userId, date, time, toCategoryId(previousCategoryId));
         if (categoryId == null) {
+            // 无推荐属于正常业务结果，用空字符串表示本次没有可自动填入的分类。
             return ApiResponse.success("");
         }
+        // 分类 ID 按字符串返回，避免前端 JavaScript Number 丢失大整数精度。
         return ApiResponse.success(String.valueOf(categoryId));
     }
 

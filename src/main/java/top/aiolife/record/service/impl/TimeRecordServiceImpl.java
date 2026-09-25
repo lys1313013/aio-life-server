@@ -223,26 +223,44 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
     @Override
     public Long recommendType(long userId, String date, int time, Long previousCategoryId) {
+        // time 表示当天的第几分钟：0 为 00:00，1439 为 23:59。
         if (time < 0 || time > 1439) throw new IllegalArgumentException("时间必须在 0 到 1439 之间");
         LocalDate localDate = LocalDate.parse(date);
+        // 根据工作日历识别工作日/非工作日，包含法定节假日和调休补班，不直接按星期推断。
         Boolean isWorkday = recommendationDataCache.get("workday",
                 () -> workCalendarService.isWorkday(localDate), localDate);
         if (isWorkday == null) {
-            // 日历尚未初始化时不猜测类型，保留时间块，暂不推荐分类。
+            // 目标日期的日历缺失时直接结束推荐，由 Controller 将 null 转成空字符串。
             log.info("Time category recommendation completed: userId={}, date={}, minute={}, "
                     + "source=NONE, reason=WORK_CALENDAR_MISSING, categoryId=null", userId, date, time);
             return null;
         }
+        // targetDate 在这里是参考日：严格早于 localDate 的最近一个同类日；日历不完整时可能为 null。
         LocalDate targetDate = recommendationDataCache.get("comparableDate",
                 () -> workCalendarService.findPreviousComparableDate(localDate), localDate);
 
+        // 优先使用 Jev AI，结合用户可见分类、目标日该时刻之前及参考日的有效历史记录预测。
+        // previousCategoryId 仅为兼容旧调用保留，不影响预测，允许连续记录使用同一分类。
         Long predicted = jevRecommendationService.recommend(userId, localDate, time, isWorkday, targetDate);
         if (predicted != null) return logRecommendation(userId, date, time, "JEV", predicted);
 
+        // AI 未给出分类时，尝试参考日同一时刻的记录；没有唯一有效记录则返回 null。
         return recommendFromReferenceDay(userId, localDate, time, targetDate, LocalDateTime.now());
     }
 
-    /** 仅参考上一个同类日；无有效记录或存在重叠时不猜测分类，允许延续上一分类。 */
+    /**
+     * 使用最近一个同类日的记录兜底，只接受覆盖目标分钟且分类仍对用户可见的唯一记录。
+     *
+     * <p>参考日必须早于目标日期，且不能晚于当前日期；若参考日就是今天，
+     * 仅使用结束时间严格早于当前分钟的记录。无匹配记录或存在多条候选记录时均返回 null。</p>
+     *
+     * @param userId 用户 ID
+     * @param date 本次需要推荐分类的目标日期
+     * @param minute 目标时刻距当天 00:00 的分钟数
+     * @param reference 最近一个同类日的日期，可为 null
+     * @param now 当前时间，用于排除尚未结束的参考记录
+     * @return 唯一有效参考记录的分类 ID；无法确定时返回 null
+     */
     Long recommendFromReferenceDay(long userId, LocalDate date, int minute,
                                   LocalDate reference, LocalDateTime now) {
         if (reference == null || !reference.isBefore(date) || reference.isAfter(now.toLocalDate())) {
