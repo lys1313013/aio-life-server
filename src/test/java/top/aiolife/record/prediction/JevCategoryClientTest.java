@@ -86,8 +86,8 @@ class JevCategoryClientTest {
         assertNull(client.predict(request));
         assertTrue((System.nanoTime() - started) / 1_000_000 < 500,
                 "等待必须受总时限约束，不能等到上游响应结束");
-        assertTrue(logs().contains("reason=TOTAL_TIMEOUT"));
-        assertTrue(logs().matches("(?s).*elapsedMs=\\d+.*"));
+        assertTrue(logs().contains("原因=TOTAL_TIMEOUT"));
+        assertTrue(logs().matches("(?s).*耗时毫秒=\\d+.*"));
     }
 
     @Test
@@ -101,8 +101,8 @@ class JevCategoryClientTest {
                 .andExpect(req -> {
                     String sentBody = ((org.springframework.mock.http.client.MockClientHttpRequest) req).getBodyAsString();
                     String loggedBody = events.stream().map(event -> event.getMessage().getFormattedMessage())
-                            .filter(message -> message.contains("requestBody="))
-                            .findFirst().orElseThrow().split("requestBody=", 2)[1];
+                            .filter(message -> message.contains("请求体="))
+                            .findFirst().orElseThrow().split("请求体=", 2)[1];
                     assertEquals(sentBody, loggedBody);
                     assertEquals("jev-latest", new com.fasterxml.jackson.databind.ObjectMapper()
                             .readTree(loggedBody).path("model").asText());
@@ -111,18 +111,18 @@ class JevCategoryClientTest {
         assertEquals(104L, client.predict(request));
         server.verify();
         String logs = logs();
-        assertTrue(logs.contains("outcome=ACCEPTED, reason=PREDICTED, httpStatus=200"));
-        assertTrue(logs.contains("responseModel=jev-1.13.0"));
-        assertTrue(logs.contains("categoryId=104"));
-        assertTrue(logs.matches("(?s).*elapsedMs=\\d+.*"));
+        assertTrue(logs.contains("结果=ACCEPTED, 原因=PREDICTED, HTTP状态=200"));
+        assertTrue(logs.contains("响应模型=jev-1.13.0"));
+        assertTrue(logs.contains("分类ID=104"));
+        assertTrue(logs.matches("(?s).*耗时毫秒=\\d+.*"));
         assertEquals(2, events.size());
         assertTrue(events.stream().allMatch(event -> "jev-test-trace".equals(event.getContextData().getValue("traceId"))));
         var ids = events.stream().map(event -> event.getMessage().getFormattedMessage()
-                .split("callId=")[1].split(",")[0]).distinct().toList();
+                .split("调用ID=")[1].split(",")[0]).distinct().toList();
         assertEquals(1, ids.size(), "开始和完成日志使用同一个调用 ID");
         assertFalse(logs.contains("test-key"));
         assertFalse(logs.contains("Authorization"));
-        assertTrue(logs.contains("requestBody=" + request));
+        assertTrue(logs.contains("请求体=" + request));
         assertTrue(logs.contains("todayRecords"));
     }
 
@@ -133,8 +133,8 @@ class JevCategoryClientTest {
                 .andRespond(withSuccess(response.toString(), MediaType.APPLICATION_JSON));
         assertNull(client.predict(request));
         server.verify();
-        assertTrue(logs().contains("outcome=FALLBACK, reason=LOW_CONFIDENCE, httpStatus=200"));
-        assertTrue(logs().contains("confidence=0.64"));
+        assertTrue(logs().contains("结果=FALLBACK, 原因=LOW_CONFIDENCE, HTTP状态=200"));
+        assertTrue(logs().contains("置信度=0.64"));
     }
 
     @Test
@@ -143,8 +143,8 @@ class JevCategoryClientTest {
                 .body("private-upstream-body test-key"));
         assertNull(client.predict(request));
         server.verify();
-        assertTrue(logs().contains("reason=HTTP_ERROR, httpStatus=401"));
-        assertTrue(logs().matches("(?s).*elapsedMs=\\d+.*"));
+        assertTrue(logs().contains("原因=HTTP_ERROR, HTTP状态=401"));
+        assertTrue(logs().matches("(?s).*耗时毫秒=\\d+.*"));
         assertFalse(logs().contains("private-upstream-body"));
         assertFalse(logs().contains("test-key"));
     }
@@ -154,8 +154,8 @@ class JevCategoryClientTest {
         server.expect(requestTo(JevCategoryClient.ENDPOINT)).andRespond(withException(new SocketTimeoutException()));
         assertNull(client.predict(request));
         server.verify();
-        assertTrue(logs().contains("reason=NETWORK_TIMEOUT"));
-        assertTrue(logs().contains("errorType=SocketTimeoutException"));
+        assertTrue(logs().contains("原因=NETWORK_TIMEOUT"));
+        assertTrue(logs().contains("错误类型=SocketTimeoutException"));
     }
 
     @Test
@@ -163,7 +163,7 @@ class JevCategoryClientTest {
         server.expect(requestTo(JevCategoryClient.ENDPOINT)).andRespond(withSuccess("{", MediaType.APPLICATION_JSON));
         assertNull(client.predict(request));
         server.verify();
-        assertTrue(logs().contains("reason=CLIENT_ERROR"));
+        assertTrue(logs().contains("原因=CLIENT_ERROR"));
     }
 
     @Test
@@ -171,8 +171,8 @@ class JevCategoryClientTest {
         assertNull(new JevCategoryClient("", true, "jev-latest", 1000).predict(request));
         assertNull(new JevCategoryClient("test-key", false, "jev-latest", 1000).predict(request));
         server.verify();
-        assertTrue(logs().contains("reason=MISSING_API_KEY"));
-        assertTrue(logs().contains("reason=DISABLED"));
+        assertTrue(logs().contains("原因=MISSING_API_KEY"));
+        assertTrue(logs().contains("原因=DISABLED"));
     }
 
     @Test
@@ -180,7 +180,7 @@ class JevCategoryClientTest {
         request.put("extra", "测".repeat(64 * 1024));
         assertNull(client.predict(request));
         server.verify();
-        assertTrue(logs().contains("reason=REQUEST_TOO_LARGE"));
+        assertTrue(logs().contains("原因=REQUEST_TOO_LARGE"));
     }
 
     @Test
@@ -210,10 +210,10 @@ class JevCategoryClientTest {
             client.close();
             var executor = (java.util.concurrent.ExecutorService) ReflectionTestUtils.getField(client, "executor");
             assertTrue(executor.awaitTermination(1, TimeUnit.SECONDS));
-            assertTrue(logs().contains("reason=TOTAL_TIMEOUT"));
-            assertFalse(logs().contains("outcome=ACCEPTED"));
+            assertTrue(logs().contains("原因=TOTAL_TIMEOUT"));
+            assertFalse(logs().contains("结果=ACCEPTED"));
             assertEquals(1, events.stream().filter(event -> event.getMessage().getFormattedMessage()
-                    .contains("Jev category completed")).count());
+                    .contains("Jev 分类调用完成")).count());
         } finally {
             release.countDown();
         }

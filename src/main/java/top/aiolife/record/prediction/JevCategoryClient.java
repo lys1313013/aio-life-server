@@ -75,19 +75,19 @@ public class JevCategoryClient {
         String callId = UUID.randomUUID().toString();
         long started = System.nanoTime();
         if (!isAvailable()) {
-            log.info("Jev category skipped: callId={}, reason={}", callId, unavailableReason());
+            log.info("Jev 分类调用跳过：调用ID={}, 原因={}", callId, unavailableReason());
             return null;
         }
         request.put("model", model);
         String body = request.toString();
         int requestBytes = body.getBytes(StandardCharsets.UTF_8).length;
         if (requestBytes > 64 * 1024) {
-            log.warn("Jev category skipped: callId={}, reason=REQUEST_TOO_LARGE, requestBytes={}, limitBytes={}",
+            log.warn("Jev 分类调用跳过：调用ID={}, 原因=REQUEST_TOO_LARGE, 请求字节数={}, 上限字节数={}",
                     callId, requestBytes, 64 * 1024);
             return null;
         }
-        log.info("Jev category started: callId={}, endpoint={}, model={}, timeoutMs={}, requestBytes={}, "
-                        + "categoryCount={}, todayRecordCount={}, referenceRecordCount={}, requestBody={}",
+        log.info("Jev 分类调用开始：调用ID={}, 端点={}, 模型={}, 超时毫秒={}, 请求字节数={}, "
+                        + "分类数={}, 今日记录数={}, 参考日记录数={}, 请求体={}",
                 callId, ENDPOINT, safeLogValue(model), requestTimeoutMs, requestBytes,
                 request.path("questions").path("current_category").path("criteria").size(),
                 request.path("state").path("todayRecords").size(),
@@ -114,8 +114,8 @@ public class JevCategoryClient {
 
     // 仅等待方打印最终结果，保留 HTTP 线程的 traceId/spanId；超时后的迟到响应不再打印成功。
     private Long finish(String callId, long started, Outcome outcome) {
-        String template = "Jev category completed: callId={}, outcome={}, reason={}, httpStatus={}, "
-                + "responseModel={}, confidence={}, categoryId={}, elapsedMs={}, timeoutMs={}, errorType={}";
+        String template = "Jev 分类调用完成：调用ID={}, 结果={}, 原因={}, HTTP状态={}, "
+                + "响应模型={}, 置信度={}, 分类ID={}, 耗时毫秒={}, 超时毫秒={}, 错误类型={}";
         Object[] fields = {callId, outcome.categoryId() == null ? "FALLBACK" : "ACCEPTED", outcome.reason(),
                 outcome.httpStatus(), outcome.responseModel(), outcome.confidence(), outcome.categoryId(),
                 (System.nanoTime() - started) / 1_000_000, requestTimeoutMs, outcome.errorType()};
