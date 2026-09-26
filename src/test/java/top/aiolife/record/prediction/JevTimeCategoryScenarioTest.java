@@ -54,7 +54,7 @@ class JevTimeCategoryScenarioTest {
         category.setId(104L);
         category.setName("工作");
         when(categories.listUserVisibleCategories(1L)).thenReturn(java.util.List.of(category));
-        var service = new TimeRecordServiceImpl(mapper, null, null, null, calendar, org.mockito.Mockito.mock(top.aiolife.record.prediction.JevCategoryRecommendationService.class, invocation -> null), new top.aiolife.record.prediction.RecommendationDataCache(15000), categories);
+        var service = new TimeRecordServiceImpl(mapper, null, null, null, calendar, org.mockito.Mockito.mock(top.aiolife.record.prediction.JevCategoryRecommendationService.class, invocation -> null), new top.aiolife.record.prediction.RecommendationDataCache(15000), categories, org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class));
         ReflectionTestUtils.setField(service, "baseMapper", mapper);
         var referenceRecord = new TimeRecordEntity();
         referenceRecord.setCategoryId(104L);

@@ -82,7 +82,7 @@ class TimeRecordControllerTest {
     }
 
     private ApiResponse<RecommendNextVO> recommendNextAsUser(ITimeRecordService timeRecordService) {
-        TimeRecordController controller = new TimeRecordController(timeRecordService, null, null, null);
+        TimeRecordController controller = new TimeRecordController(org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class), timeRecordService, null, null, null);
         StpLogic originalStpLogic = StpUtil.getStpLogic();
         StpUtil.setStpLogic(new StpLogic("login") {
             @Override
@@ -142,7 +142,7 @@ class TimeRecordControllerTest {
         ITimeTrackerCategoryService categoryService = proxy(ITimeTrackerCategoryService.class,
                 (method, args) -> null);
 
-        TimeRecordController controller = new TimeRecordController(
+        TimeRecordController controller = new TimeRecordController(org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class),
                 timeRecordService, exerciseRecordService, categoryService, userDictDataService);
         TimeRecordDateRangeMcpReq req = new TimeRecordDateRangeMcpReq();
         req.setStartDate(LocalDate.of(2026, 8, 9));

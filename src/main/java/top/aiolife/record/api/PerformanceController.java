@@ -1,6 +1,7 @@
 package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
+import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -78,13 +79,18 @@ public class PerformanceController {
      * 更新演出记录
      */
     @PutMapping
+    @Transactional(rollbackFor = Exception.class)
     public ApiResponse<PerformanceEntity> updatePerformance(@RequestBody PerformanceEntity entity) {
         long userId = StpUtil.getLoginIdAsLong();
+        entity.setCreateUser(userId);
+        entity.setCreateTime(null);
         entity.fillUpdateCommonField(userId);
         LambdaQueryWrapper<PerformanceEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PerformanceEntity::getId, entity.getId());
         wrapper.eq(PerformanceEntity::getCreateUser, userId);
-        getBaseMapper().update(entity, wrapper);
+        if (getBaseMapper().update(entity, wrapper) == 0) {
+            throw new IllegalArgumentException("演出记录不存在或无权操作");
+        }
         if (entity.getFileIds() != null && !entity.getFileIds().isEmpty()) {
             fileService.bindBizId(entity.getFileIds(), "performance", entity.getId());
         }

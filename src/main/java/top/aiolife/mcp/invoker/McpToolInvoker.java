@@ -22,13 +22,17 @@ import java.util.Map;
 public class McpToolInvoker {
 
     private final ObjectMapper objectMapper;
+    private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
 
     public McpSchema.CallToolResult invoke(McpToolRegistry.RegisteredMcpTool tool,
                                            Map<String, Object> arguments,
                                            Object loginId,
                                            RequestAttributes requestAttributes) {
         try {
-            Object result = McpSaTokenScope.runWithContext(loginId, requestAttributes, () -> invokeTool(tool, arguments));
+            Object result = McpSaTokenScope.runWithContext(loginId, requestAttributes, () -> {
+                secondaryLockGuard.checkTool(tool.name());
+                return invokeTool(tool, arguments);
+            });
             return McpSchema.CallToolResult.builder()
                     .addTextContent(toJson(result))
                     .isError(false)

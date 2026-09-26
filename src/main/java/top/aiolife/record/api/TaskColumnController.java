@@ -128,11 +128,13 @@ public class TaskColumnController {
     public ApiResponse<Void> reSort(@RequestBody List<TaskColumnEntity> list) {
         Long userId = StpUtil.getLoginIdAsLong();
         for (TaskColumnEntity entity : list) {
-            entity.fillUpdateCommonField(userId);
+            TaskColumnEntity update = new TaskColumnEntity();
+            update.setSortOrder(entity.getSortOrder());
+            update.fillUpdateCommonField(userId);
             LambdaQueryWrapper<TaskColumnEntity> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(TaskColumnEntity::getId, entity.getId());
             wrapper.eq(TaskColumnEntity::getUserId, userId);
-            getBaseMapper().update(entity, wrapper);
+            getBaseMapper().update(update, wrapper);
         }
         return ApiResponse.success();
     }

@@ -1,6 +1,7 @@
 package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
+import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.AllArgsConstructor;
@@ -76,6 +77,7 @@ public class HonorRecordController {
 
 
     @PutMapping
+    @Transactional(rollbackFor = Exception.class)
     public ApiResponse<HonorRecordEntity> updateHonorRecord(@RequestBody HonorRecordEntity honorRecordEntity) {
         long userId = StpUtil.getLoginIdAsLong();
         honorRecordEntity.fillUpdateCommonField(userId);
@@ -83,7 +85,9 @@ public class HonorRecordController {
         LambdaUpdateWrapper<HonorRecordEntity> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
         lambdaUpdateWrapper.eq(HonorRecordEntity::getId, honorRecordEntity.getId());
         lambdaUpdateWrapper.eq(HonorRecordEntity::getUserId, userId);
-        honorRecordService.update(honorRecordEntity, lambdaUpdateWrapper);
+        if (!honorRecordService.update(honorRecordEntity, lambdaUpdateWrapper)) {
+            throw new IllegalArgumentException("荣誉记录不存在或无权操作");
+        }
         if (honorRecordEntity.getFileIds() != null && !honorRecordEntity.getFileIds().isEmpty()) {
             fileService.bindBizId(honorRecordEntity.getFileIds(), "honor_record", honorRecordEntity.getId());
         }

@@ -34,6 +34,19 @@ class DoubanWishlistMcpToolsTest {
     @Mock
     private IReadRecordService readRecordService;
 
+    @Mock
+    private top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
+    private org.mockito.MockedStatic<cn.dev33.satoken.stp.StpUtil> login;
+
+    @org.junit.jupiter.api.BeforeEach
+    void login() {
+        login = org.mockito.Mockito.mockStatic(cn.dev33.satoken.stp.StpUtil.class);
+        login.when(cn.dev33.satoken.stp.StpUtil::getLoginIdAsLong).thenReturn(11L);
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void logout() { login.close(); }
+
     @InjectMocks
     private DoubanWishlistMcpTools tools;
 

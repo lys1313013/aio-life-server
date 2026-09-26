@@ -68,6 +68,10 @@ public class RecordMcpE2ETest {
             @ComponentScan.Filter(type = org.springframework.context.annotation.FilterType.REGEX, pattern = "top\\.aiolife\\.sso\\..*")
     })
     static class MinimalTestApp {
+        @Bean
+        public top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard() {
+            return org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class);
+        }
         
         @Bean
         @Primary
@@ -119,7 +123,7 @@ public class RecordMcpE2ETest {
         @Bean
         @Primary
         public TimeRecordController timeRecordController() {
-            return new TimeRecordController(null, null, null, null) {
+            return new TimeRecordController(org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class), null, null, null, null) {
                 @Override
                 public ApiResponse<List<TimeRecordDateRangeVO>> queryByDateRangeForAI(TimeRecordDateRangeMcpReq req) {
                     TimeRecordDateRangeVO vo = new TimeRecordDateRangeVO();

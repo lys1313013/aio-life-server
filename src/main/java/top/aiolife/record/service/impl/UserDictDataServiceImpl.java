@@ -96,8 +96,13 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
         return result;
     }
 
+    private void rejectBankTag(String type) {
+        if ("bank_card_tag".equals(type)) throw new IllegalArgumentException("请在银行卡页面管理标签");
+    }
+
     @Override
     public void createDictData(UserDictDataEntity entity, Long userId) {
+        rejectBankTag(entity.getDictType());
         if (entity.getUserId() != null && entity.getUserId() == 0L) {
             throw new RuntimeException("普通用户不能创建公共分类");
         }
@@ -113,11 +118,13 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
 
     @Override
     public void updateDictData(Long id, UserDictDataEntity updates, Long userId) {
+        rejectBankTag(updates.getDictType());
         UserDictDataEntity target = this.getById(id);
         if (target == null) {
             throw new RuntimeException("字典数据不存在");
         }
 
+        rejectBankTag(target.getDictType());
         if (target.getUserId() == 0L) {
             // 目标是公共字典，生成或更新覆盖记录
             if ("Y".equals(target.getIsReadonly())) {
@@ -151,8 +158,15 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
         } else if (target.getUserId().equals(userId)) {
             // 目标是当前用户的记录（私有分类或已有的覆盖记录），直接更新
             updates.setId(id);
+            updates.setUserId(userId);
+            updates.setTemplateId(target.getTemplateId());
+            updates.setCreateUser(target.getCreateUser());
+            updates.setCreateTime(target.getCreateTime());
+            updates.setIsDeleted(target.getIsDeleted());
             updates.fillUpdateCommonField(userId);
-            this.updateById(updates);
+            this.update(updates, new LambdaQueryWrapper<UserDictDataEntity>()
+                    .eq(UserDictDataEntity::getId, id)
+                    .eq(UserDictDataEntity::getUserId, userId));
         } else {
             throw new RuntimeException("无权修改此字典数据");
         }
@@ -165,6 +179,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
             throw new RuntimeException("字典数据不存在");
         }
 
+        rejectBankTag(target.getDictType());
         if (target.getUserId() == 0L) {
             // 目标是公共分类，生成隐藏记录
             UserDictDataEntity existingOverride = this.getOne(new LambdaQueryWrapper<UserDictDataEntity>()

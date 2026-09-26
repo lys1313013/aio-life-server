@@ -1,0 +1,37 @@
+{
+  "title": "银行业金融机构法人名单（截至2025年12月末）",
+  "as_of": "2025-12-31",
+  "published_at": "2026-08-14",
+  "retrieved_at": "2026-09-27",
+  "source_url": "https://www.nfra.gov.cn/cn/view/pages/governmentDetail.html?docId=1268142&itemId=863&generaltype=1",
+  "pdf_url": "https://www.nfra.gov.cn/chinese/docfile/2026/1dcdad9de86f4d9d889356bb64cb313e.pdf",
+  "pdf_sha256": "c2103c834996762b2508b0e983894a06c494a6e2a037dede867ae6f2da1073b3",
+  "source_rows": 3619,
+  "included_counts": {
+    "国有大型商业银行": 6,
+    "股份制商业银行": 12,
+    "城市商业银行": 123,
+    "民营银行": 19,
+    "外资法人银行": 41,
+    "住房储蓄银行": 1,
+    "直销银行": 1,
+    "农村商业银行": 1398,
+    "农村合作银行": 18,
+    "农村信用社": 336,
+    "村镇银行": 1177
+  },
+  "excluded_counts": {
+    "开发性金融机构": 1,
+    "政策性银行": 2,
+    "农村资金互助社": 4,
+    "信托公司": 67,
+    "金融资产管理公司": 5,
+    "金融租赁公司": 70,
+    "企业集团财务公司": 232,
+    "消费金融公司": 31,
+    "汽车金融公司": 25,
+    "货币经纪公司": 6,
+    "其他金融机构": 44
+  },
+  "csv_sha256": "d802f5bf44f4b63361af89aaf1b67fd51848c998d8a40e7d6976f3098471ab82"
+}

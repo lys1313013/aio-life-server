@@ -38,6 +38,7 @@ import java.util.List;
 @AllArgsConstructor
 @RequestMapping("/sysDictData")
 public class SysDictDataController {
+    private top.aiolife.bankcard.service.BankCardDictionaryGuard bankCardGuard;
     private ISysDictDataMapper sysDictDataMapper;
     private ISysDictTypeMapper sysDictTypeMapper;
 
@@ -104,8 +105,10 @@ public class SysDictDataController {
     }
 
     @SaCheckRole("admin")
+    @org.springframework.transaction.annotation.Transactional
     @PutMapping("/{dictCode}")
     public ApiResponse<Boolean> update(@PathVariable("dictCode") Long dictCode, @RequestBody SysDictDataEntity entity) {
+        bankCardGuard.checkBankChange(dictCode, entity.getDictId(), Integer.valueOf(1).equals(entity.getIsDeleted()));
         entity.setDictCode(dictCode);
         entity.setCreateUser(null);
         entity.setUpdateUser(StpUtil.getLoginIdAsLong());
@@ -113,8 +116,10 @@ public class SysDictDataController {
     }
 
     @SaCheckRole("admin")
+    @org.springframework.transaction.annotation.Transactional
     @DeleteMapping("/{dictCode}")
     public ApiResponse<Boolean> delete(@PathVariable("dictCode") Long dictCode) {
+        bankCardGuard.checkBankChange(dictCode, null, true);
         boolean b = getBaseMapper().deleteById(dictCode) > 0;
         return ApiResponse.success(b);
     }

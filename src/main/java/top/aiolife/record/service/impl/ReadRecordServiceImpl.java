@@ -59,7 +59,10 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
                     .or()
                     .like(ReadRecordEntity::getAuthor, query.getTitle()));
         }
-        wrapper.last("ORDER BY FIELD(status, 'not_started', 'in_progress', 'completed', 'on_hold'), "
+        String statusOrder = Boolean.TRUE.equals(query.getInProgressFirst())
+                ? "'in_progress', 'not_started', 'completed', 'on_hold'"
+                : "'not_started', 'in_progress', 'completed', 'on_hold'";
+        wrapper.last("ORDER BY FIELD(status, " + statusOrder + "), "
                 + "finish_time DESC, create_time DESC");
 
         Page<ReadRecordEntity> page = new Page<>(query.getCurrent() == null ? 1 : query.getCurrent(), query.getSize() == null ? 10 : query.getSize());

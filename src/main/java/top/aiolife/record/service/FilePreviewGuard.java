@@ -15,7 +15,11 @@ import java.util.List;
  * @author Lys
  */
 @Component
+@lombok.RequiredArgsConstructor
 public class FilePreviewGuard {
+
+    private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     /**
      * 访问判定结果
@@ -76,18 +80,35 @@ public class FilePreviewGuard {
      * @return 访问判定结果
      */
     public AccessDecision check(FileEntity fileEntity, Long userId) {
+        if ("bank_card_cover".equals(fileEntity.getBizType())) {
+            if (userId == null) return AccessDecision.UNAUTHORIZED;
+            if (!userId.equals(fileEntity.getCreateUser())) return AccessDecision.FORBIDDEN;
+            secondaryLockGuard.checkMenus(userId, "/finance/bank-cards");
+            if (fileEntity.getBizId() != null && jdbc.queryForObject(
+                    "SELECT COUNT(*) FROM bank_card WHERE id=? AND user_id=? AND is_deleted=0",
+                    Long.class, fileEntity.getBizId(), userId) == 0) return AccessDecision.FORBIDDEN;
+            return AccessDecision.ALLOW;
+        }
         if (fileEntity.getIsPublic() == null || fileEntity.getIsPublic() != 0) {
             return AccessDecision.ALLOW;
         }
         if (userId == null) {
             return AccessDecision.UNAUTHORIZED;
         }
-        if (isAdmin(userId)) {
-            return AccessDecision.ALLOW;
-        }
-        if (fileEntity.getCreateUser() != null && !fileEntity.getCreateUser().equals(userId)) {
+        if (!isAdmin(userId) && fileEntity.getCreateUser() != null && !fileEntity.getCreateUser().equals(userId)) {
             return AccessDecision.FORBIDDEN;
         }
+        String menu = switch (fileEntity.getBizType() == null ? "" : fileEntity.getBizType()) {
+            case "wardrobe_item" -> "/wardrobe";
+            case "feedback", "feedback_comment" -> "/my-hub/feedback";
+            case "movie" -> "/record/movie";
+            case "honor_record" -> "/my-hub/honor";
+            case "read" -> "/record/read";
+            case "performance" -> "/record/performance";
+            case "device" -> "/my-hub/device";
+            default -> null;
+        };
+        if (menu != null) secondaryLockGuard.checkMenus(userId, menu);
         return AccessDecision.ALLOW;
     }
 }

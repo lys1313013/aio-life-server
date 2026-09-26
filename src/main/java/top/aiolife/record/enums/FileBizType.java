@@ -10,6 +10,7 @@ import java.util.Arrays;
 @Getter
 public enum FileBizType {
 
+    BANK_CARD_COVER("bank_card_cover", "bank-card", FileVisibility.PRIVATE),
     AVATAR("avatar", "avatar", FileVisibility.PUBLIC),
     WARDROBE_ITEM("wardrobe_item", "wardrobe", FileVisibility.PRIVATE),
     FEEDBACK("feedback", "feedback", FileVisibility.PRIVATE),

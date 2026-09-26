@@ -35,6 +35,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
     public void saveItem(WardrobeItemReq req) {
         WardrobeItemEntity entity = reqToEntity(req);
         Long userId = StpUtil.getLoginIdAsLong();
+        validateCategory(req.getCategoryId(), userId);
         entity.setUserId(userId);
         entity.fillCreateCommonField(userId);
         entity.setSeason(joinSeason(req.getSeason()));
@@ -49,6 +50,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         if (existing == null || !userId.equals(existing.getUserId())) {
             throw new RuntimeException("衣物不存在或无权限操作");
         }
+        validateCategory(req.getCategoryId(), userId);
         WardrobeItemEntity entity = reqToEntity(req);
         entity.setId(req.getId());
         entity.fillUpdateCommonField(userId);
@@ -110,7 +112,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
 
         // 分类统计
         Map<String, Long> categoryCount = new HashMap<>();
-        Map<Long, String> categoryNameMap = getCategoryNameMap();
+        Map<Long, String> categoryNameMap = getCategoryNameMap(userId);
         for (WardrobeItemEntity item : items) {
             String name = categoryNameMap.getOrDefault(item.getCategoryId(), "未分类");
             categoryCount.put(name, categoryCount.getOrDefault(name, 0L) + 1);
@@ -169,7 +171,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         vo.setId(entity.getId());
         vo.setName(entity.getName());
         vo.setCategoryId(entity.getCategoryId());
-        vo.setCategoryName(getCategoryNameMap().get(entity.getCategoryId()));
+        vo.setCategoryName(getCategoryNameMap(entity.getUserId()).get(entity.getCategoryId()));
         vo.setColor(entity.getColor());
         vo.setBrand(entity.getBrand());
         vo.setSeason(entity.getSeason());
@@ -182,8 +184,23 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         return vo;
     }
 
-    private Map<Long, String> getCategoryNameMap() {
-        List<WardrobeCategoryEntity> categories = categoryMapper.selectList(null);
+    private LambdaQueryWrapper<WardrobeCategoryEntity> visibleCategories(Long userId) {
+        return new LambdaQueryWrapper<WardrobeCategoryEntity>()
+                .and(w -> w.eq(WardrobeCategoryEntity::getCategoryType, 0)
+                        .or(o -> o.eq(WardrobeCategoryEntity::getCategoryType, 1)
+                                .eq(WardrobeCategoryEntity::getUserId, userId)));
+    }
+
+    private void validateCategory(Long categoryId, Long userId) {
+        if (categoryId == null) return;
+        if (categoryMapper.selectCount(visibleCategories(userId)
+                .eq(WardrobeCategoryEntity::getId, categoryId)) == 0) {
+            throw new IllegalArgumentException("分类不存在或无权使用");
+        }
+    }
+
+    private Map<Long, String> getCategoryNameMap(Long userId) {
+        List<WardrobeCategoryEntity> categories = categoryMapper.selectList(visibleCategories(userId));
         return categories.stream()
                 .collect(Collectors.toMap(WardrobeCategoryEntity::getId, WardrobeCategoryEntity::getName, (a, b) -> a));
     }

@@ -1,6 +1,8 @@
 package top.aiolife.record.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import top.aiolife.core.pojo.entity.BaseEntity;
 
@@ -21,6 +23,18 @@ public class TimeTrackerCategoryEntity extends BaseEntity {
      * 模板ID，指向被覆盖的公共分类ID
      */
     private Long templateId;
+    /** 上级分类：0 为一级；覆盖记录 null 表示继承公共分类。 */
+    private Long parentId;
+
+    @TableField(exist = false)
+    @JsonIgnore
+    private boolean parentIdSpecified;
+
+    public void setParentId(Long parentId) {
+        this.parentId = parentId;
+        this.parentIdSpecified = true;
+    }
+
     /**
      * 分类名称
      */

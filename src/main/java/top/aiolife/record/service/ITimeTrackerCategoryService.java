@@ -20,6 +20,9 @@ public interface ITimeTrackerCategoryService extends IService<TimeTrackerCategor
      */
     List<TimeTrackerCategoryEntity> listUserVisibleCategories(Long userId);
 
+    /** 完整的个人有效分类树，包含停用分类，用于历史记录显示与管理。 */
+    List<TimeTrackerCategoryEntity> listUserCategories(Long userId);
+
     /**
      * 查询用户隐藏的分类列表
      * @param userId 用户ID

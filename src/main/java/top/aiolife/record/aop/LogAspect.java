@@ -41,7 +41,7 @@ public class LogAspect {
 
 
         // login 接口不打印请求参数
-        if (!"login".equals(methodName)) {
+        if (!"login".equals(methodName) && !(joinPoint.getTarget() instanceof top.aiolife.bankcard.api.BankCardController)) {
             Object[] args = joinPoint.getArgs();
             if (args != null && args.length > 0) {
                 try {

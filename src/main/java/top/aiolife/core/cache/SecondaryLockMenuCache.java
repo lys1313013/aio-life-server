@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
 import top.aiolife.sso.pojo.entity.UserSecondaryLockMenuEntity;
@@ -12,79 +11,70 @@ import top.aiolife.system.mapper.ISysMenuMapper;
 import top.aiolife.system.pojo.entity.SysMenuEntity;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * 用户二级锁菜单路径缓存，供拦截器按 userId 快速匹配。
- *
- * @author Lys
- * @date 2026/07/25
- */
-@Slf4j
+/** 缓存锁定菜单及其实际子菜单，解锁键始终使用原始锁定菜单路径。 */
 @Component
 @RequiredArgsConstructor
 public class SecondaryLockMenuCache {
-
     private final UserSecondaryLockMenuMapper lockMenuMapper;
     private final ISysMenuMapper sysMenuMapper;
+    private final Cache<Long, Map<String, Set<String>>> cache = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofSeconds(60)).maximumSize(10_000).build();
 
-    private final Cache<Long, Set<String>> cache = Caffeine.newBuilder()
-            .expireAfterWrite(Duration.ofSeconds(60))
-            .maximumSize(10_000)
-            .build();
-
-    /**
-     * 获取用户锁定的菜单路径集合。
-     */
     public Set<String> getLockedPaths(long userId) {
-        return cache.get(userId, this::loadLockedPaths);
+        return cache.get(userId, this::loadLockedPaths).keySet();
     }
 
-    /**
-     * 判断请求路径是否匹配用户的二级锁菜单，返回匹配到的菜单路径，未匹配返回 null。
-     */
-    public String findMatchedPath(long userId, String requestPath) {
-        Set<String> paths = getLockedPaths(userId);
-        if (paths.isEmpty() || requestPath == null || requestPath.isBlank()) {
-            return null;
+    public Set<String> findLockedMenus(long userId, Set<String> menus) {
+        Set<String> canonical = menus.stream().map(SecondaryLockPolicy::canonicalMenu).collect(Collectors.toSet());
+        Set<String> result = new TreeSet<>();
+        cache.get(userId, this::loadLockedPaths).forEach((lock, protectedPaths) -> {
+            if (protectedPaths.stream().anyMatch(p -> canonical.stream()
+                    .anyMatch(m -> SecondaryLockPolicy.under(m, p)))) result.add(lock);
+        });
+        return result;
+    }
+
+    public Set<String> findMatchedPaths(long userId, String requestPath) {
+        Set<String> menus = SecondaryLockPolicy.requestMenus(requestPath);
+        if (requestPath != null) menus.add(requestPath); // 兼容路径本就一致的菜单
+        return findLockedMenus(userId, menus);
+    }
+
+    public String findMatchedPath(long userId, String menuPath) {
+        return findLockedMenus(userId, Set.of(menuPath)).stream()
+                .max(Comparator.comparingInt(String::length)).orElse(null);
+    }
+
+    public void evict(long userId) { cache.invalidate(userId); }
+
+    private Map<String, Set<String>> loadLockedPaths(long userId) {
+        List<UserSecondaryLockMenuEntity> locks = lockMenuMapper.selectList(
+                new LambdaQueryWrapper<UserSecondaryLockMenuEntity>().eq(UserSecondaryLockMenuEntity::getUserId, userId));
+        if (locks.isEmpty()) return Map.of();
+        List<SysMenuEntity> menus = sysMenuMapper.selectList(new LambdaQueryWrapper<SysMenuEntity>()
+                .eq(SysMenuEntity::getIsDeleted, 0).eq(SysMenuEntity::getStatus, 1));
+        Map<Long, SysMenuEntity> byId = menus.stream().collect(Collectors.toMap(SysMenuEntity::getId, m -> m));
+        Map<String, Set<String>> result = new HashMap<>();
+        for (UserSecondaryLockMenuEntity lock : locks) {
+            SysMenuEntity root = byId.get(lock.getMenuId());
+            if (root == null || root.getPath() == null || root.getPath().isBlank()) continue;
+            Set<String> paths = new HashSet<>();
+            for (SysMenuEntity menu : menus) {
+                Set<Long> visited = new HashSet<>();
+                SysMenuEntity cursor = menu;
+                while (cursor != null && visited.add(cursor.getId())) {
+                    if (Objects.equals(cursor.getId(), root.getId())) {
+                        if (menu.getPath() != null) paths.add(SecondaryLockPolicy.canonicalMenu(menu.getPath()));
+                        break;
+                    }
+                    cursor = byId.get(cursor.getParentId());
+                }
+            }
+            result.put(root.getPath(), Set.copyOf(paths));
         }
-        return paths.stream()
-                .filter(p -> requestPath.equals(p) || requestPath.startsWith(p + "/"))
-                .max((a, b) -> Integer.compare(a.length(), b.length()))
-                .orElse(null);
-    }
-
-    /**
-     * 清除指定用户的缓存，用户修改锁定菜单后调用。
-     */
-    public void evict(long userId) {
-        cache.invalidate(userId);
-    }
-
-    private Set<String> loadLockedPaths(long userId) {
-        LambdaQueryWrapper<UserSecondaryLockMenuEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(UserSecondaryLockMenuEntity::getUserId, userId);
-        List<UserSecondaryLockMenuEntity> list = lockMenuMapper.selectList(wrapper);
-        if (list.isEmpty()) {
-            return Collections.emptySet();
-        }
-
-        List<Long> menuIds = list.stream()
-                .map(UserSecondaryLockMenuEntity::getMenuId)
-                .toList();
-        LambdaQueryWrapper<SysMenuEntity> menuWrapper = new LambdaQueryWrapper<>();
-        menuWrapper.in(SysMenuEntity::getId, menuIds);
-        menuWrapper.eq(SysMenuEntity::getIsDeleted, 0);
-        menuWrapper.eq(SysMenuEntity::getStatus, 1);
-        List<SysMenuEntity> menus = sysMenuMapper.selectList(menuWrapper);
-
-        return menus.stream()
-                .map(SysMenuEntity::getPath)
-                .filter(p -> p != null && !p.isBlank())
-                .collect(Collectors.toUnmodifiableSet());
+        return Map.copyOf(result);
     }
 }

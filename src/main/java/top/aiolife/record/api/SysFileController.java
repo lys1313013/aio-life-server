@@ -37,6 +37,7 @@ public class SysFileController {
     private final MinioUtil minioUtil;
     private final top.aiolife.config.MinioConfig minioConfig;
     private final FilePreviewGuard filePreviewGuard;
+    private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
 
     /**
      * 统一文件上传入口。
@@ -44,6 +45,8 @@ public class SysFileController {
     @PostMapping("/upload")
     public ApiResponse<FileVO> upload(@RequestParam("file") MultipartFile file,
                                       @RequestParam("bizType") String bizType) {
+        if ("bank_card_cover".equals(bizType)) secondaryLockGuard.checkMenus(
+                cn.dev33.satoken.stp.StpUtil.getLoginIdAsLong(), "/finance/bank-cards");
         return ApiResponse.success(fileService.upload(file, FileBizType.fromBizType(bizType)));
     }
 
@@ -78,6 +81,10 @@ public class SysFileController {
             return;
         }
 
+        if ("bank_card_cover".equals(fileEntity.getBizType())) {
+            response.setHeader("Cache-Control", "no-store");
+            response.setHeader("X-Content-Type-Options", "nosniff");
+        }
         // 从 MinIO 拿取文件
         String bucketName = StringUtils.hasText(minioConfig.getBucketName()) ? minioConfig.getBucketName() : "aiolife";
         String objectName = normalizeObjectName(fileEntity.getFileName(), bucketName);

@@ -25,7 +25,7 @@ class SecondaryLockInterceptorTest {
         try (var stp = mockStatic(StpUtil.class)) {
             stp.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
             RequestLoginContext.checkLogin();
-            when(menu.findMatchedPath(7L, "/timeRecord/recommendNext")).thenReturn("/timeRecord");
+            when(menu.findMatchedPaths(7L, "/timeRecord/recommendNext")).thenReturn(java.util.Set.of("/timeRecord"));
             when(redis.hasKey("secondary:unlock:7:/timeRecord")).thenReturn(false, true);
             var response = new MockHttpServletResponse();
             assertFalse(interceptor.preHandle(request, response, new Object()));

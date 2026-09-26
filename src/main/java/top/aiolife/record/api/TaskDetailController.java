@@ -56,10 +56,13 @@ public class TaskDetailController {
     public ApiResponse<Void> reSort(@RequestBody List<TaskDetailEntity> list) {
         Long userId = StpUtil.getLoginIdAsLong();
         for (TaskDetailEntity entity : list) {
+            TaskDetailEntity update = new TaskDetailEntity();
+            update.setSort(entity.getSort());
+            update.fillUpdateCommonField(userId);
             LambdaQueryWrapper<TaskDetailEntity> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(TaskDetailEntity::getId, entity.getId());
             wrapper.eq(TaskDetailEntity::getUserId, userId);
-            taskDetailService.update(entity, wrapper);
+            taskDetailService.update(update, wrapper);
         }
         return ApiResponse.success();
     }
@@ -88,6 +91,9 @@ public class TaskDetailController {
     @PutMapping
     public ApiResponse<Boolean> update(@RequestBody TaskDetailEntity entity) {
         Long userId = StpUtil.getLoginIdAsLong();
+        entity.setUserId(userId);
+        entity.setCreateUser(null);
+        entity.setCreateTime(null);
         entity.fillUpdateCommonField(userId);
         // 确保只能更新自己的详情
         LambdaQueryWrapper<TaskDetailEntity> queryWrapper = new LambdaQueryWrapper<>();

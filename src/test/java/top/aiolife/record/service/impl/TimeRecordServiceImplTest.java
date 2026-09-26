@@ -22,6 +22,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class TimeRecordServiceImplTest {
 
+    @Mock
+    private top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
+
     @InjectMocks
     private TimeRecordServiceImpl timeRecordService;
 

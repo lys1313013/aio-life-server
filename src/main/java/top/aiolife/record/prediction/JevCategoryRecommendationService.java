@@ -32,9 +32,13 @@ public class JevCategoryRecommendationService {
         var input = JSON.createObjectNode();
         input.putObject("target").put("date", date.toString()).put("minute", minute);
         var criteria = input.putObject("categories");
-        dataCache.get("visibleCategories", () -> categories.listUserVisibleCategories(userId), userId).forEach(category -> {
+        var visibleCategories = dataCache.get("visibleCategories", () -> categories.listUserVisibleCategories(userId), userId);
+        visibleCategories.forEach(category -> {
             if (category.getId() != null && category.getName() != null)
-                criteria.put(category.getId().toString(), category.getName());
+                criteria.put(category.getId().toString(), visibleCategories.stream()
+                        .filter(parent -> parent.getId().equals(category.getParentId()))
+                        .map(parent -> parent.getName() + " / " + category.getName())
+                        .findFirst().orElse(category.getName()));
         });
         if (criteria.isEmpty()) return skip(userId, date, minute, "NO_CATEGORIES");
 

@@ -30,6 +30,7 @@
 
     <dependencyManagement>
         <dependencies>
+
             <!-- Boot 3.4 起不再管理 OkHttp；保留原有 4.12.0，统一 MinIO 与 LangChain4j 的依赖。 -->
             <dependency>
                 <groupId>com.squareup.okhttp3</groupId>
@@ -42,6 +43,21 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- 显式声明运行时已有的 BC 版本，用于银行卡 SM4-GCM / SM3。 -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.81</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- jsoup HTML parser library -->
         <dependency>
             <groupId>org.jsoup</groupId>

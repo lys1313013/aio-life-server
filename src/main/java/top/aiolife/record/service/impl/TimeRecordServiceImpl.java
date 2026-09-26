@@ -54,17 +54,40 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     private final JevCategoryRecommendationService jevRecommendationService;
     private final RecommendationDataCache recommendationDataCache;
     private final ITimeTrackerCategoryService timeTrackerCategoryService;
+    private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
+
+    private void checkExistingExercises(long userId, List<String> timeIds) {
+        if (!timeIds.isEmpty() && exerciseRecordService.count(new LambdaQueryWrapper<ExerciseRecordEntity>()
+                .eq(ExerciseRecordEntity::getUserId, userId).in(ExerciseRecordEntity::getTimeId, timeIds)) > 0) {
+            secondaryLockGuard.checkMenus(userId, "/record/exercise");
+        }
+    }
+
+    private void validateCategory(Long categoryId, long userId, boolean existingCategory) {
+        if (categoryId == null) return;
+        boolean allowed = timeTrackerCategoryService.count(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
+                .eq(TimeTrackerCategoryEntity::getId, categoryId)
+                .and(w -> w.eq(TimeTrackerCategoryEntity::getUserId, userId)
+                        .or().eq(TimeTrackerCategoryEntity::getUserId, 0L))) > 0;
+        if (!allowed) throw new IllegalArgumentException("分类不存在或无权使用");
+        if (!existingCategory && timeTrackerCategoryService.listUserVisibleCategories(userId).stream()
+                .noneMatch(c -> java.util.Objects.equals(c.getId(), categoryId))) {
+            throw new IllegalArgumentException("分类或上级分类已停用，请重新选择");
+        }
+    }
 
     private void updateRelateStatusIfNecessary(TimeRecordEntity entity, long userId) {
         if (entity.getRelateId() != null && entity.getRelateType() != null) {
             log.info("Check relate status, type: {}, id: {}", entity.getRelateType(), entity.getRelateId());
             if (entity.getRelateType().equals(RelateTypeEnum.READ.getValue())) {
+                secondaryLockGuard.checkMenus(userId, "/record/read");
                 readRecordService.update(new LambdaUpdateWrapper<ReadRecordEntity>()
                         .eq(ReadRecordEntity::getId, entity.getRelateId())
                         .eq(ReadRecordEntity::getUserId, userId)
                         .eq(ReadRecordEntity::getStatus, ProgressStatusEnum.NOT_STARTED)
                         .set(ReadRecordEntity::getStatus, ProgressStatusEnum.IN_PROGRESS));
             } else if (entity.getRelateType().equals(RelateTypeEnum.MOVIE.getValue())) {
+                secondaryLockGuard.checkMenus(userId, "/record/movie");
                 movieService.update(new LambdaUpdateWrapper<MovieEntity>()
                         .eq(MovieEntity::getId, entity.getRelateId())
                         .eq(MovieEntity::getUserId, userId)
@@ -83,6 +106,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         List<ExerciseRecordReq> exerciseRecordReqs = timeRecordReq.getExercises();
 
         long userId = StpUtil.getLoginIdAsLong();
+        validateCategory(entity.getCategoryId(), userId, false);
         entity.setUserId(userId);
         entity.setCreateUser(userId);
         entity.setUpdateUser(userId);
@@ -104,6 +128,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         updateRelateStatusIfNecessary(entity, userId);
 
         if (exerciseRecordReqs != null && !exerciseRecordReqs.isEmpty()) {
+            secondaryLockGuard.checkMenus(userId, "/record/exercise");
             List<ExerciseRecordEntity> validExercises = new java.util.ArrayList<>();
             for (ExerciseRecordReq exerciseReq : exerciseRecordReqs) {
                 if (exerciseReq.getExerciseTypeId() == null) {
@@ -137,6 +162,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         if (existing == null || existing.getUserId() == null || existing.getUserId() != userId) {
             throw new RuntimeException("记录不存在或无权限");
         }
+        validateCategory(entity.getCategoryId(), userId, java.util.Objects.equals(entity.getCategoryId(), existing.getCategoryId()));
         // 防止请求方篡改记录归属
         entity.setUserId(null);
         entity.setUpdateUser(userId);
@@ -153,6 +179,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         this.updateById(entity);
         updateRelateStatusIfNecessary(entity, userId);
 
+        checkExistingExercises(userId, List.of(entity.getId()));
         // 删除旧的运动记录
         exerciseRecordService.remove(new LambdaQueryWrapper<ExerciseRecordEntity>()
                 .eq(ExerciseRecordEntity::getTimeId, entity.getId())
@@ -160,6 +187,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
         // 添加新的运动记录
         if (exerciseRecordReqs != null && !exerciseRecordReqs.isEmpty()) {
+            secondaryLockGuard.checkMenus(userId, "/record/exercise");
             List<ExerciseRecordEntity> validExercises = new java.util.ArrayList<>();
             for (ExerciseRecordReq exerciseReq : exerciseRecordReqs) {
                 if (exerciseReq.getExerciseTypeId() == null) {
@@ -185,6 +213,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void removeById(String id, long userId) {
+        checkExistingExercises(userId, List.of(id));
         LambdaQueryWrapper<TimeRecordEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(TimeRecordEntity::getId, id);
         queryWrapper.eq(TimeRecordEntity::getUserId, userId);
@@ -212,6 +241,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
         List<String> ids = list.stream().map(TimeRecordEntity::getId).toList();
 
+        checkExistingExercises(userId, ids);
         // 2. 删除关联的运动记录
         exerciseRecordService.remove(new LambdaQueryWrapper<ExerciseRecordEntity>()
                 .in(ExerciseRecordEntity::getTimeId, ids)

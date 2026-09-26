@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @RequestMapping("/timeRecord")
 public class TimeRecordController {
+    private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
     private final ITimeRecordService timeRecordService;
     private final IExerciseRecordService exerciseRecordService;
     private final ITimeTrackerCategoryService timeTrackerCategoryService;
@@ -113,7 +114,10 @@ public class TimeRecordController {
 
         Map<Long, String> categoryNameMap = Collections.emptyMap();
         if (!categoryIds.isEmpty()) {
-            categoryNameMap = timeTrackerCategoryService.listByIds(categoryIds).stream()
+            categoryNameMap = timeTrackerCategoryService.list(new LambdaQueryWrapper<top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity>()
+                            .in(top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity::getId, categoryIds)
+                            .and(w -> w.eq(top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity::getUserId, userId)
+                                    .or().eq(top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity::getUserId, 0L))).stream()
                     .collect(Collectors.toMap(
                             top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity::getId,
                             top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity::getName
@@ -164,6 +168,7 @@ public class TimeRecordController {
             return;
         }
 
+        secondaryLockGuard.checkMenus(userId, "/record/exercise");
         Map<Long, String> exerciseNameMap = userDictDataService
                 .listUserVisibleDictData(userId, DictTypeEnum.EXERCISE_TYPE.getValue(), true)
                 .stream()
@@ -265,6 +270,7 @@ public class TimeRecordController {
                 .eq(ExerciseRecordEntity::getTimeId, id)
                 .eq(ExerciseRecordEntity::getUserId, userId)
                 .list();
+        if (!exercises.isEmpty()) secondaryLockGuard.checkMenus(userId, "/record/exercise");
         vo.setExercises(exercises);
 
         return ApiResponse.success(vo);

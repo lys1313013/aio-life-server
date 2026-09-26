@@ -519,19 +519,20 @@ public class UserServiceImpl implements IUserService {
             throw new RuntimeException("未设置二级密码");
         }
 
-        // 将前端传入的路径解析为实际的菜单路径（前缀匹配）
-        String resolvedPath = secondaryLockMenuCache.findMatchedPath(userId, menuPath);
-        if (resolvedPath == null) {
-            resolvedPath = menuPath; // 兜底：使用原始路径
+        if (menuPath == null || menuPath.isBlank()) {
+            throw new IllegalArgumentException("菜单路径不能为空");
         }
-
-        // 校验二级密码（含失败次数限制）
+        String path = menuPath.split("\\?", 2)[0];
+        if (path.startsWith("/api/")) path = path.substring(4);
+        java.util.Set<String> paths = secondaryLockMenuCache.findMatchedPaths(userId, path);
         verifySecondaryPasswordOrThrow(user, password);
-
-        // 写入解锁凭证（使用解析后的菜单路径，与拦截器一致）
-        String unlockKey = SecondaryLockInterceptor.unlockKey(userId, resolvedPath);
-        redisUtil.set(unlockKey, "1", SecondaryLockInterceptor.unlockTtlSeconds(), TimeUnit.SECONDS);
-
+        // 一次密码验证同时满足当前菜单及其父级锁；键仍是原锁定菜单路径。
+        if (paths.isEmpty()) paths = java.util.Set.of(menuPath);
+        String unlockKey = null;
+        for (String lockedPath : paths) {
+            unlockKey = SecondaryLockInterceptor.unlockKey(userId, lockedPath);
+            redisUtil.set(unlockKey, "1", SecondaryLockInterceptor.unlockTtlSeconds(), TimeUnit.SECONDS);
+        }
         return unlockKey;
     }
 

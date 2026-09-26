@@ -35,6 +35,11 @@ public class TimeTrackerCategoryController {
     /**
      * 获取当前用户隐藏的分类列表
      */
+    @GetMapping("/all")
+    public ApiResponse<List<TimeTrackerCategoryEntity>> all() {
+        return ApiResponse.success(categoryService.listUserCategories(StpUtil.getLoginIdAsLong()));
+    }
+
     @GetMapping("/hidden")
     public ApiResponse<List<TimeTrackerCategoryEntity>> listHidden() {
         long userId = StpUtil.getLoginIdAsLong();

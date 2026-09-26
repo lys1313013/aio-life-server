@@ -2,6 +2,7 @@ package top.aiolife.record.api;
 
 import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
+import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -113,6 +114,7 @@ public class ThoughtController {
     }
 
     @PutMapping("/{id}")
+    @Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> update(@PathVariable("id") Long id, @RequestBody ThoughtEntity entity) {
         Long userId = StpUtil.getLoginIdAsLong();
         entity.setId(id);
@@ -133,8 +135,22 @@ public class ThoughtController {
             // 更新事件
             if (entity.getEvents() != null) {
                 entity.getEvents().forEach(eventEntity -> {
-                    eventEntity.setThoughtId(entity.getId());
-                    relaEventMapper.insertOrUpdate(eventEntity);
+                    ThoughtRelaEventEntity update = new ThoughtRelaEventEntity();
+                    update.setContent(eventEntity.getContent());
+                    if (eventEntity.getId() == null) {
+                        update.setThoughtId(id);
+                        update.fillCreateCommonField(userId);
+                        relaEventMapper.insert(update);
+                    } else {
+                        update.fillUpdateCommonField(userId);
+                        int updated = relaEventMapper.update(update,
+                                new LambdaQueryWrapper<ThoughtRelaEventEntity>()
+                                        .eq(ThoughtRelaEventEntity::getId, eventEntity.getId())
+                                        .eq(ThoughtRelaEventEntity::getThoughtId, id));
+                        if (updated == 0) {
+                            throw new IllegalArgumentException("关联事件不存在或无权操作");
+                        }
+                    }
                 });
             }
             return ApiResponse.success(true);

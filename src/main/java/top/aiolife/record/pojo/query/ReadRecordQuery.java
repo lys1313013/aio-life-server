@@ -12,6 +12,8 @@ public class ReadRecordQuery {
     private ProgressStatusEnum status;
     private List<ProgressStatusEnum> statuses;
     private Boolean activeOnly;
+    /** 时迹关联选择时，优先展示在读记录。 */
+    private Boolean inProgressFirst;
     private Integer current;
     private Integer size;
 }

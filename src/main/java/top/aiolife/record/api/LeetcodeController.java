@@ -1,6 +1,7 @@
 package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
+import cn.dev33.satoken.annotation.SaCheckRole;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.service.ILeetcodeService;
 import jakarta.mail.MessagingException;
@@ -22,6 +23,7 @@ public class LeetcodeController {
      * 没啥地方使用，只是用来手动触发
      */
     @PostMapping("/notifyTodayQuestion")
+    @SaCheckRole("admin")
     public ApiResponse<Void> notifyTodayQuestion() throws MessagingException {
         StpUtil.getLoginIdAsLong();
         leetcodeService.notifyTodayQuestion();

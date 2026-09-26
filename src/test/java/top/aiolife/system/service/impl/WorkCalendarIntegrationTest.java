@@ -89,7 +89,7 @@ class WorkCalendarIntegrationTest {
                         category.setName("分类" + id);
                         return category;
                     }).toList());
-            var service = new TimeRecordServiceImpl(timeMapper, null, null, null, calendar, org.mockito.Mockito.mock(top.aiolife.record.prediction.JevCategoryRecommendationService.class, invocation -> null), new top.aiolife.record.prediction.RecommendationDataCache(15000), categories);
+            var service = new TimeRecordServiceImpl(timeMapper, null, null, null, calendar, org.mockito.Mockito.mock(top.aiolife.record.prediction.JevCategoryRecommendationService.class, invocation -> null), new top.aiolife.record.prediction.RecommendationDataCache(15000), categories, org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class));
             ReflectionTestUtils.setField(service, "baseMapper", timeMapper);
             try (var clock = mockStatic(java.time.LocalDateTime.class, CALLS_REAL_METHODS)) {
                 var now = java.time.LocalDateTime.of(2026, 12, 31, 12, 0);

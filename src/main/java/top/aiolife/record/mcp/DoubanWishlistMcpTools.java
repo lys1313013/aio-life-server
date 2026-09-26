@@ -22,6 +22,7 @@ import top.aiolife.record.util.DoubanSubjectUrl;
 @RequiredArgsConstructor
 public class DoubanWishlistMcpTools {
 
+    private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
     private final IMovieService movieService;
     private final IReadRecordService readRecordService;
 
@@ -31,6 +32,8 @@ public class DoubanWishlistMcpTools {
             throw new IllegalArgumentException("请求参数不能为空");
         }
         DoubanSubjectUrl.Subject subject = DoubanSubjectUrl.parse(req.getUrl());
+        secondaryLockGuard.checkMenus(cn.dev33.satoken.stp.StpUtil.getLoginIdAsLong(),
+                subject.mediaType() == DoubanSubjectUrl.MediaType.MOVIE ? "/record/movie" : "/record/read");
         return switch (subject.mediaType()) {
             case MOVIE -> addMovie(subject);
             case BOOK -> addBook(subject);

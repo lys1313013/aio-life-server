@@ -48,6 +48,12 @@ public class ExceptionHandle {
         return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "请求的接口不存在：" + path);
     }
 
+    @ExceptionHandler(SecondaryLockRequiredException.class)
+    public ApiResponse<Object> handleSecondaryLock(SecondaryLockRequiredException e) {
+        return ApiResponse.error(ResponseCodeConst.SECONDARY_LOCK_REQUIRED, e.getMessage(),
+                java.util.Map.of("menuPath", e.getMenuPath()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ApiResponse<Object> handleException(Exception e) {
         log.error("发生异常：{}", e.getMessage(), e);

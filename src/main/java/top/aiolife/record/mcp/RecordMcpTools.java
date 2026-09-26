@@ -108,7 +108,10 @@ public class RecordMcpTools {
             return List.of();
         }
         return items.stream()
-                .map(c -> new TimeTrackerCategoryMcpVO(c.getId(), c.getName()))
+                .map(c -> new TimeTrackerCategoryMcpVO(c.getId(), items.stream()
+                        .filter(parent -> parent.getId().equals(c.getParentId()))
+                        .map(parent -> parent.getName() + " / " + c.getName())
+                        .findFirst().orElse(c.getName())))
                 .toList();
     }
 

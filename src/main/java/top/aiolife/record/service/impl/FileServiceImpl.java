@@ -51,6 +51,7 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
             throw new IllegalArgumentException("文件不能为空");
         }
 
+        String validatedContentType = bizType == FileBizType.BANK_CARD_COVER ? validateBankCover(file) : file.getContentType();
         long userId = StpUtil.getLoginIdAsLong();
         String bucketName = resolveBucketName();
         String objectName = buildObjectName(userId, bizType, file.getOriginalFilename());
@@ -62,7 +63,7 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
             FileEntity fileEntity = new FileEntity();
             fileEntity.setFileName(objectName);
             fileEntity.setFileSize(file.getSize());
-            fileEntity.setFileType(file.getContentType());
+            fileEntity.setFileType(validatedContentType);
             fileEntity.setBizType(bizType.getBizType());
             fileEntity.setIsPublic(bizType.getVisibility().getValue());
             fileEntity.setHashValue("");
@@ -125,6 +126,23 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
         }
     }
 
+    private String validateBankCover(MultipartFile file) {
+        if (file.getSize() > 5 * 1024 * 1024) throw new IllegalArgumentException("卡面图片不能超过5MB");
+        try (var input = javax.imageio.ImageIO.createImageInputStream(file.getInputStream())) {
+            var readers = javax.imageio.ImageIO.getImageReaders(input);
+            if (!readers.hasNext()) throw new IllegalArgumentException("卡面仅支持PNG或JPEG图片");
+            var reader = readers.next();
+            try {
+                reader.setInput(input);
+                String format = reader.getFormatName().toLowerCase(Locale.ROOT);
+                if (!java.util.Set.of("png", "jpeg", "jpg").contains(format)
+                        || (long) reader.getWidth(0) * reader.getHeight(0) > 16_000_000)
+                    throw new IllegalArgumentException("卡面须为不超过1600万像素的PNG或JPEG图片");
+                return "png".equals(format) ? "image/png" : "image/jpeg";
+            } finally { reader.dispose(); }
+        } catch (java.io.IOException e) { throw new IllegalArgumentException("卡面图片无法读取"); }
+    }
+
     private String extractExtension(String imageUrl, String contentType) {
         String path = imageUrl.contains("?") ? imageUrl.substring(0, imageUrl.indexOf("?")) : imageUrl;
         String ext = StrUtil.subAfter(path, ".", true);
@@ -173,6 +191,10 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
         if (CollectionUtils.isEmpty(fileIds)) {
             return;
         }
+        // 银行卡卡面只能通过银行卡事务绑定，不能被通用入口迁走。
+        if ("bank_card_cover".equals(bizType) || this.count(new LambdaQueryWrapper<FileEntity>()
+                .in(FileEntity::getId, fileIds).eq(FileEntity::getBizType, "bank_card_cover")) > 0)
+            throw new IllegalArgumentException("请通过银行卡页面绑定卡面");
         // 只允许绑定当前用户自己上传的文件
         long userId = StpUtil.getLoginIdAsLong();
         LambdaUpdateWrapper<FileEntity> updateWrapper = new LambdaUpdateWrapper<>();
