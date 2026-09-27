@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 ## 项目概述
 
@@ -157,6 +157,7 @@ public interface MyConvertor {
 
 | 变量 | 说明 | 默认值 |
 |---|---|---|
+| `AIO_LIFE_JWT_SECRET` | JWT 签名密钥（Sa-Token），生产必须覆盖 | aio_life（仅本地开发） |
 | `AIO_LIFE_DB_PASSWORD` | 数据库密码 | root |
 | `AIO_LIFE_DB_URL` | 数据库地址 | 127.0.0.1:3306 |
 | `AIO_LIFE_REDIS_HOST` | Redis 地址 | 127.0.0.1 |
