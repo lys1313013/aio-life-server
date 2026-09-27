@@ -75,6 +75,7 @@ SELECT 92626001,'银行','bank','0',0,0,0
 WHERE NOT EXISTS(SELECT 1 FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0);
 SET @bank_dict_id = (SELECT dict_id FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0);
 DROP TEMPORARY TABLE IF EXISTS tmp_nfra_bank_dictionary;
+-- 与 sys_dict_data 保持一致，避免继承 MySQL 8 默认排序规则导致查重比较失败。
 CREATE TEMPORARY TABLE tmp_nfra_bank_dictionary (
   seed_id BIGINT PRIMARY KEY,
   sort_order INT NOT NULL,
@@ -82,7 +83,7 @@ CREATE TEMPORARY TABLE tmp_nfra_bank_dictionary (
   bank_value VARCHAR(100) NOT NULL UNIQUE,
   full_name VARCHAR(100) NOT NULL,
   source_remark VARCHAR(500) NOT NULL
-);
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 """
     body = []
     for start in range(0, len(records), 200):

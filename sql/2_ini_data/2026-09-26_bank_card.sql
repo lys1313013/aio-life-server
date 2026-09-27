@@ -10,6 +10,7 @@ SELECT 92626001,'银行','bank','0',0,0,0
 WHERE NOT EXISTS(SELECT 1 FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0);
 SET @bank_dict_id = (SELECT dict_id FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0);
 DROP TEMPORARY TABLE IF EXISTS tmp_nfra_bank_dictionary;
+-- 与 sys_dict_data 保持一致，避免继承 MySQL 8 默认排序规则导致查重比较失败。
 CREATE TEMPORARY TABLE tmp_nfra_bank_dictionary (
   seed_id BIGINT PRIMARY KEY,
   sort_order INT NOT NULL,
@@ -17,7 +18,7 @@ CREATE TEMPORARY TABLE tmp_nfra_bank_dictionary (
   bank_value VARCHAR(100) NOT NULL UNIQUE,
   full_name VARCHAR(100) NOT NULL,
   source_remark VARCHAR(500) NOT NULL
-);
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 INSERT INTO tmp_nfra_bank_dictionary(seed_id,sort_order,label,bank_value,full_name,source_remark) VALUES
 (92626101,0,'中国工商银行','ICBC','中国工商银行股份有限公司','国家金融监督管理总局；截至2025-12-31；B0001H111000001；国有大型商业银行；中国工商银行股份有限公司；PDF第1页'),
 (92626102,1,'中国农业银行','ABC','中国农业银行股份有限公司','国家金融监督管理总局；截至2025-12-31；B0002H111000001；国有大型商业银行；中国农业银行股份有限公司；PDF第1页'),
