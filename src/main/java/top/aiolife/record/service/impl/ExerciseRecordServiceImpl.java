@@ -3,11 +3,13 @@ package top.aiolife.record.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import top.aiolife.record.enums.DictTypeEnum;
 import top.aiolife.record.mapper.IExerciseRecordMapper;
+import top.aiolife.record.pojo.dto.ExerciseStatisticsDTO;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.vo.ExerciseDashboardDayVO;
 import top.aiolife.record.pojo.vo.ExerciseDashboardItemVO;
 import top.aiolife.record.pojo.vo.ExerciseDashboardSummaryVO;
+import top.aiolife.record.pojo.vo.ExerciseDashboardTrendPointVO;
 import top.aiolife.record.service.IExerciseRecordService;
 import top.aiolife.record.service.UserDictDataService;
 import org.springframework.stereotype.Service;
@@ -92,39 +94,20 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
 
     @Override
     public ExerciseDashboardSummaryVO getDashboardSummary(Long userId, LocalDate lastDate, int limit) {
-        // 游标从传入的 lastDate 开始往前取；首次调用传 null 表示从今天（含）开始
-        LocalDate cursor = lastDate != null ? lastDate : LocalDate.now().plusDays(1);
-
-        // 一次拉够 limit 个日期对应的原始记录，再在内存里按天/类型聚合
-        // 单用户单类型的运动量有限，limit 通常为 7，单页 SQL 上限取 7 * 5 = 35 条足以覆盖
-        int fetchLimit = Math.max(limit * 5, 50);
-        List<ExerciseRecordEntity> records = this.lambdaQuery()
-                .eq(ExerciseRecordEntity::getUserId, userId)
-                .lt(ExerciseRecordEntity::getExerciseDate, cursor)
-                .orderByDesc(ExerciseRecordEntity::getExerciseDate,
-                        ExerciseRecordEntity::getCreateTime)
-                .last("LIMIT " + fetchLimit)
-                .list();
-
-        // 按日期降序聚合 → 按运动类型聚合（运动量求和）
-        Map<LocalDate, Map<Long, Integer>> groupedByDate = new LinkedHashMap<>();
-        for (ExerciseRecordEntity record : records) {
-            LocalDate date = record.getExerciseDate();
-            Long typeId = record.getExerciseTypeId();
-            if (date == null || typeId == null) {
-                continue;
-            }
-            int count = record.getExerciseCount() == null ? 0 : record.getExerciseCount();
-            groupedByDate.computeIfAbsent(date, k -> new LinkedHashMap<>())
-                    .merge(typeId, count, Integer::sum);
-        }
-
-        // 限制返回 limit 个日期（按日期降序）
-        List<LocalDate> dates = new ArrayList<>(groupedByDate.keySet());
-        dates.sort(Comparator.reverseOrder());
+        // lastDate 是上一页最早日期的前一天，包含游标当天，避免连续日期被跳过。
+        LocalDate cursor = lastDate != null ? lastDate : LocalDate.now();
+        List<LocalDate> dates = baseMapper.selectDashboardDates(userId, cursor, limit + 1);
         boolean hasMore = dates.size() > limit;
         if (hasMore) {
             dates = dates.subList(0, limit);
+        }
+        // 先按日期分页，再完整聚合整天的数据，避免原始记录 LIMIT 截断同一天。
+        Map<LocalDate, Map<Long, Integer>> groupedByDate = new LinkedHashMap<>();
+        if (!dates.isEmpty()) {
+            for (ExerciseStatisticsDTO record : baseMapper.selectDashboardTotals(userId, dates)) {
+                groupedByDate.computeIfAbsent(record.getExerciseDate(), k -> new LinkedHashMap<>())
+                        .put(record.getExerciseTypeId(), record.getExerciseCount());
+            }
         }
 
         // 收集需要查字典的运动类型 id
@@ -134,7 +117,7 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
                 .toList();
         Map<Long, UserDictDataEntity> dictMap = lookupDictMap(userId, typeIds);
 
-        // 计算每个类型上一次（最近一次）运动的次数，用于与本次比较
+        // 构建同类型运动日历史，用于增减对比和最近五次趋势
         Map<Long, NavigableMap<LocalDate, Integer>> prevHistoryByType = buildPrevHistory(
                 userId, typeIds, dates, groupedByDate);
 
@@ -161,7 +144,12 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
                 } else {
                     item.setTypeLabel("其他");
                 }
-                attachPrevDelta(item, typeId, date, count, prevHistoryByType.get(typeId));
+                attachPrevDelta(item, date, count, prevHistoryByType.get(typeId));
+                List<ExerciseDashboardTrendPointVO> trend = new ArrayList<>(5);
+                prevHistoryByType.get(typeId).tailMap(date, true).entrySet().stream().limit(5)
+                        .forEach(point -> trend.add(new ExerciseDashboardTrendPointVO(point.getKey(), point.getValue())));
+                java.util.Collections.reverse(trend);
+                item.setTrend(trend);
                 items.add(item);
             }
             // 子项按 count 降序展示
@@ -177,10 +165,10 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
     }
 
     /**
-     * 为页面中出现的运动类型构建「更早一次运动」的次数索引：
+     * 为页面中出现的运动类型构建历史次数索引：
      * - 页面日期之前的记录：从 DB 单次查询后按 (typeId, date) 聚合
      * - 页面内更早日期的记录：直接复用已聚合的 groupedByDate（用于在同页靠前日期的 prev）
-     * 返回的 Map 按日期降序排列，便于通过 tailMap(date, false) 取到「严格小于 chip 日期」的最新一条
+     * 返回的 Map 按日期降序排列，便于通过 tailMap(date, false) 取到「严格小于当前行日期」的最新一条
      */
     private Map<Long, NavigableMap<LocalDate, Integer>> buildPrevHistory(
             Long userId,
@@ -193,22 +181,14 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
         }
         LocalDate oldestPageDate = pageDates.get(pageDates.size() - 1);
 
-        // 1. 页面最早日期之前的同类型记录（limit 500 兜底，避免深翻历史拉爆）
-        List<ExerciseRecordEntity> historyRecords = this.lambdaQuery()
-                .eq(ExerciseRecordEntity::getUserId, userId)
-                .in(ExerciseRecordEntity::getExerciseTypeId, typeIds)
-                .lt(ExerciseRecordEntity::getExerciseDate, oldestPageDate)
-                .orderByDesc(ExerciseRecordEntity::getExerciseDate, ExerciseRecordEntity::getCreateTime)
-                .last("LIMIT 500")
-                .list();
-        for (ExerciseRecordEntity r : historyRecords) {
-            if (r.getExerciseDate() == null || r.getExerciseTypeId() == null) continue;
-            int c = r.getExerciseCount() == null ? 0 : r.getExerciseCount();
+        // 每个类型取四个完整的历史运动日，稀疏记录也能跨页补足趋势。
+        List<ExerciseStatisticsDTO> historyRecords = baseMapper.selectDashboardHistory(userId, typeIds, oldestPageDate);
+        for (ExerciseStatisticsDTO r : historyRecords) {
             result.computeIfAbsent(r.getExerciseTypeId(), k -> new TreeMap<>(Comparator.reverseOrder()))
-                    .merge(r.getExerciseDate(), c, Integer::sum);
+                    .put(r.getExerciseDate(), r.getExerciseCount());
         }
 
-        // 2. 页面内所有日期的聚合数据也并入，让靠后 chip 可以引用同页靠前日期作为 prev
+        // 并入页面内的聚合数据，让较新的记录引用同页更早的运动日。
         for (LocalDate date : pageDates) {
             Map<Long, Integer> typeMap = groupedByDate.get(date);
             if (typeMap == null) {
@@ -223,18 +203,17 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
     }
 
     /**
-     * 把上一次运动的次数、差值、差值百分比填到 chip 上
+     * 填写上一次运动的次数、差值和差值百分比
      */
     private void attachPrevDelta(
             ExerciseDashboardItemVO item,
-            Long typeId,
             LocalDate date,
             int count,
             NavigableMap<LocalDate, Integer> history) {
         if (history == null) {
             return;
         }
-        // 严格小于 chip 日期的最近一条；history 自身按日期降序，tailMap(..., false).firstEntry() 即为目标
+        // 严格小于当前行日期的最近一条；history 自身按日期降序，tailMap(..., false).firstEntry() 即为目标
         NavigableMap<LocalDate, Integer> tail = history.tailMap(date, false);
         if (tail.isEmpty()) {
             return;
@@ -247,7 +226,7 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
         if (prevCount > 0) {
             item.setDeltaPercent((int) Math.round((count - prevCount) * 100.0 / prevCount));
         }
-        // prevCount == 0 时不计算百分比，前端用 prevCount==0 + deltaCount>0 渲染「新增」
+        // 上次为零时仅返回绝对增减，不计算百分比。
     }
 
     private Map<Long, UserDictDataEntity> lookupDictMap(Long userId, List<Long> typeIds) {

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 首页运动汇总 - 每日按运动类型聚合的子项
@@ -40,6 +41,9 @@ public class ExerciseDashboardItemVO {
      * 当日该类型运动总次数
      */
     private Integer count;
+
+    /** 截至本日最近五个有记录的运动日（含本日），按日期升序；不足五次不补点。 */
+    private List<ExerciseDashboardTrendPointVO> trend;
 
     /**
      * 上一次做该类型运动的日期
