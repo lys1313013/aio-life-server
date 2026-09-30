@@ -20,7 +20,7 @@ use `aio_life`;
 CREATE TABLE IF NOT EXISTS `user` (
     `id` bigint(20) NOT NULL AUTO_INCREMENT,
     `username` varchar(50) NOT NULL COMMENT '用户名',
-    `password` varchar(255) NOT NULL COMMENT '密码',
+    `password` varchar(255) DEFAULT NULL COMMENT '密码，NULL表示未设置',
     `nickname` varchar(50) NOT NULL COMMENT '昵称',
     `create_user` bigint(20) DEFAULT NULL COMMENT '创建人',
     `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -35,6 +35,21 @@ CREATE TABLE IF NOT EXISTS `user` (
     `is_deleted` tinyint(4) NOT NULL DEFAULT '0',
     `secondary_password` varchar(128) DEFAULT NULL COMMENT '二级密码（加盐哈希）',
     `secondary_password_salt` varchar(64) DEFAULT NULL COMMENT '二级密码盐值',
+    `phone_country_code` varchar(5) DEFAULT NULL COMMENT '国际电话区号，不含加号',
+    `phone` varchar(20) DEFAULT NULL COMMENT '不含国际区号的手机号',
+    `phone_verified_at` datetime DEFAULT NULL COMMENT '最近接收可信手机号验证结果的时间',
+    `wechat_openid` varchar(128) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT '当前配置小程序的openid',
+    `wechat_unionid` varchar(128) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL COMMENT '微信unionid，可为空，不用于自动合并账号',
+    `active_flag` tinyint GENERATED ALWAYS AS (CASE WHEN `is_deleted` = 0 THEN 1 ELSE NULL END) STORED COMMENT '仅有效用户参与凭证唯一约束',
+    UNIQUE KEY `uk_user_phone_active` (`phone_country_code`, `phone`, `active_flag`),
+    UNIQUE KEY `uk_user_wechat_active` (`wechat_openid`, `active_flag`),
+    CONSTRAINT `ck_user_phone_pair` CHECK (
+        (`phone_country_code` IS NULL AND `phone` IS NULL) OR
+        (`phone_country_code` IS NOT NULL AND `phone` IS NOT NULL
+         AND `phone_country_code` REGEXP '^[1-9][0-9]{0,2}$'
+         AND `phone` REGEXP '^[0-9]{4,14}$'
+         AND CHAR_LENGTH(`phone_country_code`) + CHAR_LENGTH(`phone`) <= 15)
+    ),
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 

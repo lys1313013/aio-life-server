@@ -4,6 +4,9 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.AllArgsConstructor;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.mapper.IGoalMapper;
@@ -30,9 +33,13 @@ public class GoalController {
     private final IGoalService goalService;
 
     @GetMapping
+    @Operation(summary = "查询当前用户的目标", description = "返回目标列表，支持目标类型、进度状态及关键词筛选，按创建时间倒序。")
     public ApiResponse<List<GoalEntity>> queryGoals(
+            @Parameter(description = "目标类型：1=年度、2=月度、3=日目标", schema = @Schema(allowableValues = {"1", "2", "3"}))
             @RequestParam(required = false) Integer type,
+            @Parameter(description = "进度状态", schema = @Schema(allowableValues = {"not_started", "in_progress", "completed", "on_hold"}))
             @RequestParam(required = false) String status,
+            @Parameter(description = "匹配目标标题、描述或标签")
             @RequestParam(required = false) String keyword) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<GoalEntity> queryWrapper = new LambdaQueryWrapper<>();
@@ -58,6 +65,7 @@ public class GoalController {
     }
 
     @PostMapping
+    @Operation(summary = "创建目标", description = "用户归属和审计信息由服务端设置；parentId 可关联父目标。响应返回创建后的目标及 ID。")
     public ApiResponse<GoalEntity> createGoal(@RequestBody GoalEntity goalEntity) {
         long userId = StpUtil.getLoginIdAsLong();
         goalEntity.setUserId(userId);
@@ -71,6 +79,7 @@ public class GoalController {
     }
 
     @PutMapping
+    @Operation(summary = "更新目标", description = "请求体携带目标 id，只更新当前用户拥有的目标；用户归属不可修改。")
     public ApiResponse<GoalEntity> updateGoal(@RequestBody GoalEntity goalEntity) {
         long userId = StpUtil.getLoginIdAsLong();
         goalEntity.setUpdateTime(LocalDateTime.now());
@@ -86,6 +95,7 @@ public class GoalController {
     }
 
     @PostMapping("/batchDelete")
+    @Operation(summary = "批量删除目标", description = "请求体 idList 为目标 ID 列表，仅逻辑删除当前用户拥有的目标。")
     public ApiResponse<Void> deleteGoals(@RequestBody CommonReq commonReq) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaUpdateWrapper<GoalEntity> updateWrapper = new LambdaUpdateWrapper<>();

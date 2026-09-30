@@ -50,6 +50,7 @@ public class RecordMcpE2ETest {
     private int port;
 
     private McpSyncClient mcpClient;
+    private cn.dev33.satoken.stp.StpLogic originalStpLogic;
 
     @Configuration
     @EnableAutoConfiguration(exclude = {
@@ -208,6 +209,7 @@ public class RecordMcpE2ETest {
 
     @BeforeEach
     void setUp() {
+        originalStpLogic = cn.dev33.satoken.stp.StpUtil.getStpLogic();
         cn.dev33.satoken.stp.StpLogic mockLogic = new cn.dev33.satoken.stp.StpLogic("login") {
             @Override
             public long getLoginIdAsLong() {
@@ -231,8 +233,13 @@ public class RecordMcpE2ETest {
 
     @AfterEach
     void tearDown() {
-        if (mcpClient != null) {
-            mcpClient.closeGracefully();
+        try {
+            if (mcpClient != null) {
+                mcpClient.closeGracefully();
+            }
+        } finally {
+            // StpUtil 是全局状态，不能让 MCP 的测试身份影响后续真实鉴权测试。
+            cn.dev33.satoken.stp.StpUtil.setStpLogic(originalStpLogic);
         }
     }
 

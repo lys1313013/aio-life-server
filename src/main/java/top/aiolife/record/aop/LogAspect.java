@@ -40,8 +40,10 @@ public class LogAspect {
         String httpMethod = request != null ? request.getMethod() : "unknown";
 
 
-        // login 接口不打印请求参数
-        if (!"login".equals(methodName) && !(joinPoint.getTarget() instanceof top.aiolife.bankcard.api.BankCardController)) {
+        // 登录及微信认证接口不打印一次性凭证、票据或密码
+        if (!"login".equals(methodName)
+                && !(joinPoint.getTarget() instanceof top.aiolife.sso.api.WechatAuthController)
+                && !(joinPoint.getTarget() instanceof top.aiolife.bankcard.api.BankCardController)) {
             Object[] args = joinPoint.getArgs();
             if (args != null && args.length > 0) {
                 try {

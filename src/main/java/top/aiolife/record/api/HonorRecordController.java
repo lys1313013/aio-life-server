@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.mapper.IHonorRecordMapper;
+import top.aiolife.record.pojo.entity.FileEntity;
 import top.aiolife.record.pojo.entity.HonorRecordEntity;
 import top.aiolife.record.pojo.req.CommonReq;
 import top.aiolife.record.service.IHonorRecordService;
@@ -88,8 +89,19 @@ public class HonorRecordController {
         if (!honorRecordService.update(honorRecordEntity, lambdaUpdateWrapper)) {
             throw new IllegalArgumentException("荣誉记录不存在或无权操作");
         }
-        if (honorRecordEntity.getFileIds() != null && !honorRecordEntity.getFileIds().isEmpty()) {
-            fileService.bindBizId(honorRecordEntity.getFileIds(), "honor_record", honorRecordEntity.getId());
+        if (honorRecordEntity.getFileIds() != null) {
+            List<String> fileIds = honorRecordEntity.getFileIds();
+            // fileIds 是保存后的完整附件列表；空列表清空关联，未传则保持原样。
+            LambdaUpdateWrapper<FileEntity> removedFiles = new LambdaUpdateWrapper<>();
+            removedFiles.eq(FileEntity::getBizType, "honor_record")
+                    .eq(FileEntity::getBizId, honorRecordEntity.getId())
+                    .eq(FileEntity::getCreateUser, userId)
+                    .notIn(!fileIds.isEmpty(), FileEntity::getId, fileIds)
+                    .set(FileEntity::getBizId, null)
+                    .set(FileEntity::getUpdateUser, userId)
+                    .set(FileEntity::getUpdateTime, LocalDateTime.now());
+            fileService.update(removedFiles);
+            fileService.bindBizId(fileIds, "honor_record", honorRecordEntity.getId());
         }
         return ApiResponse.success(honorRecordEntity);
     }

@@ -1,5 +1,7 @@
 package top.aiolife.sso.api;
 
+import io.swagger.v3.oas.annotations.Hidden;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +51,7 @@ public class FileController {
      * @param fileName 文件名（包含桶名和路径）
      */
     @GetMapping("/file/preview/{*fileName}")
+    @Hidden // 历史 catch-all 与 /file/preview/{id} 不能同时表示为合法 OpenAPI 路径；AI 使用按 ID 的标准入口。
     public void preview(@PathVariable("fileName") String fileName, HttpServletResponse response) {
         // 去除前导 /
         if (fileName.startsWith("/")) {

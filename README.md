@@ -14,6 +14,7 @@
 
 - 🌐 **前端项目**：[aio-life-front](https://github.com/lys1313013/aio-life-front)
 - 🔧 **后端项目**：[aio-life-server](https://github.com/lys1313013/aio-life-server)（本仓库）
+- 🤖 **AI 接口调用**：[OpenAPI 文档获取与调用指南](docs/AI接口调用指南.md)
 
 ## 🛠 技术栈
 
@@ -220,6 +221,8 @@ mvn clean package -DskipTests
 | 管理端点 | 45679 | Prometheus、Health、Info |
 
 ### API 文档
+
+推荐渐进读取：`GET /api/docs/catalog` 查看模块，`GET /api/docs/operations?keyword=目标` 分页搜索，`GET /api/docs/operations/{operationId}` 获取单接口定义及必要 Schema。三个入口均无需登录或 API Key。
 
 启动服务后访问各模块接口，统一返回格式：
 

@@ -71,6 +71,23 @@ public class UserEntity extends AuditEntity {
      */
     private String email;
 
+    /** 国际电话区号，不含 +；与 phone 同时为空或同时有值。 */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String phoneCountryCode;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String phone;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private LocalDateTime phoneVerifiedAt;
+
+    /** 仅对应服务端配置的一个微信小程序，不作为跨应用身份。 */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String wechatOpenid;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String wechatUnionid;
+
     /**
      * 角色类型
      */

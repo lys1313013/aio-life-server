@@ -20,6 +20,12 @@ public class UserInfoVO {
 
     private String username;
 
+    /** 实际登录账号，保留 username 原展示契约。 */
+    private String accountUsername;
+    private boolean hasPassword;
+    private boolean wechatBound;
+    private String phoneMasked;
+
     private String nickname;
 
     /**

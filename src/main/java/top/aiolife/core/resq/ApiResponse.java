@@ -1,5 +1,6 @@
 package top.aiolife.core.resq;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import top.aiolife.core.constant.ResponseCodeConst;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,16 +27,19 @@ public class ApiResponse<T> implements Serializable {
   /**
    * 状态码
    */
+  @Schema(description = "业务状态码：0=成功，113000=通用失败，100400=参数错误，2001=需要二级密码验证；HTTP 200 不代表业务成功", example = "0")
   private String rscode;
 
   /**
    * 返回信息，一般是报错提示
    */
+  @Schema(description = "结果提示，失败时通常为错误信息，成功时可为 null", nullable = true)
   private String result;
 
   /**
    * 返回结果
    */
+  @Schema(description = "业务数据；rscode=2001 时为包含 menuPath 的对象", nullable = true)
   private T data;
 
   public ApiResponse(String rscode, String result, T data) {

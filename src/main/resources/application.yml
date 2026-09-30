@@ -2,6 +2,37 @@ server:
   port: 45678
   servlet:
     context-path: /api # 固定前缀
+
+# 完整 JSON/YAML 与渐进查询文档均可匿名读取；业务接口仍需鉴权，无需安装文档 UI。
+springdoc:
+  api-docs:
+    enabled: ${AIO_LIFE_OPENAPI_ENABLED:true}
+    version: OPENAPI_3_0
+  default-flat-param-object: true
+  override-with-generic-response: false
+  writer-with-order-by-keys: true
+  group-configs:
+    - group: record
+      packages-to-scan: top.aiolife.record.api
+    - group: sso
+      packages-to-scan: top.aiolife.sso.api
+    - group: system
+      packages-to-scan: top.aiolife.system.api
+    - group: wardrobe
+      packages-to-scan: top.aiolife.wardrobe.api
+    - group: membership
+      packages-to-scan: top.aiolife.membership.api
+    - group: bankcard
+      packages-to-scan: top.aiolife.bankcard.api
+    - group: feedback
+      packages-to-scan: top.aiolife.feedback.api
+    - group: relationship
+      packages-to-scan: top.aiolife.relationship.api
+    - group: llm
+      packages-to-scan: top.aiolife.llm.api
+    - group: mcp
+      packages-to-scan: top.aiolife.mcp.api
+
 spring:
   application:
     name: aio-life-server
@@ -118,6 +149,11 @@ mybatis-plus:
 
 aio:
   life:
+    auth:
+      wechat-mini:
+        enabled: ${AIO_LIFE_WECHAT_MINI_ENABLED:false}
+        app-id: ${AIO_LIFE_WECHAT_MINI_APP_ID:}
+        app-secret: ${AIO_LIFE_WECHAT_MINI_APP_SECRET:}
     scheduling:
       enabled: ${AIO_LIFE_SCHEDULING_ENABLED:true}
     # Neo4j 总开关：默认 false（关系图谱模块不加载）；需要时设 AIO_LIFE_NEO4J_ENABLED=true 启用 Neo4jConfig、PersonServiceImpl、RelationshipServiceImpl、RelationshipController

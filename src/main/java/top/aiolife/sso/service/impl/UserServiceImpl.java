@@ -27,6 +27,7 @@ import top.aiolife.sso.pojo.vo.UserInfoVO;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
 import top.aiolife.sso.pojo.vo.UserVO;
 import top.aiolife.sso.service.IUserService;
+import top.aiolife.sso.service.LoginSessionService;
 import top.aiolife.sso.util.PasswordUtil;
 import cn.hutool.core.date.DateUtil;
 import org.springframework.beans.factory.annotation.Value;
@@ -61,6 +62,7 @@ public class UserServiceImpl implements IUserService {
     private static final String LAST_ACTIVE_KEY_PREFIX = "user:last_active:";
 
     private final UserMapper userMapper;
+    private final LoginSessionService loginSessionService;
     private final LoginLogMapper loginLogMapper;
     private final IMailService mailService;
     private final RedisUtil redisUtil;
@@ -91,7 +93,8 @@ public class UserServiceImpl implements IUserService {
         loginLogEntity.setUsername(loginReq.getUsername());
         loginLogEntity.setIpAddress(ip);
 
-        if (userEntity == null) {
+        if (userEntity == null || !StringUtils.hasText(userEntity.getPassword())
+                || !StringUtils.hasText(loginReq.getPassword())) {
             // 【有意保留】登录失败时写入明文密码到 login_log.password，用于抓取弱密码/常见密码样本（密码本）。
             // 非缺陷，勿删除。见 docs/数据库表结构审查报告.md「已决策不回改」。
             loginLogEntity.setPassword(loginReq.getPassword());
@@ -108,28 +111,7 @@ public class UserServiceImpl implements IUserService {
             throw new RuntimeException("用户名或密码错误");
         }
 
-        loginLogEntity.setUserId(userEntity.getId());
-        loginLogMapper.insert(loginLogEntity);
-        StpUtil.login(userEntity.getId());
-        String token = StpUtil.getTokenValue();
-
-        // 为了兼容前端 img 标签直接使用 Cookie 访问带鉴权的图片
-        // 需要在写入浏览器的 Cookie 时，手动加上配置的 token-prefix (Bearer)
-        // 这样浏览器发起的 Cookie 中就包含了完整的 "Bearer xxxx" 格式，完美通过 Sa-Token 校验
-        String tokenName = StpUtil.getTokenName();
-        String tokenPrefix = cn.dev33.satoken.SaManager.getConfig().getTokenPrefix();
-        String cookieValue = (tokenPrefix != null ? tokenPrefix + " " : "") + token;
-        // 获取默认的 Cookie 超时时间配置
-        int timeout = (int) cn.dev33.satoken.SaManager.getConfig().getTimeout();
-        cn.dev33.satoken.context.SaHolder.getResponse().addCookie(tokenName, cookieValue, "/", null, timeout);
-
-        UserLoginVO userLoginVO = new UserLoginVO();
-        userLoginVO.setId(userEntity.getId());
-        userLoginVO.setRealName(userEntity.getNickname());
-        userLoginVO.setUsername(userEntity.getNickname());
-        userLoginVO.setRoles(StringUtils.hasText(userEntity.getRole()) ? Arrays.asList(userEntity.getRole().split(",")) : Collections.singletonList("user"));
-        userLoginVO.setAccessToken(token);
-        return userLoginVO;
+        return loginSessionService.complete(userEntity, ip, true);
     }
 
     @Override
@@ -144,6 +126,14 @@ public class UserServiceImpl implements IUserService {
         userInfoVO.setRealName(userEntity.getNickname());
         userInfoVO.setUsername(userEntity.getNickname());
         userInfoVO.setNickname(userEntity.getNickname());
+        userInfoVO.setAccountUsername(userEntity.getUsername());
+        userInfoVO.setHasPassword(StringUtils.hasText(userEntity.getPassword()));
+        userInfoVO.setWechatBound(StringUtils.hasText(userEntity.getWechatOpenid()));
+        if (StringUtils.hasText(userEntity.getPhone())) {
+            String phone = userEntity.getPhone();
+            userInfoVO.setPhoneMasked("+" + userEntity.getPhoneCountryCode() + " ****"
+                    + phone.substring(Math.max(0, phone.length() - 4)));
+        }
         userInfoVO.setAvatar(userEntity.getAvatar());
         userInfoVO.setEmail(userEntity.getEmail());
         userInfoVO.setIntroduction(userEntity.getIntroduction());
@@ -171,6 +161,7 @@ public class UserServiceImpl implements IUserService {
         // 禁止通过此接口修改密码
         userEntity.setPassword(null);
         userEntity.setPasswordSalt(null);
+        clearExternalCredentials(userEntity);
         userMapper.updateById(userEntity);
     }
 
@@ -179,6 +170,9 @@ public class UserServiceImpl implements IUserService {
         UserEntity userEntity = userMapper.selectById(userId);
         if (userEntity == null) {
             throw new RuntimeException("用户不存在");
+        }
+        if (!StringUtils.hasText(userEntity.getPassword())) {
+            throw new RuntimeException("尚未设置密码，请通过微信验证后设置登录密码");
         }
         String encryptedPassword = PasswordUtil.encryptPassword(changePasswordReq.getOldPassword(), userEntity.getPasswordSalt());
         if (!userEntity.getPassword().equals(encryptedPassword)) {
@@ -258,8 +252,18 @@ public class UserServiceImpl implements IUserService {
         return a.isAfter(b) ? a : b;
     }
 
+    /** 普通资料及管理端表单不能绕过微信认证写入登录凭证。 */
+    private void clearExternalCredentials(UserEntity user) {
+        user.setPhone(null);
+        user.setPhoneCountryCode(null);
+        user.setPhoneVerifiedAt(null);
+        user.setWechatOpenid(null);
+        user.setWechatUnionid(null);
+    }
+
     @Override
     public void addUser(UserEntity userEntity) {
+        clearExternalCredentials(userEntity);
         if (!StringUtils.hasText(userEntity.getPassword())) {
             userEntity.setPassword("123456");
         }

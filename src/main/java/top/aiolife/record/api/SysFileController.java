@@ -1,5 +1,9 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,12 +55,20 @@ public class SysFileController {
     }
 
     @GetMapping("/preview/{id:[a-fA-F0-9]{32}}")
-    public void preview(@PathVariable("id") String id, HttpServletResponse response) {
+    @Operation(summary = "按文件 ID 预览文件")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "文件内容，Content-Type 取决于文件类型；不是 ApiResponse JSON",
+            content = @Content(mediaType = "*/*", schema = @Schema(type = "string", format = "binary")))
+    public void preview(@Parameter(description = "上传响应中的文件 ID", schema = @Schema(pattern = "^[a-fA-F0-9]{32}$"))
+                        @PathVariable("id") String id, HttpServletResponse response) {
         handleFileRequest(id, response, false);
     }
 
     @GetMapping("/download/{id:[a-fA-F0-9]{32}}")
-    public void download(@PathVariable("id") String id, HttpServletResponse response) {
+    @Operation(summary = "按文件 ID 下载文件")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "文件内容，Content-Disposition 为 attachment；不是 ApiResponse JSON",
+            content = @Content(mediaType = "*/*", schema = @Schema(type = "string", format = "binary")))
+    public void download(@Parameter(description = "上传响应中的文件 ID", schema = @Schema(pattern = "^[a-fA-F0-9]{32}$"))
+                         @PathVariable("id") String id, HttpServletResponse response) {
         handleFileRequest(id, response, true);
     }
 
