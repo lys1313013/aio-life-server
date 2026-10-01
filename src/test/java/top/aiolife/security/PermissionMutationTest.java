@@ -3,6 +3,7 @@ package top.aiolife.security;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
@@ -27,7 +28,7 @@ class PermissionMutationTest {
     @BeforeAll
     static void tables() {
         for (Class<?> type : List.of(TaskEntity.class, TaskColumnEntity.class, TaskDetailEntity.class,
-                ThoughtEntity.class, ThoughtRelaEventEntity.class, PerformanceEntity.class,
+                ThoughtEntity.class, ThoughtRelaEventEntity.class, PerformanceEntity.class, FileEntity.class,
                 HonorRecordEntity.class, TimeTrackerCategoryEntity.class, UserDictDataEntity.class)) {
             TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), type.getName()), type);
         }
@@ -179,9 +180,18 @@ class PermissionMutationTest {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
             var files = mock(IFileService.class); var mapper = mock(IPerformanceMapper.class);
             when(mapper.update(any(PerformanceEntity.class), any(Wrapper.class))).thenReturn(1);
-            var input = new PerformanceEntity(); input.setId(7L); input.setFileIds(List.of("own-file"));
+            // 附件同步会先查询当前用户拥有的文件，再执行绑定。
+            var ownedFile = new FileEntity(); ownedFile.setId("31"); ownedFile.setCreateUser(11L);
+            when(files.list(any(Wrapper.class))).thenReturn(List.of(ownedFile));
+            var input = new PerformanceEntity(); input.setId(7L); input.setFileIds(List.of("31"));
             new PerformanceController(mapper, files).updatePerformance(input);
-            verify(files).bindBizId(List.of("own-file"), "performance", 7L);
+            var query = ArgumentCaptor.forClass(Wrapper.class);
+            verify(files).list(query.capture());
+            assertTrue(query.getValue().getSqlSegment().contains("id IN"));
+            assertTrue(query.getValue().getSqlSegment().contains("create_user ="));
+            assertTrue(((AbstractWrapper<?, ?, ?>) query.getValue()).getParamNameValuePairs()
+                    .values().containsAll(List.of("31", 11L)));
+            verify(files).bindBizId(List.of("31"), "performance", 7L);
         }
     }
 
