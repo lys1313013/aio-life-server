@@ -3,6 +3,10 @@ package top.aiolife.record.api;
 import cn.dev33.satoken.stp.StpUtil;
 import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import top.aiolife.record.pojo.entity.FileEntity;
+import java.time.LocalDateTime;
+import java.util.List;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import top.aiolife.core.resq.ApiResponse;
@@ -64,14 +68,13 @@ public class PerformanceController {
      * 新增演出记录
      */
     @PostMapping
+    @Transactional(rollbackFor = Exception.class)
     public ApiResponse<PerformanceEntity> createPerformance(@RequestBody PerformanceEntity entity) {
         long userId = StpUtil.getLoginIdAsLong();
         entity.setId(null);
         entity.fillCreateCommonField(userId);
         getBaseMapper().insert(entity);
-        if (entity.getFileIds() != null && !entity.getFileIds().isEmpty()) {
-            fileService.bindBizId(entity.getFileIds(), "performance", entity.getId());
-        }
+        syncFiles(entity, userId);
         return ApiResponse.success(entity);
     }
 
@@ -91,10 +94,30 @@ public class PerformanceController {
         if (getBaseMapper().update(entity, wrapper) == 0) {
             throw new IllegalArgumentException("演出记录不存在或无权操作");
         }
-        if (entity.getFileIds() != null && !entity.getFileIds().isEmpty()) {
-            fileService.bindBizId(entity.getFileIds(), "performance", entity.getId());
-        }
+        syncFiles(entity, userId);
         return ApiResponse.success(entity);
+    }
+
+    // 完整列表语义：未传保留，空列表解除关联；文件实体本身不删除。
+    private void syncFiles(PerformanceEntity entity, long userId) {
+        if (entity.getFileIds() == null) return;
+        List<String> fileIds = entity.getFileIds().stream().distinct().toList();
+        if (!fileIds.isEmpty()) {
+            List<FileEntity> ownedFiles = fileService.list(new LambdaQueryWrapper<FileEntity>()
+                    .in(FileEntity::getId, fileIds).eq(FileEntity::getCreateUser, userId));
+            if (ownedFiles.size() != fileIds.size())
+                throw new IllegalArgumentException("附件不存在或无权操作");
+        }
+        LambdaUpdateWrapper<FileEntity> removedFiles = new LambdaUpdateWrapper<>();
+        removedFiles.eq(FileEntity::getBizType, "performance")
+                .eq(FileEntity::getBizId, entity.getId())
+                .eq(FileEntity::getCreateUser, userId)
+                .notIn(!fileIds.isEmpty(), FileEntity::getId, fileIds)
+                .set(FileEntity::getBizId, null)
+                .set(FileEntity::getUpdateUser, userId)
+                .set(FileEntity::getUpdateTime, LocalDateTime.now());
+        fileService.update(removedFiles);
+        fileService.bindBizId(fileIds, "performance", entity.getId());
     }
 
     /**

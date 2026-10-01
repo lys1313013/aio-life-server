@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * 类功能描述
@@ -134,6 +135,7 @@ public class ThoughtController {
         if (rows > 0) {
             // 更新事件
             if (entity.getEvents() != null) {
+                List<Long> retainedEventIds = new ArrayList<>();
                 entity.getEvents().forEach(eventEntity -> {
                     ThoughtRelaEventEntity update = new ThoughtRelaEventEntity();
                     update.setContent(eventEntity.getContent());
@@ -141,6 +143,7 @@ public class ThoughtController {
                         update.setThoughtId(id);
                         update.fillCreateCommonField(userId);
                         relaEventMapper.insert(update);
+                        retainedEventIds.add(update.getId());
                     } else {
                         update.fillUpdateCommonField(userId);
                         int updated = relaEventMapper.update(update,
@@ -150,8 +153,14 @@ public class ThoughtController {
                         if (updated == 0) {
                             throw new IllegalArgumentException("关联事件不存在或无权操作");
                         }
+                        retainedEventIds.add(eventEntity.getId());
                     }
                 });
+                // events 是保存后的完整事件列表；未传保留，空列表清空。
+                // 只清理已验证归属的闪念，保留旧事件 ID 和新增事件 ID。
+                relaEventMapper.delete(new LambdaQueryWrapper<ThoughtRelaEventEntity>()
+                        .eq(ThoughtRelaEventEntity::getThoughtId, id)
+                        .notIn(!retainedEventIds.isEmpty(), ThoughtRelaEventEntity::getId, retainedEventIds));
             }
             return ApiResponse.success(true);
         }

@@ -14,6 +14,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.core.exception.ExceptionHandle;
 import top.aiolife.record.api.*;
+import top.aiolife.feedback.api.FeedbackController;
+import top.aiolife.feedback.pojo.query.FeedbackAdminQuery;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.query.ExpenseQuery;
@@ -48,6 +50,7 @@ class QueryHttpContractTest {
     static Stream<Arguments> readEndpoints() {
         return Stream.of(
                 Arguments.of(DeviceController.class, "/device/query"),
+                Arguments.of(FeedbackController.class, "/feedback/my"),
                 Arguments.of(ReadRecordController.class, "/read-record/page"),
                 Arguments.of(UserDictDataController.class, "/userDictData/query"),
                 Arguments.of(UserDictDataController.class, "/userDictData/admin/query"),
@@ -84,6 +87,21 @@ class QueryHttpContractTest {
         verifyNoInteractions(controller);
         mvc.perform(get(path)).andExpect(status().isOk());
         assertEquals(1, mockingDetails(controller).getInvocations().size());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void testFeedback_状态和类型从平铺URL绑定到泛型DTO() throws Exception {
+        FeedbackController controller = mock(FeedbackController.class);
+        mvc(controller).perform(get("/feedback/my").param("page", "3").param("pageSize", "20")
+                        .param("status", "PENDING").param("feedbackType", "BUG"))
+                .andExpect(status().isOk());
+        ArgumentCaptor<CommonQuery<FeedbackAdminQuery>> captor = ArgumentCaptor.forClass(CommonQuery.class);
+        verify(controller).listMy(captor.capture());
+        assertEquals(3, captor.getValue().getPage());
+        assertEquals(20, captor.getValue().getPageSize());
+        assertEquals("PENDING", captor.getValue().getCondition().getStatus());
+        assertEquals("BUG", captor.getValue().getCondition().getFeedbackType());
     }
 
     @Test

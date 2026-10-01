@@ -6,6 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -123,7 +124,14 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             entity.setFinishTime(LocalDateTime.now());
         }
 
-        this.updateById(entity);
+        // 仅显式传入 rating 才更新评分；null 是清空，未传保留旧值。
+        LambdaUpdateWrapper<MovieEntity> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(MovieEntity::getId, req.getId()).eq(MovieEntity::getUserId, userId);
+        if (req.isRatingProvided()) {
+            wrapper.set(MovieEntity::getRating, req.getRating());
+        }
+        entity.setRating(null); // 避免实体列与 wrapper 的评分 SET 重复。
+        if (!this.update(entity, wrapper)) throw new IllegalArgumentException("记录不存在或无权限");
     }
 
     private void validateRating(Integer rating) {

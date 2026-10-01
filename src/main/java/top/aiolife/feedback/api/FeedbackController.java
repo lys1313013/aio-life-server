@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.query.CommonQuery;
+import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.feedback.pojo.query.FeedbackAdminQuery;
@@ -40,7 +41,7 @@ public class FeedbackController {
      * 我的反馈列表
      */
     @GetMapping("/my")
-    public ApiResponse<PageResp<FeedbackVO>> listMy(CommonQuery<FeedbackAdminQuery> query) {
+    public ApiResponse<PageResp<FeedbackVO>> listMy(@QueryParams CommonQuery<FeedbackAdminQuery> query) {
         long userId = StpUtil.getLoginIdAsLong();
         return ApiResponse.success(feedbackService.listMy(userId, query));
     }
