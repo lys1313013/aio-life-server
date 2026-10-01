@@ -27,7 +27,7 @@ import java.io.OutputStream;
  * 本接口保留用于兼容历史生成的 URL（FileVO.fileUrl、CBTI 图片），访问控制：
  * <ul>
  *   <li>仅允许访问配置的默认桶与 CBTI 桶，杜绝任意桶读取</li>
- *   <li>CBTI 公共图片前缀（images/cbti/characters/）匿名放行</li>
+ *   <li>默认桶内用户头像与 CBTI 公共图片前缀（images/cbti/characters/）匿名放行</li>
  *   <li>其余对象要求登录；存在文件记录时按 isPublic/属主/管理员校验</li>
  * </ul>
  *
@@ -78,8 +78,8 @@ public class FileController {
             return;
         }
 
-        // CBTI 公共图片（人格形象等公开资源）匿名放行
-        if (!isPublicObject(objectName)) {
+        // 用户头像与 CBTI 公共图片供浏览器直接加载，无需登录凭据
+        if (!isPublicObject(bucketName, objectName)) {
             Long userId = filePreviewGuard.resolveLoginUserId();
             if (userId == null) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -142,9 +142,14 @@ public class FileController {
     }
 
     /**
-     * 是否为可匿名访问的公共对象（CBTI 人格形象等公开资源目录）
+     * 是否为可匿名访问的公共对象（用户头像、CBTI 人格形象）。
+     * 头像仅匹配默认桶内的 userId/avatar/文件名，兼容没有文件记录的历史头像。
      */
-    private boolean isPublicObject(String objectName) {
+    private boolean isPublicObject(String bucketName, String objectName) {
+        String defaultBucket = StringUtils.hasText(minioConfig.getBucketName()) ? minioConfig.getBucketName() : "aiolife";
+        if (defaultBucket.equals(bucketName) && objectName.matches("[0-9]+/avatar/[^/]+")) {
+            return true;
+        }
         String publicPrefix = StringUtils.hasText(cbtiConfig.getObjectPrefix())
                 ? cbtiConfig.getObjectPrefix() : "images/cbti/characters/";
         if (publicPrefix.startsWith("/")) {
