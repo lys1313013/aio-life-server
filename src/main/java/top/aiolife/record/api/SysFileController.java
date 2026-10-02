@@ -93,7 +93,7 @@ public class SysFileController {
             return;
         }
 
-        if ("bank_card_cover".equals(fileEntity.getBizType())) {
+        if ("bank_card_cover".equals(fileEntity.getBizType()) || "bank_card_template_cover".equals(fileEntity.getBizType())) {
             response.setHeader("Cache-Control", "no-store");
             response.setHeader("X-Content-Type-Options", "nosniff");
         }

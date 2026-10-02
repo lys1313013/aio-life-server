@@ -16,6 +16,11 @@ import java.util.List;
 @RequestMapping("/bank-cards")
 public class BankCardController {
     private final BankCardService service;
+    private final top.aiolife.bankcard.service.BankCardCoverTemplateService covers;
+    @GetMapping("/cover-templates")
+    public ApiResponse<List<top.aiolife.bankcard.pojo.vo.BankCardCoverTemplateVO.Option>> covers(@RequestParam long bankId, @RequestParam String cardType) {
+        return ApiResponse.success(covers.options(bankId,cardType));
+    }
     @GetMapping public ApiResponse<List<BankCardVO>> list() { return ApiResponse.success(service.list(StpUtil.getLoginIdAsLong())); }
     @GetMapping("/banks") public ApiResponse<List<BankCardVO.Bank>> banks() { return ApiResponse.success(service.banks()); }
     @GetMapping("/{id}") public ApiResponse<BankCardVO> detail(@PathVariable long id) { return ApiResponse.success(service.detail(StpUtil.getLoginIdAsLong(),id)); }

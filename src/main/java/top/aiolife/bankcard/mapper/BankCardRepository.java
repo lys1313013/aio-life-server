@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BankCardRepository {
     private final JdbcTemplate jdbc;
-    private static final String FIELDS = "bank_id,custom_bank_name,card_name,alias,card_type,card_no_ciphertext,card_no_fingerprint,card_no_last4,branch_name,status,opened_date,expiry_month,credit_limit,statement_day,repayment_day,cover_color,cover_source_url,sort_order,remark,update_user,update_time";
+    private static final String FIELDS = "bank_id,custom_bank_name,card_name,alias,card_type,card_no_ciphertext,card_no_fingerprint,card_no_last4,branch_name,status,opened_date,expiry_month,credit_limit,statement_day,repayment_day,cover_template_id,cover_color,cover_source_url,sort_order,remark,update_user,update_time";
     private static String property(String column) {
         String[] parts = column.split("_");
         return parts[0] + Arrays.stream(parts).skip(1)

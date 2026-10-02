@@ -23,6 +23,7 @@ public class BankCardService {
     private final BankCardCrypto crypto;
     private final BankCardDictionaryGuard guard;
     private final JdbcTemplate jdbc;
+    private final BankCardCoverTemplateService templates;
 
     public List<BankCardVO.Bank> banks() {
         return jdbc.query("SELECT d.dict_code,d.dict_label,d.dict_value,d.status,t.status AS type_status FROM sys_dict_data d JOIN sys_dict_type t ON t.dict_id=d.dict_id WHERE t.dict_type='bank' AND t.is_deleted=0 AND d.is_deleted=0 ORDER BY d.dict_sort,d.dict_code",
@@ -47,17 +48,32 @@ public class BankCardService {
         jdbc.query("SELECT id,biz_id FROM file WHERE biz_type=? AND create_user=? AND is_deleted=0 AND is_public=0 AND biz_id IS NOT NULL", rs -> {
             covers.computeIfAbsent(rs.getLong("biz_id"), k -> new ArrayList<>()).add(rs.getString("id"));
         }, COVER_TYPE, userId);
+        Map<Long, Map<String,Object>> templateCovers = new HashMap<>();
+        jdbc.queryForList("""
+            SELECT DISTINCT t.id,t.name,t.source_url,f.id AS file_id FROM bank_card c
+            JOIN bank_card_cover_template t ON t.id=c.cover_template_id AND t.is_deleted=0
+            LEFT JOIN file f ON f.biz_id=t.id AND f.biz_type='bank_card_template_cover' AND f.is_deleted=0
+            WHERE c.user_id=? AND c.is_deleted=0
+            """,userId).forEach(row -> templateCovers.put(((Number)row.get("id")).longValue(),row));
         return repository.list(userId).stream().map(card -> {
             var vo = new BankCardVO();
             BeanUtils.copyProperties(card, vo);
             vo.setId(card.getId().toString());
-            vo.setCardNoFirst4(crypto.decrypt(card.getCardNoCiphertext(), userId, card.getId()).substring(0, 4));
+            if (card.getCardNoCiphertext() != null)
+                vo.setCardNoFirst4(crypto.decrypt(card.getCardNoCiphertext(), userId, card.getId()).substring(0, 4));
             vo.setBankId(card.getBankId() == null ? null : card.getBankId().toString());
             var bank = bankMap.get(vo.getBankId());
             vo.setBankName(card.getBankId() == null ? card.getCustomBankName() : bank == null ? "银行配置不可用" : bank.name());
             vo.setBankCode(bank == null ? "" : bank.code());
             vo.setTags(cardTags.getOrDefault(card.getId(), List.of()));
             vo.setCoverFileIds(covers.getOrDefault(card.getId(), List.of()));
+            vo.setCoverTemplateId(card.getCoverTemplateId()==null ? null : card.getCoverTemplateId().toString());
+            var template=templateCovers.get(card.getCoverTemplateId());
+            if (template!=null) {
+                vo.setCoverTemplateFileId((String)template.get("file_id"));
+                vo.setCoverTemplateName((String)template.get("name"));
+                vo.setCoverSourceUrl((String)template.get("source_url"));
+            }
             return vo;
         }).toList();
     }
@@ -67,6 +83,7 @@ public class BankCardService {
     }
     public String reveal(long userId, long id) {
         var card = repository.owned(userId, id);
+        if (card.getCardNoCiphertext() == null) throw new IllegalArgumentException("尚未填写卡号");
         return crypto.decrypt(card.getCardNoCiphertext(), userId, id);
     }
     private void validateBank(Long bankId, BankCardEntity existing) {
@@ -101,6 +118,9 @@ public class BankCardService {
                 if (!Set.of("https","http").contains(uri.getScheme()) || uri.getHost()==null) throw new IllegalArgumentException();
             } catch (IllegalArgumentException e) { throw new IllegalArgumentException("卡面出处须为完整网页地址"); }
         }
+        if (req.getCoverTemplateId()!=null && !req.getCoverFileIds().isEmpty())
+            throw new IllegalArgumentException("公共卡面与私人上传不能同时选择");
+        templates.validateSelection(existing==null ? null : existing.getCoverTemplateId(),req.getCoverTemplateId(),req.getBankId(),req.getCardType());
         var card = new BankCardEntity();
         BeanUtils.copyProperties(req, card);
         card.setCustomBankName(customBankName);
@@ -122,7 +142,7 @@ public class BankCardService {
         } else if (existing != null) {
             card.setCardNoCiphertext(existing.getCardNoCiphertext()); card.setCardNoFingerprint(existing.getCardNoFingerprint());
             card.setCardNoLast4(existing.getCardNoLast4());
-        } else throw new IllegalArgumentException("请输入卡号");
+        }
         Set<Long> tagIds = new LinkedHashSet<>(req.getTagIds());
         Set<Long> oldTags = new HashSet<>(jdbc.queryForList("SELECT tag_id FROM bank_card_tag_rel WHERE bank_card_id=? AND user_id=? AND is_deleted=0",Long.class,card.getId(),userId));
         Map<Long,BankCardVO.Tag> allowedTags = new HashMap<>();
@@ -150,7 +170,9 @@ public class BankCardService {
     }
     @Transactional(rollbackFor = Exception.class)
     public void delete(long userId,long id) {
-        guard.lockUser(userId); repository.owned(userId,id);
+        guard.lockUser(userId);
+        var existing=repository.owned(userId,id);
+        templates.validateSelection(existing.getCoverTemplateId(),null,null,null);
         jdbc.update("UPDATE bank_card SET is_deleted=1,update_user=?,update_time=CURRENT_TIMESTAMP WHERE id=? AND user_id=? AND is_deleted=0",userId,id,userId);
         jdbc.update("UPDATE bank_card_tag_rel SET is_deleted=1,update_user=?,update_time=CURRENT_TIMESTAMP WHERE bank_card_id=? AND user_id=? AND is_deleted=0",userId,id,userId);
         replaceCover(userId,id,List.of());

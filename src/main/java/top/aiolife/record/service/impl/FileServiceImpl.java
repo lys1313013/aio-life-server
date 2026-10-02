@@ -51,18 +51,33 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
             throw new IllegalArgumentException("文件不能为空");
         }
 
-        String validatedContentType = bizType == FileBizType.BANK_CARD_COVER ? validateBankCover(file) : file.getContentType();
+        boolean template = bizType == FileBizType.BANK_CARD_TEMPLATE_COVER;
+        if (template) StpUtil.checkRole("admin");
+        String validatedContentType = bizType == FileBizType.BANK_CARD_COVER || template ? validateBankCover(file) : file.getContentType();
         long userId = StpUtil.getLoginIdAsLong();
         String bucketName = resolveBucketName();
         String objectName = buildObjectName(userId, bizType, file.getOriginalFilename());
 
+        long storedSize=file.getSize();
         try {
-            minioUtil.uploadFile(bucketName, file, objectName);
+            if (template) {
+                // 无论源文件是 JPEG 还是 PNG，系统卡面统一解码重编码为 PNG。
+                java.awt.image.BufferedImage image;
+                try (var input=file.getInputStream()) { image=javax.imageio.ImageIO.read(input); }
+                if (image==null) throw new IllegalArgumentException("卡面图片无法读取");
+                var output=new java.io.ByteArrayOutputStream();
+                javax.imageio.ImageIO.write(image,"png",output);
+                if (output.size()>5*1024*1024) throw new IllegalArgumentException("处理后的卡面不能超过5MB");
+                byte[] bytes=output.toByteArray();
+                storedSize=bytes.length;
+                minioUtil.putObject(bucketName,objectName,new ByteArrayInputStream(bytes),bytes.length,"image/png");
+                validatedContentType="image/png";
+            } else minioUtil.uploadFile(bucketName, file, objectName);
             registerRollbackCleanup(bucketName, objectName);
 
             FileEntity fileEntity = new FileEntity();
             fileEntity.setFileName(objectName);
-            fileEntity.setFileSize(file.getSize());
+            fileEntity.setFileSize(storedSize);
             fileEntity.setFileType(validatedContentType);
             fileEntity.setBizType(bizType.getBizType());
             fileEntity.setIsPublic(bizType.getVisibility().getValue());
@@ -81,6 +96,7 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
     @Override
     @Transactional(rollbackFor = Exception.class)
     public FileVO uploadFromUrl(String imageUrl, FileBizType bizType) {
+        if (bizType==FileBizType.BANK_CARD_TEMPLATE_COVER) throw new IllegalArgumentException("公共卡面请使用图片上传");
         long userId = StpUtil.getLoginIdAsLong();
         String bucketName = resolveBucketName();
 
@@ -162,6 +178,8 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
     }
 
     private String buildObjectName(long userId, FileBizType bizType, String originalFilename) {
+        if (bizType==FileBizType.BANK_CARD_TEMPLATE_COVER)
+            return "system/bank-card-covers/" + UUID.randomUUID() + ".png";
         String extension = StringUtils.getFilenameExtension(originalFilename);
         String suffix = StringUtils.hasText(extension) && extension.matches("[A-Za-z0-9]{1,10}")
                 ? "." + extension.toLowerCase(Locale.ROOT)
@@ -192,8 +210,8 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
             return;
         }
         // 银行卡卡面只能通过银行卡事务绑定，不能被通用入口迁走。
-        if ("bank_card_cover".equals(bizType) || this.count(new LambdaQueryWrapper<FileEntity>()
-                .in(FileEntity::getId, fileIds).eq(FileEntity::getBizType, "bank_card_cover")) > 0)
+        if ("bank_card_cover".equals(bizType) || "bank_card_template_cover".equals(bizType) || this.count(new LambdaQueryWrapper<FileEntity>()
+                .in(FileEntity::getId, fileIds).in(FileEntity::getBizType, "bank_card_cover", "bank_card_template_cover")) > 0)
             throw new IllegalArgumentException("请通过银行卡页面绑定卡面");
         // 只允许绑定当前用户自己上传的文件
         long userId = StpUtil.getLoginIdAsLong();

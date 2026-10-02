@@ -28,6 +28,9 @@ public class BankCardVO {
     private BigDecimal creditLimit;
     private Integer statementDay;
     private Integer repaymentDay;
+    private String coverTemplateId;
+    private String coverTemplateFileId;
+    private String coverTemplateName;
     private String coverColor;
     private String coverSourceUrl;
     private Integer sortOrder;

@@ -23,6 +23,8 @@ public class BankCardDictionaryGuard {
         var types = jdbc.queryForList("SELECT dict_type FROM sys_dict_type WHERE dict_id=?", String.class, ids.getFirst());
         if (!types.contains("bank")) return;
         if (deleting || (newTypeId != null && !newTypeId.equals(ids.getFirst()))) {
+            var templates = jdbc.queryForList("SELECT id FROM bank_card_cover_template WHERE bank_id=? AND is_deleted=0 FOR UPDATE",Long.class,bankId);
+            if (!templates.isEmpty()) throw new IllegalArgumentException("银行已被公共卡面引用，请停用而非删除或变更类型");
             var references = jdbc.queryForList("SELECT id FROM bank_card WHERE bank_id=? AND is_deleted=0 FOR UPDATE", Long.class, bankId);
             if (!references.isEmpty()) throw new IllegalArgumentException("银行已被银行卡引用，请停用而非删除或变更类型");
         }

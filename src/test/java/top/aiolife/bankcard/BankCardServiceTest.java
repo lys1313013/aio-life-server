@@ -44,9 +44,12 @@ class BankCardServiceTest {
                 .replaceAll("(?m)^--.*$", "").replace("USE `aio_life`;", "")
                 .replaceAll("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", "");
         for(String statement:ddl.split(";")) if(!statement.isBlank()) jdbc.execute(statement);
+        String templateDdl=Files.readString(Path.of("sql/1_init_table/2026-10-02_bank_card_cover_template.sql")).split("-- 兼容")[0]
+                .replace("USE `aio_life`;", "").replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", "");
+        for(String statement:templateDdl.split(";")) if(!statement.isBlank()) jdbc.execute(statement);
         crypto = new BankCardCrypto(Base64.getEncoder().encodeToString(new byte[32]));
         guard = new BankCardDictionaryGuard(jdbc);
-        service = new BankCardService(new BankCardRepository(jdbc),crypto,guard,jdbc);
+        service = new BankCardService(new BankCardRepository(jdbc),crypto,guard,jdbc,new BankCardCoverTemplateService(jdbc,guard));
     }
     BankCardReq request() {
         var req=new BankCardReq(); req.setBankId(20L);req.setCardType("debit");req.setStatus("normal");req.setCardNo(NUMBER);return req;
@@ -79,6 +82,44 @@ class BankCardServiceTest {
         assertEquals("0012",changed.getCardNoFirst4());
         assertEquals("8901",changed.getCardNoLast4());
         assertEquals("0012",service.list(1).getFirst().getCardNoFirst4());
+    }
+    @Test void testOptionalNumber_空卡号可重复新增并在编辑后补填() {
+        var req=request();
+        req.setCardNo(null);
+        var first=create(1,req);
+        long id=Long.parseLong(first.getId());
+        assertNull(first.getCardNoFirst4());
+        assertNull(first.getCardNoLast4());
+        for (String blank : List.of("", " \t ")) {
+            req.setCardNo(blank);
+            assertNotNull(create(1,req));
+        }
+        assertEquals(3,service.list(1).size());
+        assertNull(jdbc.queryForObject("SELECT card_no_ciphertext FROM bank_card WHERE id=?",String.class,id));
+        assertNull(jdbc.queryForObject("SELECT card_no_fingerprint FROM bank_card WHERE id=?",byte[].class,id));
+        assertEquals("尚未填写卡号",assertThrows(IllegalArgumentException.class,()->service.reveal(1,id)).getMessage());
+        assertThrows(IllegalArgumentException.class,()->service.reveal(2,id));
+        req.setAlias("待补充卡号");
+        var edited=tx.execute(s->service.save(1,id,req));
+        assertEquals("待补充卡号",edited.getAlias());
+        assertNull(edited.getCardNoLast4());
+        req.setCardNo(NUMBER);
+        var filled=tx.execute(s->service.save(1,id,req));
+        assertEquals("6222",filled.getCardNoFirst4());
+        assertEquals("1234",filled.getCardNoLast4());
+        assertEquals(NUMBER,service.reveal(1,id));
+        assertThrows(IllegalArgumentException.class,()->create(1,req));
+        req.setCardNo("  ");
+        tx.execute(s->service.save(1,id,req));
+        assertEquals(NUMBER,service.reveal(1,id));
+    }
+    @Test void testOptionalNumber_填写时仍校验格式() {
+        var req=request();
+        for (String invalid : List.of("1234", "abcdefghijkl", "-", "12345678901234567890")) {
+            req.setCardNo(invalid);
+            assertThrows(IllegalArgumentException.class,()->create(1,req));
+        }
+        assertTrue(service.list(1).isEmpty());
     }
     @Test void customBankCanBeCreatedRenamedAndSwitchedWithoutChangingSystemDictionary() {
         var req=request(); req.setBankId(null);req.setCustomBankName("  自定义地方银行  ");
@@ -184,6 +225,106 @@ class BankCardServiceTest {
         file.setBizId(123L);
         assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,1L));
         org.mockito.Mockito.verify(lock,org.mockito.Mockito.atLeastOnce()).checkMenus(1L,"/finance/bank-cards");
+    }
+
+    BankCardCoverTemplateService templates() { return new BankCardCoverTemplateService(jdbc,guard); }
+    BankCardCoverTemplateReq templateReq(String fileId) {
+        var req=new BankCardCoverTemplateReq();
+        req.setName("测试公共卡面");req.setBankId(20L);req.setCardType("debit");req.setFileId(fileId);
+        return req;
+    }
+    void templateFile(String id,long userId) {
+        jdbc.update("INSERT INTO file(id,biz_type,create_user) VALUES(?,?,?)",id,BankCardCoverTemplateService.FILE_TYPE,userId);
+    }
+    long template() {
+        templateFile(FILE_A,1);
+        return Long.parseLong(tx.execute(s->templates().save(1,null,templateReq(FILE_A))).id());
+    }
+    @Test void 公共卡面可被不同用户引用且替换图片同步生效() {
+        long id=template();var req=request();req.setCoverTemplateId(id);
+        var first=create(1,req);var second=create(2,req);
+        assertEquals(FILE_A,first.getCoverTemplateFileId());assertTrue(first.getCoverFileIds().isEmpty());
+        assertEquals(2,templates().detail(id).usageCount());
+        templateFile(FILE_B,2);
+        var edit=templateReq(FILE_B);edit.setName("新版卡面");edit.setSourceUrl("https://example.com/card");
+        tx.execute(s->templates().save(2,id,edit));
+        assertEquals(FILE_B,service.detail(1,Long.parseLong(first.getId())).getCoverTemplateFileId());
+        assertEquals("新版卡面",service.detail(2,Long.parseLong(second.getId())).getCoverTemplateName());
+        assertEquals("https://example.com/card",service.list(1).getFirst().getCoverSourceUrl());
+        assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM file WHERE id=?",Integer.class,FILE_A));
+    }
+    @Test void 停用不允许新选用但既有引用可编辑并显示() {
+        long id=template();var req=request();req.setCoverTemplateId(id);var card=create(1,req);
+        tx.execute(s->templates().setEnabled(1,id,0));
+        assertTrue(templates().options(20,"debit").isEmpty());
+        assertThrows(IllegalArgumentException.class,()->create(2,req));
+        req.setAlias("仍可编辑");
+        assertEquals(FILE_A,tx.execute(s->service.save(1,Long.valueOf(card.getId()),req)).getCoverTemplateFileId());
+        assertThrows(IllegalArgumentException.class,()->tx.executeWithoutResult(s->templates().delete(1,id)));
+        req.setCoverTemplateId(null);
+        tx.execute(s->service.save(1,Long.valueOf(card.getId()),req));
+        tx.executeWithoutResult(s->templates().delete(1,id));
+        assertThrows(IllegalArgumentException.class,()->templates().detail(id));
+    }
+    @Test void 拒绝错配自定义银行私人图片混用和已引用类型修改() {
+        long id=template();var req=request();req.setCoverTemplateId(id);req.setCardType("credit");
+        assertThrows(IllegalArgumentException.class,()->create(1,req));
+        req.setCardType("debit");req.setBankId(null);req.setCustomBankName("测试银行");
+        assertThrows(IllegalArgumentException.class,()->create(1,req));
+        req.setBankId(20L);req.setCustomBankName(null);file(FILE_B,1);req.setCoverFileIds(List.of(FILE_B));
+        assertThrows(IllegalArgumentException.class,()->create(1,req));
+        req.setCoverFileIds(List.of());create(1,req);
+        var edit=templateReq(FILE_A);edit.setCardType("credit");
+        assertThrows(IllegalArgumentException.class,()->tx.execute(s->templates().save(1,id,edit)));
+        assertThrows(IllegalArgumentException.class,()->tx.executeWithoutResult(s->guard.checkBankChange(20,null,true)));
+    }
+    @Test void 私人和公共卡面切换清理私人文件但删卡不删除模板() {
+        long id=template();file(FILE_B,1);var req=request();req.setCoverFileIds(List.of(FILE_B));var card=create(1,req);
+        req.setCoverFileIds(List.of());req.setCoverTemplateId(id);
+        tx.execute(s->service.save(1,Long.valueOf(card.getId()),req));
+        assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM file WHERE id=?",Integer.class,FILE_B));
+        tx.executeWithoutResult(s->service.delete(1,Long.parseLong(card.getId())));
+        assertEquals(0,templates().detail(id).usageCount());
+        assertEquals(0,jdbc.queryForObject("SELECT is_deleted FROM file WHERE id=?",Integer.class,FILE_A));
+    }
+    @Test void 保存失败保留旧图并拒绝绑定其他模板和他人临时图片() {
+        long id=template();templateFile(FILE_B,2);
+        assertThrows(IllegalArgumentException.class,()->tx.execute(s->templates().save(1,id,templateReq(FILE_B))));
+        assertEquals(FILE_A,templates().detail(id).fileId());
+        assertThrows(IllegalArgumentException.class,()->tx.execute(s->templates().save(1,null,templateReq(FILE_A))));
+        var req=templateReq(FILE_A);req.setSourceUrl("javascript:alert(1)");
+        assertThrows(IllegalArgumentException.class,()->tx.execute(s->templates().save(1,id,req)));
+    }
+    @Test void 银行停用后禁止新选用且既有银行卡可继续编辑() {
+        long id=template();var req=request();req.setCoverTemplateId(id);var card=create(1,req);
+        jdbc.update("UPDATE sys_dict_data SET status='1' WHERE dict_code=20");
+        assertTrue(templates().options(20,"debit").isEmpty());
+        assertThrows(IllegalArgumentException.class,()->create(2,req));
+        assertEquals(FILE_A,tx.execute(s->service.save(1,Long.valueOf(card.getId()),req)).getCoverTemplateFileId());
+    }
+    @Test void 公共图片拒绝匿名和临时图读取停用只允许已有引用者() {
+        long id=template();var req=request();req.setCoverTemplateId(id);create(1,req);
+        var menu=org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class);
+        var preview=org.mockito.Mockito.spy(new top.aiolife.record.service.FilePreviewGuard(menu,jdbc));
+        org.mockito.Mockito.doReturn(false).when(preview).isAdmin(org.mockito.ArgumentMatchers.anyLong());
+        var file=new top.aiolife.record.pojo.entity.FileEntity();file.setBizType(BankCardCoverTemplateService.FILE_TYPE);file.setIsPublic(1);
+        assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));
+        assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,2L));
+        file.setBizId(id);
+        assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,2L));
+        tx.execute(s->templates().setEnabled(1,id,0));
+        assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,2L));
+        assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,1L));
+    }
+    @Test void 并发删除与选用不会产生悬空引用() throws Exception {
+        long id=template();var req=request();req.setCoverTemplateId(id);
+        try(var pool=Executors.newFixedThreadPool(2)) {
+            var start=new CountDownLatch(1);
+            var selected=pool.submit(()->{start.await();try{create(1,req);return true;}catch(IllegalArgumentException e){return false;}});
+            var deleted=pool.submit(()->{start.await();try{tx.executeWithoutResult(s->templates().delete(1,id));return true;}catch(IllegalArgumentException e){return false;}});
+            start.countDown();assertNotEquals(selected.get(10,TimeUnit.SECONDS),deleted.get(10,TimeUnit.SECONDS));
+            assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM bank_card c JOIN bank_card_cover_template t ON c.cover_template_id=t.id WHERE c.is_deleted=0 AND t.is_deleted=1",Integer.class));
+        }
     }
 
 }

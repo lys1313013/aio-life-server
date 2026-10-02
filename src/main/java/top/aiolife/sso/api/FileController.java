@@ -79,7 +79,7 @@ public class FileController {
         }
 
         // 用户头像与 CBTI 公共图片供浏览器直接加载，无需登录凭据
-        if (!isPublicObject(bucketName, objectName)) {
+        if (objectName.startsWith("system/bank-card-covers/") || !isPublicObject(bucketName, objectName)) {
             Long userId = filePreviewGuard.resolveLoginUserId();
             if (userId == null) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -87,6 +87,10 @@ public class FileController {
             }
             // 存在文件记录时按公开性/属主校验；历史遗留无记录对象登录即可读
             FileEntity fileEntity = findFileRecord(objectName);
+            if (fileEntity==null && objectName.startsWith("system/bank-card-covers/")) {
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
             if (fileEntity != null) {
                 FilePreviewGuard.AccessDecision decision = filePreviewGuard.check(fileEntity, userId);
                 if (decision == FilePreviewGuard.AccessDecision.UNAUTHORIZED) {
@@ -100,6 +104,10 @@ public class FileController {
             }
         }
 
+        if (objectName.startsWith("system/bank-card-covers/")) {
+            response.setHeader("Cache-Control","no-store");
+            response.setHeader("X-Content-Type-Options","nosniff");
+        }
         try (InputStream inputStream = minioUtil.getFile(bucketName, objectName);
              OutputStream outputStream = response.getOutputStream()) {
 

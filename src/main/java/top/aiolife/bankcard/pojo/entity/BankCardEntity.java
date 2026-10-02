@@ -26,6 +26,7 @@ public class BankCardEntity extends BaseEntity {
     private BigDecimal creditLimit;
     private Integer statementDay;
     private Integer repaymentDay;
+    private Long coverTemplateId;
     private String coverColor;
     private String coverSourceUrl;
     private Integer sortOrder;

@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-/** 全量编辑请求。编辑时 cardNo 留空保留原卡号，coverFileIds 为空清除卡面。 */
+/** 全量编辑请求。cardNo 选填，编辑时留空保留原卡号，coverFileIds 为空清除卡面。 */
 @Getter
 @Setter
 public class BankCardReq {
@@ -25,6 +25,7 @@ public class BankCardReq {
     @Digits(integer = 16, fraction = 2, message = "信用额度最多保留两位小数") private BigDecimal creditLimit;
     @Min(1) @Max(31) private Integer statementDay;
     @Min(1) @Max(31) private Integer repaymentDay;
+    private Long coverTemplateId;
     @Pattern(regexp = "#[0-9a-fA-F]{6}", message = "请选择有效颜色") private String coverColor;
     @Size(max = 1000) private String coverSourceUrl;
     @Min(0) private Integer sortOrder = 0;
