@@ -1,6 +1,8 @@
 package top.aiolife.system.service;
 
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import io.minio.MinioClient;
@@ -11,6 +13,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -135,27 +139,42 @@ class StorageUploadCoordinationTest {
         assertTrue(mutexes.isEmpty());
     }
 
-    @Test void URL上传同样保持锁直到文件事务提交() throws Exception {
-        var server = com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/cover.png", exchange -> {
-            exchange.getResponseHeaders().set("Content-Type", "image/png");
-            exchange.sendResponseHeaders(200, 1); exchange.getResponseBody().write(1); exchange.close();
-        });
-        server.start();
+    @ParameterizedTest
+    @EnumSource(value = FileBizType.class, names = {"MOVIE", "READ_RECORD"})
+    void URL上传同样保持锁直到文件事务提交(FileBizType bizType) throws Exception {
+        String imageUrl = "https://img1.doubanio.com/cover.png";
+        var request = mock(HttpRequest.class, RETURNS_SELF);
+        when(request.header(anyString(), anyString())).thenReturn(request);
+        var response = mock(HttpResponse.class);
+        when(request.execute()).thenReturn(response);
+        when(response.getStatus()).thenReturn(200);
+        when(response.header("Content-Type")).thenReturn("image/png");
+        when(response.bodyBytes()).thenReturn(new byte[]{1});
         doAnswer(call -> { key.set(call.getArgument(1)); return null; }).when(uploads).putObject(anyString(), anyString(), any(), anyLong(), anyString());
         try {
             var result = executor.submit(() -> {
-                try (var login = mockStatic(StpUtil.class)) {
+                // 静态替身仅对当前线程生效；保留真实来源校验、事务和对象锁。
+                try (var http = mockStatic(HttpRequest.class); var login = mockStatic(StpUtil.class)) {
+                    http.when(() -> HttpRequest.get(imageUrl)).thenReturn(request);
                     login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
-                    files.uploadFromUrl("http://127.0.0.1:" + server.getAddress().getPort() + "/cover.png", FileBizType.AVATAR);
+                    files.uploadFromUrl(imageUrl, bizType);
                 }
             });
-            assertTrue(written.await(10, TimeUnit.SECONDS));
+            if (!written.await(10, TimeUnit.SECONDS)) {
+                result.get(1, TimeUnit.SECONDS); // 优先暴露上传线程的实际异常。
+                fail("URL 上传未进入文件保存阶段");
+            }
+            assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM file", Integer.class));
             assertEquals(409, assertThrows(ResponseStatusException.class, () -> admin.delete(key.get())).getStatusCode().value());
             finish.countDown(); result.get(10, TimeUnit.SECONDS);
             assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM file", Integer.class));
+            assertEquals(bizType.getBizType(), jdbc.queryForObject("SELECT biz_type FROM file", String.class));
+            assertEquals(409, assertThrows(ResponseStatusException.class, () -> admin.delete(key.get())).getStatusCode().value());
             verifyNoInteractions(deletes);
-        } finally { finish.countDown(); server.stop(0); }
+            assertTrue(mutexes.values().stream().noneMatch(ReentrantLock::isLocked));
+            verify(request).setFollowRedirects(false);
+            verify(response).close();
+        } finally { finish.countDown(); }
     }
 
     @Test void CBTI直接上传的对象与人格引用更新也在共享锁内() throws Exception {
