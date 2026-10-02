@@ -1,19 +1,21 @@
 package top.aiolife.wardrobe.api;
 
 import cn.dev33.satoken.stp.StpUtil;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.wardrobe.convertor.WardrobeApiConvertor;
 import top.aiolife.wardrobe.pojo.req.CategoryReq;
+import top.aiolife.wardrobe.pojo.req.WardrobeCategorySaveReq;
 import top.aiolife.wardrobe.pojo.req.WardrobeItemReq;
+import top.aiolife.wardrobe.pojo.req.WardrobeItemSaveReq;
 import top.aiolife.wardrobe.pojo.vo.CategoryVO;
 import top.aiolife.wardrobe.pojo.vo.WardrobeItemVO;
 import top.aiolife.wardrobe.pojo.vo.WardrobeStatsVO;
 import top.aiolife.wardrobe.service.IWardrobeCategoryService;
 import top.aiolife.wardrobe.service.IWardrobeItemService;
-
-import java.util.List;
 
 /**
  * 衣柜 Controller
@@ -56,7 +58,8 @@ public class WardrobeController {
      * 保存衣物
      */
     @PostMapping("/items")
-    public ApiResponse<Void> saveItem(@RequestBody WardrobeItemReq req) {
+    public ApiResponse<Void> saveItem(@RequestBody WardrobeItemSaveReq request) {
+        WardrobeItemReq req = WardrobeApiConvertor.INSTANCE.fromWardrobeItemSaveReq(request);
         wardrobeItemService.saveItem(req);
         return ApiResponse.success();
     }
@@ -65,7 +68,8 @@ public class WardrobeController {
      * 更新衣物
      */
     @PutMapping("/items/{id}")
-    public ApiResponse<Void> updateItem(@PathVariable Long id, @RequestBody WardrobeItemReq req) {
+    public ApiResponse<Void> updateItem(@PathVariable Long id, @RequestBody WardrobeItemSaveReq request) {
+        WardrobeItemReq req = WardrobeApiConvertor.INSTANCE.fromWardrobeItemSaveReq(request);
         req.setId(id);
         wardrobeItemService.updateItem(req);
         return ApiResponse.success();
@@ -107,7 +111,8 @@ public class WardrobeController {
      * 保存分类
      */
     @PostMapping("/categories")
-    public ApiResponse<Void> saveCategory(@RequestBody CategoryReq req) {
+    public ApiResponse<Void> saveCategory(@RequestBody WardrobeCategorySaveReq request) {
+        CategoryReq req = WardrobeApiConvertor.INSTANCE.fromWardrobeCategorySaveReq(request);
         wardrobeCategoryService.saveCategory(req);
         return ApiResponse.success();
     }
@@ -116,7 +121,8 @@ public class WardrobeController {
      * 更新分类
      */
     @PutMapping("/categories/{id}")
-    public ApiResponse<Void> updateCategory(@PathVariable Long id, @RequestBody CategoryReq req) {
+    public ApiResponse<Void> updateCategory(@PathVariable Long id, @RequestBody WardrobeCategorySaveReq request) {
+        CategoryReq req = WardrobeApiConvertor.INSTANCE.fromWardrobeCategorySaveReq(request);
         req.setId(id);
         wardrobeCategoryService.updateCategory(req);
         return ApiResponse.success();

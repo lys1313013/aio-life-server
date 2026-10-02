@@ -3,6 +3,10 @@ package top.aiolife.llm.api;
 import cn.dev33.satoken.stp.StpUtil;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+import jakarta.validation.Valid;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -10,16 +14,16 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.llm.convertor.LlmApiConvertor;
 import top.aiolife.llm.pojo.entity.ChatMessageEntity;
-import top.aiolife.llm.pojo.entity.ConversationEntity;
+import top.aiolife.llm.pojo.req.ChatReq;
+import top.aiolife.llm.pojo.req.ChatSessionSaveReq;
+import top.aiolife.llm.pojo.vo.ChatMessageVO;
+import top.aiolife.llm.pojo.vo.ConversationVO;
 import top.aiolife.llm.service.ChatMessageService;
 import top.aiolife.llm.service.ConversationService;
 import top.aiolife.llm.service.LLMKeyService;
 import top.aiolife.llm.service.LLMService;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -33,11 +37,11 @@ public class LLMController {
     private final ConversationService chatSessionService;
 
     @PostMapping("/chat")
-    public ApiResponse<String> chat(@RequestBody Map<String, Object> request) {
+    public ApiResponse<String> chat(@Valid @RequestBody ChatReq request) {
         try {
             long userId = StpUtil.getLoginIdAsLong();
-            String prompt = (String) request.get("prompt");
-            Long conversationId = request.get("conversationId") != null ? Long.valueOf(request.get("conversationId").toString()) : null;
+            String prompt = request.getPrompt();
+            Long conversationId = request.getConversationId();
 
             var llmKey = llmKeyService.getDefaultLLMKey(userId);
             if (llmKey == null) {
@@ -68,13 +72,13 @@ public class LLMController {
     }
 
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter chatStream(@RequestBody Map<String, Object> request, jakarta.servlet.http.HttpServletResponse response) {
+    public SseEmitter chatStream(@Valid @RequestBody ChatReq request, jakarta.servlet.http.HttpServletResponse response) {
         response.setHeader("Cache-Control", "no-cache");
         response.setHeader("X-Accel-Buffering", "no");
 
         long userId = StpUtil.getLoginIdAsLong();
-        String prompt = (String) request.get("prompt");
-        Long conversationId = request.get("conversationId") != null ? Long.valueOf(request.get("conversationId").toString()) : null;
+        String prompt = request.getPrompt();
+        Long conversationId = request.getConversationId();
 
         SseEmitter emitter = new SseEmitter(300000L);
         StringBuilder fullResponse = new StringBuilder();
@@ -158,7 +162,7 @@ public class LLMController {
     }
 
     @GetMapping("/chat/history")
-    public ApiResponse<List<ChatMessageEntity>> getChatHistory(@RequestParam(required = false) Long conversationId) {
+    public ApiResponse<List<ChatMessageVO>> getChatHistory(@RequestParam(required = false) Long conversationId) {
         try {
             long userId = StpUtil.getLoginIdAsLong();
             List<ChatMessageEntity> history;
@@ -167,7 +171,7 @@ public class LLMController {
             } else {
                 history = chatMessageService.listByUserId(userId);
             }
-            return ApiResponse.success(history);
+            return ApiResponse.success(LlmApiConvertor.INSTANCE.toChatMessageVOList(history));
         } catch (Exception e) {
             log.error("Failed to get chat history: {}", e.getMessage(), e);
             return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
@@ -191,10 +195,10 @@ public class LLMController {
     }
 
     @GetMapping("/sessions")
-    public ApiResponse<List<ConversationEntity>> getSessions() {
+    public ApiResponse<List<ConversationVO>> getSessions() {
         try {
             long userId = StpUtil.getLoginIdAsLong();
-            return ApiResponse.success(chatSessionService.listByUserId(userId));
+            return ApiResponse.success(LlmApiConvertor.INSTANCE.toConversationVOList(chatSessionService.listByUserId(userId)));
         } catch (Exception e) {
             log.error("Failed to get chat sessions: {}", e.getMessage(), e);
             return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
@@ -202,11 +206,11 @@ public class LLMController {
     }
 
     @PostMapping("/sessions")
-    public ApiResponse<ConversationEntity> createSession(@RequestBody Map<String, String> request) {
+    public ApiResponse<ConversationVO> createSession(@Valid @RequestBody ChatSessionSaveReq request) {
         try {
             long userId = StpUtil.getLoginIdAsLong();
-            String title = request.get("title");
-            return ApiResponse.success(chatSessionService.createSession(userId, title));
+            String title = request.getTitle();
+            return ApiResponse.success(LlmApiConvertor.INSTANCE.toConversationVO(chatSessionService.createSession(userId, title)));
         } catch (Exception e) {
             log.error("Failed to create chat session: {}", e.getMessage(), e);
             return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
@@ -214,10 +218,10 @@ public class LLMController {
     }
 
     @PutMapping("/sessions/{conversationId}")
-    public ApiResponse<Void> updateSession(@PathVariable Long conversationId, @RequestBody Map<String, String> request) {
+    public ApiResponse<Void> updateSession(@PathVariable Long conversationId, @Valid @RequestBody ChatSessionSaveReq request) {
         try {
             long userId = StpUtil.getLoginIdAsLong();
-            String title = request.get("title");
+            String title = request.getTitle();
             chatSessionService.updateTitle(userId, conversationId, title);
             return ApiResponse.success();
         } catch (Exception e) {

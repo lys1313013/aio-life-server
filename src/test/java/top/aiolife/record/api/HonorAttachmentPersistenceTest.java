@@ -3,6 +3,8 @@ package top.aiolife.record.api;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import java.util.List;
+import java.util.UUID;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +18,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 import top.aiolife.config.MinioConfig;
+import top.aiolife.core.ApiRequestFixtures;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.record.mapper.IFileMapper;
 import top.aiolife.record.mapper.IHonorRecordMapper;
@@ -23,9 +26,6 @@ import top.aiolife.record.pojo.entity.HonorRecordEntity;
 import top.aiolife.record.pojo.vo.FileVO;
 import top.aiolife.record.service.impl.FileServiceImpl;
 import top.aiolife.record.service.impl.HonorRecordServiceImpl;
-
-import java.util.List;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -154,7 +154,7 @@ class HonorAttachmentPersistenceTest {
         request.setId(100L);
         request.setTitle("更新后的荣誉");
         request.setFileIds(fileIds);
-        assertEquals("0", controller.updateHonorRecord(request).getRscode());
+        assertEquals("0", controller.updateHonorRecord(ApiRequestFixtures.request(request, top.aiolife.record.pojo.req.HonorRecordUpdateReq.class)).getRscode());
     }
 
     private List<String> attachmentIds() {

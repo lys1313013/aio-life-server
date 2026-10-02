@@ -1,32 +1,36 @@
 package top.aiolife.record.api;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import top.aiolife.core.query.CommonQuery;
-import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.core.resq.PageResp;
-import top.aiolife.core.util.SysUtil;
-import top.aiolife.record.mapper.ISysDictDataMapper;
-import top.aiolife.record.mapper.ISysDictTypeMapper;
-import top.aiolife.record.pojo.entity.SysDictDataEntity;
-import top.aiolife.record.pojo.entity.SysDictTypeEntity;
-import top.aiolife.record.pojo.query.SysDictTypeQuery;
+import jakarta.validation.Valid;
+import java.util.Collection;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Collection;
-import java.util.List;
+import top.aiolife.core.query.CommonQuery;
+import top.aiolife.core.query.QueryParams;
+import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.resq.PageResp;
+import top.aiolife.core.util.SysUtil;
+import top.aiolife.record.convertor.RecordApiConvertor;
+import top.aiolife.record.mapper.ISysDictDataMapper;
+import top.aiolife.record.mapper.ISysDictTypeMapper;
+import top.aiolife.record.pojo.entity.SysDictDataEntity;
+import top.aiolife.record.pojo.entity.SysDictTypeEntity;
+import top.aiolife.record.pojo.query.SysDictTypeQuery;
+import top.aiolife.record.pojo.req.SysDictDataCreateReq;
+import top.aiolife.record.pojo.req.SysDictDataUpdateReq;
+import top.aiolife.record.pojo.vo.SysDictDataRecordVO;
 
 /**
  * 字典数据Controller
@@ -48,7 +52,7 @@ public class SysDictDataController {
 
     @SaCheckRole("admin")
     @GetMapping("/query")
-    public ApiResponse<PageResp<SysDictDataEntity>> query(
+    public ApiResponse<PageResp<SysDictDataRecordVO>> query(
             @QueryParams CommonQuery<SysDictTypeQuery> query) {
         LambdaQueryWrapper<SysDictDataEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.orderByAsc(SysDictDataEntity::getDictId, SysDictDataEntity::getDictSort);
@@ -75,7 +79,7 @@ public class SysDictDataController {
         Page<SysDictDataEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<SysDictDataEntity> iPage = getBaseMapper().selectPage(page, lambdaQueryWrapper);
         if (iPage.getTotal() == 0) {
-            return ApiResponse.success(PageResp.of());
+            return ApiResponse.success(RecordApiConvertor.INSTANCE.toSysDictDataRecordVOPage(PageResp.of()));
         }
 
         List<SysDictDataEntity> records = iPage.getRecords();
@@ -92,12 +96,13 @@ public class SysDictDataController {
                 }
         });
         PageResp<SysDictDataEntity> objectPageResp = PageResp.of(records, iPage.getTotal());
-        return ApiResponse.success(objectPageResp);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toSysDictDataRecordVOPage(objectPageResp));
     }
 
     @SaCheckRole("admin")
     @PostMapping
-    public ApiResponse<Boolean> add(@RequestBody SysDictDataEntity entity) {
+    public ApiResponse<Boolean> add(@Valid @RequestBody SysDictDataCreateReq entityReq) {
+        SysDictDataEntity entity = RecordApiConvertor.INSTANCE.fromSysDictDataCreateReq(entityReq);
         entity.setDictCode(null);
         entity.setCreateUser(StpUtil.getLoginIdAsLong());
         entity.setUpdateUser(StpUtil.getLoginIdAsLong());
@@ -107,7 +112,8 @@ public class SysDictDataController {
     @SaCheckRole("admin")
     @org.springframework.transaction.annotation.Transactional
     @PutMapping("/{dictCode}")
-    public ApiResponse<Boolean> update(@PathVariable("dictCode") Long dictCode, @RequestBody SysDictDataEntity entity) {
+    public ApiResponse<Boolean> update(@PathVariable("dictCode") Long dictCode, @Valid @RequestBody SysDictDataUpdateReq entityReq) {
+        SysDictDataEntity entity = RecordApiConvertor.INSTANCE.fromSysDictDataUpdateReq(entityReq);
         bankCardGuard.checkBankChange(dictCode, entity.getDictId(), Integer.valueOf(1).equals(entity.getIsDeleted()));
         entity.setDictCode(dictCode);
         entity.setCreateUser(null);

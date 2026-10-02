@@ -1,37 +1,39 @@
 package top.aiolife.record.api;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import top.aiolife.core.constant.ResponseCodeConst;
-import top.aiolife.core.query.CommonQuery;
-import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.core.resq.PageResp;
-import top.aiolife.core.util.SysUtil;
-import top.aiolife.record.mapper.IIncomeMapper;
-import top.aiolife.record.pojo.entity.IncomeEntity;
-import top.aiolife.record.pojo.entity.UserDictDataEntity;
-import top.aiolife.record.pojo.query.IncomeQuery;
-import top.aiolife.record.pojo.vo.IncStaByYearVO;
-import top.aiolife.record.pojo.vo.IncStaticByYearVO;
-import top.aiolife.record.service.UserDictDataService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import top.aiolife.core.query.CommonQuery;
+import top.aiolife.core.query.QueryParams;
+import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.resq.PageResp;
+import top.aiolife.core.util.SysUtil;
+import top.aiolife.record.convertor.RecordApiConvertor;
+import top.aiolife.record.mapper.IIncomeMapper;
+import top.aiolife.record.pojo.entity.IncomeEntity;
+import top.aiolife.record.pojo.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.query.IncomeQuery;
+import top.aiolife.record.pojo.req.IncomeCreateReq;
+import top.aiolife.record.pojo.req.IncomeUpdateReq;
+import top.aiolife.record.pojo.vo.IncStaByYearVO;
+import top.aiolife.record.pojo.vo.IncStaticByYearVO;
+import top.aiolife.record.pojo.vo.IncomeVO;
+import top.aiolife.record.service.UserDictDataService;
 
 /**
  * 类功能描述
@@ -54,7 +56,7 @@ public class IncomeController {
 
 
     @GetMapping("/query")
-    public ApiResponse<PageResp<IncomeEntity>> query(
+    public ApiResponse<PageResp<IncomeVO>> query(
             @QueryParams CommonQuery<IncomeQuery> query) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<IncomeEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -69,19 +71,21 @@ public class IncomeController {
         Page<IncomeEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<IncomeEntity> iPage = incomeMapper.selectPage(page, lambdaQueryWrapper);
         PageResp<IncomeEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
-        return ApiResponse.success(objectPageResp);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toIncomeVOPage(objectPageResp));
     }
 
 
     @PostMapping
-    public ApiResponse<Boolean> add(@Validated @RequestBody IncomeEntity entity) {
+    public ApiResponse<Boolean> add(@Validated @RequestBody IncomeCreateReq entityReq) {
+        IncomeEntity entity = RecordApiConvertor.INSTANCE.fromIncomeCreateReq(entityReq);
         entity.setId(null);
         entity.setUserId(StpUtil.getLoginIdAsLong());
         return ApiResponse.success(getBaseMapper().insert(entity) > 0);
     }
 
     @PutMapping("/{incomeId}")
-    public ApiResponse<Boolean> update(@PathVariable("incomeId") Long incomeId, @Validated @RequestBody IncomeEntity entity) {
+    public ApiResponse<Boolean> update(@PathVariable("incomeId") Long incomeId, @Validated @RequestBody IncomeUpdateReq entityReq) {
+        IncomeEntity entity = RecordApiConvertor.INSTANCE.fromIncomeUpdateReq(entityReq);
         Long userId = StpUtil.getLoginIdAsLong();
         entity.setId(incomeId);
         entity.setUserId(null);
@@ -101,11 +105,11 @@ public class IncomeController {
     }
 
     @GetMapping("/statisticsByYear")
-    public ApiResponse<Object> statisticsByYear() {
+    public ApiResponse<List<IncStaticByYearVO>> statisticsByYear() {
         long userId = StpUtil.getLoginIdAsLong();
         List<IncStaByYearVO> list = incomeMapper.statisticsByYear(userId);
         List<IncStaticByYearVO> ans = new ArrayList<>();
-        
+
         // 获取收入类型字典数据
         List<UserDictDataEntity> dictDataList = userDictDataService.listUserVisibleDictData(userId, "income_type");
         Map<Long, String> dictMap = dictDataList.stream()
@@ -126,9 +130,9 @@ public class IncomeController {
         }
         return ApiResponse.success(ans);
     }
-    
+
     @GetMapping("/statisticsByMonth")
-    public ApiResponse<Object> statisticsByMonth() {
+    public ApiResponse<List<IncStaticByYearVO>> statisticsByMonth() {
         long userId = StpUtil.getLoginIdAsLong();
         List<IncStaByYearVO> list = incomeMapper.statisticsByMonth(userId);
         List<IncStaticByYearVO> ans = new ArrayList<>();

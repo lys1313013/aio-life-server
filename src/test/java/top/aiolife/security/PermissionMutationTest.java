@@ -1,23 +1,23 @@
 package top.aiolife.security;
 
-import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import java.util.List;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import top.aiolife.core.ApiRequestFixtures;
 import top.aiolife.record.api.*;
 import top.aiolife.record.mapper.*;
 import top.aiolife.record.pojo.entity.*;
 import top.aiolife.record.service.*;
 import top.aiolife.record.service.impl.TimeTrackerCategoryServiceImpl;
 import top.aiolife.record.service.impl.UserDictDataServiceImpl;
-
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -86,7 +86,7 @@ class PermissionMutationTest {
             var controller = new TaskController(mock(ITaskService.class), mapper, mock(ITaskDetail.class));
             var input = new TaskEntity(); input.setId(7L); input.setUserId(22L);
             input.setContent("不要写入"); input.setCreateUser(22L); input.setSortOrder(3);
-            controller.reSort(List.of(input));
+            controller.reSort(ApiRequestFixtures.requests(List.of(input), top.aiolife.record.pojo.req.TaskSortReq.class));
             var saved = ArgumentCaptor.forClass(TaskEntity.class);
             var query = ArgumentCaptor.forClass(Wrapper.class);
             verify(mapper).update(saved.capture(), query.capture());
@@ -102,7 +102,7 @@ class PermissionMutationTest {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
             var columns = mock(ITaskColumnMapper.class);
             var column = new TaskColumnEntity(); column.setId(7L); column.setUserId(22L); column.setSortOrder(4);
-            new TaskColumnController(columns, mock(ITaskColumnService.class)).reSort(List.of(column));
+            new TaskColumnController(columns, mock(ITaskColumnService.class)).reSort(ApiRequestFixtures.requests(List.of(column), top.aiolife.record.pojo.req.TaskColumnSortReq.class));
             var savedColumn = ArgumentCaptor.forClass(TaskColumnEntity.class);
             verify(columns).update(savedColumn.capture(), any(Wrapper.class));
             assertNull(savedColumn.getValue().getUserId());
@@ -111,7 +111,7 @@ class PermissionMutationTest {
             var details = mock(ITaskDetail.class);
             var detail = new TaskDetailEntity(); detail.setId(8L); detail.setUserId(22L);
             detail.setTaskId(99L); detail.setContent("不要写入"); detail.setSort(5);
-            new TaskDetailController(details, mock(ITaskService.class)).reSort(List.of(detail));
+            new TaskDetailController(details, mock(ITaskService.class)).reSort(ApiRequestFixtures.requests(List.of(detail), top.aiolife.record.pojo.req.TaskDetailSortReq.class));
             var savedDetail = ArgumentCaptor.forClass(TaskDetailEntity.class);
             verify(details).update(savedDetail.capture(), any(Wrapper.class));
             assertNull(savedDetail.getValue().getUserId()); assertNull(savedDetail.getValue().getTaskId());
@@ -126,10 +126,12 @@ class PermissionMutationTest {
             var service = mock(ITaskDetail.class);
             var controller = new TaskDetailController(service, mock(ITaskService.class));
             var input = new TaskDetailEntity(); input.setId(7L); input.setUserId(22L);
-            controller.update(input);
-            assertEquals(11L, input.getUserId());
+            controller.update(ApiRequestFixtures.request(input, top.aiolife.record.pojo.req.TaskDetailUpdateReq.class));
+            var saved = ArgumentCaptor.forClass(TaskDetailEntity.class);
             var query = ArgumentCaptor.forClass(Wrapper.class);
-            verify(service).update(eq(input), query.capture());
+            verify(service).update(saved.capture(), query.capture());
+            assertEquals(11L, saved.getValue().getUserId());
+            assertEquals(7L, saved.getValue().getId());
             assertTrue(query.getValue().getSqlSegment().contains("user_id"));
         }
     }
@@ -144,7 +146,7 @@ class PermissionMutationTest {
             var controller = new ThoughtController(thoughts, events);
             var input = new ThoughtEntity(); var event = new ThoughtRelaEventEntity();
             event.setId(99L); event.setThoughtId(88L); event.setContent("外来事件"); input.setEvents(List.of(event));
-            assertThrows(IllegalArgumentException.class, () -> controller.update(7L, input));
+            assertThrows(IllegalArgumentException.class, () -> controller.update(7L,ApiRequestFixtures.request(input, top.aiolife.record.pojo.req.ThoughtUpdateReq.class)));
             var saved = ArgumentCaptor.forClass(ThoughtRelaEventEntity.class);
             var query = ArgumentCaptor.forClass(Wrapper.class);
             verify(events).update(saved.capture(), query.capture());
@@ -164,12 +166,14 @@ class PermissionMutationTest {
             performance.setCreateUser(22L); performance.setFileIds(List.of("dummy-file"));
             var performanceMapper = mock(IPerformanceMapper.class);
             assertThrows(IllegalArgumentException.class, () ->
-                    new PerformanceController(performanceMapper, files).updatePerformance(performance));
-            assertEquals(11L, performance.getCreateUser());
+                    new PerformanceController(performanceMapper, files).updatePerformance(ApiRequestFixtures.request(performance, top.aiolife.record.pojo.req.PerformanceUpdateReq.class)));
+            var performanceUpdate = ArgumentCaptor.forClass(PerformanceEntity.class);
+            verify(performanceMapper).update(performanceUpdate.capture(), any(Wrapper.class));
+            assertEquals(11L, performanceUpdate.getValue().getCreateUser());
             var honor = new HonorRecordEntity(); honor.setId(99L); honor.setFileIds(List.of("dummy-file"));
             assertThrows(IllegalArgumentException.class, () ->
                     new HonorRecordController(mock(IHonorRecordMapper.class), mock(IHonorRecordService.class), files)
-                            .updateHonorRecord(honor));
+                            .updateHonorRecord(ApiRequestFixtures.request(honor, top.aiolife.record.pojo.req.HonorRecordUpdateReq.class)));
             verifyNoInteractions(files);
         }
     }
@@ -184,7 +188,7 @@ class PermissionMutationTest {
             var ownedFile = new FileEntity(); ownedFile.setId("31"); ownedFile.setCreateUser(11L);
             when(files.list(any(Wrapper.class))).thenReturn(List.of(ownedFile));
             var input = new PerformanceEntity(); input.setId(7L); input.setFileIds(List.of("31"));
-            new PerformanceController(mapper, files).updatePerformance(input);
+            new PerformanceController(mapper, files).updatePerformance(ApiRequestFixtures.request(input, top.aiolife.record.pojo.req.PerformanceUpdateReq.class));
             var query = ArgumentCaptor.forClass(Wrapper.class);
             verify(files).list(query.capture());
             assertTrue(query.getValue().getSqlSegment().contains("id IN"));
@@ -199,7 +203,7 @@ class PermissionMutationTest {
     void globalNotification_requiresAdmin() throws Exception {
         var role = LeetcodeController.class.getMethod("notifyTodayQuestion").getAnnotation(SaCheckRole.class);
         assertNotNull(role); assertArrayEquals(new String[]{"admin"}, role.value());
-        assertNotNull(ThoughtController.class.getMethod("update", Long.class, ThoughtEntity.class)
+        assertNotNull(ThoughtController.class.getMethod("update", Long.class, top.aiolife.record.pojo.req.ThoughtUpdateReq.class)
                 .getAnnotation(org.springframework.transaction.annotation.Transactional.class));
     }
 }

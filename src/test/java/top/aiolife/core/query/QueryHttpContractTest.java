@@ -1,6 +1,10 @@
 package top.aiolife.core.query;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -13,21 +17,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.core.exception.ExceptionHandle;
-import top.aiolife.record.api.*;
 import top.aiolife.feedback.api.FeedbackController;
 import top.aiolife.feedback.pojo.query.FeedbackAdminQuery;
-import top.aiolife.record.pojo.entity.TimeRecordEntity;
+import top.aiolife.record.api.*;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.query.ExpenseQuery;
 import top.aiolife.record.pojo.query.MovieQuery;
 import top.aiolife.sso.api.AuthController;
 import top.aiolife.sso.api.UserCenterController;
 import top.aiolife.sso.service.IUserService;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
@@ -134,12 +132,13 @@ class QueryHttpContractTest {
         mvc(controller).perform(get("/timeRecord/query").param("date", "2026-09-12")
                         .param("categoryId", "9007199254740993"))
                 .andExpect(status().isOk());
-        ArgumentCaptor<CommonQuery<TimeRecordEntity>> captor = ArgumentCaptor.forClass(CommonQuery.class);
+        ArgumentCaptor<CommonQuery<top.aiolife.record.pojo.query.TimeRecordQuery>> captor = ArgumentCaptor.forClass(CommonQuery.class);
         verify(controller).query(captor.capture());
         assertEquals(1, captor.getValue().getPage());
         assertEquals(50, captor.getValue().getPageSize());
         assertEquals(LocalDate.of(2026, 9, 12), captor.getValue().getCondition().getDate());
-        assertEquals(9007199254740993L, captor.getValue().getCondition().getCategoryId());
+        assertFalse(java.util.Arrays.stream(captor.getValue().getCondition().getClass().getDeclaredFields())
+                .anyMatch(field -> field.getName().equals("categoryId")));
     }
 
     @Test

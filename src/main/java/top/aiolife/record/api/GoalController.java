@@ -3,20 +3,24 @@ package top.aiolife.record.api;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import lombok.AllArgsConstructor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.springframework.web.bind.annotation.*;
-import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.record.mapper.IGoalMapper;
-import top.aiolife.record.pojo.entity.GoalEntity;
-import top.aiolife.record.pojo.req.CommonReq;
-import top.aiolife.record.pojo.enums.ProgressStatusEnum;
-import top.aiolife.record.service.IGoalService;
-
+import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.record.convertor.RecordApiConvertor;
+import top.aiolife.record.mapper.IGoalMapper;
+import top.aiolife.record.pojo.entity.GoalEntity;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
+import top.aiolife.record.pojo.req.CommonReq;
+import top.aiolife.record.pojo.req.GoalCreateReq;
+import top.aiolife.record.pojo.req.GoalUpdateReq;
+import top.aiolife.record.pojo.vo.GoalVO;
+import top.aiolife.record.service.IGoalService;
 
 /**
  * 目标管理控制器
@@ -34,7 +38,7 @@ public class GoalController {
 
     @GetMapping
     @Operation(summary = "查询当前用户的目标", description = "返回目标列表，支持目标类型、进度状态及关键词筛选，按创建时间倒序。")
-    public ApiResponse<List<GoalEntity>> queryGoals(
+    public ApiResponse<List<GoalVO>> queryGoals(
             @Parameter(description = "目标类型：1=年度、2=月度、3=日目标", schema = @Schema(allowableValues = {"1", "2", "3"}))
             @RequestParam(required = false) Integer type,
             @Parameter(description = "进度状态", schema = @Schema(allowableValues = {"not_started", "in_progress", "completed", "on_hold"}))
@@ -52,7 +56,7 @@ public class GoalController {
             queryWrapper.eq(GoalEntity::getStatus, ProgressStatusEnum.fromCode(status));
         }
         if (keyword != null && !keyword.trim().isEmpty()) {
-            queryWrapper.and(wrapper -> 
+            queryWrapper.and(wrapper ->
                 wrapper.like(GoalEntity::getTitle, keyword)
                        .or()
                        .like(GoalEntity::getDescription, keyword)
@@ -61,12 +65,13 @@ public class GoalController {
             );
         }
         queryWrapper.orderByDesc(GoalEntity::getCreateTime);
-        return ApiResponse.success(goalService.list(queryWrapper));
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toGoalVOList(goalService.list(queryWrapper)));
     }
 
     @PostMapping
     @Operation(summary = "创建目标", description = "用户归属和审计信息由服务端设置；parentId 可关联父目标。响应返回创建后的目标及 ID。")
-    public ApiResponse<GoalEntity> createGoal(@RequestBody GoalEntity goalEntity) {
+    public ApiResponse<GoalVO> createGoal(@Valid @RequestBody GoalCreateReq goalEntityReq) {
+        GoalEntity goalEntity = RecordApiConvertor.INSTANCE.fromGoalCreateReq(goalEntityReq);
         long userId = StpUtil.getLoginIdAsLong();
         goalEntity.setUserId(userId);
         goalEntity.setIsDeleted(0);
@@ -75,23 +80,24 @@ public class GoalController {
         goalEntity.setCreateUser(userId);
         goalEntity.setUpdateUser(userId);
         goalMapper.insert(goalEntity);
-        return ApiResponse.success(goalEntity);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toGoalVO(goalEntity));
     }
 
     @PutMapping
     @Operation(summary = "更新目标", description = "请求体携带目标 id，只更新当前用户拥有的目标；用户归属不可修改。")
-    public ApiResponse<GoalEntity> updateGoal(@RequestBody GoalEntity goalEntity) {
+    public ApiResponse<GoalVO> updateGoal(@Valid @RequestBody GoalUpdateReq goalEntityReq) {
+        GoalEntity goalEntity = RecordApiConvertor.INSTANCE.fromGoalUpdateReq(goalEntityReq);
         long userId = StpUtil.getLoginIdAsLong();
         goalEntity.setUpdateTime(LocalDateTime.now());
         goalEntity.setUpdateUser(userId);
         goalEntity.setUserId(null); // 防止修改所属用户
-        
+
         LambdaUpdateWrapper<GoalEntity> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(GoalEntity::getId, goalEntity.getId());
         updateWrapper.eq(GoalEntity::getUserId, userId);
         goalService.update(goalEntity, updateWrapper);
-        
-        return ApiResponse.success(goalEntity);
+
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toGoalVO(goalEntity));
     }
 
     @PostMapping("/batchDelete")

@@ -4,18 +4,23 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
+import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mapper.ITaskMapper;
 import top.aiolife.record.pojo.entity.TaskEntity;
+import top.aiolife.record.pojo.req.TaskCreateReq;
+import top.aiolife.record.pojo.req.TaskSortReq;
+import top.aiolife.record.pojo.req.TaskUpdateReq;
+import top.aiolife.record.pojo.vo.TaskVO;
 import top.aiolife.record.service.ITaskDetail;
 import top.aiolife.record.service.ITaskService;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * 任务控制器
@@ -40,7 +45,7 @@ public class TaskController {
     }
 
     @GetMapping()
-    public ApiResponse<PageResp<TaskEntity>> query(@RequestParam(required = false) Long taskId,
+    public ApiResponse<PageResp<TaskVO>> query(@RequestParam(required = false) Long taskId,
                                                     @RequestParam(defaultValue = "1") int get,
                                                    @RequestParam(defaultValue = "100") int pageSize) {
         Long userId = StpUtil.getLoginIdAsLong();
@@ -63,7 +68,7 @@ public class TaskController {
         });
 
         PageResp<TaskEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
-        return ApiResponse.success(objectPageResp);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskVOPage(objectPageResp));
     }
 
     /**
@@ -72,13 +77,14 @@ public class TaskController {
      * @param entity
      */
     @PostMapping
-    public ApiResponse<TaskEntity> save(@RequestBody TaskEntity entity) {
+    public ApiResponse<TaskVO> save(@Valid @RequestBody TaskCreateReq entityReq) {
+        TaskEntity entity = RecordApiConvertor.INSTANCE.fromTaskCreateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
         entity.setId(null);
         entity.setUserId(userId);
         entity.fillCreateCommonField(userId);
         getBaseMapper().insert(entity);
-        return ApiResponse.success(entity);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskVO(entity));
     }
 
     /**
@@ -87,7 +93,8 @@ public class TaskController {
      * @param entity
      */
     @PutMapping("/{id}")
-    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @RequestBody TaskEntity entity) {
+    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @Valid @RequestBody TaskUpdateReq entityReq) {
+        TaskEntity entity = RecordApiConvertor.INSTANCE.fromTaskUpdateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
         entity.setId(id);
         entity.setUserId(null);
@@ -118,7 +125,8 @@ public class TaskController {
      * @param list 只传id、columnId和sortOrder
      */
     @PostMapping("/reSort")
-    public ApiResponse<Void> reSort(@RequestBody List<TaskEntity> list) {
+    public ApiResponse<Void> reSort(@Valid @RequestBody List<TaskSortReq> requests) {
+        List<TaskEntity> list = requests.stream().map(RecordApiConvertor.INSTANCE::fromTaskSortReq).toList();
         Long userId = StpUtil.getLoginIdAsLong();
         for (TaskEntity entity : list) {
             TaskEntity update = new TaskEntity();

@@ -2,16 +2,19 @@ package top.aiolife.sso.api;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.sso.pojo.entity.MessageEntity;
-import top.aiolife.sso.service.IMessageService;
-
+import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.resq.PageResp;
+import top.aiolife.sso.convertor.SsoApiConvertor;
+import top.aiolife.sso.pojo.entity.MessageEntity;
+import top.aiolife.sso.pojo.req.MessageCreateReq;
+import top.aiolife.sso.pojo.vo.MessageVO;
+import top.aiolife.sso.service.IMessageService;
 
 @RestController
 @RequestMapping("/message")
@@ -21,11 +24,11 @@ public class MessageController {
     private final IMessageService messageService;
 
     @GetMapping("/list")
-    public ApiResponse<List<MessageEntity>> list(
+    public ApiResponse<List<MessageVO>> list(
             @RequestParam(required = false) Boolean isRead) {
         long userId = StpUtil.getLoginIdAsLong();
         List<MessageEntity> messages = messageService.listByUserId(userId, isRead);
-        return ApiResponse.success(messages);
+        return ApiResponse.success(SsoApiConvertor.INSTANCE.toMessageVOList(messages));
     }
 
     @GetMapping("/unread-count")
@@ -52,12 +55,13 @@ public class MessageController {
     }
 
     @PostMapping
-    public ApiResponse<MessageEntity> create(@RequestBody MessageEntity message) {
+    public ApiResponse<MessageVO> create(@Valid @RequestBody MessageCreateReq messageReq) {
+        MessageEntity message = SsoApiConvertor.INSTANCE.fromMessageCreateReq(messageReq);
         long userId = StpUtil.getLoginIdAsLong();
         message.setCreateUser(userId);
         message.setUpdateUser(userId);
         message.setSenderId(userId);
-        return ApiResponse.success(messageService.createMessage(message));
+        return ApiResponse.success(SsoApiConvertor.INSTANCE.toMessageVO(messageService.createMessage(message)));
     }
 
     @DeleteMapping("/{id}")
@@ -69,17 +73,18 @@ public class MessageController {
 
     @SaCheckRole("admin")
     @GetMapping("/admin/list")
-    public ApiResponse<IPage<MessageEntity>> adminList(
+    public ApiResponse<PageResp<MessageVO>> adminList(
             @RequestParam(required = false, defaultValue = "1") Long current,
             @RequestParam(required = false, defaultValue = "10") Long size,
             @RequestParam(required = false) Long userId
     ) {
-        return ApiResponse.success(messageService.adminList(current, size, userId));
+        return ApiResponse.success(SsoApiConvertor.INSTANCE.toMessageVOPage(messageService.adminList(current, size, userId)));
     }
 
     @SaCheckRole("admin")
     @PostMapping("/admin/send")
-    public ApiResponse<Void> adminSend(@RequestBody MessageEntity message) {
+    public ApiResponse<Void> adminSend(@Valid @RequestBody MessageCreateReq messageReq) {
+        MessageEntity message = SsoApiConvertor.INSTANCE.fromMessageCreateReq(messageReq);
         message.setCreateUser(StpUtil.getLoginIdAsLong());
         message.setUpdateUser(StpUtil.getLoginIdAsLong());
         message.setSenderId(StpUtil.getLoginIdAsLong());

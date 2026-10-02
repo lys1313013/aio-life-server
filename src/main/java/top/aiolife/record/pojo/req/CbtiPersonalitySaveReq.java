@@ -1,8 +1,7 @@
 package top.aiolife.record.pojo.req;
 
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 /**
  * CBTI 人格保存请求体
@@ -12,8 +11,6 @@ import java.util.List;
  */
 @Data
 public class CbtiPersonalitySaveReq {
-
-    private Long id;
 
     private String code;
 

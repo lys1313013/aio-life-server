@@ -1,43 +1,47 @@
 package top.aiolife.record.api;
 
-import top.aiolife.core.query.QueryParams;
-import top.aiolife.sso.util.RequestLoginContext;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
-import top.aiolife.core.query.CommonQuery;
-import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.core.resq.PageResp;
-import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
-import top.aiolife.record.pojo.entity.TimeRecordEntity;
-import top.aiolife.record.pojo.entity.UserDictDataEntity;
-import top.aiolife.record.pojo.enums.RelateTypeEnum;
-import top.aiolife.record.enums.DictTypeEnum;
-import top.aiolife.record.pojo.query.TimeWeekQuery;
-import top.aiolife.record.pojo.req.TimeRecordReq;
-import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
-import top.aiolife.record.convertor.TimeRecordConvertor;
-import top.aiolife.record.pojo.vo.RecommendNextVO;
-import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
-import top.aiolife.record.pojo.vo.TimeRecordExerciseVO;
-import top.aiolife.record.pojo.vo.TimeRecordVO;
-import top.aiolife.record.service.IExerciseRecordService;
-import top.aiolife.record.service.ITimeRecordService;
-import top.aiolife.record.service.ITimeTrackerCategoryService;
-import top.aiolife.record.service.UserDictDataService;
-
-import java.time.LocalDate;
+import jakarta.validation.Valid;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.query.CommonQuery;
+import top.aiolife.core.query.QueryParams;
+import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.resq.PageResp;
+import top.aiolife.record.convertor.RecordApiConvertor;
+import top.aiolife.record.convertor.TimeRecordConvertor;
+import top.aiolife.record.enums.DictTypeEnum;
+import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
+import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
+import top.aiolife.record.pojo.entity.TimeRecordEntity;
+import top.aiolife.record.pojo.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.enums.RelateTypeEnum;
+import top.aiolife.record.pojo.query.TimeRecordQuery;
+import top.aiolife.record.pojo.query.TimeWeekQuery;
+import top.aiolife.record.pojo.req.TimeRecordDeleteByDateReq;
+import top.aiolife.record.pojo.req.TimeRecordReq;
+import top.aiolife.record.pojo.req.TimeRecordSaveReq;
+import top.aiolife.record.pojo.vo.RecommendNextVO;
+import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
+import top.aiolife.record.pojo.vo.TimeRecordExerciseVO;
+import top.aiolife.record.pojo.vo.TimeRecordListVO;
+import top.aiolife.record.pojo.vo.TimeRecordVO;
+import top.aiolife.record.service.IExerciseRecordService;
+import top.aiolife.record.service.ITimeRecordService;
+import top.aiolife.record.service.ITimeTrackerCategoryService;
+import top.aiolife.record.service.UserDictDataService;
+import top.aiolife.sso.util.RequestLoginContext;
 
 /**
  * 类功能描述
@@ -61,8 +65,9 @@ public class TimeRecordController {
     }
 
     @GetMapping("/query")
-    public ApiResponse<PageResp<TimeRecordEntity>> query(
-            @QueryParams CommonQuery<TimeRecordEntity> query) {
+    public ApiResponse<PageResp<TimeRecordListVO>> query(
+            @QueryParams CommonQuery<TimeRecordQuery> requestQuery) {
+        CommonQuery<TimeRecordEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromTimeRecordQuery);
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<TimeRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.select(
@@ -82,7 +87,7 @@ public class TimeRecordController {
         Page<TimeRecordEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<TimeRecordEntity> iPage = timeRecordService.page(page, lambdaQueryWrapper);
         PageResp<TimeRecordEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
-        return ApiResponse.success(objectPageResp);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeRecordListVOPage(objectPageResp));
     }
 
     /**
@@ -90,10 +95,10 @@ public class TimeRecordController {
      * @param query 查询参数
      */
     @GetMapping("/queryByDateRange")
-    public ApiResponse<List<TimeRecordEntity>> queryByDateRange(
+    public ApiResponse<List<TimeRecordListVO>> queryByDateRange(
             @QueryParams CommonQuery<TimeWeekQuery> query) {
         List<TimeRecordEntity> list = queryByDateRangeList(query);
-        return ApiResponse.success(list);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeRecordListVOList(list));
     }
 
     /**
@@ -271,18 +276,20 @@ public class TimeRecordController {
                 .eq(ExerciseRecordEntity::getUserId, userId)
                 .list();
         if (!exercises.isEmpty()) secondaryLockGuard.checkMenus(userId, "/record/exercise");
-        vo.setExercises(exercises);
+        vo.setExercises(RecordApiConvertor.INSTANCE.toExerciseRecordVOList(exercises));
 
         return ApiResponse.success(vo);
     }
 
     @PostMapping
-    public ApiResponse<String> save(@RequestBody TimeRecordReq timeRecordReq) {
+    public ApiResponse<String> save(@RequestBody TimeRecordSaveReq request) {
+        TimeRecordReq timeRecordReq = RecordApiConvertor.INSTANCE.fromTimeRecordSaveReq(request);
         return ApiResponse.success(timeRecordService.saveTimeRecord(timeRecordReq));
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<Boolean> update(@PathVariable("id") String id, @RequestBody TimeRecordReq timeRecordReq) {
+    public ApiResponse<Boolean> update(@PathVariable("id") String id, @RequestBody TimeRecordSaveReq request) {
+        TimeRecordReq timeRecordReq = RecordApiConvertor.INSTANCE.fromTimeRecordSaveReq(request);
         timeRecordReq.setId(id);
         timeRecordService.updateTimeRecord(timeRecordReq);
         return ApiResponse.success();
@@ -303,7 +310,8 @@ public class TimeRecordController {
      * @param entity id
      */
     @PostMapping("/deleteByDate")
-    public ApiResponse<Void> deleteByDay(@RequestBody TimeRecordEntity entity) {
+    public ApiResponse<Void> deleteByDay(@Valid @RequestBody TimeRecordDeleteByDateReq entityReq) {
+        TimeRecordEntity entity = RecordApiConvertor.INSTANCE.fromTimeRecordDeleteByDateReq(entityReq);
         timeRecordService.removeByDate(entity.getDate(), StpUtil.getLoginIdAsLong());
         return ApiResponse.success();
     }
@@ -338,17 +346,17 @@ public class TimeRecordController {
      * @param date 日期 yyyy-MM-dd
      */
     @GetMapping("/recommendNext")
-    public ApiResponse<RecommendNextVO> recommendNext(String date) {
+    public ApiResponse<top.aiolife.record.pojo.vo.TimeRecordRecommendationVO> recommendNext(String date) {
         long userId = RequestLoginContext.requireUserId();
         RecommendNextVO result = timeRecordService.recommendNext(userId, date);
-        
+
         // 获取推荐分类
         TimeRecordEntity recommend = result.getRecommend();
         if (recommend == null) {
             log.info("Time next recommendation skipped: userId={}, date={}, reason=NO_REMAINING_TIME", userId, date);
-            return ApiResponse.success(result);
+            return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeRecordRecommendationVO(result));
         }
-        
+
         // 寻找紧邻的上一条记录分类
         Long previousCategoryId = null;
         if (result.getRecords() != null) {
@@ -363,7 +371,7 @@ public class TimeRecordController {
         Long categoryId = timeRecordService.recommendType(userId, date, recommend.getStartTime(), previousCategoryId);
         recommend.setCategoryId(categoryId);
 
-        return ApiResponse.success(result);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeRecordRecommendationVO(result));
     }
 
     /**

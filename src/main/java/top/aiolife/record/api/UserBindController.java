@@ -1,17 +1,21 @@
 package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
+import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.client.DoubanAccountClient;
+import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.req.UserBindCreateReq;
+import top.aiolife.record.pojo.req.UserBindUpdateReq;
 import top.aiolife.record.pojo.vo.DoubanAccountVO;
+import top.aiolife.record.pojo.vo.UserBindVO;
 import top.aiolife.record.service.IUserBindService;
 import top.aiolife.record.service.IWereadService;
 import top.aiolife.record.util.RedisUtil;
-
-import java.util.List;
 
 /**
  * 用户第三方账号绑定接口
@@ -45,7 +49,7 @@ public class UserBindController {
      * 获取当前用户的绑定列表
      */
     @GetMapping("/list")
-    public ApiResponse<List<UserBindEntity>> list(@RequestParam(required = false) Boolean includeToken) {
+    public ApiResponse<List<UserBindVO>> list(@RequestParam(required = false) Boolean includeToken) {
         long userId = StpUtil.getLoginIdAsLong();
         List<UserBindEntity> list = userBindService.getBindsByUserId(userId);
         list.forEach(item -> {
@@ -54,7 +58,7 @@ public class UserBindController {
                 item.setAccessToken(null);
             }
         });
-        return ApiResponse.success(list);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserBindVOList(list));
     }
 
     /**
@@ -69,7 +73,8 @@ public class UserBindController {
      * 新增绑定
      */
     @PostMapping
-    public ApiResponse<Boolean> add(@RequestBody UserBindEntity userBindEntity) {
+    public ApiResponse<Boolean> add(@Valid @RequestBody UserBindCreateReq userBindEntityReq) {
+        UserBindEntity userBindEntity = RecordApiConvertor.INSTANCE.fromUserBindCreateReq(userBindEntityReq);
         long userId = StpUtil.getLoginIdAsLong();
         userBindEntity.setUserId(userId);
 
@@ -99,7 +104,8 @@ public class UserBindController {
      * 更新绑定
      */
     @PutMapping
-    public ApiResponse<Boolean> update(@RequestBody UserBindEntity userBindEntity) {
+    public ApiResponse<Boolean> update(@Valid @RequestBody UserBindUpdateReq userBindEntityReq) {
+        UserBindEntity userBindEntity = RecordApiConvertor.INSTANCE.fromUserBindUpdateReq(userBindEntityReq);
         long userId = StpUtil.getLoginIdAsLong();
         userBindEntity.setUserId(userId);
 
@@ -124,12 +130,12 @@ public class UserBindController {
         }
 
         userBindEntity.fillUpdateCommonField(userId);
-        
+
         // 如果Access Token为空，则保留原值（不更新）
         if (userBindEntity.getAccessToken() == null || userBindEntity.getAccessToken().isEmpty()) {
             userBindEntity.setAccessToken(exist.getAccessToken());
         }
-        
+
         boolean success = userBindService.updateById(userBindEntity);
         evictGithubVisibleCache(userId, exist.getPlatform());
         return ApiResponse.success(success);

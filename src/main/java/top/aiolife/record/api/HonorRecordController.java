@@ -1,22 +1,25 @@
 package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
-import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import jakarta.validation.Valid;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mapper.IHonorRecordMapper;
 import top.aiolife.record.pojo.entity.FileEntity;
 import top.aiolife.record.pojo.entity.HonorRecordEntity;
 import top.aiolife.record.pojo.req.CommonReq;
-import top.aiolife.record.service.IHonorRecordService;
-
-import java.time.LocalDateTime;
+import top.aiolife.record.pojo.req.HonorRecordCreateReq;
+import top.aiolife.record.pojo.req.HonorRecordUpdateReq;
+import top.aiolife.record.pojo.vo.HonorRecordVO;
 import top.aiolife.record.service.IFileService;
-
-import java.util.List;
+import top.aiolife.record.service.IHonorRecordService;
 
 /**
  * 荣誉记录控制器
@@ -35,7 +38,7 @@ public class HonorRecordController {
 
 
     @GetMapping
-    public ApiResponse<List<HonorRecordEntity>> queryHonorRecords() {
+    public ApiResponse<List<HonorRecordVO>> queryHonorRecords() {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<HonorRecordEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(HonorRecordEntity::getUserId, userId);
@@ -47,11 +50,11 @@ public class HonorRecordController {
                 entity.setFiles(fileService.getByBiz("honor_record", entity.getId()));
             }
         }
-        return ApiResponse.success(list);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toHonorRecordVOList(list));
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<HonorRecordEntity> getHonorRecord(@PathVariable Long id) {
+    public ApiResponse<HonorRecordVO> getHonorRecord(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<HonorRecordEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(HonorRecordEntity::getId, id);
@@ -60,12 +63,13 @@ public class HonorRecordController {
         if (entity != null) {
             entity.setFiles(fileService.getByBiz("honor_record", entity.getId()));
         }
-        return ApiResponse.success(entity);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toHonorRecordVO(entity));
     }
 
 
     @PostMapping
-    public ApiResponse<HonorRecordEntity> createHonorRecord(@RequestBody HonorRecordEntity honorRecordEntity) {
+    public ApiResponse<HonorRecordVO> createHonorRecord(@Valid @RequestBody HonorRecordCreateReq honorRecordEntityReq) {
+        HonorRecordEntity honorRecordEntity = RecordApiConvertor.INSTANCE.fromHonorRecordCreateReq(honorRecordEntityReq);
         long userId = StpUtil.getLoginIdAsLong();
         honorRecordEntity.setUserId(userId);
         honorRecordEntity.fillCreateCommonField(userId);
@@ -73,13 +77,14 @@ public class HonorRecordController {
         if (honorRecordEntity.getFileIds() != null && !honorRecordEntity.getFileIds().isEmpty()) {
             fileService.bindBizId(honorRecordEntity.getFileIds(), "honor_record", honorRecordEntity.getId());
         }
-        return ApiResponse.success(honorRecordEntity);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toHonorRecordVO(honorRecordEntity));
     }
 
 
     @PutMapping
     @Transactional(rollbackFor = Exception.class)
-    public ApiResponse<HonorRecordEntity> updateHonorRecord(@RequestBody HonorRecordEntity honorRecordEntity) {
+    public ApiResponse<HonorRecordVO> updateHonorRecord(@Valid @RequestBody HonorRecordUpdateReq honorRecordEntityReq) {
+        HonorRecordEntity honorRecordEntity = RecordApiConvertor.INSTANCE.fromHonorRecordUpdateReq(honorRecordEntityReq);
         long userId = StpUtil.getLoginIdAsLong();
         honorRecordEntity.fillUpdateCommonField(userId);
         honorRecordEntity.setUserId(null);
@@ -103,7 +108,7 @@ public class HonorRecordController {
             fileService.update(removedFiles);
             fileService.bindBizId(fileIds, "honor_record", honorRecordEntity.getId());
         }
-        return ApiResponse.success(honorRecordEntity);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toHonorRecordVO(honorRecordEntity));
     }
 
 
@@ -128,7 +133,7 @@ public class HonorRecordController {
         queryWrapper.eq(HonorRecordEntity::getId, id);
         queryWrapper.eq(HonorRecordEntity::getUserId, userId);
         HonorRecordEntity record = honorRecordService.getOne(queryWrapper);
-        
+
         if (record != null) {
             record.setIsTop(record.getIsTop() == 1 ? 0 : 1);
             record.fillUpdateCommonField(userId);

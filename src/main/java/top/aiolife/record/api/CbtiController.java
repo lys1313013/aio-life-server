@@ -1,8 +1,12 @@
 package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Valid;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
@@ -11,12 +15,8 @@ import top.aiolife.config.CbtiConfig;
 import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.pojo.entity.CbtiPersonalityEntity;
+import top.aiolife.record.pojo.req.CbtiTestReq;
 import top.aiolife.record.service.ICbtiService;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * CBTI 测试控制器
@@ -99,22 +99,11 @@ public class CbtiController {
      * @return 统一返回结构，data 为测试结果（人格、匹配度、维度结果、匹配排行等）
      */
     @PostMapping("/test")
-    public ApiResponse<Map<String, Object>> test(@RequestBody Map<String, Object> body) throws Exception {
+    public ApiResponse<Map<String, Object>> test(@Valid @RequestBody CbtiTestReq body) throws Exception {
         long userId = StpUtil.getLoginIdAsLong();
 
-        Map<Integer, Integer> answers = null;
-        Object answersObj = body.get("answers");
-        if (answersObj != null) {
-            answers = objectMapper.convertValue(answersObj, new TypeReference<Map<Integer, Integer>>() {
-            });
-        }
-
-        Map<String, Object> hiddenAnswers = null;
-        Object hiddenObj = body.get("hiddenAnswers");
-        if (hiddenObj != null) {
-            hiddenAnswers = objectMapper.convertValue(hiddenObj, new TypeReference<Map<String, Object>>() {
-            });
-        }
+        Map<Integer, Integer> answers = body.getAnswers();
+        Map<String, Object> hiddenAnswers = body.getHiddenAnswers();
 
         Map<String, Object> result = cbtiService.testAndSave(userId, answers == null ? Map.of() : answers, hiddenAnswers);
 
@@ -138,7 +127,7 @@ public class CbtiController {
         long userId = StpUtil.getLoginIdAsLong();
         List<Map<String, Object>> list = cbtiService.getUserHistory(userId);
         for (Map<String, Object> item : list) {
-            Object obj = item.get("imageObject");
+            Object obj = item.remove("imageObject");
             if (obj instanceof String objectName && StringUtils.hasText(objectName)) {
                 item.put("imageUrl", buildPreviewUrl(objectName));
             }
@@ -161,6 +150,7 @@ public class CbtiController {
         if (detail == null) {
             return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "记录不存在");
         }
+        detail.remove("userId");
         Object personality = detail.get("personality");
         if (personality instanceof CbtiPersonalityEntity entity) {
             detail.put("personality", toPersonalityView(entity));
@@ -194,7 +184,6 @@ public class CbtiController {
         p.put("techStack", entity.getTechStack());
         p.put("spirit", entity.getSpirit());
         p.put("isSpecial", Objects.equals(entity.getIsSpecial(), 1));
-        p.put("imageObject", entity.getImageObject());
         if (StringUtils.hasText(entity.getImageObject())) {
             p.put("imageUrl", buildPreviewUrl(entity.getImageObject()));
         }

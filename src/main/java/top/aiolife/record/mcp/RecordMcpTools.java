@@ -1,34 +1,35 @@
 package top.aiolife.record.mcp;
 
-import dev.langchain4j.agent.tool.Tool;
-import lombok.RequiredArgsConstructor;
-import top.aiolife.mcp.annotation.McpToolProvider;
-import top.aiolife.record.api.ThoughtController;
-import top.aiolife.record.api.TimeRecordController;
-import top.aiolife.record.api.TimeTrackerCategoryController;
-import top.aiolife.record.api.TaskController;
-import top.aiolife.record.api.TaskDetailController;
-import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
-import top.aiolife.record.pojo.req.ThoughtSaveReq;
-import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
-import top.aiolife.record.pojo.req.TimeRecordReq;
-import top.aiolife.record.mcp.req.TimeRecordSaveMcpReq;
-import top.aiolife.record.mcp.req.TaskDetailSaveMcpReq;
-import top.aiolife.record.mcp.vo.TaskMcpVO;
-import top.aiolife.record.mcp.vo.TaskDetailMcpVO;
-import top.aiolife.record.mcp.vo.TimeTrackerCategoryMcpVO;
-import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
-import cn.hutool.core.bean.BeanUtil;
 import cn.dev33.satoken.stp.StpUtil;
-import top.aiolife.record.pojo.entity.TimeRecordEntity;
-import top.aiolife.record.pojo.entity.TaskEntity;
-import top.aiolife.record.pojo.entity.TaskDetailEntity;
-import top.aiolife.record.service.ITaskService;
-import top.aiolife.record.service.ITimeRecordService;
-
+import cn.hutool.core.bean.BeanUtil;
+import dev.langchain4j.agent.tool.Tool;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import top.aiolife.mcp.annotation.McpToolProvider;
+import top.aiolife.record.api.TaskController;
+import top.aiolife.record.api.TaskDetailController;
+import top.aiolife.record.api.ThoughtController;
+import top.aiolife.record.api.TimeRecordController;
+import top.aiolife.record.api.TimeTrackerCategoryController;
+import top.aiolife.record.mcp.req.TaskDetailSaveMcpReq;
+import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
+import top.aiolife.record.mcp.req.TimeRecordSaveMcpReq;
+import top.aiolife.record.mcp.vo.TaskDetailMcpVO;
+import top.aiolife.record.mcp.vo.TaskMcpVO;
+import top.aiolife.record.mcp.vo.TimeTrackerCategoryMcpVO;
+import top.aiolife.record.pojo.entity.TaskDetailEntity;
+import top.aiolife.record.pojo.entity.TaskEntity;
+import top.aiolife.record.pojo.entity.TimeRecordEntity;
+import top.aiolife.record.pojo.req.ThoughtSaveReq;
+import top.aiolife.record.pojo.req.TimeRecordReq;
+import top.aiolife.record.pojo.vo.TaskDetailVO;
+import top.aiolife.record.pojo.vo.TaskVO;
+import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
+import top.aiolife.record.pojo.vo.TimeTrackerCategoryVO;
+import top.aiolife.record.service.ITaskService;
+import top.aiolife.record.service.ITimeRecordService;
 
 @McpToolProvider
 @RequiredArgsConstructor
@@ -87,7 +88,7 @@ public class RecordMcpTools {
             actualReq.setDate(date);
         }
 
-        timeRecordController.save(actualReq);
+        timeRecordController.save(top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toTimeRecordSaveReq(actualReq));
 
         // 格式化时间并返回给大模型
         String startTimeStr = String.format("%02d:%02d", startTime / 60, startTime % 60);
@@ -103,7 +104,7 @@ public class RecordMcpTools {
 
     @Tool("查询用户的所有时迹分类（含合并的公共分类）")
     public List<TimeTrackerCategoryMcpVO> time_tracker_category_list() {
-        List<TimeTrackerCategoryEntity> items = timeTrackerCategoryController.list().getData();
+        List<TimeTrackerCategoryVO> items = timeTrackerCategoryController.list().getData();
         if (items == null) {
             return List.of();
         }
@@ -117,13 +118,13 @@ public class RecordMcpTools {
 
     @Tool("查询所有任务列表，用于获取任务ID以便后续操作")
     public List<TaskMcpVO> task_list() {
-        List<TaskEntity> items = taskController.query(null, 1, 100).getData().getItems();
+        List<TaskVO> items = taskController.query(null, 1, 100).getData().getItems();
         if (items == null) {
             return List.of();
         }
         return items.stream()
                 .map(t -> {
-                    List<TaskDetailEntity> detailEntities = taskDetailController.list(t.getId()).getData();
+                    List<TaskDetailVO> detailEntities = taskDetailController.list(t.getId()).getData();
                     List<TaskDetailMcpVO> details = detailEntities == null ? List.of() : detailEntities.stream()
                             .map(d -> new TaskDetailMcpVO(d.getId(), d.getContent(), d.getIsCompleted()))
                             .toList();
@@ -137,15 +138,15 @@ public class RecordMcpTools {
         if (req.getTaskId() == null) {
             throw new IllegalArgumentException("任务ID不能为空");
         }
-        
+
         Long userId = StpUtil.getLoginIdAsLong();
         TaskEntity task = taskController.getBaseMapper().selectById(req.getTaskId());
-        
+
         if (task == null || !task.getUserId().equals(userId)) {
             throw new IllegalArgumentException("任务不存在或无权限访问该任务");
         }
-        
-        TaskDetailEntity entity = new TaskDetailEntity();
+
+        top.aiolife.record.pojo.req.TaskDetailCreateReq entity = new top.aiolife.record.pojo.req.TaskDetailCreateReq();
         entity.setTaskId(req.getTaskId());
         entity.setContent(req.getContent());
         // 设置默认值，避免数据库报错或逻辑异常

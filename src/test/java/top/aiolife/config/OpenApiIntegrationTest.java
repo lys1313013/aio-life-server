@@ -1,8 +1,8 @@
 package top.aiolife.config;
 
-import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.SaManager;
 import cn.dev33.satoken.context.SaTokenContext;
+import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.spring.SaTokenContextForSpringInJakartaServlet;
 import cn.dev33.satoken.spring.SaTokenContextRegister;
 import cn.dev33.satoken.stp.StpUtil;
@@ -10,6 +10,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.core.util.PathUtils;
 import io.swagger.v3.oas.annotations.Hidden;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,15 +48,6 @@ import top.aiolife.sso.interceptor.ApiKeyInterceptor;
 import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
 import top.aiolife.sso.interceptor.UserLastActiveInterceptor;
 import top.aiolife.sso.service.IApiKeyService;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -116,8 +115,10 @@ class OpenApiIntegrationTest {
     @Test
     void 文档包含真实泛型响应字符串ID枚举日期格式和JavaDoc() throws Exception {
         JsonNode document = document("/v3/api-docs");
-        JsonNode goal = document.path("components").path("schemas").path("GoalEntity").path("properties");
+        JsonNode goal = document.path("components").path("schemas").path("GoalVO").path("properties");
         assertEquals("string", goal.path("id").path("type").asText());
+        assertFalse(goal.has("userId"));
+        assertFalse(goal.has("isDeleted"));
         assertTrue(goal.path("title").path("description").asText().contains("目标标题"));
         assertTrue(goal.path("status").path("enum").toString().contains("in_progress"));
         assertEquals("2026-09-29 10:30:00", goal.path("startDate").path("example").asText());
@@ -126,7 +127,7 @@ class OpenApiIntegrationTest {
         JsonNode response = resolve(document, document.at("/paths/~1goals/get/responses/200/content/*~1*/schema"));
         if (response.isMissingNode()) response = resolve(document,
                 document.at("/paths/~1goals/get/responses/200/content/application~1json/schema"));
-        assertEquals("#/components/schemas/GoalEntity", response.at("/properties/data/items/$ref").asText());
+        assertEquals("#/components/schemas/GoalVO", response.at("/properties/data/items/$ref").asText());
         assertTrue(response.at("/properties/rscode/description").asText().contains("2001"));
         assertEquals("binary", document.at("/paths/~1file~1download~1{id}/get/responses/200/content/*~1*/schema/format").asText());
     }

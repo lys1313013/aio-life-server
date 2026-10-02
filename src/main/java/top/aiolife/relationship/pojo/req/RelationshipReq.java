@@ -13,7 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RelationshipReq {
-    private Long id;
+
     private String sourcePersonId;
     private String targetPersonId;
     private String relationType;

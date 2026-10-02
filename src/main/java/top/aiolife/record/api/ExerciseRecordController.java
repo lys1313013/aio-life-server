@@ -1,29 +1,32 @@
 package top.aiolife.record.api;
 
-import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import top.aiolife.core.query.CommonQuery;
-import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.core.resq.PageResp;
-import top.aiolife.core.util.SysUtil;
-import top.aiolife.record.mapper.IExerciseRecordMapper;
-import top.aiolife.record.pojo.dto.ExerciseStatisticsDTO;
-import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
-import top.aiolife.record.pojo.req.CommonReq;
-import top.aiolife.record.pojo.vo.ExerciseDashboardSummaryVO;
-import top.aiolife.record.service.IExerciseRecordService;
-
+import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
-
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.query.CommonQuery;
+import top.aiolife.core.query.QueryParams;
+import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.resq.PageResp;
+import top.aiolife.core.util.SysUtil;
+import top.aiolife.record.convertor.RecordApiConvertor;
+import top.aiolife.record.mapper.IExerciseRecordMapper;
+import top.aiolife.record.pojo.dto.ExerciseStatisticsDTO;
+import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
+import top.aiolife.record.pojo.query.ExerciseRecordQuery;
+import top.aiolife.record.pojo.req.CommonReq;
+import top.aiolife.record.pojo.req.ExerciseRecordCreateReq;
+import top.aiolife.record.pojo.req.ExerciseRecordUpdateReq;
+import top.aiolife.record.pojo.vo.ExerciseDashboardSummaryVO;
+import top.aiolife.record.pojo.vo.ExerciseRecordVO;
+import top.aiolife.record.service.IExerciseRecordService;
 
 @Slf4j
 
@@ -50,8 +53,9 @@ public class ExerciseRecordController {
      * 查询运动记录列表
      */
     @GetMapping("/query")
-    public ApiResponse<PageResp<ExerciseRecordEntity>> query(
-            @QueryParams CommonQuery<ExerciseRecordEntity> query) {
+    public ApiResponse<PageResp<ExerciseRecordVO>> query(
+            @QueryParams CommonQuery<ExerciseRecordQuery> requestQuery) {
+        CommonQuery<ExerciseRecordEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromExerciseRecordQuery);
         Long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, userId);
@@ -65,14 +69,15 @@ public class ExerciseRecordController {
         Page<ExerciseRecordEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<ExerciseRecordEntity> iPage = getBaseMapper().selectPage(page, lambdaQueryWrapper);
         PageResp<ExerciseRecordEntity> pageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
-        return ApiResponse.success(pageResp);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toExerciseRecordVOPage(pageResp));
     }
 
     /**
      * 新增运动记录
      */
     @PostMapping
-    public ApiResponse<Boolean> add(@RequestBody ExerciseRecordEntity exerciseRecord) {
+    public ApiResponse<Boolean> add(@Valid @RequestBody ExerciseRecordCreateReq exerciseRecordReq) {
+        ExerciseRecordEntity exerciseRecord = RecordApiConvertor.INSTANCE.fromExerciseRecordCreateReq(exerciseRecordReq);
         Long userId = StpUtil.getLoginIdAsLong();
         exerciseRecord.setUserId(userId);
         exerciseRecord.setCreateUser(userId);
@@ -83,16 +88,17 @@ public class ExerciseRecordController {
      * 修改运动记录
      */
     @PutMapping("/{id}")
-    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @RequestBody ExerciseRecordEntity exerciseRecord) {
+    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @Valid @RequestBody ExerciseRecordUpdateReq exerciseRecordReq) {
+        ExerciseRecordEntity exerciseRecord = RecordApiConvertor.INSTANCE.fromExerciseRecordUpdateReq(exerciseRecordReq);
         long userId = StpUtil.getLoginIdAsLong();
         exerciseRecord.setId(id);
         exerciseRecord.setUserId(null);
         exerciseRecord.setUpdateUser(userId);
-        
+
         LambdaQueryWrapper<ExerciseRecordEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ExerciseRecordEntity::getId, exerciseRecord.getId());
         wrapper.eq(ExerciseRecordEntity::getUserId, userId);
-        
+
         return ApiResponse.success(getBaseMapper().update(exerciseRecord, wrapper) > 0);
     }
 
@@ -110,32 +116,32 @@ public class ExerciseRecordController {
      * 获取运动记录详情
      */
     @GetMapping("/get/{id}")
-    public ApiResponse<ExerciseRecordEntity> get(@PathVariable Long id) {
+    public ApiResponse<ExerciseRecordVO> get(@PathVariable Long id) {
         LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, StpUtil.getLoginIdAsLong());
         lambdaQueryWrapper.eq(ExerciseRecordEntity::getId, id);
-        return ApiResponse.success(getBaseMapper().selectOne(lambdaQueryWrapper));
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toExerciseRecordVO(getBaseMapper().selectOne(lambdaQueryWrapper)));
     }
 
     /**
      * 获取运动记录统计数据（限制时间范围和数据量），用于统计图表
-     * 返回完整的实体对象
+     * 返回业务字段，不包含所属用户或审计字段
      */
     @GetMapping("/statistics")
-    public ApiResponse<List<ExerciseRecordEntity>> getStatistics(@RequestParam Map<String, Object> params) {
+    public ApiResponse<List<ExerciseRecordVO>> getStatistics(@QueryParams top.aiolife.record.pojo.query.ExerciseStatisticsQuery params) {
         Long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, userId);
 
         // 处理查询条件
-        if (params != null && !params.isEmpty()) {
+        if (params != null && params.hasFilters()) {
             // 运动类型
-            Long exerciseTypeId = toExerciseTypeId(params.get("exerciseTypeId"));
+            Long exerciseTypeId = params.getExerciseTypeId();
             lambdaQueryWrapper.eq(exerciseTypeId != null, ExerciseRecordEntity::getExerciseTypeId, exerciseTypeId);
 
             // 日期区间
-            String startDate = (String) params.get("startDate");
-            String endDate = (String) params.get("endDate");
+            String startDate = params.getStartDate();
+            String endDate = params.getEndDate();
             if (SysUtil.isNotEmpty(startDate)) {
                 lambdaQueryWrapper.ge(ExerciseRecordEntity::getExerciseDate, java.time.LocalDate.parse(startDate));
             }
@@ -153,27 +159,27 @@ public class ExerciseRecordController {
         lambdaQueryWrapper.last("LIMIT 1000"); // 限制最多返回1000条记录
 
         List<ExerciseRecordEntity> list = getBaseMapper().selectList(lambdaQueryWrapper);
-        return ApiResponse.success(list);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toExerciseRecordVOList(list));
     }
 
     /**
      * 获取轻量级运动记录统计数据，仅包含统计所需字段
      */
     @GetMapping("/statistics/light")
-    public ApiResponse<List<ExerciseStatisticsDTO>> getLightStatistics(@RequestParam Map<String, Object> params) {
+    public ApiResponse<List<ExerciseStatisticsDTO>> getLightStatistics(@QueryParams top.aiolife.record.pojo.query.ExerciseStatisticsQuery params) {
         Long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, userId);
 
         // 处理查询条件
-        if (params != null && !params.isEmpty()) {
+        if (params != null && params.hasFilters()) {
             // 运动类型
-            Long exerciseTypeId = toExerciseTypeId(params.get("exerciseTypeId"));
+            Long exerciseTypeId = params.getExerciseTypeId();
             lambdaQueryWrapper.eq(exerciseTypeId != null, ExerciseRecordEntity::getExerciseTypeId, exerciseTypeId);
 
             // 日期区间
-            String startDate = (String) params.get("startDate");
-            String endDate = (String) params.get("endDate");
+            String startDate = params.getStartDate();
+            String endDate = params.getEndDate();
             if (SysUtil.isNotEmpty(startDate)) {
                 lambdaQueryWrapper.ge(ExerciseRecordEntity::getExerciseDate, java.time.LocalDate.parse(startDate));
             }
@@ -228,17 +234,4 @@ public class ExerciseRecordController {
         return ApiResponse.success(exerciseRecordService.getDashboardSummary(userId, cursor, safeLimit));
     }
 
-    /**
-     * 兼容 number / 数字字符串两种入参，转换为运动类型ID（Long）
-     */
-    private Long toExerciseTypeId(Object value) {
-        if (value == null) {
-            return null;
-        }
-        try {
-            return Long.valueOf(String.valueOf(value).trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
 }

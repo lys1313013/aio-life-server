@@ -1,16 +1,17 @@
 package top.aiolife.sso.api;
 
 import cn.dev33.satoken.stp.StpUtil;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.sso.convertor.ApiKeyConvertor;
+import top.aiolife.sso.convertor.SsoApiConvertor;
 import top.aiolife.sso.pojo.entity.ApiKeyEntity;
 import top.aiolife.sso.pojo.req.ApiKeyGenerateReq;
+import top.aiolife.sso.pojo.vo.ApiKeyCreatedVO;
 import top.aiolife.sso.pojo.vo.ApiKeyVO;
 import top.aiolife.sso.service.IApiKeyService;
-
-import java.util.List;
 
 /**
  * API Key 管理控制器
@@ -39,9 +40,9 @@ public class ApiKeyController {
      * 生成新的 API Key
      */
     @PostMapping("/generate")
-    public ApiResponse<ApiKeyEntity> generate(@RequestBody ApiKeyGenerateReq req) {
+    public ApiResponse<ApiKeyCreatedVO> generate(@RequestBody ApiKeyGenerateReq req) {
         long userId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(apiKeyService.generateApiKey(userId, req.getRemark(), req.getExpireDays()));
+        return ApiResponse.success(SsoApiConvertor.INSTANCE.toApiKeyCreatedVO(apiKeyService.generateApiKey(userId, req.getRemark(), req.getExpireDays())));
     }
 
     /**

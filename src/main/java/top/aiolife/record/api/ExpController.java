@@ -1,41 +1,44 @@
 package top.aiolife.record.api;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import top.aiolife.core.constant.ResponseCodeConst;
-import top.aiolife.core.constant.StatusConst;
-import top.aiolife.core.query.CommonQuery;
-import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.core.resq.PageResp;
-import top.aiolife.core.util.SysUtil;
-import top.aiolife.record.mapper.IExpenseMapper;
-import top.aiolife.record.pojo.entity.ExpenseEntity;
-import top.aiolife.record.pojo.entity.SysDictDataEntity;
-import top.aiolife.record.pojo.entity.UserDictDataEntity;
-import top.aiolife.record.pojo.query.ExpenseQuery;
-import top.aiolife.record.pojo.req.CommonReq;
-import top.aiolife.record.pojo.vo.ExpStaByYearVO;
-import top.aiolife.record.pojo.vo.ExpStaticByYearVO;
-import top.aiolife.record.service.IExpenseService;
-import top.aiolife.record.service.UserDictDataService;
+import jakarta.validation.Valid;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import top.aiolife.core.constant.ResponseCodeConst;
+import top.aiolife.core.constant.StatusConst;
+import top.aiolife.core.query.CommonQuery;
+import top.aiolife.core.query.QueryParams;
+import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.resq.PageResp;
+import top.aiolife.core.util.SysUtil;
+import top.aiolife.record.convertor.RecordApiConvertor;
+import top.aiolife.record.mapper.IExpenseMapper;
+import top.aiolife.record.pojo.entity.ExpenseEntity;
+import top.aiolife.record.pojo.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.query.ExpenseQuery;
+import top.aiolife.record.pojo.req.CommonReq;
+import top.aiolife.record.pojo.req.ExpenseCreateReq;
+import top.aiolife.record.pojo.req.ExpenseUpdateReq;
+import top.aiolife.record.pojo.vo.ExpStaByYearVO;
+import top.aiolife.record.pojo.vo.ExpStaticByYearVO;
+import top.aiolife.record.pojo.vo.ExpenseVO;
+import top.aiolife.record.service.IExpenseService;
+import top.aiolife.record.service.UserDictDataService;
 
 /**
  * 类功能描述
@@ -50,7 +53,7 @@ import java.util.stream.Collectors;
 public class ExpController {
 
     private UserDictDataService userDictDataService;
-    
+
     private IExpenseService expenseService;
 
     private IExpenseMapper expenseMapper;
@@ -60,7 +63,7 @@ public class ExpController {
     }
 
     @GetMapping("/query")
-    public ApiResponse<PageResp<ExpenseEntity>> query(
+    public ApiResponse<PageResp<ExpenseVO>> query(
             @QueryParams CommonQuery<ExpenseQuery> query) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<ExpenseEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -82,11 +85,12 @@ public class ExpController {
         Page<ExpenseEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<ExpenseEntity> iPage = expenseMapper.selectPage(page, lambdaQueryWrapper);
         PageResp<ExpenseEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
-        return ApiResponse.success(objectPageResp);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toExpenseVOPage(objectPageResp));
     }
 
     @PostMapping
-    public ApiResponse<Boolean> insert(@RequestBody ExpenseEntity entity) {
+    public ApiResponse<Boolean> insert(@Valid @RequestBody ExpenseCreateReq entityReq) {
+        ExpenseEntity entity = RecordApiConvertor.INSTANCE.fromExpenseCreateReq(entityReq);
         Long userId = StpUtil.getLoginIdAsLong();
         entity.setUserId(userId);
         // 新增时，交易金额为空时，默认设置为记账金额
@@ -102,7 +106,8 @@ public class ExpController {
     }
 
     @PutMapping
-    public ApiResponse<Boolean> update(@RequestBody ExpenseEntity entity) {
+    public ApiResponse<Boolean> update(@Valid @RequestBody ExpenseUpdateReq entityReq) {
+        ExpenseEntity entity = RecordApiConvertor.INSTANCE.fromExpenseUpdateReq(entityReq);
         Long userId = StpUtil.getLoginIdAsLong();
         entity.setUserId(userId);
         // 更新时，交易金额为空时，默认设置为记账金额
@@ -122,32 +127,33 @@ public class ExpController {
 
     // 批量新增
     @PostMapping("/saveBatch")
-    public ApiResponse<Boolean> saveBatch(@RequestBody List<ExpenseEntity> list) {
+    public ApiResponse<Boolean> saveBatch(@Valid @RequestBody List<ExpenseCreateReq> requests) {
+        List<ExpenseEntity> list = requests.stream().map(RecordApiConvertor.INSTANCE::fromExpenseCreateReq).toList();
         long userId = StpUtil.getLoginIdAsLong();
-        
+
         // 提取所有有交易号的记录
         List<String> transactionIds = list.stream()
                 .map(ExpenseEntity::getTransactionId)
                 .filter(tid -> tid != null && !tid.trim().isEmpty())
                 .distinct()
                 .toList();
-        
+
         // 用户级别验重：检查交易号是否已存在
         if (!transactionIds.isEmpty()) {
             LambdaQueryWrapper<ExpenseEntity> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(ExpenseEntity::getUserId, userId);
             wrapper.in(ExpenseEntity::getTransactionId, transactionIds);
             List<ExpenseEntity> existingList = getBaseMapper().selectList(wrapper);
-            
+
             if (!existingList.isEmpty()) {
                 List<String> duplicatedIds = existingList.stream()
                         .map(ExpenseEntity::getTransactionId)
                         .toList();
-                return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, 
+                return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL,
                         "交易号已存在: " + String.join(", ", duplicatedIds));
             }
         }
-        
+
         for (ExpenseEntity entity : list) {
             entity.setUserId(userId);
             entity.setCreateUser(userId);
@@ -182,7 +188,7 @@ public class ExpController {
      * 按年度统计支出
      */
     @GetMapping("/statisticsByYear")
-    public ApiResponse<Object> statisticsByYear() {
+    public ApiResponse<List<ExpStaticByYearVO>> statisticsByYear() {
         long userId = StpUtil.getLoginIdAsLong();
         List<ExpStaByYearVO> list = expenseMapper.statisticsByYear(userId);
         List<ExpStaticByYearVO> ans = new ArrayList<>();
@@ -212,7 +218,7 @@ public class ExpController {
      * 按月度统计支出
      */
     @GetMapping("/statisticsByMonth")
-    public ApiResponse<Object> statisticsByMonth() {
+    public ApiResponse<List<ExpStaticByYearVO>> statisticsByMonth() {
         long userId = StpUtil.getLoginIdAsLong();
         List<ExpStaByYearVO> list = expenseMapper.statisticsByMonth(userId);
         List<ExpStaticByYearVO> ans = new ArrayList<>();

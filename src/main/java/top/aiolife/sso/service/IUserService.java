@@ -1,5 +1,6 @@
 package top.aiolife.sso.service;
 
+import java.util.List;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.sso.pojo.entity.UserEntity;
@@ -11,8 +12,6 @@ import top.aiolife.sso.pojo.vo.UserBasicInfoVO;
 import top.aiolife.sso.pojo.vo.UserInfoVO;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
 import top.aiolife.sso.pojo.vo.UserVO;
-
-import java.util.List;
 
 /**
  * 用户服务接口
@@ -87,7 +86,7 @@ public interface IUserService {
     /**
      * 获取用户列表
      */
-    PageResp<UserVO> getUserList(CommonQuery query);
+    PageResp<UserVO> getUserList(CommonQuery<top.aiolife.sso.pojo.query.UserQuery> query);
 
     /**
      * 新增用户

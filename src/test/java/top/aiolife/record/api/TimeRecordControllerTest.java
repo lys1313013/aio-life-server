@@ -2,34 +2,33 @@ package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Test;
+import java.lang.reflect.Proxy;
+import java.time.LocalDate;
+import java.util.List;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.Test;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
-import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
 import top.aiolife.record.pojo.vo.RecommendNextVO;
+import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
 import top.aiolife.record.service.IExerciseRecordService;
 import top.aiolife.record.service.ITimeRecordService;
 import top.aiolife.record.service.ITimeTrackerCategoryService;
 import top.aiolife.record.service.UserDictDataService;
 
-import java.lang.reflect.Proxy;
-import java.time.LocalDate;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TimeRecordControllerTest {
@@ -46,11 +45,11 @@ class TimeRecordControllerTest {
             return result;
         });
 
-        ApiResponse<RecommendNextVO> response = recommendNextAsUser(timeRecordService);
+        var response = recommendNextAsUser(timeRecordService);
 
         assertEquals("0", response.getRscode());
         assertNull(response.getData().getRecommend());
-        assertSame(records, response.getData().getRecords());
+        assertEquals(RecordApiConvertor.INSTANCE.toTimeRecordListVOList(records), response.getData().getRecords());
     }
 
     @Test
@@ -74,14 +73,14 @@ class TimeRecordControllerTest {
             return 20L;
         });
 
-        ApiResponse<RecommendNextVO> response = recommendNextAsUser(timeRecordService);
+        var response = recommendNextAsUser(timeRecordService);
 
         assertEquals("0", response.getRscode());
-        assertSame(recommend, response.getData().getRecommend());
+        assertEquals(RecordApiConvertor.INSTANCE.toTimeRecordListVO(recommend), response.getData().getRecommend());
         assertEquals(20L, recommend.getCategoryId());
     }
 
-    private ApiResponse<RecommendNextVO> recommendNextAsUser(ITimeRecordService timeRecordService) {
+    private ApiResponse<top.aiolife.record.pojo.vo.TimeRecordRecommendationVO> recommendNextAsUser(ITimeRecordService timeRecordService) {
         TimeRecordController controller = new TimeRecordController(org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class), timeRecordService, null, null, null);
         StpLogic originalStpLogic = StpUtil.getStpLogic();
         StpUtil.setStpLogic(new StpLogic("login") {

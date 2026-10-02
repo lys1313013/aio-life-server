@@ -1,9 +1,15 @@
 package top.aiolife.record.mcp;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import io.modelcontextprotocol.spec.McpSchema;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,20 +27,11 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.api.*;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
-import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
 import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.service.ITaskService;
 import top.aiolife.record.service.ITimeRecordService;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
-import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
-
-import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,8 +57,8 @@ public class RecordMcpE2ETest {
             cn.dev33.satoken.dao.SaTokenDaoRedisJackson.class
     })
     @ComponentScan(basePackages = {
-            "top.aiolife.mcp", 
-            "top.aiolife.record.mcp" 
+            "top.aiolife.mcp",
+            "top.aiolife.record.mcp"
     }, excludeFilters = {
             @ComponentScan.Filter(type = org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE, classes = {
                     top.aiolife.mcp.auth.McpSaTokenScope.class
@@ -73,7 +70,7 @@ public class RecordMcpE2ETest {
         public top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard() {
             return org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class);
         }
-        
+
         @Bean
         @Primary
         public cn.dev33.satoken.context.SaTokenContext saTokenContext() {
@@ -133,7 +130,7 @@ public class RecordMcpE2ETest {
                 }
 
                 @Override
-                public ApiResponse<String> save(TimeRecordReq req) {
+                public ApiResponse<String> save(top.aiolife.record.pojo.req.TimeRecordSaveReq req) {
                     return ApiResponse.success("2099999999999999999");
                 }
             };
@@ -271,7 +268,7 @@ public class RecordMcpE2ETest {
         McpSchema.TextContent content = (McpSchema.TextContent) result.content().get(0);
         assertTrue(content.text().contains("保存成功") || content.text().contains("true"));
     }
-    
+
     @Test
     void testCallTimeRecordQueryByDateRange() {
         mcpClient.initialize();

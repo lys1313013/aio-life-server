@@ -1,15 +1,20 @@
 package top.aiolife.record.mcp;
 
-import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.stp.StpLogic;
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
-import org.junit.jupiter.api.BeforeEach;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.record.api.*;
+import top.aiolife.record.mapper.ITaskMapper;
 import top.aiolife.record.mcp.req.TaskDetailSaveMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordSaveMcpReq;
@@ -22,15 +27,7 @@ import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.pojo.req.ThoughtSaveReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
-import top.aiolife.record.service.ITaskService;
 import top.aiolife.record.service.ITimeRecordService;
-import top.aiolife.record.mapper.ITaskMapper;
-import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
-
-import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -80,8 +77,8 @@ class RecordMcpToolsTest {
             }
 
             @Override
-            public ApiResponse<String> save(TimeRecordReq req) {
-                savedTimeRecord = req;
+            public ApiResponse<String> save(top.aiolife.record.pojo.req.TimeRecordSaveReq req) {
+                savedTimeRecord = top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.fromTimeRecordSaveReq(req);
                 return ApiResponse.success("2099999999999999999");
             }
         };
@@ -96,11 +93,11 @@ class RecordMcpToolsTest {
 
         TimeTrackerCategoryController timeTrackerCategoryController = new TimeTrackerCategoryController(null) {
             @Override
-            public ApiResponse<List<TimeTrackerCategoryEntity>> list() {
+            public ApiResponse<List<top.aiolife.record.pojo.vo.TimeTrackerCategoryVO>> list() {
                 TimeTrackerCategoryEntity category = new TimeTrackerCategoryEntity();
                 category.setId(1L);
                 category.setName("Category1");
-                return ApiResponse.success(Collections.singletonList(category));
+                return ApiResponse.success(top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toTimeTrackerCategoryVOList(Collections.singletonList(category)));
             }
         };
 
@@ -144,15 +141,15 @@ class RecordMcpToolsTest {
 
         TaskController taskController = new TaskController(null, null, null) {
             @Override
-            public ApiResponse<PageResp<TaskEntity>> query(Long taskId, int get, int pageSize) {
+            public ApiResponse<PageResp<top.aiolife.record.pojo.vo.TaskVO>> query(Long taskId, int get, int pageSize) {
                 TaskEntity task = new TaskEntity();
                 task.setId(1L);
                 task.setContent("Task1");
                 PageResp<TaskEntity> pageResp = new PageResp<>();
                 pageResp.setItems(Collections.singletonList(task));
-                return ApiResponse.success(pageResp);
+                return ApiResponse.success(top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toTaskVOPage(pageResp));
             }
-            
+
             @Override
             public ITaskMapper getBaseMapper() {
                 return taskMapper;
@@ -161,18 +158,18 @@ class RecordMcpToolsTest {
 
         TaskDetailController taskDetailController = new TaskDetailController(null, null) {
             @Override
-            public ApiResponse<List<TaskDetailEntity>> list(Long taskId) {
+            public ApiResponse<List<top.aiolife.record.pojo.vo.TaskDetailVO>> list(Long taskId) {
                 TaskDetailEntity detail = new TaskDetailEntity();
                 detail.setId(1L);
                 detail.setContent("Detail1");
                 detail.setIsCompleted(0);
-                return ApiResponse.success(Collections.singletonList(detail));
+                return ApiResponse.success(top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toTaskDetailVOList(Collections.singletonList(detail)));
             }
 
             @Override
-            public ApiResponse<TaskDetailEntity> create(TaskDetailEntity entity) {
-                savedTaskDetail = entity;
-                return ApiResponse.success(entity);
+            public ApiResponse<top.aiolife.record.pojo.vo.TaskDetailVO> create(top.aiolife.record.pojo.req.TaskDetailCreateReq request) {
+                savedTaskDetail = top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.fromTaskDetailCreateReq(request);
+                return ApiResponse.success(top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toTaskDetailVO(savedTaskDetail));
             }
         };
 

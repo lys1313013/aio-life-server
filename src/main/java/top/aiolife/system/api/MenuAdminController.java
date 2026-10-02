@@ -3,20 +3,21 @@ package top.aiolife.system.api;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-import top.aiolife.core.constant.ResponseCodeConst;
-import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.sso.mapper.UserMapper;
-import top.aiolife.sso.pojo.entity.UserEntity;
-import top.aiolife.system.pojo.req.MenuSaveReq;
-import top.aiolife.system.pojo.vo.MenuAdminVO;
-import top.aiolife.system.service.IMenuService;
-
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.sso.mapper.UserMapper;
+import top.aiolife.sso.pojo.entity.UserEntity;
+import top.aiolife.system.pojo.req.MenuSaveReq;
+import top.aiolife.system.pojo.req.MenuSortUpdateReq;
+import top.aiolife.system.pojo.req.MenuStatusUpdateReq;
+import top.aiolife.system.pojo.vo.MenuAdminVO;
+import top.aiolife.system.service.IMenuService;
 
 /**
  * 菜单管理控制器
@@ -114,13 +115,9 @@ public class MenuAdminController {
      * @return 统一返回结构，data 为更新后的菜单节点
      */
     @PutMapping("/{id}/status")
-    public ApiResponse<MenuAdminVO> updateStatus(@PathVariable long id, @RequestBody Map<String, Object> body) throws Exception {
+    public ApiResponse<MenuAdminVO> updateStatus(@PathVariable long id, @Valid @RequestBody MenuStatusUpdateReq body) throws Exception {
         long userId = StpUtil.getLoginIdAsLong();
-        Object statusObj = body == null ? null : body.get("status");
-        if (!(statusObj instanceof Number n)) {
-            return ApiResponse.error(ResponseCodeConst.RECODE_PARAM_FAIL, "status 不能为空");
-        }
-        return ApiResponse.success(menuService.updateStatus(id, n.intValue(), userId));
+        return ApiResponse.success(menuService.updateStatus(id, body.getStatus(), userId));
     }
 
     /**
@@ -131,13 +128,9 @@ public class MenuAdminController {
      * @return 统一返回结构，data 为更新后的菜单节点
      */
     @PutMapping("/{id}/sort")
-    public ApiResponse<MenuAdminVO> updateSort(@PathVariable long id, @RequestBody Map<String, Object> body) throws Exception {
+    public ApiResponse<MenuAdminVO> updateSort(@PathVariable long id, @Valid @RequestBody MenuSortUpdateReq body) throws Exception {
         long userId = StpUtil.getLoginIdAsLong();
-        Object sortObj = body == null ? null : body.get("sort");
-        if (!(sortObj instanceof Number n)) {
-            return ApiResponse.error(ResponseCodeConst.RECODE_PARAM_FAIL, "sort 不能为空");
-        }
-        return ApiResponse.success(menuService.updateSort(id, n.intValue(), userId));
+        return ApiResponse.success(menuService.updateSort(id, body.getSort(), userId));
     }
 
     /**

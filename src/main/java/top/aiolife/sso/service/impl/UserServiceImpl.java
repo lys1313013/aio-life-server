@@ -1,23 +1,40 @@
 package top.aiolife.sso.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import top.aiolife.core.cache.SecondaryLockMenuCache;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.record.service.IMailService;
 import top.aiolife.record.util.RedisUtil;
 import top.aiolife.sso.convertor.UserConvertor;
+import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
 import top.aiolife.sso.mapper.LoginLogMapper;
 import top.aiolife.sso.mapper.UserMapper;
+import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
 import top.aiolife.sso.pojo.entity.LoginLogEntity;
 import top.aiolife.sso.pojo.entity.UserEntity;
+import top.aiolife.sso.pojo.entity.UserSecondaryLockMenuEntity;
 import top.aiolife.sso.pojo.req.ChangePasswordReq;
 import top.aiolife.sso.pojo.req.LoginReq;
 import top.aiolife.sso.pojo.req.RegisterReq;
@@ -29,25 +46,6 @@ import top.aiolife.sso.pojo.vo.UserVO;
 import top.aiolife.sso.service.IUserService;
 import top.aiolife.sso.service.LoginSessionService;
 import top.aiolife.sso.util.PasswordUtil;
-import cn.hutool.core.date.DateUtil;
-import org.springframework.beans.factory.annotation.Value;
-
-import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
-import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
-import top.aiolife.sso.pojo.entity.UserSecondaryLockMenuEntity;
-import top.aiolife.core.cache.SecondaryLockMenuCache;
-
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.IntStream;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * 用户服务实现类
@@ -185,9 +183,15 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public PageResp<UserVO> getUserList(CommonQuery query) {
+    public PageResp<UserVO> getUserList(CommonQuery<top.aiolife.sso.pojo.query.UserQuery> query) {
         Page<UserEntity> page = new Page<>(query.getPage(), query.getPageSize());
         LambdaQueryWrapper<UserEntity> wrapper = new LambdaQueryWrapper<>();
+        String keyword = query.getCondition() == null ? null : query.getCondition().getKeyword();
+        if (StringUtils.hasText(keyword)) {
+            wrapper.and(where -> where.like(UserEntity::getUsername, keyword.trim())
+                    .or().like(UserEntity::getNickname, keyword.trim())
+                    .or().like(UserEntity::getEmail, keyword.trim()));
+        }
         wrapper.orderByDesc(UserEntity::getCreateTime);
         userMapper.selectPage(page, wrapper);
 
@@ -293,12 +297,12 @@ public class UserServiceImpl implements IUserService {
         }
 
         checkRateLimit(email, ip);
-        
+
         // 生成验证码
         String code = RandomUtil.randomNumbers(6);
         // 存入Redis，5分钟有效
         redisUtil.set("register:code:" + email, code, 5, TimeUnit.MINUTES);
-        
+
         // 更新频率限制记录
         updateRateLimit(email, ip);
 
@@ -325,10 +329,10 @@ public class UserServiceImpl implements IUserService {
         String code = RandomUtil.randomNumbers(6);
         // 存入Redis，5分钟有效
         redisUtil.set("reset:code:" + email, code, 5, TimeUnit.MINUTES);
-        
+
         // 更新频率限制记录
         updateRateLimit(email, ip);
-        
+
         // 发送邮件
         mailService.sendSimpleEmail(email, "重置密码验证码", "您的验证码是：" + code + "，有效期5分钟。", "reset_pwd", ip);
     }
@@ -475,11 +479,11 @@ public class UserServiceImpl implements IUserService {
         userEntity.setEmail(registerReq.getEmail());
         userEntity.setPassword(registerReq.getPassword());
         userEntity.setRole("user"); // 默认普通用户
-        
+
         String salt = PasswordUtil.getSalt();
         userEntity.setPasswordSalt(salt);
         userEntity.setPassword(PasswordUtil.encryptPassword(userEntity.getPassword(), salt));
-        
+
         userMapper.insert(userEntity);
     }
 

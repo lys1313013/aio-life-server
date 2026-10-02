@@ -1,5 +1,7 @@
 package top.aiolife.llm.service.impl;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -8,9 +10,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import top.aiolife.llm.mapper.LLMKeyMapper;
 import top.aiolife.llm.pojo.entity.LLMKeyEntity;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -61,6 +60,21 @@ class LLMKeyServiceImplTest {
 
         verify(llmKeyMapper, times(1)).updateById(any(LLMKeyEntity.class));
         assertNotNull(testKey.getUpdateTime());
+    }
+
+    @Test
+    void blankApiKey_keepsExistingKey() {
+        var existing = new LLMKeyEntity();
+        existing.setId(testKeyId);
+        existing.setUserId(testUserId);
+        existing.setApiKey("existing-secret");
+        when(llmKeyMapper.selectById(testKeyId)).thenReturn(existing);
+        testKey.setApiKey("  ");
+        llmKeyService.updateLLMKey(testKey);
+        var saved = org.mockito.ArgumentCaptor.forClass(LLMKeyEntity.class);
+        verify(llmKeyMapper).updateById(saved.capture());
+        assertNull(saved.getValue().getApiKey(), "MyBatis ignores null, preserving the stored key");
+        assertEquals("existing-secret", existing.getApiKey());
     }
 
     @Test

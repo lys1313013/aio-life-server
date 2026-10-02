@@ -1,24 +1,30 @@
 package top.aiolife.record.api;
 
-import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.validation.Valid;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.query.CommonQuery;
+import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.core.util.SysUtil;
-
+import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mapper.UserDictDataMapper;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.query.UserDictDataQuery;
+import top.aiolife.record.pojo.req.UserDictDataAdminCreateReq;
+import top.aiolife.record.pojo.req.UserDictDataAdminUpdateReq;
+import top.aiolife.record.pojo.req.UserDictDataCreateReq;
 import top.aiolife.record.pojo.req.UserDictDataReSortReq;
+import top.aiolife.record.pojo.req.UserDictDataUpdateReq;
 import top.aiolife.record.pojo.vo.UserDictDataSortVO;
+import top.aiolife.record.pojo.vo.UserDictDataVO;
 import top.aiolife.record.service.UserDictDataService;
-
-import java.util.List;
 
 /**
  * 用户字典数据Controller
@@ -34,7 +40,8 @@ public class UserDictDataController {
     private UserDictDataService userDictDataService;
 
     @GetMapping("/query")
-    public ApiResponse<PageResp<UserDictDataEntity>> query(@QueryParams CommonQuery<UserDictDataEntity> query) {
+    public ApiResponse<PageResp<UserDictDataVO>> query(@QueryParams CommonQuery<UserDictDataQuery> requestQuery) {
+        CommonQuery<UserDictDataEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromUserDictDataQuery);
         Long userId = StpUtil.getLoginIdAsLong();
 
         UserDictDataEntity condition = query.getCondition();
@@ -63,34 +70,36 @@ public class UserDictDataController {
         int total = dataList.size();
         int fromIndex = (current - 1) * size;
         int toIndex = Math.min(fromIndex + size, total);
-        
+
         List<UserDictDataEntity> pageList = new java.util.ArrayList<>();
         if (fromIndex < total) {
             pageList = dataList.subList(fromIndex, toIndex);
         }
 
         PageResp<UserDictDataEntity> pageResp = PageResp.of(pageList, (long) total);
-        return ApiResponse.success(pageResp);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserDictDataVOPage(pageResp));
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<UserDictDataEntity> getById(@PathVariable("id") Long id) {
+    public ApiResponse<UserDictDataVO> getById(@PathVariable("id") Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<UserDictDataEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(UserDictDataEntity::getId, id);
         queryWrapper.in(UserDictDataEntity::getUserId, userId, 0L);
-        return ApiResponse.success(userDictDataMapper.selectOne(queryWrapper));
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserDictDataVO(userDictDataMapper.selectOne(queryWrapper)));
     }
 
     @PostMapping
-    public ApiResponse<Boolean> insert(@RequestBody UserDictDataEntity entity) {
+    public ApiResponse<Boolean> insert(@Valid @RequestBody UserDictDataCreateReq entityReq) {
+        UserDictDataEntity entity = RecordApiConvertor.INSTANCE.fromUserDictDataCreateReq(entityReq);
         Long userId = StpUtil.getLoginIdAsLong();
         userDictDataService.createDictData(entity, userId);
         return ApiResponse.success(true);
     }
 
     @PutMapping
-    public ApiResponse<Boolean> update(@RequestBody UserDictDataEntity entity) {
+    public ApiResponse<Boolean> update(@Valid @RequestBody UserDictDataUpdateReq entityReq) {
+        UserDictDataEntity entity = RecordApiConvertor.INSTANCE.fromUserDictDataUpdateReq(entityReq);
         Long userId = StpUtil.getLoginIdAsLong();
         userDictDataService.updateDictData(entity.getId(), entity, userId);
         return ApiResponse.success(true);
@@ -107,9 +116,10 @@ public class UserDictDataController {
 
     @cn.dev33.satoken.annotation.SaCheckRole("admin")
     @GetMapping("/admin/query")
-    public ApiResponse<PageResp<UserDictDataEntity>> adminQuery(@QueryParams CommonQuery<UserDictDataEntity> query) {
+    public ApiResponse<PageResp<UserDictDataVO>> adminQuery(@QueryParams CommonQuery<UserDictDataQuery> requestQuery) {
+        CommonQuery<UserDictDataEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromUserDictDataQuery);
         LambdaQueryWrapper<UserDictDataEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        
+
         // 强制只能查询基础值 (userId = 0)
         lambdaQueryWrapper.eq(UserDictDataEntity::getUserId, 0L);
 
@@ -130,12 +140,13 @@ public class UserDictDataController {
         Page<UserDictDataEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<UserDictDataEntity> iPage = userDictDataMapper.selectPage(page, lambdaQueryWrapper);
         PageResp<UserDictDataEntity> pageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
-        return ApiResponse.success(pageResp);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserDictDataVOPage(pageResp));
     }
 
     @cn.dev33.satoken.annotation.SaCheckRole("admin")
     @PostMapping("/admin")
-    public ApiResponse<Boolean> adminInsert(@RequestBody UserDictDataEntity entity) {
+    public ApiResponse<Boolean> adminInsert(@Valid @RequestBody UserDictDataAdminCreateReq entityReq) {
+        UserDictDataEntity entity = RecordApiConvertor.INSTANCE.fromUserDictDataAdminCreateReq(entityReq);
         // userId = 0L 代表基础值
         entity.setUserId(0L);
         entity.fillCreateCommonField(0L);
@@ -145,7 +156,8 @@ public class UserDictDataController {
 
     @cn.dev33.satoken.annotation.SaCheckRole("admin")
     @PutMapping("/admin/{id}")
-    public ApiResponse<Boolean> adminUpdate(@PathVariable("id") Long id, @RequestBody UserDictDataEntity entity) {
+    public ApiResponse<Boolean> adminUpdate(@PathVariable("id") Long id, @Valid @RequestBody UserDictDataAdminUpdateReq entityReq) {
+        UserDictDataEntity entity = RecordApiConvertor.INSTANCE.fromUserDictDataAdminUpdateReq(entityReq);
         UserDictDataEntity target = userDictDataService.getById(id);
         if (target == null || target.getUserId() != 0L) {
             throw new RuntimeException("只能修改基础值");

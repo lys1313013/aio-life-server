@@ -2,6 +2,7 @@ package top.aiolife.record.api;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import top.aiolife.core.ApiRequestFixtures;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.record.mapper.ITaskColumnMapper;
 import top.aiolife.record.pojo.entity.TaskColumnEntity;
@@ -33,7 +34,7 @@ class TaskColumnControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new TaskColumnEntity());
 
-        var response = taskColumnController.query(query);
+        var response = taskColumnController.query(ApiRequestFixtures.query(query, top.aiolife.record.pojo.query.TaskColumnQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);

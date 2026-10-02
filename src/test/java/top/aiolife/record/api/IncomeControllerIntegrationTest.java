@@ -1,14 +1,14 @@
 package top.aiolife.record.api;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import top.aiolife.core.ApiRequestFixtures;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.record.mapper.IIncomeMapper;
 import top.aiolife.record.pojo.entity.IncomeEntity;
 import top.aiolife.record.pojo.query.IncomeQuery;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,7 +37,7 @@ class IncomeControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new IncomeQuery());
 
-        var response = incomeController.query(query);
+        var response = incomeController.query(ApiRequestFixtures.query(query, top.aiolife.record.pojo.query.IncomeQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);

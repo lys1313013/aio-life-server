@@ -1,14 +1,16 @@
 package top.aiolife.record.api;
 
-import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.resq.PageResp;
+import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.pojo.query.MovieQuery;
-import top.aiolife.record.pojo.req.MovieReq;
 import top.aiolife.record.pojo.req.DoubanMovieImportReq;
+import top.aiolife.record.pojo.req.MovieCreateReq;
+import top.aiolife.record.pojo.req.MovieReq;
 import top.aiolife.record.pojo.vo.DoubanMovieImportPreviewVO;
 import top.aiolife.record.pojo.vo.DoubanMovieImportResultVO;
 import top.aiolife.record.pojo.vo.MovieVO;
@@ -32,12 +34,14 @@ public class MovieController {
     private final IDoubanMovieImportService doubanMovieImportService;
 
     @GetMapping("/page")
-    public ApiResponse<Page<MovieVO>> pageList(@QueryParams MovieQuery query) {
-        return ApiResponse.success(movieService.pageList(query));
+    public ApiResponse<PageResp<MovieVO>> pageList(@QueryParams MovieQuery query) {
+        var page = movieService.pageList(query);
+        return ApiResponse.success(PageResp.of(page.getRecords(), page.getTotal()));
     }
 
     @PostMapping
-    public ApiResponse<Void> save(@RequestBody MovieReq req) {
+    public ApiResponse<Void> save(@RequestBody MovieCreateReq request) {
+        MovieReq req = RecordApiConvertor.INSTANCE.fromMovieCreateReq(request);
         movieService.saveRecord(req);
         return ApiResponse.success();
     }

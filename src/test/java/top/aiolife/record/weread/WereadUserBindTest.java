@@ -2,15 +2,17 @@ package top.aiolife.record.weread;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson2.JSON;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.test.util.ReflectionTestUtils;
+import top.aiolife.core.ApiRequestFixtures;
 import top.aiolife.record.api.UserBindController;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.service.IUserBindService;
 import top.aiolife.record.service.IWereadService;
-import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -56,7 +58,7 @@ class WereadUserBindTest {
     void add_绑定入口复用微信读书连接服务() {
         try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            controller.add(binding());
+            controller.add(ApiRequestFixtures.request(binding(), top.aiolife.record.pojo.req.UserBindCreateReq.class));
             verify(weread).connect("wrk-test");
             verify(binds, never()).save(any());
         }
@@ -68,7 +70,7 @@ class WereadUserBindTest {
         var request = binding(); request.setAccessToken(""); request.setMetaFields("{}");
         try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            controller.update(request);
+            controller.update(ApiRequestFixtures.request(request, top.aiolife.record.pojo.req.UserBindUpdateReq.class));
             verifyNoInteractions(weread);
             verify(binds, never()).updateById(any());
         }
@@ -79,7 +81,7 @@ class WereadUserBindTest {
         when(binds.getById(11L)).thenReturn(binding());
         try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            controller.update(binding());
+            controller.update(ApiRequestFixtures.request(binding(), top.aiolife.record.pojo.req.UserBindUpdateReq.class));
             verify(weread).connect("wrk-test");
             verify(binds, never()).updateById(any());
         }
@@ -91,7 +93,7 @@ class WereadUserBindTest {
         var request = binding(); request.setPlatform("github");
         try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            controller.update(request);
+            controller.update(ApiRequestFixtures.request(request, top.aiolife.record.pojo.req.UserBindUpdateReq.class));
             verifyNoInteractions(weread);
             verify(binds, never()).updateById(any());
         }
@@ -115,7 +117,7 @@ class WereadUserBindTest {
         var request = binding(); request.setPlatform("WeRead");
         try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            controller.add(request);
+            controller.add(ApiRequestFixtures.request(request, top.aiolife.record.pojo.req.UserBindCreateReq.class));
             verify(weread).connect("wrk-test");
             verify(binds, never()).save(any());
         }

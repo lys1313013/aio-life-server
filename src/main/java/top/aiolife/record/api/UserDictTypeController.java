@@ -1,17 +1,16 @@
 package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
+import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.record.enums.DictTypeEnum;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.entity.UserDictTypeEntity;
 import top.aiolife.record.pojo.vo.UserDictTypeDetailVO;
 import top.aiolife.record.service.UserDictDataService;
-import top.aiolife.record.enums.DictTypeEnum;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * 用户字典类型Controller
@@ -48,8 +47,8 @@ public class UserDictTypeController {
         List<UserDictDataEntity> dataList = userDictDataService.listUserVisibleDictData(userId, dictType);
 
         UserDictTypeDetailVO detailVO = new UserDictTypeDetailVO();
-        detailVO.setUserDictTypeEntity(typeVO);
-        detailVO.setDictDetailList(dataList);
+        detailVO.setUserDictTypeEntity(top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toUserDictTypeVO(typeVO));
+        detailVO.setDictDetailList(top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toUserDictDataVOList(dataList));
 
         return ApiResponse.success(detailVO);
     }

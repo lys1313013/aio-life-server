@@ -4,16 +4,6 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.membership.mapper.IMembershipMapper;
-import top.aiolife.membership.pojo.entity.MembershipRecordEntity;
-import top.aiolife.membership.pojo.req.MembershipReq;
-import top.aiolife.membership.pojo.vo.MembershipStatsVO;
-import top.aiolife.membership.pojo.vo.MembershipVO;
-import top.aiolife.membership.service.IMembershipService;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -21,6 +11,17 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
+import lombok.AllArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.membership.convertor.MembershipApiConvertor;
+import top.aiolife.membership.mapper.IMembershipMapper;
+import top.aiolife.membership.pojo.entity.MembershipRecordEntity;
+import top.aiolife.membership.pojo.req.MembershipCreateReq;
+import top.aiolife.membership.pojo.req.MembershipReq;
+import top.aiolife.membership.pojo.vo.MembershipStatsVO;
+import top.aiolife.membership.pojo.vo.MembershipVO;
+import top.aiolife.membership.service.IMembershipService;
 
 /**
  * 会员记录控制器
@@ -95,7 +96,8 @@ public class MembershipController {
     }
 
     @PostMapping
-    public ApiResponse<MembershipVO> create(@RequestBody MembershipReq req) {
+    public ApiResponse<MembershipVO> create(@RequestBody MembershipCreateReq request) {
+        MembershipReq req = MembershipApiConvertor.INSTANCE.fromMembershipCreateReq(request);
         long userId = StpUtil.getLoginIdAsLong();
         normalizeCost(req);
         MembershipRecordEntity entity = new MembershipRecordEntity();

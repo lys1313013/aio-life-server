@@ -1,10 +1,8 @@
 package top.aiolife.record.pojo.vo;
 
-import top.aiolife.record.pojo.entity.SysDictTypeEntity;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.List;
 
 /**
  * 通用字典返回值
@@ -15,7 +13,7 @@ import java.util.List;
 @Getter
 @Setter
 public class SysDictTypeDetailVO {
-    private SysDictTypeEntity sysDictTypeEntity;
+    private SysDictTypeVO sysDictTypeEntity;
 
     /**
      * 明细数据

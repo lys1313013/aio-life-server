@@ -1,26 +1,31 @@
 package top.aiolife.record.api;
 
-import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import jakarta.validation.Valid;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.query.CommonQuery;
+import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.core.util.SysUtil;
+import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.convertor.SysDictDataConvertor;
 import top.aiolife.record.mapper.ISysDictDataMapper;
 import top.aiolife.record.mapper.ISysDictTypeMapper;
 import top.aiolife.record.pojo.entity.SysDictDataEntity;
 import top.aiolife.record.pojo.entity.SysDictTypeEntity;
+import top.aiolife.record.pojo.query.SysDictTypeFilterQuery;
+import top.aiolife.record.pojo.req.SysDictTypeCreateReq;
+import top.aiolife.record.pojo.req.SysDictTypeUpdateReq;
 import top.aiolife.record.pojo.vo.SysDictDataVO;
 import top.aiolife.record.pojo.vo.SysDictTypeDetailVO;
-
-import java.util.List;
+import top.aiolife.record.pojo.vo.SysDictTypeVO;
 
 /**
  * 数据字典Controller
@@ -56,7 +61,7 @@ public class SysDictTypeController {
         typeQueryWrapper.orderByAsc(SysDictDataEntity::getDictSort);
         List<SysDictDataEntity> sysDictDataEntityList = sysDictDataMapper.selectList(typeQueryWrapper);
         SysDictTypeDetailVO sysDictTypeDetailVO = new SysDictTypeDetailVO();
-        sysDictTypeDetailVO.setSysDictTypeEntity(sysDictTypeEntity);
+        sysDictTypeDetailVO.setSysDictTypeEntity(RecordApiConvertor.INSTANCE.toSysDictTypeVO(sysDictTypeEntity));
 
         List<SysDictDataVO> detailVoList = sysDictDataEntityList.stream().map(SysDictDataConvertor.INSTANCE::Entity2VO).toList();
         sysDictTypeDetailVO.setDictDetailList(detailVoList);
@@ -66,8 +71,9 @@ public class SysDictTypeController {
 
     @SaCheckRole("admin")
     @GetMapping("/query")
-    public ApiResponse<PageResp<SysDictTypeEntity>> query(
-            @QueryParams CommonQuery<SysDictTypeEntity> query) {
+    public ApiResponse<PageResp<SysDictTypeVO>> query(
+            @QueryParams CommonQuery<SysDictTypeFilterQuery> requestQuery) {
+        CommonQuery<SysDictTypeEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromSysDictTypeFilterQuery);
         LambdaQueryWrapper<SysDictTypeEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
 
         SysDictTypeEntity condition = query.getCondition();
@@ -80,12 +86,13 @@ public class SysDictTypeController {
         Page<SysDictTypeEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<SysDictTypeEntity> iPage = getBaseMapper().selectPage(page, lambdaQueryWrapper);
         PageResp<SysDictTypeEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
-        return ApiResponse.success(objectPageResp);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toSysDictTypeVOPage(objectPageResp));
     }
 
     @SaCheckRole("admin")
     @PostMapping
-    public ApiResponse<Boolean> add(@RequestBody SysDictTypeEntity entity) {
+    public ApiResponse<Boolean> add(@Valid @RequestBody SysDictTypeCreateReq entityReq) {
+        SysDictTypeEntity entity = RecordApiConvertor.INSTANCE.fromSysDictTypeCreateReq(entityReq);
         entity.setDictId(null);
         entity.setCreateUser(StpUtil.getLoginIdAsLong());
         entity.setUpdateUser(StpUtil.getLoginIdAsLong());
@@ -95,7 +102,8 @@ public class SysDictTypeController {
     @SaCheckRole("admin")
     @org.springframework.transaction.annotation.Transactional
     @PutMapping("/{dictId}")
-    public ApiResponse<Boolean> update(@PathVariable("dictId") Long dictId, @RequestBody SysDictTypeEntity entity) {
+    public ApiResponse<Boolean> update(@PathVariable("dictId") Long dictId, @Valid @RequestBody SysDictTypeUpdateReq entityReq) {
+        SysDictTypeEntity entity = RecordApiConvertor.INSTANCE.fromSysDictTypeUpdateReq(entityReq);
         bankCardGuard.checkTypeChange(dictId, entity.getDictType(), Integer.valueOf(1).equals(entity.getIsDeleted()));
         entity.setDictId(dictId);
         entity.setCreateUser(null);

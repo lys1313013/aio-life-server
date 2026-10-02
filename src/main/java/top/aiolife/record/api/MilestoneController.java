@@ -3,16 +3,20 @@ package top.aiolife.record.api;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import jakarta.validation.Valid;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mapper.IMilestoneMapper;
 import top.aiolife.record.pojo.entity.MilestoneEntity;
 import top.aiolife.record.pojo.req.CommonReq;
+import top.aiolife.record.pojo.req.MilestoneCreateReq;
+import top.aiolife.record.pojo.req.MilestoneUpdateReq;
+import top.aiolife.record.pojo.vo.MilestoneVO;
 import top.aiolife.record.service.IMilestoneService;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 类功能描述
@@ -34,26 +38,28 @@ public class MilestoneController {
 
 
     @GetMapping
-    public ApiResponse<List<MilestoneEntity>> queryMilestone() {
+    public ApiResponse<List<MilestoneVO>> queryMilestone() {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<MilestoneEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(MilestoneEntity::getUserId, userId);
         queryWrapper.orderByDesc(MilestoneEntity::getCreateTime);
-        return ApiResponse.success(milestoneService.list(queryWrapper));
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toMilestoneVOList(milestoneService.list(queryWrapper)));
     }
 
 
     @PostMapping
-    public ApiResponse<MilestoneEntity> createMilestone(@RequestBody MilestoneEntity milestoneEntity) {
+    public ApiResponse<MilestoneVO> createMilestone(@Valid @RequestBody MilestoneCreateReq milestoneEntityReq) {
+        MilestoneEntity milestoneEntity = RecordApiConvertor.INSTANCE.fromMilestoneCreateReq(milestoneEntityReq);
         long userId = StpUtil.getLoginIdAsLong();
         milestoneEntity.setUserId(userId);
         milestoneEntity.fillCreateCommonField(userId);
         milestoneMapper.insert(milestoneEntity);
-        return ApiResponse.success(milestoneEntity);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toMilestoneVO(milestoneEntity));
     }
 
     @PutMapping
-    public ApiResponse<MilestoneEntity> updateMilestone(@RequestBody MilestoneEntity milestoneEntity) {
+    public ApiResponse<MilestoneVO> updateMilestone(@Valid @RequestBody MilestoneUpdateReq milestoneEntityReq) {
+        MilestoneEntity milestoneEntity = RecordApiConvertor.INSTANCE.fromMilestoneUpdateReq(milestoneEntityReq);
         long userId = StpUtil.getLoginIdAsLong();
         milestoneEntity.fillUpdateCommonField(userId);
         milestoneEntity.setUserId(null);
@@ -61,7 +67,7 @@ public class MilestoneController {
         lambdaUpdateWrapper.eq(MilestoneEntity::getId, milestoneEntity.getId());
         lambdaUpdateWrapper.eq(MilestoneEntity::getUserId, userId);
         milestoneService.update(milestoneEntity, lambdaUpdateWrapper);
-        return ApiResponse.success(milestoneEntity);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toMilestoneVO(milestoneEntity));
     }
 
     @PostMapping("/batchDelete")

@@ -1,23 +1,22 @@
 package top.aiolife.record.api;
 
+import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import top.aiolife.core.ApiRequestFixtures;
 import top.aiolife.core.query.CommonQuery;
-import top.aiolife.core.resq.PageResp;
 import top.aiolife.record.mapper.ITimeRecordMapper;
-import top.aiolife.record.pojo.entity.TimeRecordEntity;
-import top.aiolife.record.pojo.entity.ReadRecordEntity;
 import top.aiolife.record.pojo.entity.MovieEntity;
+import top.aiolife.record.pojo.entity.ReadRecordEntity;
+import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.enums.RelateTypeEnum;
 import top.aiolife.record.pojo.query.TimeWeekQuery;
 import top.aiolife.record.pojo.req.TimeRecordReq;
-import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.service.IMovieService;
+import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.service.ITimeRecordService;
-
-import java.time.LocalDate;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -127,9 +126,9 @@ class TimeRecordControllerIntegrationTest extends BaseIntegrationTest {
         condition.setDate(LocalDate.now());
         query.setCondition(condition);
 
-        var response = timeRecordController.query(query);
+        var response = timeRecordController.query(ApiRequestFixtures.query(query, top.aiolife.record.pojo.query.TimeRecordQuery.class));
         assertSuccess(response);
-        PageResp<TimeRecordEntity> pageResp = response.getData();
+        var pageResp = response.getData();
         assertNotNull(pageResp);
         assertTrue(pageResp.getTotal() >= 1);
 
@@ -151,9 +150,9 @@ class TimeRecordControllerIntegrationTest extends BaseIntegrationTest {
         condition.setEndDate(LocalDate.now().plusDays(1));
         query.setCondition(condition);
 
-        var response = timeRecordController.queryByDateRange(query);
+        var response = timeRecordController.queryByDateRange(ApiRequestFixtures.query(query, top.aiolife.record.pojo.query.TimeWeekQuery.class));
         assertSuccess(response);
-        List<TimeRecordEntity> list = response.getData();
+        var list = response.getData();
         assertNotNull(list);
     }
 

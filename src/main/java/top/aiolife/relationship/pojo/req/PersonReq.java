@@ -13,7 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PersonReq {
-    private Long id;
+
     private String name;
     private String avatar;
     private String category;

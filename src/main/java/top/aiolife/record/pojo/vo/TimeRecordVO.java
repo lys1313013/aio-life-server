@@ -1,11 +1,8 @@
 package top.aiolife.record.pojo.vo;
 
+import java.util.List;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
-import top.aiolife.record.pojo.entity.TimeRecordEntity;
-
-import java.util.List;
 
 /**
  * TimeRecord VO
@@ -15,9 +12,9 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class TimeRecordVO extends TimeRecordEntity {
+public class TimeRecordVO extends TimeRecordListVO {
     /**
      * 运动记录列表
      */
-    private List<ExerciseRecordEntity> exercises;
+    private List<ExerciseRecordVO> exercises;
 }

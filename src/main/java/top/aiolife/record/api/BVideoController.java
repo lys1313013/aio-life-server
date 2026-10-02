@@ -1,29 +1,35 @@
 package top.aiolife.record.api;
 
-import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import top.aiolife.core.constant.StatusConst;
-import top.aiolife.core.constant.ResponseCodeConst;
-import top.aiolife.core.query.CommonQuery;
-import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.core.resq.PageResp;
-import top.aiolife.record.mapper.IBVideoMapper;
-import top.aiolife.record.pojo.entity.BVideoEntity;
-import top.aiolife.record.pojo.enums.ProgressStatusEnum;
-import top.aiolife.record.pojo.vo.BVideoStatisticsVO;
-import top.aiolife.record.pojo.vo.StatusCount;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
-
+import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.constant.ResponseCodeConst;
+import top.aiolife.core.constant.StatusConst;
+import top.aiolife.core.query.CommonQuery;
+import top.aiolife.core.query.QueryParams;
+import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.resq.PageResp;
+import top.aiolife.record.convertor.RecordApiConvertor;
+import top.aiolife.record.mapper.IBVideoMapper;
+import top.aiolife.record.pojo.entity.BVideoEntity;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
+import top.aiolife.record.pojo.query.BVideoQuery;
+import top.aiolife.record.pojo.req.BVideoCreateReq;
+import top.aiolife.record.pojo.req.BVideoProgressReq;
+import top.aiolife.record.pojo.req.BVideoUpdateReq;
+import top.aiolife.record.pojo.vo.BVideoStatisticsVO;
+import top.aiolife.record.pojo.vo.BVideoVO;
+import top.aiolife.record.pojo.vo.StatusCount;
 
 /**
  * 类功能描述
@@ -50,8 +56,9 @@ public class BVideoController {
     }
 
     @GetMapping("/query")
-    public ApiResponse<PageResp<BVideoEntity>> query(
-            @QueryParams CommonQuery<BVideoEntity> query) {
+    public ApiResponse<PageResp<BVideoVO>> query(
+            @QueryParams CommonQuery<BVideoQuery> requestQuery) {
+        CommonQuery<BVideoEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromBVideoQuery);
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<BVideoEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(BVideoEntity::getUserId, userId);
@@ -65,11 +72,12 @@ public class BVideoController {
         IPage<BVideoEntity> iPage = bVideoMapper.selectPageWithStatusOrder(
                 page, lambdaQueryWrapper, STATUS_ORDER_CODES);
         PageResp<BVideoEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
-        return ApiResponse.success(objectPageResp);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toBVideoVOPage(objectPageResp));
     }
 
     @PostMapping
-    public ApiResponse<Boolean> insert(@RequestBody BVideoEntity entity) {
+    public ApiResponse<Boolean> insert(@Valid @RequestBody BVideoCreateReq entityReq) {
+        BVideoEntity entity = RecordApiConvertor.INSTANCE.fromBVideoCreateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
 
         LambdaQueryWrapper<BVideoEntity> queryWrapper = new LambdaQueryWrapper<>();
@@ -93,13 +101,14 @@ public class BVideoController {
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<Boolean> update(@PathVariable Long id, @RequestBody BVideoEntity entity) {
+    public ApiResponse<Boolean> update(@PathVariable Long id, @Valid @RequestBody BVideoUpdateReq entityReq) {
+        BVideoEntity entity = RecordApiConvertor.INSTANCE.fromBVideoUpdateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
 
         LambdaQueryWrapper<BVideoEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BVideoEntity::getId, id);
         wrapper.eq(BVideoEntity::getUserId, userId);
-        
+
         BVideoEntity existEntity = getBaseMapper().selectOne(wrapper);
         if (existEntity == null) {
             return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "无权限更新该数据或数据不存在");
@@ -112,7 +121,7 @@ public class BVideoController {
         if (entity.getStatus() == ProgressStatusEnum.COMPLETED) {
             entity.setWatchedDuration(entity.getDuration());
         }
-        
+
         boolean b = getBaseMapper().update(entity, wrapper) > 0;
         return ApiResponse.success(b);
     }
@@ -121,7 +130,7 @@ public class BVideoController {
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
-        
+
         LambdaQueryWrapper<BVideoEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BVideoEntity::getId, id);
         wrapper.eq(BVideoEntity::getUserId, userId);
@@ -162,7 +171,8 @@ public class BVideoController {
     }
 
     @PostMapping("/tagVideo")
-    public ApiResponse<Boolean> tagVideo(@RequestBody BVideoEntity entity) {
+    public ApiResponse<Boolean> tagVideo(@Valid @RequestBody BVideoCreateReq entityReq) {
+        BVideoEntity entity = RecordApiConvertor.INSTANCE.fromBVideoCreateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
         entity.setUserId(userId);
 
@@ -185,7 +195,8 @@ public class BVideoController {
     }
 
     @PostMapping("/syncProgress")
-    public ApiResponse<Boolean> syncProgress(@RequestBody BVideoEntity entity) {
+    public ApiResponse<Boolean> syncProgress(@Valid @RequestBody BVideoProgressReq entityReq) {
+        BVideoEntity entity = RecordApiConvertor.INSTANCE.fromBVideoProgressReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
         entity.setUserId(userId);
         log.info("bvid: {}, currentEpisode: {}, watchedDuration: {}", entity.getBvid(),

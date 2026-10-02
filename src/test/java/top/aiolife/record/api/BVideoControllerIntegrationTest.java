@@ -2,6 +2,7 @@ package top.aiolife.record.api;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import top.aiolife.core.ApiRequestFixtures;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.pojo.entity.BVideoEntity;
@@ -34,7 +35,7 @@ class BVideoControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new BVideoEntity());
 
-        var response = bVideoController.query(query);
+        var response = bVideoController.query(ApiRequestFixtures.query(query, top.aiolife.record.pojo.query.BVideoQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);

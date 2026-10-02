@@ -1,11 +1,10 @@
 package top.aiolife.core.resq;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.util.List;
 
 /**
  * 分页数据返回对象
@@ -31,6 +30,11 @@ public class PageResp<T> {
 
   public static <T> PageResp<T> of() {
       return new PageResp<>();
+  }
+
+  /** 仅转换记录字段，保留分页总数及空值语义。 */
+  public <R> PageResp<R> map(java.util.function.Function<T, R> mapper) {
+    return new PageResp<>(items == null ? null : items.stream().map(mapper).toList(), total);
   }
 
   /**

@@ -1,27 +1,32 @@
 package top.aiolife.record.api;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import top.aiolife.core.query.QueryParams;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import top.aiolife.core.query.CommonQuery;
-import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.core.resq.PageResp;
-import top.aiolife.record.mapper.IMemoMapper;
-import top.aiolife.record.pojo.entity.MemoEntity;
-import top.aiolife.record.service.IMemoService;
+import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.time.LocalDateTime;
+import top.aiolife.core.query.CommonQuery;
+import top.aiolife.core.query.QueryParams;
+import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.resq.PageResp;
+import top.aiolife.record.convertor.RecordApiConvertor;
+import top.aiolife.record.mapper.IMemoMapper;
+import top.aiolife.record.pojo.entity.MemoEntity;
+import top.aiolife.record.pojo.query.MemoQuery;
+import top.aiolife.record.pojo.req.MemoCreateReq;
+import top.aiolife.record.pojo.req.MemoUpdateReq;
+import top.aiolife.record.pojo.vo.MemoVO;
+import top.aiolife.record.service.IMemoService;
 
 /**
  * 备忘录控制器
@@ -42,28 +47,30 @@ public class MemoController {
      * 查询列表
      */
     @GetMapping("/query")
-    public ApiResponse<PageResp<MemoEntity>> query(@QueryParams CommonQuery<MemoEntity> query) {
+    public ApiResponse<PageResp<MemoVO>> query(@QueryParams CommonQuery<MemoQuery> requestQuery) {
+        CommonQuery<MemoEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromMemoQuery);
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<MemoEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(MemoEntity::getUserId, userId);
-        
+
         if (query.getCondition() != null && query.getCondition().getContent() != null) {
             lambdaQueryWrapper.like(MemoEntity::getContent, query.getCondition().getContent());
         }
-        
+
         lambdaQueryWrapper.orderByDesc(MemoEntity::getUpdateTime);
-        
+
         Page<MemoEntity> page = new Page<>(query.getPage(), query.getPageSize());
-        
+
         Page<MemoEntity> resultPage = memoMapper.selectPage(page, lambdaQueryWrapper);
-        return ApiResponse.success(PageResp.of(resultPage.getRecords(), resultPage.getTotal()));
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toMemoVOPage(PageResp.of(resultPage.getRecords(), resultPage.getTotal())));
     }
 
     /**
      * 新增
      */
     @PostMapping
-    public ApiResponse<Boolean> save(@RequestBody MemoEntity entity) {
+    public ApiResponse<Boolean> save(@Valid @RequestBody MemoCreateReq entityReq) {
+        MemoEntity entity = RecordApiConvertor.INSTANCE.fromMemoCreateReq(entityReq);
         entity.setUserId(StpUtil.getLoginIdAsLong());
         entity.setCreateUser(StpUtil.getLoginIdAsLong());
         entity.setCreateTime(LocalDateTime.now());
@@ -76,21 +83,22 @@ public class MemoController {
      * 更新
      */
     @PutMapping("/{id}")
-    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @RequestBody MemoEntity entity) {
+    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @Valid @RequestBody MemoUpdateReq entityReq) {
+        MemoEntity entity = RecordApiConvertor.INSTANCE.fromMemoUpdateReq(entityReq);
         Long userId = StpUtil.getLoginIdAsLong();
         entity.setId(id);
         entity.setUserId(userId);
         entity.setUpdateUser(userId);
-        
+
         // 只有在修改内容/标题时才更新时间，如果是单纯点击隐藏内容则不更新时间
         if (entity.getContent() != null || entity.getTitle() != null) {
             entity.setUpdateTime(LocalDateTime.now());
         }
-        
+
         LambdaQueryWrapper<MemoEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(MemoEntity::getId, entity.getId());
         wrapper.eq(MemoEntity::getUserId, userId);
-        
+
         memoMapper.update(entity, wrapper);
         return ApiResponse.success(true);
     }

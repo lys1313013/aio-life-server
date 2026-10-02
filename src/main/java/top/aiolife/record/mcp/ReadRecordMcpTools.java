@@ -1,19 +1,18 @@
 package top.aiolife.record.mcp;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import dev.langchain4j.agent.tool.Tool;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import top.aiolife.core.resq.PageResp;
 import top.aiolife.mcp.annotation.McpToolProvider;
 import top.aiolife.record.api.ReadRecordController;
-import top.aiolife.record.pojo.query.ReadRecordQuery;
-import top.aiolife.record.pojo.vo.ReadRecordVO;
 import top.aiolife.record.mcp.req.ReadRecordQueryMcpReq;
 import top.aiolife.record.mcp.vo.ReadRecordMcpVO;
 import top.aiolife.record.mcp.vo.ReadRecordPageMcpVO;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
-
-import java.util.List;
-import java.util.Map;
+import top.aiolife.record.pojo.query.ReadRecordQuery;
+import top.aiolife.record.pojo.vo.ReadRecordVO;
 
 /**
  * 阅读记录 MCP 工具
@@ -47,8 +46,8 @@ public class ReadRecordMcpTools {
         }
         query.setSize(size);
 
-        Page<ReadRecordVO> page = readRecordController.pageList(query).getData();
-        List<ReadRecordMcpVO> records = page.getRecords().stream()
+        PageResp<ReadRecordVO> page = readRecordController.pageList(query).getData();
+        List<ReadRecordMcpVO> records = page.getItems().stream()
                 .map(this::toMcpVO)
                 .toList();
         return ReadRecordPageMcpVO.builder()

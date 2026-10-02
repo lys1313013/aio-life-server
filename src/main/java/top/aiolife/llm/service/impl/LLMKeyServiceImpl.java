@@ -2,15 +2,14 @@ package top.aiolife.llm.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import top.aiolife.llm.mapper.LLMKeyMapper;
 import top.aiolife.llm.pojo.entity.LLMKeyEntity;
 import top.aiolife.llm.service.LLMKeyService;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -50,6 +49,10 @@ public class LLMKeyServiceImpl implements LLMKeyService {
         }
         try {
             llmKeyEntity.fillUpdateCommonField(userId);
+            // 未填写新密钥时保留原值，列表响应不回传密钥全文。
+            if (llmKeyEntity.getApiKey() != null && llmKeyEntity.getApiKey().isBlank()) {
+                llmKeyEntity.setApiKey(null);
+            }
             // 防止请求方篡改记录归属
             llmKeyEntity.setUserId(null);
 

@@ -1,8 +1,7 @@
 package top.aiolife.system.pojo.req;
 
-import lombok.Data;
-
 import java.util.Map;
+import lombok.Data;
 
 /**
  * 系统菜单保存请求体
@@ -12,8 +11,6 @@ import java.util.Map;
  */
 @Data
 public class MenuSaveReq {
-
-    private Long id;
 
     private Long parentId;
 

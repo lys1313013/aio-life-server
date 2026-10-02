@@ -2,18 +2,22 @@ package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import jakarta.validation.Valid;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mapper.IPasswordVaultMapper;
 import top.aiolife.record.pojo.entity.PasswordVaultEntity;
+import top.aiolife.record.pojo.req.PasswordVaultCreateReq;
+import top.aiolife.record.pojo.req.PasswordVaultUpdateReq;
+import top.aiolife.record.pojo.vo.PasswordVaultVO;
 import top.aiolife.record.service.IPasswordVaultService;
-
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * 密码库控制器。
@@ -36,33 +40,34 @@ public class PasswordVaultController {
      * 查询密码列表
      */
     @GetMapping("/list")
-    public ApiResponse<List<PasswordVaultEntity>> list() {
+    public ApiResponse<List<PasswordVaultVO>> list() {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<PasswordVaultEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PasswordVaultEntity::getUserId, userId);
         wrapper.orderByDesc(PasswordVaultEntity::getUpdateTime);
         List<PasswordVaultEntity> list = passwordVaultMapper.selectList(wrapper);
-        return ApiResponse.success(list);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toPasswordVaultVOList(list));
     }
 
     /**
      * 获取单条密码详情
      */
     @GetMapping("/{id}")
-    public ApiResponse<PasswordVaultEntity> getById(@PathVariable Long id) {
+    public ApiResponse<PasswordVaultVO> getById(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<PasswordVaultEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PasswordVaultEntity::getId, id);
         wrapper.eq(PasswordVaultEntity::getUserId, userId);
         PasswordVaultEntity entity = passwordVaultMapper.selectOne(wrapper);
-        return ApiResponse.success(entity);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toPasswordVaultVO(entity));
     }
 
     /**
      * 新增密码
      */
     @PostMapping
-    public ApiResponse<Boolean> save(@RequestBody PasswordVaultEntity entity) {
+    public ApiResponse<Boolean> save(@Valid @RequestBody PasswordVaultCreateReq entityReq) {
+        PasswordVaultEntity entity = RecordApiConvertor.INSTANCE.fromPasswordVaultCreateReq(entityReq);
         entity.setUserId(StpUtil.getLoginIdAsLong());
         entity.setCreateUser(StpUtil.getLoginIdAsLong());
         entity.setCreateTime(LocalDateTime.now());
@@ -81,7 +86,8 @@ public class PasswordVaultController {
      * 编辑密码
      */
     @PutMapping("/{id}")
-    public ApiResponse<Boolean> update(@PathVariable Long id, @RequestBody PasswordVaultEntity entity) {
+    public ApiResponse<Boolean> update(@PathVariable Long id, @Valid @RequestBody PasswordVaultUpdateReq entityReq) {
+        PasswordVaultEntity entity = RecordApiConvertor.INSTANCE.fromPasswordVaultUpdateReq(entityReq);
         Long userId = StpUtil.getLoginIdAsLong();
         PasswordVaultEntity existing = passwordVaultMapper.selectById(id);
         if (existing == null || !userId.equals(existing.getUserId())) {

@@ -2,6 +2,7 @@ package top.aiolife.record.api;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import top.aiolife.core.ApiRequestFixtures;
 import top.aiolife.record.mapper.IPerformanceMapper;
 import top.aiolife.record.pojo.entity.PerformanceEntity;
 
@@ -36,8 +37,8 @@ class PerformanceControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     void testCreate_新增演出记录() {
         PerformanceEntity entity = createPerformance(null);
-        var response = performanceController.createPerformance(entity);
-        PerformanceEntity created = assertSuccessWithData(response);
+        var response = performanceController.createPerformance(ApiRequestFixtures.request(entity, top.aiolife.record.pojo.req.PerformanceCreateReq.class));
+        var created = assertSuccessWithData(response);
         assertNotNull(created.getId());
 
         PerformanceEntity dbEntity = performanceMapper.selectById(created.getId());
@@ -58,7 +59,7 @@ class PerformanceControllerIntegrationTest extends BaseIntegrationTest {
         updateParam.setId(perfId);
         updateParam.setPerformanceName("改名后的演出");
         updateParam.setCity("上海");
-        var response = performanceController.updatePerformance(updateParam);
+        var response = performanceController.updatePerformance(ApiRequestFixtures.request(updateParam, top.aiolife.record.pojo.req.PerformanceUpdateReq.class));
         assertSuccess(response);
 
         PerformanceEntity dbEntity = performanceMapper.selectById(perfId);
