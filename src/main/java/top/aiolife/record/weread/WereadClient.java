@@ -16,7 +16,7 @@ import java.util.Set;
 @Component
 public class WereadClient {
     private static final Set<String> ENDPOINTS = Set.of("/shelf/sync", "/readdata/detail",
-            "/user/notebooks", "/book/bookmarklist", "/review/list/mine", "/book/getprogress");
+            "/user/notebooks", "/book/bookmarklist", "/review/list/mine", "/book/getprogress", "/book/info");
     private final RestClient client;
 
     public WereadClient(RestClient.Builder builder) {

@@ -218,4 +218,49 @@ class WereadServiceTest {
         }
     }
 
+    @Test
+    void bookLink_使用当前用户凭证及原始字符串书籍ID() throws Exception {
+        when(mapper.selectOne(any())).thenReturn(connection());
+        String bookId = "3300144307";
+        when(client.call("wrk-test", "/book/info", Map.of("bookId", bookId)))
+                .thenReturn(json.readTree("{\"deepLink\":\"https://weread.qq.com/web/reader/test-book\",\"extra\":\"ignored\"}"));
+        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
+            assertEquals("https://weread.qq.com/web/reader/test-book", service.bookLink(bookId).deepLink());
+            verify(client).call("wrk-test", "/book/info", Map.of("bookId", bookId));
+            ArgumentCaptor<Wrapper<UserBindEntity>> captor = ArgumentCaptor.forClass(Wrapper.class);
+            verify(mapper).selectOne(captor.capture());
+            captor.getValue().getSqlSegment();
+            assertTrue(((com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?,?,?>)captor.getValue()).getParamNameValuePairs().containsValue(42L));
+        }
+    }
+
+    @Test
+    void bookLink_非法ID及未连接用户不请求上游() {
+        assertThrows(IllegalArgumentException.class, () -> service.bookLink("../bad"));
+        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(43L);
+            assertThrows(IllegalStateException.class, () -> service.bookLink("book-1"));
+            verifyNoInteractions(client);
+        }
+    }
+
+    @Test
+    void bookLink_缺失或非官方安全链接可以重试() throws Exception {
+        when(mapper.selectOne(any())).thenReturn(connection());
+        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
+            for (String link : new String[]{"", "javascript:alert(1)", "https://evil.example/book", "https://weread.qq.com.evil.example", "https://user@weread.qq.com/book", "http://weread.qq.com/book"}) {
+                when(client.call(anyString(), eq("/book/info"), anyMap()))
+                        .thenReturn(json.createObjectNode().put("deepLink", link));
+                assertThrows(IllegalStateException.class, () -> service.bookLink("book-1"));
+            }
+            when(client.call(anyString(), eq("/book/info"), anyMap()))
+                    .thenThrow(new IllegalStateException("微信读书暂时不可用，请稍后重试"))
+                    .thenReturn(json.createObjectNode().put("deepLink", "https://weread.qq.com/web/reader/retry"));
+            assertThrows(IllegalStateException.class, () -> service.bookLink("book-1"));
+            assertEquals("https://weread.qq.com/web/reader/retry", service.bookLink("book-1").deepLink());
+        }
+    }
+
 }

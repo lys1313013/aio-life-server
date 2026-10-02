@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.pojo.req.WereadConnectionReq;
 import top.aiolife.record.pojo.vo.WereadConnectionVO;
+import top.aiolife.record.pojo.vo.WereadBookLinkVO;
 import top.aiolife.record.service.IWereadService;
 
 /** 微信读书独立入口，所有数据使用当前登录用户的连接。 */
@@ -48,6 +49,11 @@ public class WereadController {
     @GetMapping("/notes")
     public ApiResponse<JsonNode> notes(@RequestParam String bookId) {
         return ApiResponse.success(service.notes(bookId));
+    }
+
+    @GetMapping("/book-link")
+    public ApiResponse<WereadBookLinkVO> bookLink(@RequestParam String bookId) {
+        return ApiResponse.success(service.bookLink(bookId));
     }
 
     @GetMapping("/progress")

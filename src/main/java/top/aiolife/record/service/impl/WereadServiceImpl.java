@@ -16,6 +16,7 @@ import org.springframework.util.StringUtils;
 import top.aiolife.record.mapper.UserBindMapper;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.vo.WereadConnectionVO;
+import top.aiolife.record.pojo.vo.WereadBookLinkVO;
 import top.aiolife.record.service.IWereadService;
 import top.aiolife.record.weread.WereadClient;
 import java.time.LocalDateTime;
@@ -234,6 +235,25 @@ public class WereadServiceImpl implements IWereadService {
             if (!cursors.add(cursor)) throw new IllegalStateException("点评分页未推进，请重试");
         }
         throw new IllegalStateException("点评数量超过单次读取上限，未完成同步");
+    }
+
+    @Override
+    public WereadBookLinkVO bookLink(String bookId) {
+        validateBookId(bookId);
+        String key = credential(requireConnection(StpUtil.getLoginIdAsLong()));
+        String link = client.call(key, "/book/info", Map.of("bookId", bookId)).path("deepLink").asText("");
+        try {
+            java.net.URI uri = java.net.URI.create(link);
+            String host = uri.getHost();
+            if (!"https".equalsIgnoreCase(uri.getScheme()) || host == null
+                    || !(host.equalsIgnoreCase("weread.qq.com") || host.toLowerCase(java.util.Locale.ROOT).endsWith(".weread.qq.com"))
+                    || uri.getUserInfo() != null) {
+                throw new IllegalArgumentException();
+            }
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("该书暂未提供可用的微信读书链接，请稍后重试");
+        }
+        return new WereadBookLinkVO(link);
     }
 
     @Override
