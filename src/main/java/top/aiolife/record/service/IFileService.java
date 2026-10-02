@@ -38,7 +38,8 @@ public interface IFileService extends IService<FileEntity> {
     List<FileVO> getByBiz(String bizType, Long bizId);
     
     /**
-     * 从 URL 下载文件并上传保存
+     * 从白名单豆瓣 CDN 的 HTTPS URL 下载阅读/观影封面，不跟随重定向。
+     * 自定义封面使用 upload，业务记录保存返回的 fileId。
      *
      * @param imageUrl 图片 URL
      * @param bizType  业务类型

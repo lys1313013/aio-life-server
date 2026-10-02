@@ -161,6 +161,9 @@ aio:
       enabled: ${AIO_LIFE_NEO4J_ENABLED:false}
     server:
       base-url: ${AIO_LIFE_SERVER_BASE_URL:http://localhost:45678/api}
+      douban:
+        # 允许配置域名及其任意子域名，按点号边界匹配；空值禁用远程封面下载。
+        cover-allowed-domains: ${AIO_LIFE_DOUBAN_COVER_ALLOWED_DOMAINS:doubanio.com}
       typesafe:
         enabled: ${AIO_LIFE_TYPESAFE_ENABLED:true}
         api-key: ${AIO_LIFE_TYPESAFE_API_KEY:}

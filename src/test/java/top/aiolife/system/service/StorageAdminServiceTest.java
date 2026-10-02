@@ -61,7 +61,7 @@ class StorageAdminServiceTest {
         var config = config();
         config.setEndpoint("http://127.0.0.1:" + server.getAddress().getPort());
         try (var listClient = new StorageListClient(config)) {
-            var service = new StorageAdminService(config, listClient, mock(MinioClient.class), mock(StorageFileReferenceGuard.class));
+            var service = new StorageAdminService(config, listClient, mock(MinioClient.class), mock(StorageFileReferenceGuard.class), mock(top.aiolife.core.lock.StorageObjectLock.class));
             var query = new StorageObjectQuery();
             query.setPageSize(2);
             var page = service.list(query);
@@ -96,7 +96,7 @@ class StorageAdminServiceTest {
         when(client.getObject(any(GetObjectArgs.class))).thenReturn(new GetObjectResponse(
                 new Headers.Builder().build(), "business", "us-east-1", "中文 +#.JPG",
                 new ByteArrayInputStream(new byte[]{1, 2, 3})));
-        var service = new StorageAdminService(config(), mock(StorageListClient.class), client, mock(StorageFileReferenceGuard.class));
+        var service = new StorageAdminService(config(), mock(StorageListClient.class), client, mock(StorageFileReferenceGuard.class), mock(top.aiolife.core.lock.StorageObjectLock.class));
         var response = new MockHttpServletResponse();
         service.read("中文 +#.JPG", false, response);
         assertEquals("image/jpeg", response.getContentType());
@@ -115,7 +115,7 @@ class StorageAdminServiceTest {
         var stat = mock(StatObjectResponse.class);
         when(stat.size()).thenReturn(21 * 1024 * 1024L);
         when(client.statObject(any(StatObjectArgs.class))).thenReturn(stat);
-        var service = new StorageAdminService(config(), mock(StorageListClient.class), client, mock(StorageFileReferenceGuard.class));
+        var service = new StorageAdminService(config(), mock(StorageListClient.class), client, mock(StorageFileReferenceGuard.class), mock(top.aiolife.core.lock.StorageObjectLock.class));
         for (String key : List.of("unsafe.svg", "unsafe.html", "large.jpg")) {
             var error = assertThrows(ResponseStatusException.class,
                     () -> service.read(key, false, new MockHttpServletResponse()));
@@ -136,7 +136,7 @@ class StorageAdminServiceTest {
         var config = config();
         config.setBucketName("");
         var listClient = mock(StorageListClient.class);
-        var service = new StorageAdminService(config, listClient, mock(MinioClient.class), mock(StorageFileReferenceGuard.class));
+        var service = new StorageAdminService(config, listClient, mock(MinioClient.class), mock(StorageFileReferenceGuard.class), mock(top.aiolife.core.lock.StorageObjectLock.class));
         assertThrows(ResponseStatusException.class, () -> service.list(new StorageObjectQuery()));
         verifyNoInteractions(listClient);
     }

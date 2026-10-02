@@ -1,5 +1,6 @@
 package top.aiolife.system.service;
 
+import top.aiolife.config.CbtiConfig;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +17,12 @@ import top.aiolife.record.enums.FileBizType;
 @RequiredArgsConstructor
 public class StorageFileReferenceGuard {
     private final StorageFileReferenceMapper mapper;
+    private final CbtiConfig cbtiConfig;
 
     public void check(String bucket, String key) {
+        if ((!StringUtils.hasText(cbtiConfig.getBucketName()) || bucket.equals(cbtiConfig.getBucketName()))
+                && mapper.countCbtiReferencesIncludingDeleted(key) > 0)
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "不允许删除：CBTI 人格存在图片引用（含软删除记录）");
         String basename = key.substring(key.lastIndexOf('/') + 1);
         // 显式查询包含软删除记录；LIKE 中的 %、_、! 均按普通字符处理。
         var candidates = mapper.selectReferencesIncludingDeleted(key, basename, bucket + "/" + key,

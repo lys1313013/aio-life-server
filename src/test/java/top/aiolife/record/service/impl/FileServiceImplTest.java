@@ -28,6 +28,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 class FileServiceImplTest {
@@ -45,7 +46,7 @@ class FileServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        fileService = new FileServiceImpl(minioUtil, minioConfig);
+        fileService = new FileServiceImpl(minioUtil, minioConfig, mock(top.aiolife.core.lock.StorageObjectLock.class), new top.aiolife.record.service.DoubanCoverUrlPolicy("doubanio.com"));
         ReflectionTestUtils.setField(fileService, "baseMapper", fileMapper);
         TransactionSynchronizationManager.initSynchronization();
     }

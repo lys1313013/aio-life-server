@@ -1,5 +1,6 @@
 package top.aiolife.record.config;
 
+import top.aiolife.core.lock.StorageObjectLock;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,7 @@ public class CbtiImageInitUtil {
     private final MinioUtil minioUtil;
 
     private final ICbtiPersonalityMapper cbtiPersonalityMapper;
+    private final StorageObjectLock objectLock;
 
     /**
      * 手动触发初始化图片上传
@@ -75,11 +77,9 @@ public class CbtiImageInitUtil {
         if (!Files.exists(filePath)) {
             return;
         }
-        if (minioUtil.objectExists(bucketName, imageObject)) {
-            return;
-        }
-
-        try (InputStream inputStream = Files.newInputStream(filePath)) {
+        try (var lease = objectLock.acquire(bucketName, imageObject);
+             InputStream inputStream = Files.newInputStream(filePath)) {
+            if (minioUtil.objectExists(bucketName, imageObject)) return;
             long size = Files.size(filePath);
             minioUtil.putObject(bucketName, imageObject, inputStream, size, "image/png");
             log.info("CBTI 图片上传成功: {}/{}", bucketName, imageObject);

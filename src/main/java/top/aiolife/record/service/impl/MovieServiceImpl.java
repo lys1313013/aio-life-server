@@ -335,6 +335,13 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             var fileVO = fileService.uploadFromUrl(res.getCoverImgUrl(), top.aiolife.record.enums.FileBizType.MOVIE);
             res.setFileId(fileVO.getId());
             log.info("封面图已上传至 MinIO: fileId={}", fileVO.getId());
+        } catch (IllegalArgumentException e) {
+            if (required) {
+                throw e;
+            }
+            // 解析可保留书影信息，但不能把被拒绝的封面地址回填给客户端。
+            res.setCoverImgUrl(null);
+            log.warn("豆瓣封面来源被拒绝: {}", e.getMessage());
         } catch (Exception e) {
             if (required) {
                 throw new IllegalStateException("封面图上传失败，请确认 MinIO 服务可用后重试", e);

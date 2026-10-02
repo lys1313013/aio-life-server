@@ -21,7 +21,7 @@ class BankCardTemplateUploadTest {
     @Test void 系统目录上传JPEG会转为PNG且文件记录保持私有() throws Exception {
         var minio=mock(MinioUtil.class);var config=new MinioConfig();config.setBucketName("test-bucket");
         var saved=new AtomicReference<FileEntity>();
-        var service=new FileServiceImpl(minio,config) {
+        var service=new FileServiceImpl(minio,config,mock(top.aiolife.core.lock.StorageObjectLock.class), new top.aiolife.record.service.DoubanCoverUrlPolicy("doubanio.com")) {
             @Override public boolean save(FileEntity entity) { entity.setId("a".repeat(32));saved.set(entity);return true; }
         };
         var source=new ByteArrayOutputStream();
@@ -44,7 +44,7 @@ class BankCardTemplateUploadTest {
         verify(minio).putObject(eq("test-bucket"),anyString(),any(),anyLong(),eq("image/png"));
     }
     @Test void 通用上传也必须检查管理员且不能绕过模板绑定事务() {
-        var minio=mock(MinioUtil.class);var service=new FileServiceImpl(minio,new MinioConfig());
+        var minio=mock(MinioUtil.class);var service=new FileServiceImpl(minio,new MinioConfig(),mock(top.aiolife.core.lock.StorageObjectLock.class), new top.aiolife.record.service.DoubanCoverUrlPolicy("doubanio.com"));
         try(var login=mockStatic(StpUtil.class)) {
             login.when(()->StpUtil.checkRole("admin")).thenThrow(new IllegalArgumentException("无权限"));
             assertThrows(IllegalArgumentException.class,()->service.upload(new MockMultipartFile("file",new byte[]{1}),FileBizType.BANK_CARD_TEMPLATE_COVER));

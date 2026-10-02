@@ -31,6 +31,7 @@ class StorageDeleteTest {
         ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds);
         jdbc.execute("CREATE TABLE file(id VARCHAR(32), file_name VARCHAR(1024), create_user BIGINT, biz_type VARCHAR(50), biz_id BIGINT, is_deleted INT)");
+        jdbc.execute("CREATE TABLE cbti_personality(id BIGINT, image_object VARCHAR(1024), is_deleted INT)");
         var config = new MinioConfig();
         config.setBucketName("business");
         minio = mock(MinioClient.class);
@@ -41,7 +42,7 @@ class StorageDeleteTest {
         factory.setConfiguration(mybatis);
         var session = new SqlSessionTemplate(factory.getObject());
         service = new StorageAdminService(config, mock(StorageListClient.class), minio,
-                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class)));
+                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class), new top.aiolife.config.CbtiConfig()), mock(top.aiolife.core.lock.StorageObjectLock.class));
     }
 
     void record(String name, Long owner, String type, Long bizId, int deleted) {
@@ -129,6 +130,13 @@ class StorageDeleteTest {
         clearInvocations(minio);
         record("orphan.jpg", 7L, "avatar", null, 0);
         assertThrows(ResponseStatusException.class, () -> service.delete("orphan.jpg"));
+        verifyNoInteractions(minio);
+    }
+    @Test
+    void CBTI图片含软删除引用均不可清理() {
+        jdbc.update("INSERT INTO cbti_personality VALUES(7, 'images/cbti/test.png', 1)");
+        assertEquals(409, assertThrows(ResponseStatusException.class,
+                () -> service.delete("images/cbti/test.png")).getStatusCode().value());
         verifyNoInteractions(minio);
     }
 }

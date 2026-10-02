@@ -18,4 +18,8 @@ public interface StorageFileReferenceMapper {
             @Param("key") String key, @Param("basename") String basename,
             @Param("bucketKey") String bucketKey, @Param("bucketBasename") String bucketBasename,
             @Param("keySuffix") String keySuffix, @Param("basenameSuffix") String basenameSuffix);
+    /** CBTI 图片不写入 file 表，软删除人格仍保留引用保护。 */
+    @Select("SELECT COUNT(*) FROM cbti_personality WHERE image_object = #{key} OR image_object = CONCAT('/', #{key})")
+    @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
+    long countCbtiReferencesIncludingDeleted(@Param("key") String key);
 }

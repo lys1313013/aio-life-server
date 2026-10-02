@@ -1,5 +1,6 @@
 package top.aiolife.record.service.impl;
 
+import top.aiolife.core.lock.StorageObjectLock;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -20,6 +21,7 @@ import top.aiolife.record.mapper.IFileMapper;
 import top.aiolife.record.pojo.entity.FileEntity;
 import top.aiolife.record.pojo.vo.FileVO;
 import top.aiolife.record.service.IFileService;
+import top.aiolife.record.service.DoubanCoverUrlPolicy;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
@@ -38,10 +40,15 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
 
     private final MinioUtil minioUtil;
     private final MinioConfig minioConfig;
+    private final StorageObjectLock objectLock;
+    private final DoubanCoverUrlPolicy coverUrlPolicy;
 
-    public FileServiceImpl(MinioUtil minioUtil, MinioConfig minioConfig) {
+    public FileServiceImpl(MinioUtil minioUtil, MinioConfig minioConfig, StorageObjectLock objectLock,
+                           DoubanCoverUrlPolicy coverUrlPolicy) {
         this.minioUtil = minioUtil;
         this.minioConfig = minioConfig;
+        this.objectLock = objectLock;
+        this.coverUrlPolicy = coverUrlPolicy;
     }
 
     @Override
@@ -58,6 +65,7 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
         String bucketName = resolveBucketName();
         String objectName = buildObjectName(userId, bizType, file.getOriginalFilename());
 
+        objectLock.holdUntilTransactionCompletion(bucketName, objectName);
         long storedSize=file.getSize();
         try {
             if (template) {
@@ -97,28 +105,36 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
     @Transactional(rollbackFor = Exception.class)
     public FileVO uploadFromUrl(String imageUrl, FileBizType bizType) {
         if (bizType==FileBizType.BANK_CARD_TEMPLATE_COVER) throw new IllegalArgumentException("公共卡面请使用图片上传");
+        if (bizType != FileBizType.MOVIE && bizType != FileBizType.READ_RECORD) {
+            throw new IllegalArgumentException("该业务请使用文件上传");
+        }
+        String validatedUrl = coverUrlPolicy.validate(imageUrl);
         long userId = StpUtil.getLoginIdAsLong();
         String bucketName = resolveBucketName();
 
-        HttpResponse response = HttpRequest.get(imageUrl)
+        byte[] bodyBytes;
+        String contentType;
+        try (HttpResponse response = HttpRequest.get(validatedUrl)
                 .header("Referer", "https://movie.douban.com/")
                 .header("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1")
                 .timeout(10000)
-                .execute();
-
-        int status = response.getStatus();
-        if (status != 200) {
-            throw new IllegalStateException("下载封面图失败，HTTP " + status + ": " + imageUrl);
-        }
-
-        byte[] bodyBytes = response.bodyBytes();
-        String contentType = response.header("Content-Type");
-        if (StrUtil.isBlank(contentType) || !contentType.startsWith("image/")) {
-            throw new IllegalStateException("下载的不是图片，Content-Type=" + contentType + ", bodySize=" + bodyBytes.length);
+                // 禁止白名单 CDN 通过重定向转向其他主机。
+                .setFollowRedirects(false)
+                .execute()) {
+            int status = response.getStatus();
+            if (status != 200) {
+                throw new IllegalStateException("下载封面图失败，HTTP " + status);
+            }
+            bodyBytes = response.bodyBytes();
+            contentType = response.header("Content-Type");
+            if (StrUtil.isBlank(contentType) || !contentType.startsWith("image/")) {
+                throw new IllegalStateException("下载的不是图片，Content-Type=" + contentType + ", bodySize=" + bodyBytes.length);
+            }
         }
 
         String extension = extractExtension(imageUrl, contentType);
         String objectName = buildObjectName(userId, bizType, "cover" + extension);
+        objectLock.holdUntilTransactionCompletion(bucketName, objectName);
 
         try {
             minioUtil.putObject(bucketName, objectName, new ByteArrayInputStream(bodyBytes), bodyBytes.length, contentType);
@@ -189,6 +205,8 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
 
     private void registerRollbackCleanup(String bucketName, String objectName) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            // 回滚清理必须先于对象锁释放，防止清理期间另一个操作进入。
+            @Override public int getOrder() { return Integer.MAX_VALUE - 1; }
             @Override
             public void afterCompletion(int status) {
                 if (status != STATUS_ROLLED_BACK) {

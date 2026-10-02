@@ -67,7 +67,8 @@ class HonorAttachmentPersistenceTest {
         var honors = new HonorRecordServiceImpl();
         var honorMapper = session.getMapper(IHonorRecordMapper.class);
         ReflectionTestUtils.setField(honors, "baseMapper", honorMapper);
-        var files = new FileServiceImpl(mock(MinioUtil.class), mock(MinioConfig.class));
+        var files = new FileServiceImpl(mock(MinioUtil.class), mock(MinioConfig.class), mock(top.aiolife.core.lock.StorageObjectLock.class),
+                new top.aiolife.record.service.DoubanCoverUrlPolicy("doubanio.com"));
         ReflectionTestUtils.setField(files, "baseMapper", session.getMapper(IFileMapper.class));
         var proxy = new ProxyFactory(new HonorRecordController(honorMapper, honors, files));
         proxy.addAdvice(new TransactionInterceptor(new DataSourceTransactionManager(source),

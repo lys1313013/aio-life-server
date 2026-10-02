@@ -1,5 +1,6 @@
 package top.aiolife.system.service;
 
+import top.aiolife.core.lock.StorageObjectLock;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
@@ -32,6 +33,7 @@ public class StorageAdminService {
     private final StorageListClient listClient;
     private final MinioClient minioClient;
     private final StorageFileReferenceGuard referenceGuard;
+    private final StorageObjectLock objectLock;
 
     public StoragePageVO list(StorageObjectQuery query) throws Exception {
         String bucket = bucket();
@@ -81,8 +83,10 @@ public class StorageAdminService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "不支持删除目录，请选择具体文件");
         }
         String bucket = bucket();
-        referenceGuard.check(bucket, key);
-        minioClient.removeObject(RemoveObjectArgs.builder().bucket(bucket).object(key).build());
+        try (var lease = objectLock.acquire(bucket, key)) {
+            referenceGuard.check(bucket, key);
+            minioClient.removeObject(RemoveObjectArgs.builder().bucket(bucket).object(key).build());
+        }
     }
 
     private void validateKey(String key) {

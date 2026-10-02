@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import top.aiolife.core.lock.StorageObjectLock;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -51,6 +52,7 @@ public class CbtiAdminController {
     private final CbtiConfig cbtiConfig;
 
     private final CbtiImageInitUtil cbtiImageInitUtil;
+    private final StorageObjectLock objectLock;
 
     @Value("${aio.life.server.base-url}")
     private String serveBaseUrl;
@@ -188,7 +190,8 @@ public class CbtiAdminController {
         String objectName = objectPrefix + normalizedCode + "." + ext;
         String bucketName = resolveBucketName();
 
-        try {
+        // 本方法无外层事务，Mapper 更新返回前已提交；锁覆盖对象写入与引用更新。
+        try (var lease = objectLock.acquire(bucketName, objectName)) {
             minioUtil.uploadFile(bucketName, file, objectName);
             long userId = StpUtil.getLoginIdAsLong();
             exist.setImageObject(objectName);
