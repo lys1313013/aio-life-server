@@ -101,6 +101,16 @@ mvn test -Dtest=TimeTrackerCategoryControllerIntegrationTest#testList_获取分�
 - **ID 生成**：使用雪花算法 `IdType.ASSIGN_ID`
 - **基础实体**：所有业务实体继承 `BaseEntity`，包含 `id`、`createUser`、`createTime`、`updateUser`、`updateTime`、`isDeleted` 字段
 
+### 数据库访问规范（强制）
+
+- MySQL 业务数据访问统一使用 **MyBatis-Plus / MyBatis Mapper**。禁止在生产业务代码中使用 `JdbcTemplate`、`NamedParameterJdbcTemplate`、`JdbcClient` 或直接 JDBC 连接执行 SQL；不能因联表、行锁、性能或编写方便另起一套访问方式。
+- 普通单表增删改查优先使用 `BaseMapper<Entity>` 和类型安全的 Wrapper。联表、`FOR UPDATE`、特殊审计更新等 SQL 放在 `mapper/` 的注解方法或对应 Mapper XML 中，参数使用 `#{...}` 绑定；禁止将用户输入拼接为 SQL。
+- Controller、Service、Guard 只负责接口、业务规则和事务编排，不允许内嵌 SQL。需要读取软删除记录时，在 Mapper 中显式编写 SQL 并说明原因，不能改用 JDBC 绕开逻辑删除。
+- 新增业务表必须同时提供准确的 `@TableName` 实体与 `BaseMapper`，通过 `PhysicalTableEntitySelectIntegrationTest` 的真实 MySQL 全字段查询。禁止添加 JDBC 表清单或跳过表来绕过检查。
+- 迁移数据库访问方式必须保留用户归属、逻辑删除、审计字段、锁顺序和事务边界。需要清空的 nullable 字段使用显式 `set(..., null)` 或字段级 `FieldStrategy.ALWAYS`；不得全局启用空值覆盖。
+- `FOR UPDATE` 等要求重新访问数据库的查询必须禁用查询缓存，并刷新一级缓存（如 `@Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)`），避免锁查询被缓存结果替代。
+- 测试夹具、数据库结构检查可以使用 JDBC；数据源和事务管理配置不属于业务查询。`PersistenceArchitectureTest` 自动检查生产源码边界，不允许为业务代码添加豁免。
+
 ### API 响应格式
 
 ```java

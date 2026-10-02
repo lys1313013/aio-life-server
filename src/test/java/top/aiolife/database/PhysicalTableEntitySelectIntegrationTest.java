@@ -30,11 +30,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * 使用当前配置的真实 MySQL 数据库验证物理表、实体与 MyBatis-Plus / JDBC 的字段映射。
+ * 使用当前配置的真实 MySQL 数据库验证物理表、实体与 MyBatis-Plus 的字段映射。
  *
  * <p>测试只执行 SELECT，不插入、更新或删除任何数据。每个 Mapper 都通过未指定 select
  * 字段的 QueryWrapper 查询一条数据，以便 MyBatis-Plus 按实体映射生成全部持久化字段；
- * 仅使用 JDBC 的表通过显式字段清单执行同样的检查。</p>
+ * 所有业务物理表必须接入实体 Mapper，不允许通过额外清单绕过检查。</p>
  */
 @ActiveProfiles("test")
 @SpringBootTest(
@@ -43,17 +43,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 )
 @Transactional(readOnly = true)
 class PhysicalTableEntitySelectIntegrationTest {
-
-    // 银行卡模块使用 JdbcTemplate；显式校验其字段，不能因没有 BaseMapper 而漏检或跳过。
-    private static final Map<String, String> JDBC_TABLE_COLUMNS = Map.of(
-            "bank_card", "id,user_id,bank_id,custom_bank_name,card_name,alias,card_type,"
-                    + "card_no_ciphertext,card_no_fingerprint,card_no_last4,branch_name,status,"
-                    + "opened_date,expiry_month,credit_limit,statement_day,repayment_day,"
-                    + "cover_color,cover_source_url,sort_order,remark,is_deleted,"
-                    + "create_user,create_time,update_user,update_time",
-            "bank_card_tag_rel", "id,user_id,bank_card_id,tag_id,is_deleted,"
-                    + "create_user,create_time,update_user,update_time"
-    );
 
     private static final String PHYSICAL_TABLE_SQL = """
             SELECT table_name
@@ -82,8 +71,7 @@ class PhysicalTableEntitySelectIntegrationTest {
         Map<String, List<MapperBinding>> bindingsByTable = discoverMapperBindings(failures);
 
         for (String table : physicalTables) {
-            if (!isMigrationBackupTable(table) && !bindingsByTable.containsKey(table)
-                    && !JDBC_TABLE_COLUMNS.containsKey(table)) {
+            if (!isMigrationBackupTable(table) && !bindingsByTable.containsKey(table)) {
                 failures.add("物理表 `" + table + "` 没有对应的 MyBatis-Plus 实体 Mapper；字段："
                         + describeColumns(table));
             }
@@ -104,14 +92,6 @@ class PhysicalTableEntitySelectIntegrationTest {
                 } catch (Exception exception) {
                     failures.add(binding.description() + " 查询失败：" + rootMessage(exception));
                 }
-            }
-        }
-
-        for (Map.Entry<String, String> entry : JDBC_TABLE_COLUMNS.entrySet()) {
-            try {
-                jdbcTemplate.queryForList("SELECT " + entry.getValue() + " FROM `" + entry.getKey() + "` LIMIT 1");
-            } catch (Exception exception) {
-                failures.add("JDBC 物理表 `" + entry.getKey() + "` 全字段查询失败：" + rootMessage(exception));
             }
         }
 

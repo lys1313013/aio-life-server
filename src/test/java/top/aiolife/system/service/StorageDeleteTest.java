@@ -1,5 +1,9 @@
 package top.aiolife.system.service;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import org.mybatis.spring.SqlSessionTemplate;
+import top.aiolife.system.mapper.StorageFileReferenceMapper;
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
 import java.util.UUID;
@@ -22,7 +26,7 @@ class StorageDeleteTest {
     StorageAdminService service;
 
     @BeforeEach
-    void setup() {
+    void setup() throws Exception {
         var ds = new JdbcDataSource();
         ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds);
@@ -30,8 +34,14 @@ class StorageDeleteTest {
         var config = new MinioConfig();
         config.setBucketName("business");
         minio = mock(MinioClient.class);
+        var mybatis = new MybatisConfiguration();
+        mybatis.addMapper(StorageFileReferenceMapper.class);
+        var factory = new MybatisSqlSessionFactoryBean();
+        factory.setDataSource(ds);
+        factory.setConfiguration(mybatis);
+        var session = new SqlSessionTemplate(factory.getObject());
         service = new StorageAdminService(config, mock(StorageListClient.class), minio,
-                new StorageFileReferenceGuard(jdbc));
+                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class)));
     }
 
     void record(String name, Long owner, String type, Long bizId, int deleted) {

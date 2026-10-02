@@ -5,10 +5,12 @@ import java.net.URI;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import top.aiolife.bankcard.mapper.BankCardRepository;
+import top.aiolife.bankcard.mapper.*;
+import top.aiolife.bankcard.pojo.entity.BankCardTagRelEntity;
+import top.aiolife.bankcard.pojo.dto.BankCardTemplateCover;
+import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.bankcard.pojo.entity.BankCardEntity;
 import top.aiolife.bankcard.pojo.req.BankCardReq;
 import top.aiolife.bankcard.pojo.req.BankCardTagReq;
@@ -19,20 +21,21 @@ import top.aiolife.bankcard.pojo.vo.BankCardVO;
 public class BankCardService {
     public static final String TAG_TYPE = "bank_card_tag";
     public static final String COVER_TYPE = "bank_card_cover";
-    private final BankCardRepository repository;
+    private final BankCardMapper cardMapper;
     private final BankCardCrypto crypto;
     private final BankCardDictionaryGuard guard;
-    private final JdbcTemplate jdbc;
+    private final BankCardDictionaryMapper dictionaryMapper;
+    private final BankCardTagMapper tagMapper;
+    private final BankCardTagRelMapper tagRelMapper;
+    private final BankCardFileMapper fileMapper;
+    private final BankCardCoverTemplateMapper templateMapper;
     private final BankCardCoverTemplateService templates;
 
     public List<BankCardVO.Bank> banks() {
-        return jdbc.query("SELECT d.dict_code,d.dict_label,d.dict_value,d.status,t.status AS type_status FROM sys_dict_data d JOIN sys_dict_type t ON t.dict_id=d.dict_id WHERE t.dict_type='bank' AND t.is_deleted=0 AND d.is_deleted=0 ORDER BY d.dict_sort,d.dict_code",
-                (rs,n) -> new BankCardVO.Bank(rs.getString("dict_code"), rs.getString("dict_label"), rs.getString("dict_value"),
-                        "0".equals(rs.getString("status")) && "0".equals(rs.getString("type_status"))));
+        return dictionaryMapper.selectBanks();
     }
     public List<BankCardVO.Tag> tags(long userId) {
-        return jdbc.query("SELECT id,dict_label,color,status FROM user_dict_data WHERE user_id=? AND dict_type=? AND is_deleted=0 ORDER BY dict_sort,id",
-                (rs,n) -> new BankCardVO.Tag(rs.getString("id"), rs.getString("dict_label"), rs.getString("color"), rs.getString("status")), userId, TAG_TYPE);
+        return tagMapper.selectTags(userId);
     }
     public List<BankCardVO> list(long userId) {
         var bankMap = new HashMap<String, BankCardVO.Bank>();
@@ -40,22 +43,17 @@ public class BankCardService {
         var tagMap = new HashMap<String, BankCardVO.Tag>();
         tags(userId).forEach(t -> tagMap.put(t.id(), t));
         Map<Long, List<BankCardVO.Tag>> cardTags = new HashMap<>();
-        jdbc.query("SELECT bank_card_id,tag_id FROM bank_card_tag_rel WHERE user_id=? AND is_deleted=0 ORDER BY id", rs -> {
-            var tag = tagMap.get(rs.getString("tag_id"));
-            if (tag != null) cardTags.computeIfAbsent(rs.getLong("bank_card_id"), k -> new ArrayList<>()).add(tag);
-        }, userId);
+        for (var relation : tagRelMapper.listByUser(userId)) {
+            var tag = tagMap.get(relation.getTagId().toString());
+            if (tag != null) cardTags.computeIfAbsent(relation.getBankCardId(), k -> new ArrayList<>()).add(tag);
+        }
         Map<Long, List<String>> covers = new HashMap<>();
-        jdbc.query("SELECT id,biz_id FROM file WHERE biz_type=? AND create_user=? AND is_deleted=0 AND is_public=0 AND biz_id IS NOT NULL", rs -> {
-            covers.computeIfAbsent(rs.getLong("biz_id"), k -> new ArrayList<>()).add(rs.getString("id"));
-        }, COVER_TYPE, userId);
-        Map<Long, Map<String,Object>> templateCovers = new HashMap<>();
-        jdbc.queryForList("""
-            SELECT DISTINCT t.id,t.name,t.source_url,f.id AS file_id FROM bank_card c
-            JOIN bank_card_cover_template t ON t.id=c.cover_template_id AND t.is_deleted=0
-            LEFT JOIN file f ON f.biz_id=t.id AND f.biz_type='bank_card_template_cover' AND f.is_deleted=0
-            WHERE c.user_id=? AND c.is_deleted=0
-            """,userId).forEach(row -> templateCovers.put(((Number)row.get("id")).longValue(),row));
-        return repository.list(userId).stream().map(card -> {
+        for (var file : fileMapper.selectPrivateCovers(userId)) {
+            covers.computeIfAbsent(file.bizId(), k -> new ArrayList<>()).add(file.id());
+        }
+        Map<Long, BankCardTemplateCover> templateCovers = new HashMap<>();
+        templateMapper.selectUsedCovers(userId).forEach(cover -> templateCovers.put(cover.id(), cover));
+        return cardMapper.list(userId).stream().map(card -> {
             var vo = new BankCardVO();
             BeanUtils.copyProperties(card, vo);
             vo.setId(card.getId().toString());
@@ -70,9 +68,9 @@ public class BankCardService {
             vo.setCoverTemplateId(card.getCoverTemplateId()==null ? null : card.getCoverTemplateId().toString());
             var template=templateCovers.get(card.getCoverTemplateId());
             if (template!=null) {
-                vo.setCoverTemplateFileId((String)template.get("file_id"));
-                vo.setCoverTemplateName((String)template.get("name"));
-                vo.setCoverSourceUrl((String)template.get("source_url"));
+                vo.setCoverTemplateFileId(template.fileId());
+                vo.setCoverTemplateName(template.name());
+                vo.setCoverSourceUrl(template.sourceUrl());
             }
             return vo;
         }).toList();
@@ -82,25 +80,24 @@ public class BankCardService {
                 .orElseThrow(() -> new IllegalArgumentException("银行卡不存在或无权访问"));
     }
     public String reveal(long userId, long id) {
-        var card = repository.owned(userId, id);
+        var card = cardMapper.owned(userId, id);
         if (card.getCardNoCiphertext() == null) throw new IllegalArgumentException("尚未填写卡号");
         return crypto.decrypt(card.getCardNoCiphertext(), userId, id);
     }
     private void validateBank(Long bankId, BankCardEntity existing) {
-        var typeIds = jdbc.queryForList("SELECT t.dict_id FROM sys_dict_type t JOIN sys_dict_data d ON d.dict_id=t.dict_id WHERE d.dict_code=? AND t.dict_type='bank' AND t.is_deleted=0 AND d.is_deleted=0", Long.class, bankId);
-        if (typeIds.isEmpty()) throw new IllegalArgumentException("银行配置不存在");
-        guard.lockType(typeIds.getFirst());
+        Long typeId = dictionaryMapper.selectBankTypeId(bankId);
+        if (typeId == null) throw new IllegalArgumentException("银行配置不存在");
+        guard.lockType(typeId);
         // 锁获取后重新读，禁止与管理员删除/停用操作竞争。
-        var options = jdbc.query("SELECT d.status,t.status AS type_status FROM sys_dict_data d JOIN sys_dict_type t ON t.dict_id=d.dict_id WHERE d.dict_code=? AND t.dict_type='bank' AND d.is_deleted=0 AND t.is_deleted=0 FOR UPDATE",
-                (rs,n) -> "0".equals(rs.getString("status")) && "0".equals(rs.getString("type_status")), bankId);
-        if (options.isEmpty()) throw new IllegalArgumentException("银行配置不存在");
-        if (!options.getFirst() && (existing == null || !Objects.equals(existing.getBankId(), bankId)))
+        Boolean enabled = dictionaryMapper.lockBankEnabled(bankId);
+        if (enabled == null) throw new IllegalArgumentException("银行配置不存在");
+        if (!enabled && (existing == null || !Objects.equals(existing.getBankId(), bankId)))
             throw new IllegalArgumentException("该银行已停用，请选择其他银行");
     }
     @Transactional(rollbackFor = Exception.class)
     public BankCardVO save(long userId, Long id, BankCardReq req) {
         guard.lockUser(userId);
-        BankCardEntity existing = id == null ? null : repository.owned(userId, id);
+        BankCardEntity existing = id == null ? null : cardMapper.owned(userId, id);
         String customBankName = req.getCustomBankName() == null ? null : req.getCustomBankName().strip();
         if (customBankName != null && customBankName.isEmpty()) customBankName = null;
         if ((req.getBankId() == null) == (customBankName == null))
@@ -136,7 +133,7 @@ public class BankCardService {
         if (req.getCardNo()!=null && !req.getCardNo().isBlank()) {
             String number = crypto.normalize(req.getCardNo());
             card.setCardNoFingerprint(crypto.fingerprint(number,userId));
-            if (repository.duplicate(userId,card.getId(),card.getCardNoFingerprint())) throw new IllegalArgumentException("该银行卡已添加");
+            if (cardMapper.duplicate(userId,card.getId(),card.getCardNoFingerprint())) throw new IllegalArgumentException("该银行卡已添加");
             card.setCardNoCiphertext(crypto.encrypt(number,userId,card.getId()));
             card.setCardNoLast4(number.substring(number.length()-4));
         } else if (existing != null) {
@@ -144,7 +141,7 @@ public class BankCardService {
             card.setCardNoLast4(existing.getCardNoLast4());
         }
         Set<Long> tagIds = new LinkedHashSet<>(req.getTagIds());
-        Set<Long> oldTags = new HashSet<>(jdbc.queryForList("SELECT tag_id FROM bank_card_tag_rel WHERE bank_card_id=? AND user_id=? AND is_deleted=0",Long.class,card.getId(),userId));
+        Set<Long> oldTags = new HashSet<>(tagRelMapper.selectTagIds(card.getId(), userId));
         Map<Long,BankCardVO.Tag> allowedTags = new HashMap<>();
         tags(userId).forEach(t -> allowedTags.put(Long.valueOf(t.id()),t));
         for (Long tagId : tagIds) {
@@ -152,29 +149,36 @@ public class BankCardService {
             if (tag==null || (!"0".equals(tag.status()) && !oldTags.contains(tagId))) throw new IllegalArgumentException("标签不存在、已停用或不属于当前用户");
         }
         if (req.getCoverFileIds().isEmpty()) card.setCoverSourceUrl(null);
-        repository.save(card,existing==null);
-        jdbc.update("UPDATE bank_card_tag_rel SET is_deleted=1,update_user=?,update_time=CURRENT_TIMESTAMP WHERE bank_card_id=? AND user_id=? AND is_deleted=0",userId,card.getId(),userId);
-        for (Long tagId : tagIds) jdbc.update("INSERT INTO bank_card_tag_rel(id,user_id,bank_card_id,tag_id,is_deleted,create_user,update_user,create_time,update_time) VALUES(?,?,?,?,0,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)",IdWorker.getId(),userId,card.getId(),tagId,userId,userId);
+        cardMapper.save(card,existing==null);
+        tagRelMapper.deleteByCard(userId, card.getId());
+        for (Long tagId : tagIds) {
+            var relation = new BankCardTagRelEntity();
+            relation.setUserId(userId);
+            relation.setBankCardId(card.getId());
+            relation.setTagId(tagId);
+            relation.fillCreateCommonField(userId);
+            tagRelMapper.insert(relation);
+        }
         replaceCover(userId,card.getId(),req.getCoverFileIds());
         return detail(userId,card.getId());
     }
     private void replaceCover(long userId,long cardId,List<String> ids) {
         String fileId = ids.isEmpty() ? null : ids.getFirst();
         if (fileId != null) {
-            var rows = jdbc.queryForList("SELECT biz_id FROM file WHERE id=? AND biz_type=? AND create_user=? AND is_public=0 AND is_deleted=0 FOR UPDATE",fileId,COVER_TYPE,userId);
-            if (rows.size()!=1 || (rows.getFirst().get("biz_id")!=null && ((Number)rows.getFirst().get("biz_id")).longValue()!=cardId))
+            var file = fileMapper.lockPrivateCover(fileId, userId);
+            if (file == null || (file.bizId() != null && file.bizId() != cardId))
                 throw new IllegalArgumentException("卡面文件不存在、已被使用或无权绑定");
         }
-        jdbc.update("UPDATE file SET is_deleted=1,update_user=?,update_time=CURRENT_TIMESTAMP WHERE biz_type=? AND biz_id=? AND create_user=? AND is_deleted=0 AND (? IS NULL OR id<>?)",userId,COVER_TYPE,cardId,userId,fileId,fileId);
-        if (fileId!=null) jdbc.update("UPDATE file SET biz_id=?,update_user=?,update_time=CURRENT_TIMESTAMP WHERE id=? AND create_user=? AND is_deleted=0",cardId,userId,fileId,userId);
+        fileMapper.deletePrivateCoversExcept(userId, cardId, fileId);
+        if (fileId != null) fileMapper.bindPrivateCover(cardId, userId, fileId);
     }
     @Transactional(rollbackFor = Exception.class)
     public void delete(long userId,long id) {
         guard.lockUser(userId);
-        var existing=repository.owned(userId,id);
+        var existing=cardMapper.owned(userId,id);
         templates.validateSelection(existing.getCoverTemplateId(),null,null,null);
-        jdbc.update("UPDATE bank_card SET is_deleted=1,update_user=?,update_time=CURRENT_TIMESTAMP WHERE id=? AND user_id=? AND is_deleted=0",userId,id,userId);
-        jdbc.update("UPDATE bank_card_tag_rel SET is_deleted=1,update_user=?,update_time=CURRENT_TIMESTAMP WHERE bank_card_id=? AND user_id=? AND is_deleted=0",userId,id,userId);
+        cardMapper.softDeleteOwned(userId, id);
+        tagRelMapper.deleteByCard(userId, id);
         replaceCover(userId,id,List.of());
     }
     @Transactional(rollbackFor = Exception.class)
@@ -183,18 +187,33 @@ public class BankCardService {
         String name = req.name().strip();
         if(name.isEmpty()) throw new IllegalArgumentException("请输入标签名称");
         if(id!=null && tags(userId).stream().noneMatch(t->t.id().equals(id.toString()))) throw new IllegalArgumentException("标签不存在或无权修改");
-        long duplicates = jdbc.queryForObject("SELECT COUNT(*) FROM user_dict_data WHERE user_id=? AND dict_type=? AND is_deleted=0 AND dict_label=? AND id<>?",Long.class,userId,TAG_TYPE,name,id==null?0L:id);
+        long duplicates = tagMapper.countDuplicate(userId, name, id == null ? 0L : id);
         if(duplicates>0) throw new IllegalArgumentException("标签名称已存在");
         long tagId = id==null?IdWorker.getId():id;
-        if(id==null) jdbc.update("INSERT INTO user_dict_data(id,user_id,dict_type,dict_label,dict_value,color,dict_sort,status,is_default,is_readonly,is_deleted,create_user,update_user,create_time,update_time) VALUES(?,?,?,?,?,?,0,?,'N','N',0,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)",tagId,userId,TAG_TYPE,name,Long.toString(tagId),req.color(),req.status(),userId,userId);
-        else jdbc.update("UPDATE user_dict_data SET dict_label=?,color=?,status=?,update_user=?,update_time=CURRENT_TIMESTAMP WHERE id=? AND user_id=? AND dict_type=? AND is_deleted=0",name,req.color(),req.status(),userId,tagId,userId,TAG_TYPE);
+        if (id == null) {
+            var tag = new UserDictDataEntity();
+            tag.setId(tagId);
+            tag.setUserId(userId);
+            tag.setDictType(TAG_TYPE);
+            tag.setDictLabel(name);
+            tag.setDictValue(Long.toString(tagId));
+            tag.setColor(req.color());
+            tag.setDictSort(0);
+            tag.setStatus(req.status());
+            tag.setIsDefault("N");
+            tag.setIsReadonly("N");
+            tag.fillCreateCommonField(userId);
+            tagMapper.insert(tag);
+        } else {
+            tagMapper.updateTag(userId, tagId, name, req.color(), req.status());
+        }
         return new BankCardVO.Tag(Long.toString(tagId),name,req.color(),req.status());
     }
     @Transactional(rollbackFor = Exception.class)
     public void deleteTag(long userId,long id) {
         guard.lockUser(userId);
         if(tags(userId).stream().noneMatch(t->t.id().equals(Long.toString(id)))) throw new IllegalArgumentException("标签不存在或无权删除");
-        jdbc.update("UPDATE user_dict_data SET is_deleted=1,update_user=?,update_time=CURRENT_TIMESTAMP WHERE id=? AND user_id=? AND dict_type=?",userId,id,userId,TAG_TYPE);
-        jdbc.update("UPDATE bank_card_tag_rel SET is_deleted=1,update_user=?,update_time=CURRENT_TIMESTAMP WHERE tag_id=? AND user_id=? AND is_deleted=0",userId,id,userId);
+        tagMapper.deleteTag(userId, id);
+        tagRelMapper.deleteByTag(userId, id);
     }
 }

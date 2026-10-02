@@ -19,7 +19,7 @@ import java.util.List;
 public class FilePreviewGuard {
 
     private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
-    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
+    private final top.aiolife.bankcard.mapper.BankCardFileMapper bankCardFileMapper;
 
     /**
      * 访问判定结果
@@ -85,23 +85,14 @@ public class FilePreviewGuard {
             if (isAdmin(userId)) return AccessDecision.ALLOW;
             if (fileEntity.getBizId()==null) return AccessDecision.FORBIDDEN;
             secondaryLockGuard.checkMenus(userId,"/finance/bank-cards");
-            long visible=jdbc.queryForObject("""
-                SELECT COUNT(*) FROM bank_card_cover_template t
-                JOIN sys_dict_data d ON d.dict_code=t.bank_id
-                JOIN sys_dict_type dt ON dt.dict_id=d.dict_id
-                WHERE t.id=? AND t.is_deleted=0 AND (
-                  (t.is_enabled=1 AND d.status='0' AND d.is_deleted=0 AND dt.status='0' AND dt.is_deleted=0 AND dt.dict_type='bank')
-                  OR EXISTS(SELECT 1 FROM bank_card c WHERE c.cover_template_id=t.id AND c.user_id=? AND c.is_deleted=0))
-                """,Long.class,fileEntity.getBizId(),userId);
+            long visible = bankCardFileMapper.countVisibleTemplate(fileEntity.getBizId(), userId);
             return visible>0 ? AccessDecision.ALLOW : AccessDecision.FORBIDDEN;
         }
         if ("bank_card_cover".equals(fileEntity.getBizType())) {
             if (userId == null) return AccessDecision.UNAUTHORIZED;
             if (!userId.equals(fileEntity.getCreateUser())) return AccessDecision.FORBIDDEN;
             secondaryLockGuard.checkMenus(userId, "/finance/bank-cards");
-            if (fileEntity.getBizId() != null && jdbc.queryForObject(
-                    "SELECT COUNT(*) FROM bank_card WHERE id=? AND user_id=? AND is_deleted=0",
-                    Long.class, fileEntity.getBizId(), userId) == 0) return AccessDecision.FORBIDDEN;
+            if (fileEntity.getBizId() != null && bankCardFileMapper.countOwnedCard(fileEntity.getBizId(), userId) == 0) return AccessDecision.FORBIDDEN;
             return AccessDecision.ALLOW;
         }
         if (fileEntity.getIsPublic() == null || fileEntity.getIsPublic() != 0) {

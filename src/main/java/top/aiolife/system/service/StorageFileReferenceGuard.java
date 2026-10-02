@@ -4,7 +4,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.jdbc.core.JdbcTemplate;
+import top.aiolife.system.mapper.StorageFileReferenceMapper;
+import top.aiolife.system.pojo.dto.StorageFileReference;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
@@ -14,21 +15,14 @@ import top.aiolife.record.enums.FileBizType;
 @Component
 @RequiredArgsConstructor
 public class StorageFileReferenceGuard {
-    private final JdbcTemplate jdbc;
+    private final StorageFileReferenceMapper mapper;
 
     public void check(String bucket, String key) {
         String basename = key.substring(key.lastIndexOf('/') + 1);
-        // 不通过 BaseMapper 查询，避免 @TableLogic 自动隐藏仍需保护的历史关联。
-        // LIKE 显式转义，MinIO 对象名中的 %、_、! 均作为普通字符处理。
-        var candidates = jdbc.query("""
-                SELECT id, file_name, create_user, biz_type, biz_id, is_deleted
-                FROM file
-                WHERE file_name IN (?, ?, ?, ?)
-                   OR file_name LIKE ? ESCAPE '!' OR file_name LIKE ? ESCAPE '!'
-                """, (rs, row) -> new Reference(rs.getString("id"), rs.getString("file_name"),
-                rs.getString("create_user"), rs.getString("biz_type"), rs.getString("biz_id"),
-                rs.getInt("is_deleted")), key, basename, bucket + "/" + key, bucket + "/" + basename,
-                "%" + escapeLike("/" + bucket + "/" + key), "%" + escapeLike("/" + bucket + "/" + basename));
+        // 显式查询包含软删除记录；LIKE 中的 %、_、! 均按普通字符处理。
+        var candidates = mapper.selectReferencesIncludingDeleted(key, basename, bucket + "/" + key,
+                bucket + "/" + basename, "%" + escapeLike("/" + bucket + "/" + key),
+                "%" + escapeLike("/" + bucket + "/" + basename));
         var reference = candidates.stream().filter(row -> matches(row, bucket, key)).findFirst();
         if (reference.isPresent()) {
             var row = reference.get();
@@ -40,7 +34,7 @@ public class StorageFileReferenceGuard {
         }
     }
 
-    private boolean matches(Reference row, String bucket, String key) {
+    private boolean matches(StorageFileReference row, String bucket, String key) {
         String name = row.name();
         if (key.equals(name) || (bucket + "/" + key).equals(name)
                 || name.endsWith("/" + bucket + "/" + key)) return true;
@@ -66,5 +60,4 @@ public class StorageFileReferenceGuard {
         return value.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 
-    private record Reference(String id, String name, String owner, String bizType, String bizId, int deleted) {}
 }

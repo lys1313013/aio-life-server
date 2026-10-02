@@ -4,8 +4,8 @@ import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import java.net.URI;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.beans.BeanUtils;
+import top.aiolife.bankcard.mapper.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.bankcard.pojo.entity.BankCardCoverTemplateEntity;
@@ -17,45 +17,27 @@ import top.aiolife.bankcard.pojo.vo.BankCardCoverTemplateVO;
 @RequiredArgsConstructor
 public class BankCardCoverTemplateService {
     public static final String FILE_TYPE = "bank_card_template_cover";
-    private final JdbcTemplate jdbc;
+    private final BankCardCoverTemplateMapper mapper;
     private final BankCardDictionaryGuard guard;
-
-    private static final String SELECT = """
-        SELECT t.*,d.dict_label AS bank_name,f.id AS file_id,
-          (SELECT COUNT(*) FROM bank_card c WHERE c.cover_template_id=t.id AND c.is_deleted=0) AS usage_count
-        FROM bank_card_cover_template t
-        LEFT JOIN sys_dict_data d ON d.dict_code=t.bank_id
-        LEFT JOIN file f ON f.biz_id=t.id AND f.biz_type='bank_card_template_cover' AND f.is_deleted=0
-        WHERE t.is_deleted=0
-        """;
+    private final BankCardDictionaryMapper dictionaryMapper;
+    private final BankCardMapper cardMapper;
+    private final BankCardFileMapper fileMapper;
 
     public List<BankCardCoverTemplateVO> list() {
-        return query(" ORDER BY t.sort_order,t.id", new Object[0]);
-    }
-    private List<BankCardCoverTemplateVO> query(String suffix, Object... args) {
-        return jdbc.query(SELECT + suffix, (rs,n) -> new BankCardCoverTemplateVO(
-                rs.getString("id"),rs.getString("name"),rs.getString("bank_id"),rs.getString("bank_name"),
-                rs.getString("card_type"),rs.getString("source_url"),rs.getInt("is_enabled"),rs.getInt("sort_order"),
-                rs.getString("file_id"),rs.getLong("usage_count")), args);
+        return mapper.selectDetails();
     }
     public BankCardCoverTemplateVO detail(long id) {
-        return query(" AND t.id=?",id).stream().findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("公共卡面不存在"));
+        var detail = mapper.selectDetail(id);
+        if (detail == null) throw new IllegalArgumentException("公共卡面不存在");
+        return detail;
     }
     public List<BankCardCoverTemplateVO.Option> options(long bankId, String cardType) {
-        return jdbc.query("""
-            SELECT t.id,t.name,f.id AS file_id FROM bank_card_cover_template t
-            JOIN file f ON f.biz_id=t.id AND f.biz_type='bank_card_template_cover' AND f.is_deleted=0
-            JOIN sys_dict_data d ON d.dict_code=t.bank_id AND d.is_deleted=0 AND d.status='0'
-            JOIN sys_dict_type dt ON dt.dict_id=d.dict_id AND dt.dict_type='bank' AND dt.is_deleted=0 AND dt.status='0'
-            WHERE t.bank_id=? AND t.card_type=? AND t.is_deleted=0 AND t.is_enabled=1
-            ORDER BY t.sort_order,t.id
-            """, (rs,n) -> new BankCardCoverTemplateVO.Option(rs.getString("id"),rs.getString("name"),rs.getString("file_id")), bankId,cardType);
+        return mapper.selectOptions(bankId, cardType);
     }
     private BankCardCoverTemplateEntity lock(long id) {
-        return jdbc.query("SELECT * FROM bank_card_cover_template WHERE id=? AND is_deleted=0 FOR UPDATE",
-                BeanPropertyRowMapper.newInstance(BankCardCoverTemplateEntity.class),id).stream().findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("公共卡面不存在"));
+        var template = mapper.lockById(id);
+        if (template == null) throw new IllegalArgumentException("公共卡面不存在");
+        return template;
     }
     /** 卡片解除或改绑也拿模板锁；按 ID 排序避免交叉换卡面死锁。 */
     public void validateSelection(Long previousId, Long nextId, Long bankId, String cardType) {
@@ -71,23 +53,19 @@ public class BankCardCoverTemplateService {
                 if (template.getIsEnabled()!=1 || !bankEnabled(bankId))
                     throw new IllegalArgumentException("公共卡面或所属银行已停用");
             }
-            if (jdbc.queryForObject("SELECT COUNT(*) FROM file WHERE biz_type=? AND biz_id=? AND is_deleted=0",Long.class,FILE_TYPE,id)!=1)
+            if (fileMapper.countTemplateFiles(id)!=1)
                 throw new IllegalArgumentException("公共卡面图片不可用");
         }
     }
     private boolean bankEnabled(long id) {
-        return jdbc.queryForObject("""
-            SELECT COUNT(*) FROM sys_dict_data d JOIN sys_dict_type t ON t.dict_id=d.dict_id
-            WHERE d.dict_code=? AND t.dict_type='bank' AND d.is_deleted=0 AND t.is_deleted=0 AND d.status='0' AND t.status='0'
-            """,Long.class,id)>0;
+        return dictionaryMapper.countEnabledBank(id) > 0;
     }
     private void lockBanks() {
-        jdbc.queryForList("SELECT dict_id FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0 ORDER BY dict_id",Long.class)
-                .forEach(guard::lockType);
+        dictionaryMapper.selectBankTypeIds().forEach(guard::lockType);
     }
     private List<Long> references(long id) {
         // 当前读，避免 MySQL REPEATABLE READ 的历史快照漏掉刚提交的引用。
-        return jdbc.queryForList("SELECT id FROM bank_card WHERE cover_template_id=? AND is_deleted=0 FOR UPDATE",Long.class,id);
+        return cardMapper.lockTemplateReferences(id);
     }
     @Transactional(rollbackFor=Exception.class)
     public BankCardCoverTemplateVO save(long userId, Long id, BankCardCoverTemplateReq req) {
@@ -106,21 +84,25 @@ public class BankCardCoverTemplateService {
                 if (!Set.of("http","https").contains(uri.getScheme()) || uri.getHost()==null) throw new IllegalArgumentException();
             } catch (IllegalArgumentException e) { throw new IllegalArgumentException("卡面出处须为完整网页地址"); }
         }
-        var files=jdbc.queryForList("SELECT biz_id,create_user FROM file WHERE id=? AND biz_type=? AND is_deleted=0 AND is_public=0 FOR UPDATE",req.getFileId(),FILE_TYPE);
-        if (files.size()!=1) throw new IllegalArgumentException("请选择有效的公共卡面图片");
-        var file=files.getFirst();
-        Long bound=file.get("biz_id")==null ? null : ((Number)file.get("biz_id")).longValue();
-        if (bound==null ? !Objects.equals(((Number)file.get("create_user")).longValue(),userId) : bound!=templateId)
+        var file = fileMapper.lockTemplateCover(req.getFileId());
+        if (file == null) throw new IllegalArgumentException("请选择有效的公共卡面图片");
+        Long bound = file.bizId();
+        if (bound == null ? !Objects.equals(file.createUser(), userId) : bound != templateId)
             throw new IllegalArgumentException("图片已被使用或不属于本次上传");
-        if (old==null) {
-            jdbc.update("INSERT INTO bank_card_cover_template(id,name,bank_id,card_type,source_url,is_enabled,sort_order,create_user,update_user) VALUES(?,?,?,?,?,?,?,?,?)",
-                    templateId,req.getName().strip(),req.getBankId(),req.getCardType(),source,req.getIsEnabled(),req.getSortOrder(),userId,userId);
+        var template = new BankCardCoverTemplateEntity();
+        BeanUtils.copyProperties(req, template);
+        template.setId(templateId);
+        template.setName(req.getName().strip());
+        template.setSourceUrl(source);
+        if (old == null) {
+            template.fillCreateCommonField(userId);
+            mapper.insert(template);
         } else {
-            jdbc.update("UPDATE bank_card_cover_template SET name=?,bank_id=?,card_type=?,source_url=?,is_enabled=?,sort_order=?,update_user=?,update_time=CURRENT_TIMESTAMP WHERE id=?",
-                    req.getName().strip(),req.getBankId(),req.getCardType(),source,req.getIsEnabled(),req.getSortOrder(),userId,templateId);
+            template.fillUpdateCommonField(userId);
+            mapper.updateById(template);
         }
-        jdbc.update("UPDATE file SET is_deleted=1,update_user=?,update_time=CURRENT_TIMESTAMP WHERE biz_type=? AND biz_id=? AND id<>? AND is_deleted=0",userId,FILE_TYPE,templateId,req.getFileId());
-        jdbc.update("UPDATE file SET biz_id=?,update_user=?,update_time=CURRENT_TIMESTAMP WHERE id=?",templateId,userId,req.getFileId());
+        fileMapper.deleteTemplateCoversExcept(userId, templateId, req.getFileId());
+        fileMapper.bindTemplateCover(templateId, userId, req.getFileId());
         return detail(templateId);
     }
     @Transactional(rollbackFor=Exception.class)
@@ -128,14 +110,14 @@ public class BankCardCoverTemplateService {
         lockBanks();
         var template=lock(id);
         if (enabled==1 && !bankEnabled(template.getBankId())) throw new IllegalArgumentException("所属银行已停用");
-        jdbc.update("UPDATE bank_card_cover_template SET is_enabled=?,update_user=?,update_time=CURRENT_TIMESTAMP WHERE id=?",enabled,userId,id);
+        mapper.setEnabled(userId, id, enabled);
         return detail(id);
     }
     @Transactional(rollbackFor=Exception.class)
     public void delete(long userId,long id) {
         lock(id);
         if (!references(id).isEmpty()) throw new IllegalArgumentException("卡面已被使用，请停用而非删除");
-        jdbc.update("UPDATE bank_card_cover_template SET is_deleted=1,update_user=?,update_time=CURRENT_TIMESTAMP WHERE id=?",userId,id);
-        jdbc.update("UPDATE file SET is_deleted=1,update_user=?,update_time=CURRENT_TIMESTAMP WHERE biz_type=? AND biz_id=? AND is_deleted=0",userId,FILE_TYPE,id);
+        mapper.softDelete(userId, id);
+        fileMapper.deleteTemplateCoversExcept(userId, id, null);
     }
 }

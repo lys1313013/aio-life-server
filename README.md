@@ -98,6 +98,8 @@ aio-life-server/
 
 ## 🚀 快速开始
 
+数据库访问统一使用 MyBatis-Plus / MyBatis Mapper。生产业务代码禁止使用 `JdbcTemplate` 等直接 JDBC 访问方式，Service / Guard 不得内嵌 SQL；联表和行锁也必须放入 Mapper。完整规则见 [AGENTS.md：数据库访问规范](AGENTS.md#数据库访问规范强制)，由 `PersistenceArchitectureTest` 和真实数据库实体映射测试共同检查。
+
 ### 环境要求
 
 - JDK 21+

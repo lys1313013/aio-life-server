@@ -11,7 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import top.aiolife.bankcard.mapper.BankCardRepository;
+import top.aiolife.bankcard.mapper.*;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import org.mybatis.spring.SqlSessionTemplate;
 import top.aiolife.bankcard.pojo.req.*;
 import top.aiolife.bankcard.pojo.vo.BankCardVO;
 import top.aiolife.bankcard.service.*;
@@ -25,6 +28,10 @@ class BankCardServiceTest {
     BankCardService service;
     BankCardDictionaryGuard guard;
     BankCardCrypto crypto;
+    BankCardCoverTemplateService templateService;
+    BankCardFileMapper fileMapper;
+    BankCardMapper cardMapper;
+    BankCardCoverTemplateMapper coverMapper;
     static final String NUMBER = "6222000000001234";
     static final String FILE_A = "a".repeat(32);
     static final String FILE_B = "b".repeat(32);
@@ -48,8 +55,24 @@ class BankCardServiceTest {
                 .replace("USE `aio_life`;", "").replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", "");
         for(String statement:templateDdl.split(";")) if(!statement.isBlank()) jdbc.execute(statement);
         crypto = new BankCardCrypto(Base64.getEncoder().encodeToString(new byte[32]));
-        guard = new BankCardDictionaryGuard(jdbc);
-        service = new BankCardService(new BankCardRepository(jdbc),crypto,guard,jdbc,new BankCardCoverTemplateService(jdbc,guard));
+        var config = new MybatisConfiguration();
+        config.addMappers("top.aiolife.bankcard.mapper");
+        var factory = new MybatisSqlSessionFactoryBean();
+        factory.setDataSource(ds);
+        factory.setConfiguration(config);
+        var session = new SqlSessionTemplate(factory.getObject());
+        var cards = session.getMapper(BankCardMapper.class);
+        var dictionaries = session.getMapper(BankCardDictionaryMapper.class);
+        var covers = session.getMapper(BankCardCoverTemplateMapper.class);
+        cardMapper = cards;
+        coverMapper = covers;
+        var files = session.getMapper(BankCardFileMapper.class);
+        fileMapper = files;
+        guard = new BankCardDictionaryGuard(dictionaries, cards, covers);
+        templateService = new BankCardCoverTemplateService(covers, guard, dictionaries, cards, files);
+        service = new BankCardService(cards, crypto, guard, dictionaries,
+                session.getMapper(BankCardTagMapper.class), session.getMapper(BankCardTagRelMapper.class),
+                files, covers, templateService);
     }
     BankCardReq request() {
         var req=new BankCardReq(); req.setBankId(20L);req.setCardType("debit");req.setStatus("normal");req.setCardNo(NUMBER);return req;
@@ -216,7 +239,7 @@ class BankCardServiceTest {
     }
     @Test void privateCoverGuardChecksOwnerAndDeletedBankCard() {
         var lock=org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class);
-        var preview=new top.aiolife.record.service.FilePreviewGuard(lock,jdbc);
+        var preview=new top.aiolife.record.service.FilePreviewGuard(lock,fileMapper);
         var file=new top.aiolife.record.pojo.entity.FileEntity();
         file.setBizType("bank_card_cover");file.setCreateUser(1L);file.setIsPublic(1);
         assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));
@@ -227,7 +250,7 @@ class BankCardServiceTest {
         org.mockito.Mockito.verify(lock,org.mockito.Mockito.atLeastOnce()).checkMenus(1L,"/finance/bank-cards");
     }
 
-    BankCardCoverTemplateService templates() { return new BankCardCoverTemplateService(jdbc,guard); }
+    BankCardCoverTemplateService templates() { return templateService; }
     BankCardCoverTemplateReq templateReq(String fileId) {
         var req=new BankCardCoverTemplateReq();
         req.setName("测试公共卡面");req.setBankId(20L);req.setCardType("debit");req.setFileId(fileId);
@@ -305,7 +328,7 @@ class BankCardServiceTest {
     @Test void 公共图片拒绝匿名和临时图读取停用只允许已有引用者() {
         long id=template();var req=request();req.setCoverTemplateId(id);create(1,req);
         var menu=org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class);
-        var preview=org.mockito.Mockito.spy(new top.aiolife.record.service.FilePreviewGuard(menu,jdbc));
+        var preview=org.mockito.Mockito.spy(new top.aiolife.record.service.FilePreviewGuard(menu,fileMapper));
         org.mockito.Mockito.doReturn(false).when(preview).isAdmin(org.mockito.ArgumentMatchers.anyLong());
         var file=new top.aiolife.record.pojo.entity.FileEntity();file.setBizType(BankCardCoverTemplateService.FILE_TYPE);file.setIsPublic(1);
         assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));
@@ -325,6 +348,50 @@ class BankCardServiceTest {
             start.countDown();assertNotEquals(selected.get(10,TimeUnit.SECONDS),deleted.get(10,TimeUnit.SECONDS));
             assertEquals(0,jdbc.queryForObject("SELECT COUNT(*) FROM bank_card c JOIN bank_card_cover_template t ON c.cover_template_id=t.id WHERE c.is_deleted=0 AND t.is_deleted=1",Integer.class));
         }
+    }
+
+    @Test void MyBatis更新会清空可选字段并保留创建审计信息() {
+        var req = request();
+        req.setAlias("旧别名"); req.setCardName("旧卡名"); req.setBranchName("旧支行");
+        req.setRemark("旧备注"); req.setCoverColor("#abcdef");
+        req.setOpenedDate(java.time.LocalDate.of(2020, 1, 1));
+        req.setExpiryMonth(java.time.LocalDate.of(2030, 1, 1));
+        long id = Long.parseLong(create(1, req).getId());
+        var createdAt = jdbc.queryForObject("SELECT create_time FROM bank_card WHERE id=?", java.time.LocalDateTime.class, id);
+        req.setAlias(null); req.setCardName(null); req.setBranchName(null); req.setRemark(null);
+        req.setCoverColor(null); req.setOpenedDate(null); req.setExpiryMonth(null); req.setCardNo(null);
+        var edited = tx.execute(status -> service.save(1, id, req));
+        assertNull(edited.getAlias()); assertNull(edited.getCardName()); assertNull(edited.getBranchName());
+        assertNull(edited.getRemark()); assertNull(edited.getCoverColor());
+        assertNull(edited.getOpenedDate()); assertNull(edited.getExpiryMonth());
+        assertEquals(NUMBER, service.reveal(1, id));
+        assertEquals(createdAt, jdbc.queryForObject("SELECT create_time FROM bank_card WHERE id=?", java.time.LocalDateTime.class, id));
+        assertEquals(1L, jdbc.queryForObject("SELECT create_user FROM bank_card WHERE id=?", Long.class, id));
+    }
+
+    @Test void 公共卡面出处与标签颜色支持清空() {
+        long id = template();
+        var req = templateReq(FILE_A); req.setSourceUrl("https://example.com/card");
+        tx.execute(status -> templates().save(1, id, req));
+        req.setSourceUrl(null);
+        assertNull(tx.execute(status -> templates().save(1, id, req)).sourceUrl());
+        var tag = tx.execute(status -> service.saveTag(1, null, new BankCardTagReq("颜色", "#abcdef", "0")));
+        tx.execute(status -> service.saveTag(1, Long.valueOf(tag.id()), new BankCardTagReq("颜色", null, "0")));
+        assertNull(service.tags(1).getFirst().color());
+    }
+
+    @Test void 锁查询在同一事务中也必须重新读取数据库() {
+        long templateId = template();
+        long cardId = Long.parseLong(create(1, request()).getId());
+        tx.executeWithoutResult(status -> {
+            assertEquals("测试公共卡面", coverMapper.lockById(templateId).getName());
+            // 直接修改夹具不会触发 MyBatis 缓存清理，用于验证锁查询自身强制访问数据库。
+            jdbc.update("UPDATE bank_card_cover_template SET name='新名称' WHERE id=?", templateId);
+            assertEquals("新名称", coverMapper.lockById(templateId).getName());
+            assertTrue(cardMapper.lockTemplateReferences(templateId).isEmpty());
+            jdbc.update("UPDATE bank_card SET cover_template_id=? WHERE id=?", templateId, cardId);
+            assertEquals(List.of(cardId), cardMapper.lockTemplateReferences(templateId));
+        });
     }
 
 }

@@ -1,38 +1,41 @@
 package top.aiolife.bankcard.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import top.aiolife.bankcard.mapper.BankCardMapper;
+import top.aiolife.bankcard.mapper.BankCardCoverTemplateMapper;
+import top.aiolife.bankcard.mapper.BankCardDictionaryMapper;
 
 /** 银行字典维护和银行卡写入共享同一行锁，引用校验与修改处于同一事务。 */
 @Service
 @RequiredArgsConstructor
 public class BankCardDictionaryGuard {
-    private final JdbcTemplate jdbc;
+    private final BankCardDictionaryMapper dictionaryMapper;
+    private final BankCardMapper cardMapper;
+    private final BankCardCoverTemplateMapper templateMapper;
+
     public void lockUser(long userId) {
-        if (jdbc.queryForList("SELECT id FROM user WHERE id=? AND is_deleted=0 FOR UPDATE", Long.class, userId).isEmpty())
+        if (dictionaryMapper.lockUser(userId) == null)
             throw new IllegalArgumentException("用户不存在");
     }
     public void lockType(long typeId) {
-        jdbc.queryForList("SELECT dict_id FROM sys_dict_type WHERE dict_id=? FOR UPDATE", Long.class, typeId);
+        dictionaryMapper.lockType(typeId);
     }
     public void checkBankChange(long bankId, Long newTypeId, boolean deleting) {
-        var ids = jdbc.queryForList("SELECT dict_id FROM sys_dict_data WHERE dict_code=? AND is_deleted=0", Long.class, bankId);
-        if (ids.isEmpty()) return;
-        lockType(ids.getFirst());
-        var types = jdbc.queryForList("SELECT dict_type FROM sys_dict_type WHERE dict_id=?", String.class, ids.getFirst());
-        if (!types.contains("bank")) return;
-        if (deleting || (newTypeId != null && !newTypeId.equals(ids.getFirst()))) {
-            var templates = jdbc.queryForList("SELECT id FROM bank_card_cover_template WHERE bank_id=? AND is_deleted=0 FOR UPDATE",Long.class,bankId);
-            if (!templates.isEmpty()) throw new IllegalArgumentException("银行已被公共卡面引用，请停用而非删除或变更类型");
-            var references = jdbc.queryForList("SELECT id FROM bank_card WHERE bank_id=? AND is_deleted=0 FOR UPDATE", Long.class, bankId);
-            if (!references.isEmpty()) throw new IllegalArgumentException("银行已被银行卡引用，请停用而非删除或变更类型");
+        Long typeId = dictionaryMapper.selectTypeId(bankId);
+        if (typeId == null) return;
+        lockType(typeId);
+        if (!"bank".equals(dictionaryMapper.selectType(typeId))) return;
+        if (deleting || (newTypeId != null && !newTypeId.equals(typeId))) {
+            if (!templateMapper.lockBankReferences(bankId).isEmpty())
+                throw new IllegalArgumentException("银行已被公共卡面引用，请停用而非删除或变更类型");
+            if (!cardMapper.lockBankReferences(bankId).isEmpty())
+                throw new IllegalArgumentException("银行已被银行卡引用，请停用而非删除或变更类型");
         }
     }
     public void checkTypeChange(long typeId, String newType, boolean deleting) {
         lockType(typeId);
-        var types = jdbc.queryForList("SELECT dict_type FROM sys_dict_type WHERE dict_id=?", String.class, typeId);
-        if (!types.contains("bank")) return;
+        if (!"bank".equals(dictionaryMapper.selectType(typeId))) return;
         if (deleting || (newType != null && !"bank".equals(newType)))
             throw new IllegalArgumentException("银行字典类型用于银行卡模块，不能删除或变更标识，可停用");
     }
