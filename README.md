@@ -34,6 +34,19 @@
 - **Neo4j** — 图数据库（人际关系图谱，可选）
 - **MinIO** — 对象存储服务
 
+#### 管理员对象存储浏览
+
+Web 入口为「系统管理 → 对象存储」。读取 `AIO_LIFE_MINIO_BUCKET_NAME` 配置的业务桶，支持目录、路径前缀筛选、游标分页、图片预览及下载，包含未登记到业务 `file` 表的对象。每页默认 24 条，最多 100 条，不扫描全桶统计总数。支持删除没有 file 表关联的单个对象，不提供上传、目录批量删除或桶策略修改。
+
+- `GET /api/system/storage/objects`：`prefix`、`cursor`、`pageSize`；`nextCursor` 为空表示末页，切换前缀后重置游标。
+- `GET /api/system/storage/preview?key=...`：预览不超过 20 MB 的 JPG、PNG、GIF、WebP、AVIF、BMP 图片。
+- `GET /api/system/storage/download?key=...`：以附件方式下载，其他格式也可使用。
+- `DELETE /api/system/storage/object?key=...`：删除具体文件前实时查询 `file` 表；匹配完整对象名、历史带桶路径及旧文件名/属主/业务目录组合。有任意关联（包括 `biz_id` 为空、软删除记录）均返回 HTTP 409，并提示关联记录 ID 和业务；查库失败不会执行存储删除。
+
+所有入口都校验 `admin` 角色，包括预览、下载和删除。前端通过 Authorization 请求图片 Blob；不返回 MinIO 凭据、公开链接或签名链接，不修改现有桶访问策略。对象 key 按原始值传递，由请求客户端编码，保留中文、空格、`+`、`#` 和目录分隔符。文件大小沿用全局 Long 序列化约定，Web 兼容字符串数值。
+
+已有数据库升级时执行 `sql/2_ini_data/2026-10-02_storage_admin_menu.sql`（可重复执行）。SQL 直接写菜单不会主动清理 Redis 菜单缓存：执行后在管理员「权限菜单」中保存一次菜单，触发共享缓存版本更新，再重新登录以刷新前端路由。MinIO 凭据需要业务桶的 ListBucket、GetObject 与 DeleteObject 权限。
+
 ### 认证与安全
 
 - **Sa-Token 1.40.0** — 轻量级认证框架（JWT 模式）
