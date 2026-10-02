@@ -13,9 +13,13 @@ import java.util.List;
 @Data
 public class ThoughtSaveReq {
 
+    @jakarta.validation.constraints.NotBlank(message = "闪念内容不能为空")
     private String content;
 
+    @jakarta.validation.constraints.Min(0)
+    @jakarta.validation.constraints.Max(1)
     private Integer isPinned;
 
-    private List<ThoughtSaveEventReq> events;
+    @jakarta.validation.Valid
+    private List<@jakarta.validation.constraints.NotNull ThoughtSaveEventReq> events;
 }

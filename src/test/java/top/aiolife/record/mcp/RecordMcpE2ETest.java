@@ -164,7 +164,7 @@ public class RecordMcpE2ETest {
             );
         }
 
-        @Bean @Primary public ThoughtController thoughtController() { return new ThoughtController(null, null); }
+        @Bean @Primary public ThoughtController thoughtController() { return new ThoughtController(null, null, null); }
         @Bean @Primary public TimeTrackerCategoryController timeTrackerCategoryController() { return new TimeTrackerCategoryController(null); }
         @Bean @Primary public TaskController taskController() { return new TaskController(null, null, null); }
         @Bean @Primary public TaskDetailController taskDetailController() { return new TaskDetailController(null, null); }

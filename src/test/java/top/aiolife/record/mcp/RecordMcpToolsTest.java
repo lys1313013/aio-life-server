@@ -83,7 +83,7 @@ class RecordMcpToolsTest {
             }
         };
 
-        ThoughtController thoughtController = new ThoughtController(null, null) {
+        ThoughtController thoughtController = new ThoughtController(null, null, null) {
             @Override
             public ApiResponse<Boolean> save(ThoughtSaveReq req) {
                 thoughtSaved = true;

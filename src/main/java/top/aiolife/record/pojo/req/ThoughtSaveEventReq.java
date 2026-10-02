@@ -11,5 +11,6 @@ import lombok.Data;
 @Data
 public class ThoughtSaveEventReq {
 
+    @jakarta.validation.constraints.NotBlank(message = "关联事件内容不能为空")
     private String content;
 }

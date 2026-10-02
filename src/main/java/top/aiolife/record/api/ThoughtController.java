@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import top.aiolife.record.service.ThoughtCreationService;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -31,7 +32,6 @@ import top.aiolife.record.pojo.entity.ThoughtEntity;
 import top.aiolife.record.pojo.entity.ThoughtRelaEventEntity;
 import top.aiolife.record.pojo.query.ThoughtQuery;
 import top.aiolife.record.pojo.req.CommonReq;
-import top.aiolife.record.pojo.req.ThoughtSaveEventReq;
 import top.aiolife.record.pojo.req.ThoughtSaveReq;
 import top.aiolife.record.pojo.req.ThoughtUpdateReq;
 import top.aiolife.record.pojo.vo.ThoughtRecordVO;
@@ -50,6 +50,7 @@ public class ThoughtController {
     private final IThoughtMapper thoughtMapper;
 
     private final IRelaEventMapper relaEventMapper;
+    private final ThoughtCreationService thoughtCreationService;
 
     public IThoughtMapper getBaseMapper() {
         return thoughtMapper;
@@ -96,26 +97,8 @@ public class ThoughtController {
     }
 
     @PostMapping
-    public ApiResponse<Boolean> save(@RequestBody ThoughtSaveReq req) {
-        Long loginId = StpUtil.getLoginIdAsLong();
-        ThoughtEntity entity = new ThoughtEntity();
-        entity.setContent(req.getContent());
-        entity.setUserId(loginId);
-        entity.setCreateUser(loginId);
-        entity.setUpdateTime(LocalDateTime.now());
-        if (req.getIsPinned() != null) {
-            entity.setIsPinned(req.getIsPinned());
-        }
-        getBaseMapper().insert(entity);
-        List<ThoughtSaveEventReq> events = req.getEvents();
-        if (events != null) {
-            events.forEach(eventReq -> {
-                ThoughtRelaEventEntity eventEntity = new ThoughtRelaEventEntity();
-                eventEntity.setThoughtId(entity.getId());
-                eventEntity.setContent(eventReq.getContent());
-                relaEventMapper.insert(eventEntity);
-            });
-        }
+    public ApiResponse<Boolean> save(@Valid @RequestBody ThoughtSaveReq req) {
+        thoughtCreationService.create(StpUtil.getLoginIdAsLong(), req);
         return ApiResponse.success(true);
     }
 
