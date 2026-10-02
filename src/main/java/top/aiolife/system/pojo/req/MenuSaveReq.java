@@ -18,6 +18,9 @@ public class MenuSaveReq {
 
     private String path;
 
+    /** 图标颜色，六位十六进制；为空时使用默认颜色。 */
+    private String iconColor;
+
     private String component;
 
     private String redirect;

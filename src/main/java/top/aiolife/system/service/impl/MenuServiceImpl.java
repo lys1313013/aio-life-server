@@ -100,7 +100,7 @@ public class MenuServiceImpl implements IMenuService {
         row.put("menuId", m.getId());
         row.put("title", meta.get("title"));
         row.put("icon", meta.get("icon"));
-        row.put("color", meta.get("color"));
+        row.put("color", m.getIconColor());
         row.put("path", m.getPath());
         row.put("target", meta.get("link") == null ? "self" : "blank");
         row.put("parentId", m.getParentId());
@@ -253,6 +253,10 @@ public class MenuServiceImpl implements IMenuService {
         if (StringUtils.hasText(req.getPath()) && req.getPath().length() > 255) {
             throw new IllegalArgumentException("path 过长");
         }
+        if (StringUtils.hasText(req.getIconColor())
+                && !req.getIconColor().trim().matches("^#[0-9a-fA-F]{6}$")) {
+            throw new IllegalArgumentException("图标颜色必须为六位十六进制颜色，如 #427bea");
+        }
         if (StringUtils.hasText(req.getComponent())) {
             validateComponent(req.getComponent());
         }
@@ -277,6 +281,7 @@ public class MenuServiceImpl implements IMenuService {
     private void fillEntity(SysMenuEntity entity, MenuSaveReq req) throws Exception {
         entity.setParentId(req.getParentId() == null ? 0L : req.getParentId());
         entity.setName(req.getName());
+        entity.setIconColor(StringUtils.hasText(req.getIconColor()) ? req.getIconColor().trim() : null);
         if (StringUtils.hasText(req.getPath())) {
             entity.setPath(req.getPath());
         }
@@ -348,6 +353,7 @@ public class MenuServiceImpl implements IMenuService {
         vo.setPath(entity.getPath());
         vo.setName(entity.getName());
         vo.setComponent(entity.getComponent());
+        vo.setIconColor(entity.getIconColor());
         vo.setRedirect(entity.getRedirect());
         Map<String, Object> meta = readMeta(entity.getMeta());
         if (meta == null) {
@@ -365,6 +371,7 @@ public class MenuServiceImpl implements IMenuService {
         vo.setPath(entity.getPath());
         vo.setName(entity.getName());
         vo.setComponent(entity.getComponent());
+        vo.setIconColor(entity.getIconColor());
         vo.setRedirect(entity.getRedirect());
         vo.setMeta(readMeta(entity.getMeta()));
         vo.setRoles(entity.getRoles());

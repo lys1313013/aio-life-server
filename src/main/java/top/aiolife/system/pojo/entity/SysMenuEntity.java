@@ -1,6 +1,8 @@
 package top.aiolife.system.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import lombok.Getter;
 import lombok.Setter;
 import top.aiolife.core.pojo.entity.BaseEntity;
@@ -21,6 +23,10 @@ public class SysMenuEntity extends BaseEntity {
     private String name;
 
     private String path;
+
+    /** 图标颜色，六位十六进制；为空时使用默认颜色。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String iconColor;
 
     private String component;
 

@@ -140,7 +140,7 @@ public class QuickNavServiceImpl implements IQuickNavService {
         vo.setEnabled(row.getEnabled());
         vo.setTitle(str(meta, "title"));
         vo.setIcon(str(meta, "icon"));
-        vo.setColor(str(meta, "color"));
+        vo.setColor(menu.getIconColor());
         vo.setPath(menu.getPath());
         vo.setTarget(targetOf(meta));
         return vo;
