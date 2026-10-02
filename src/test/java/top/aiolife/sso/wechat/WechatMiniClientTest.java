@@ -44,6 +44,44 @@ class WechatMiniClientTest {
         server.verify();
     }
 
+    @Test void 登录兼容微信实际返回的textPlain类型() {
+        server.expect(anything()).andRespond(withSuccess(
+                "{\"openid\":\"wechat-user\",\"session_key\":\"never-return\"}", MediaType.TEXT_PLAIN));
+        assertEquals(new WechatMiniClient.Identity("wechat-user", null), client.exchangeLogin("login-code"));
+        server.verify();
+    }
+
+    @Test void textPlain错误响应仍能识别一次性凭证失效() {
+        server.expect(anything()).andRespond(withSuccess(
+                "{\"errcode\":40029,\"errmsg\":\"secret-detail\"}", MediaType.TEXT_PLAIN));
+        var error = assertThrows(ResponseStatusException.class, () -> client.exchangeLogin("used"));
+        assertEquals(400, error.getStatusCode().value());
+        assertFalse(error.getMessage().contains("secret-detail"));
+        server.verify();
+    }
+
+    @Test void 应用token与手机号均兼容textPlain类型() {
+        when(redis.get("auth:wechat:token:wx_test")).thenReturn(null);
+        when(locks.tryRun(anyString(), any())).thenAnswer(inv -> { inv.<Runnable>getArgument(1).run(); return true; });
+        server.expect(requestTo("https://api.weixin.qq.com/cgi-bin/stable_token"))
+                .andRespond(withSuccess("{\"access_token\":\"app-token\",\"expires_in\":7200}", MediaType.TEXT_PLAIN));
+        server.expect(requestTo("https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=app-token"))
+                .andRespond(withSuccess("""
+                    {"errcode":0,"phone_info":{"countryCode":"86","purePhoneNumber":"13800138000",
+                    "watermark":{"appid":"wx_test","timestamp":%d}}}
+                    """.formatted(Instant.now().getEpochSecond()), MediaType.TEXT_PLAIN));
+        assertEquals(new WechatMiniClient.Phone("86", "13800138000"), client.exchangePhone("phone-code"));
+        server.verify();
+    }
+
+    @Test void 非JSON响应不向调用方暴露上游正文() {
+        server.expect(anything()).andRespond(withSuccess("<html>secret-detail</html>", MediaType.TEXT_HTML));
+        var error = assertThrows(ResponseStatusException.class, () -> client.exchangeLogin("login-code"));
+        assertEquals(502, error.getStatusCode().value());
+        assertFalse(error.getMessage().contains("secret-detail"));
+        server.verify();
+    }
+
     @Test void 手机号使用独立code并拆分区号() {
         phoneResponse("wx_test", "44", "7700900123", 0);
         assertEquals(new WechatMiniClient.Phone("44", "7700900123"), client.exchangePhone("phone-code"));

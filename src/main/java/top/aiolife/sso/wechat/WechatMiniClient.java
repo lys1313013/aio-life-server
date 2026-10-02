@@ -1,6 +1,9 @@
 package top.aiolife.sso.wechat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -17,7 +20,9 @@ import java.util.concurrent.TimeUnit;
 
 /** 微信服务端凭证交换，不向调用方透传微信响应、session_key 或包含密钥的异常。 */
 @Component
+@Slf4j
 public class WechatMiniClient {
+    private static final ObjectMapper JSON = new ObjectMapper();
     private final WechatMiniProperties properties;
     private final RedisUtil redis;
     private final DistributedLockExecutor locks;
@@ -56,14 +61,15 @@ public class WechatMiniClient {
         requireEnabled();
         JsonNode body;
         try {
-            body = client.get().uri(uri -> uri.path("/sns/jscode2session")
+            body = readJson(client.get().uri(uri -> uri.path("/sns/jscode2session")
                     .queryParam("appid", properties.getAppId()).queryParam("secret", properties.getAppSecret())
                     .queryParam("js_code", code).queryParam("grant_type", "authorization_code").build())
-                    .retrieve().body(JsonNode.class);
+                    .retrieve(), "code2Session");
         } catch (RestClientException e) {
+            log.warn("微信接口调用失败 operation=code2Session type={}", e.getClass().getSimpleName());
             throw unavailable();
         }
-        check(body);
+        check(body, "code2Session");
         String openid = body.path("openid").asText("");
         String unionid = body.path("unionid").asText("");
         if (!openid.matches("[A-Za-z0-9_-]{1,128}")
@@ -76,17 +82,18 @@ public class WechatMiniClient {
         String token = accessToken();
         JsonNode body;
         try {
-            body = client.post().uri(uri -> uri.path("/wxa/business/getuserphonenumber")
+            body = readJson(client.post().uri(uri -> uri.path("/wxa/business/getuserphonenumber")
                     .queryParam("access_token", token).build()).body(Map.of("code", code))
-                    .retrieve().body(JsonNode.class);
+                    .retrieve(), "getuserphonenumber");
         } catch (RestClientException e) {
+            log.warn("微信接口调用失败 operation=getuserphonenumber type={}", e.getClass().getSimpleName());
             // 请求可能已消费一次性 code，不能自动重放。
             throw unavailable();
         }
         if (body != null && (body.path("errcode").asInt() == 40001 || body.path("errcode").asInt() == 42001)) {
             redis.unlock(tokenKey(), token); // 只移除本次使用的旧缓存，不能删掉并发刷新的 Token。
         }
-        check(body);
+        check(body, "getuserphonenumber");
         JsonNode info = body.path("phone_info");
         JsonNode watermark = info.path("watermark");
         long timestamp = watermark.path("timestamp").asLong(0);
@@ -111,14 +118,15 @@ public class WechatMiniClient {
             if (StringUtils.hasText(result[0])) return;
             JsonNode body;
             try {
-                body = client.post().uri("/cgi-bin/stable_token").body(Map.of(
+                body = readJson(client.post().uri("/cgi-bin/stable_token").body(Map.of(
                         "grant_type", "client_credential", "appid", properties.getAppId(),
                         "secret", properties.getAppSecret(), "force_refresh", false))
-                        .retrieve().body(JsonNode.class);
+                        .retrieve(), "stable_token");
             } catch (RestClientException e) {
+                log.warn("微信接口调用失败 operation=stable_token type={}", e.getClass().getSimpleName());
                 throw unavailable();
             }
-            check(body);
+            check(body, "stable_token");
             String token = body.path("access_token").asText("");
             long seconds = body.path("expires_in").asLong(0);
             if (!StringUtils.hasText(token) || seconds <= 60) throw unavailable();
@@ -129,10 +137,24 @@ public class WechatMiniClient {
         return result[0];
     }
 
-    private void check(JsonNode body) {
+    private JsonNode readJson(RestClient.ResponseSpec response, String operation) {
+        // 微信实际可能用 text/plain 返回 JSON，不能依赖响应 Content-Type 选择 Jackson 转换器。
+        String body = response.body(String.class);
+        if (!StringUtils.hasText(body)) throw unavailable();
+        try {
+            return JSON.readTree(body);
+        } catch (JsonProcessingException e) {
+            // 异常消息、响应正文和请求 URL 可能含凭证，只记录固定阶段与错误类别。
+            log.warn("微信接口响应无法解析 operation={} type=invalid_json", operation);
+            throw unavailable();
+        }
+    }
+
+    private void check(JsonNode body, String operation) {
         if (body == null || !body.isObject()) throw unavailable();
         int code = body.path("errcode").asInt(0);
         if (code == 0) return;
+        log.warn("微信接口返回失败 operation={} errcode={}", operation, code);
         if (code == 40029 || code == 40163 || code == 40013) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "微信凭证无效或已使用，请重新微信登录");
         }
