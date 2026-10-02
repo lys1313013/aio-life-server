@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import top.aiolife.core.cache.MenuDataCache;
 import top.aiolife.system.mapper.ISysMenuMapper;
 import top.aiolife.system.pojo.entity.SysMenuEntity;
 import top.aiolife.system.pojo.req.MenuSaveReq;
@@ -39,6 +40,7 @@ public class MenuServiceImpl implements IMenuService {
     private final ISysMenuMapper sysMenuMapper;
 
     private final ObjectMapper objectMapper;
+    private final MenuDataCache menuDataCache;
 
     @Override
     public List<MenuRouteVO> getAccessibleMenuTree(List<String> roles) {
@@ -124,6 +126,7 @@ public class MenuServiceImpl implements IMenuService {
         fillEntity(entity, req);
         entity.fillCreateCommonField(userId);
         sysMenuMapper.insert(entity);
+        menuDataCache.evictMenus();
 
         return toAdminVo(entity);
     }
@@ -146,6 +149,7 @@ public class MenuServiceImpl implements IMenuService {
         fillEntity(exist, req);
         exist.fillUpdateCommonField(userId);
         sysMenuMapper.updateById(exist);
+        menuDataCache.evictMenus();
         return toAdminVo(exist);
     }
 
@@ -161,6 +165,7 @@ public class MenuServiceImpl implements IMenuService {
         exist.setStatus(status);
         exist.fillUpdateCommonField(userId);
         sysMenuMapper.updateById(exist);
+        menuDataCache.evictMenus();
         return toAdminVo(exist);
     }
 
@@ -173,6 +178,7 @@ public class MenuServiceImpl implements IMenuService {
         exist.setSort(sort);
         exist.fillUpdateCommonField(userId);
         sysMenuMapper.updateById(exist);
+        menuDataCache.evictMenus();
         return toAdminVo(exist);
     }
 
@@ -201,15 +207,11 @@ public class MenuServiceImpl implements IMenuService {
         exist.fillUpdateCommonField(userId);
         sysMenuMapper.updateById(exist);
         sysMenuMapper.deleteById(id);
+        menuDataCache.evictMenus();
     }
 
     private List<SysMenuEntity> listEnabledMenus() {
-        LambdaQueryWrapper<SysMenuEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(SysMenuEntity::getIsDeleted, 0);
-        wrapper.eq(SysMenuEntity::getStatus, 1);
-        wrapper.orderByAsc(SysMenuEntity::getSort);
-        wrapper.orderByAsc(SysMenuEntity::getId);
-        return sysMenuMapper.selectList(wrapper);
+        return menuDataCache.getEnabledMenus();
     }
 
     private List<SysMenuEntity> listAllMenus() {

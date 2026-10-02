@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import top.aiolife.core.cache.SecondaryLockMenuCache;
 import top.aiolife.core.query.CommonQuery;
@@ -571,17 +572,11 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public List<Long> getSecondaryLockMenuIds(long userId) {
-        LambdaQueryWrapper<UserSecondaryLockMenuEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(UserSecondaryLockMenuEntity::getUserId, userId);
-        List<UserSecondaryLockMenuEntity> list = lockMenuMapper.selectList(wrapper);
-        return list.stream()
-                .map(UserSecondaryLockMenuEntity::getMenuId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
+        return secondaryLockMenuCache.getLockedMenuIds(userId);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveSecondaryLockMenus(long userId, List<Long> menuIds, String secondaryPassword) {
         UserEntity user = userMapper.selectById(userId);
         if (user == null) {

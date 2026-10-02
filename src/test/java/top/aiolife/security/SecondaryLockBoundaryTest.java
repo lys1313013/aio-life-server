@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import top.aiolife.core.cache.SecondaryLockMenuCache;
+import top.aiolife.core.cache.MenuDataCache;
 import top.aiolife.core.cache.SecondaryLockPolicy;
 import top.aiolife.core.exception.SecondaryLockRequiredException;
 import top.aiolife.mcp.invoker.McpToolInvoker;
@@ -51,7 +52,7 @@ class SecondaryLockBoundaryTest {
         when(locks.selectList(any(Wrapper.class))).thenReturn(List.of(parent, child));
         when(menus.selectList(any(Wrapper.class))).thenReturn(List.of(menu(1L, null, "/record"),
                 menu(2L, 1L, "/my-hub/honor")));
-        var cache = new SecondaryLockMenuCache(locks, menus);
+        var cache = new SecondaryLockMenuCache(new MenuDataCache(locks, menus, mock(RedisUtil.class)));
         assertEquals(Set.of("/record", "/my-hub/honor"), cache.findMatchedPaths(11L, "/honorRecords/7"));
         assertEquals(Set.of("/record", "/my-hub/honor"), cache.findLockedMenus(11L, Set.of("/my-hub/honor")));
         var redis = mock(RedisUtil.class);

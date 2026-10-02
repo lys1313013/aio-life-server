@@ -1,16 +1,9 @@
 package top.aiolife.core.cache;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
-import top.aiolife.sso.pojo.entity.UserSecondaryLockMenuEntity;
-import top.aiolife.system.mapper.ISysMenuMapper;
 import top.aiolife.system.pojo.entity.SysMenuEntity;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -18,19 +11,18 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class SecondaryLockMenuCache {
-    private final UserSecondaryLockMenuMapper lockMenuMapper;
-    private final ISysMenuMapper sysMenuMapper;
-    private final Cache<Long, Map<String, Set<String>>> cache = Caffeine.newBuilder()
-            .expireAfterWrite(Duration.ofSeconds(60)).maximumSize(10_000).build();
+    private final MenuDataCache menuDataCache;
+
+    public List<Long> getLockedMenuIds(long userId) { return menuDataCache.getLockedMenuIds(userId); }
 
     public Set<String> getLockedPaths(long userId) {
-        return cache.get(userId, this::loadLockedPaths).keySet();
+        return loadLockedPaths(userId).keySet();
     }
 
     public Set<String> findLockedMenus(long userId, Set<String> menus) {
         Set<String> canonical = menus.stream().map(SecondaryLockPolicy::canonicalMenu).collect(Collectors.toSet());
         Set<String> result = new TreeSet<>();
-        cache.get(userId, this::loadLockedPaths).forEach((lock, protectedPaths) -> {
+        loadLockedPaths(userId).forEach((lock, protectedPaths) -> {
             if (protectedPaths.stream().anyMatch(p -> canonical.stream()
                     .anyMatch(m -> SecondaryLockPolicy.under(m, p)))) result.add(lock);
         });
@@ -48,18 +40,16 @@ public class SecondaryLockMenuCache {
                 .max(Comparator.comparingInt(String::length)).orElse(null);
     }
 
-    public void evict(long userId) { cache.invalidate(userId); }
+    public void evict(long userId) { menuDataCache.evictLockedMenuIds(userId); }
 
     private Map<String, Set<String>> loadLockedPaths(long userId) {
-        List<UserSecondaryLockMenuEntity> locks = lockMenuMapper.selectList(
-                new LambdaQueryWrapper<UserSecondaryLockMenuEntity>().eq(UserSecondaryLockMenuEntity::getUserId, userId));
+        List<Long> locks = menuDataCache.getLockedMenuIds(userId);
         if (locks.isEmpty()) return Map.of();
-        List<SysMenuEntity> menus = sysMenuMapper.selectList(new LambdaQueryWrapper<SysMenuEntity>()
-                .eq(SysMenuEntity::getIsDeleted, 0).eq(SysMenuEntity::getStatus, 1));
+        List<SysMenuEntity> menus = menuDataCache.getEnabledMenus();
         Map<Long, SysMenuEntity> byId = menus.stream().collect(Collectors.toMap(SysMenuEntity::getId, m -> m));
         Map<String, Set<String>> result = new HashMap<>();
-        for (UserSecondaryLockMenuEntity lock : locks) {
-            SysMenuEntity root = byId.get(lock.getMenuId());
+        for (Long menuId : locks) {
+            SysMenuEntity root = byId.get(menuId);
             if (root == null || root.getPath() == null || root.getPath().isBlank()) continue;
             Set<String> paths = new HashSet<>();
             for (SysMenuEntity menu : menus) {
