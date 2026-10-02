@@ -143,7 +143,7 @@ class PermissionMutationTest {
             var thoughts = mock(IThoughtMapper.class); var events = mock(IRelaEventMapper.class);
             when(thoughts.update(any(ThoughtEntity.class), any(Wrapper.class))).thenReturn(1);
             when(events.update(any(ThoughtRelaEventEntity.class), any(Wrapper.class))).thenReturn(0);
-            var controller = new ThoughtController(thoughts, events);
+            var controller = new ThoughtController(thoughts, events, null);
             var input = new ThoughtEntity(); var event = new ThoughtRelaEventEntity();
             event.setId(99L); event.setThoughtId(88L); event.setContent("外来事件"); input.setEvents(List.of(event));
             assertThrows(IllegalArgumentException.class, () -> controller.update(7L,ApiRequestFixtures.request(input, top.aiolife.record.pojo.req.ThoughtUpdateReq.class)));

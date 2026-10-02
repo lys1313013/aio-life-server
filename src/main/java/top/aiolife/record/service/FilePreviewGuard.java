@@ -20,6 +20,7 @@ public class FilePreviewGuard {
 
     private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
     private final top.aiolife.bankcard.mapper.BankCardFileMapper bankCardFileMapper;
+    private final top.aiolife.sso.service.AccountStatusGuard accountStatusGuard;
 
     /**
      * 访问判定结果
@@ -41,7 +42,8 @@ public class FilePreviewGuard {
      */
     public Long resolveLoginUserId() {
         if (StpUtil.isLogin()) {
-            return StpUtil.getLoginIdAsLong();
+            Long userId = StpUtil.getLoginIdAsLong();
+            return accountStatusGuard.isActive(userId) ? userId : null;
         }
         String tokenName = StpUtil.getTokenName();
         String token = SaHolder.getRequest().getCookieValue(tokenName);
@@ -55,7 +57,8 @@ public class FilePreviewGuard {
             token = token.substring(7);
         }
         Object loginId = StpUtil.getLoginIdByToken(token);
-        return loginId == null ? null : Long.parseLong(loginId.toString());
+        Long userId = loginId == null ? null : Long.parseLong(loginId.toString());
+        return accountStatusGuard.isActive(userId) ? userId : null;
     }
 
     /**

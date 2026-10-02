@@ -30,9 +30,11 @@ import top.aiolife.record.service.IMailService;
 import top.aiolife.record.util.RedisUtil;
 import top.aiolife.sso.convertor.UserConvertor;
 import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
+import top.aiolife.sso.mapper.ApiKeyMapper;
 import top.aiolife.sso.mapper.LoginLogMapper;
 import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
+import top.aiolife.sso.pojo.entity.ApiKeyEntity;
 import top.aiolife.sso.pojo.entity.LoginLogEntity;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.pojo.entity.UserSecondaryLockMenuEntity;
@@ -61,6 +63,7 @@ public class UserServiceImpl implements IUserService {
     private static final String LAST_ACTIVE_KEY_PREFIX = "user:last_active:";
 
     private final UserMapper userMapper;
+    private final ApiKeyMapper apiKeyMapper;
     private final LoginSessionService loginSessionService;
     private final LoginLogMapper loginLogMapper;
     private final IMailService mailService;
@@ -279,9 +282,16 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    @CacheEvict(value = "userInfo", key = "#id")
+    @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = {"userInfo", "userBasicInfo"}, key = "#id")
     public void deleteUser(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("用户 ID 不能为空");
+        }
         userMapper.deleteById(id);
+        apiKeyMapper.delete(new LambdaQueryWrapper<ApiKeyEntity>().eq(ApiKeyEntity::getUserId, id));
+        // 指定账号撤销所有设备的会话；Redis 失败时抛出异常，回滚数据库删除。
+        StpUtil.logout(id);
     }
 
     @Override
@@ -439,6 +449,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void resetPassword(ResetPasswordReq resetPasswordReq) {
         // 校验验证码（含尝试次数限制，成功即作废）
         verifyEmailCode("reset:code:" + resetPasswordReq.getEmail(), resetPasswordReq.getCode());
@@ -453,7 +464,11 @@ public class UserServiceImpl implements IUserService {
         String salt = PasswordUtil.getSalt();
         userEntity.setPasswordSalt(salt);
         userEntity.setPassword(PasswordUtil.encryptPassword(resetPasswordReq.getPassword(), salt));
-        userMapper.updateById(userEntity);
+        if (userMapper.updateById(userEntity) != 1) {
+            throw new IllegalStateException("密码重置失败，请重试");
+        }
+        // 找回密码后，所有旧登录凭据必须重新登录；失败时不提交新密码。
+        StpUtil.logout(userEntity.getId());
     }
 
     @Override
@@ -604,9 +619,6 @@ public class UserServiceImpl implements IUserService {
                 lockMenuMapper.insert(entity);
             }
         }
-
-        // 刷新缓存
-        secondaryLockMenuCache.evict(userId);
     }
 
     @Override

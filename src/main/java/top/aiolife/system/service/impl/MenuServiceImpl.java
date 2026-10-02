@@ -126,7 +126,6 @@ public class MenuServiceImpl implements IMenuService {
         fillEntity(entity, req);
         entity.fillCreateCommonField(userId);
         sysMenuMapper.insert(entity);
-        menuDataCache.evictMenus();
 
         return toAdminVo(entity);
     }
@@ -149,7 +148,6 @@ public class MenuServiceImpl implements IMenuService {
         fillEntity(exist, req);
         exist.fillUpdateCommonField(userId);
         sysMenuMapper.updateById(exist);
-        menuDataCache.evictMenus();
         return toAdminVo(exist);
     }
 
@@ -165,7 +163,6 @@ public class MenuServiceImpl implements IMenuService {
         exist.setStatus(status);
         exist.fillUpdateCommonField(userId);
         sysMenuMapper.updateById(exist);
-        menuDataCache.evictMenus();
         return toAdminVo(exist);
     }
 
@@ -178,7 +175,6 @@ public class MenuServiceImpl implements IMenuService {
         exist.setSort(sort);
         exist.fillUpdateCommonField(userId);
         sysMenuMapper.updateById(exist);
-        menuDataCache.evictMenus();
         return toAdminVo(exist);
     }
 
@@ -207,7 +203,6 @@ public class MenuServiceImpl implements IMenuService {
         exist.fillUpdateCommonField(userId);
         sysMenuMapper.updateById(exist);
         sysMenuMapper.deleteById(id);
-        menuDataCache.evictMenus();
     }
 
     private List<SysMenuEntity> listEnabledMenus() {

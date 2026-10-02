@@ -19,6 +19,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import top.aiolife.sso.interceptor.ApiKeyInterceptor;
 import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
 import top.aiolife.sso.interceptor.UserLastActiveInterceptor;
+import top.aiolife.sso.service.AccountStatusGuard;
 
 @Configuration
 @RequiredArgsConstructor
@@ -33,6 +34,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
     private final ApiKeyInterceptor apiKeyInterceptor;
     private final SecondaryLockInterceptor secondaryLockInterceptor;
     private final UserLastActiveInterceptor userLastActiveInterceptor;
+    private final AccountStatusGuard accountStatusGuard;
 
     @PostConstruct
     public void initSecondContext() {
@@ -87,6 +89,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 return;
             }
             RequestLoginContext.checkLogin();
+            accountStatusGuard.requireActive(RequestLoginContext.requireUserId());
         })).addPathPatterns("/**")
                 .excludePathPatterns(PUBLIC_OPENAPI_PATHS)
                 .excludePathPatterns(top.aiolife.sso.api.WechatAuthController.PUBLIC_PATHS)

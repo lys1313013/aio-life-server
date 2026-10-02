@@ -49,10 +49,10 @@ class SecondaryLockBoundaryTest {
         var locks = mock(UserSecondaryLockMenuMapper.class); var menus = mock(ISysMenuMapper.class);
         var parent = new UserSecondaryLockMenuEntity(); parent.setMenuId(1L);
         var child = new UserSecondaryLockMenuEntity(); child.setMenuId(2L);
-        when(locks.selectList(any(Wrapper.class))).thenReturn(List.of(parent, child));
-        when(menus.selectList(any(Wrapper.class))).thenReturn(List.of(menu(1L, null, "/record"),
+        when(locks.selectForAccessControl(anyLong())).thenReturn(List.of(parent, child));
+        when(menus.selectEnabledForAccessControl()).thenReturn(List.of(menu(1L, null, "/record"),
                 menu(2L, 1L, "/my-hub/honor")));
-        var cache = new SecondaryLockMenuCache(new MenuDataCache(locks, menus, mock(RedisUtil.class)));
+        var cache = new SecondaryLockMenuCache(new MenuDataCache(locks, menus));
         assertEquals(Set.of("/record", "/my-hub/honor"), cache.findMatchedPaths(11L, "/honorRecords/7"));
         assertEquals(Set.of("/record", "/my-hub/honor"), cache.findLockedMenus(11L, Set.of("/my-hub/honor")));
         var redis = mock(RedisUtil.class);

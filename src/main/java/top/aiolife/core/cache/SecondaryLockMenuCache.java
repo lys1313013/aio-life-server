@@ -40,7 +40,6 @@ public class SecondaryLockMenuCache {
                 .max(Comparator.comparingInt(String::length)).orElse(null);
     }
 
-    public void evict(long userId) { menuDataCache.evictLockedMenuIds(userId); }
 
     private Map<String, Set<String>> loadLockedPaths(long userId) {
         List<Long> locks = menuDataCache.getLockedMenuIds(userId);

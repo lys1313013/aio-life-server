@@ -2,13 +2,11 @@ package top.aiolife.sso.interceptor;
 
 import cn.dev33.satoken.context.SaHolder;
 import cn.dev33.satoken.exception.NotLoginException;
-import cn.dev33.satoken.stp.SaLoginModel;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -16,6 +14,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import top.aiolife.sso.pojo.entity.ApiKeyEntity;
 import top.aiolife.sso.service.IApiKeyLogService;
 import top.aiolife.sso.service.IApiKeyService;
+import top.aiolife.sso.service.AccountStatusGuard;
 
 import java.time.LocalDateTime;
 
@@ -25,13 +24,13 @@ import java.time.LocalDateTime;
  * @author Lys
  * @date 2026/03/09
  */
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ApiKeyInterceptor implements HandlerInterceptor {
 
     private final IApiKeyService apiKeyService;
     private final IApiKeyLogService apiKeyLogService;
+    private final AccountStatusGuard accountStatusGuard;
 
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
@@ -49,16 +48,16 @@ public class ApiKeyInterceptor implements HandlerInterceptor {
 
         // 3. 校验 API Key
         ApiKeyEntity apiKeyEntity = apiKeyService.getByApiKey(apiKeyStr);
-        if (apiKeyEntity == null || apiKeyEntity.getIsDeleted() == 1) {
-            log.warn("API Key {} 不存在", apiKeyStr);
-            throw new NotLoginException("API Key 无效", "API_KEY", apiKeyStr);
+        if (apiKeyEntity == null || Integer.valueOf(1).equals(apiKeyEntity.getIsDeleted())) {
+            throw new NotLoginException("API Key 无效", "API_KEY", NotLoginException.INVALID_TOKEN);
         }
 
         // 4. 检查是否过期
         if (apiKeyEntity.getExpiredAt() != null && apiKeyEntity.getExpiredAt().isBefore(LocalDateTime.now())) {
-            log.warn("API Key {} 已过期", apiKeyStr);
-            throw new NotLoginException("API Key 已过期", "API_KEY", apiKeyStr);
+            throw new NotLoginException("API Key 已过期", "API_KEY", NotLoginException.TOKEN_TIMEOUT);
         }
+
+        accountStatusGuard.requireActive(apiKeyEntity.getUserId());
 
         // 5. 临时身份切换 (仅限本次请求上下文，不产生真实会话)
         StpUtil.switchTo(apiKeyEntity.getUserId());
