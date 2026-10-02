@@ -1,5 +1,10 @@
 package top.aiolife.bankcard;
 
+import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.concurrent.*;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,11 +15,7 @@ import top.aiolife.bankcard.mapper.BankCardRepository;
 import top.aiolife.bankcard.pojo.req.*;
 import top.aiolife.bankcard.pojo.vo.BankCardVO;
 import top.aiolife.bankcard.service.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.*;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /** 独立内存数据库执行真实SQL和事务，不连接项目配置中的数据库。 */
@@ -59,7 +60,25 @@ class BankCardServiceTest {
         assertThrows(IllegalArgumentException.class,()->service.reveal(2,id));
         String json=new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules().writeValueAsString(service.list(1));
         assertFalse(json.contains(NUMBER));assertFalse(json.contains("ciphertext"));assertFalse(json.contains("fingerprint"));
+        assertEquals("6222",card.getCardNoFirst4());
+        assertTrue(json.contains("\"cardNoFirst4\":\"6222\""));
+        assertTrue(json.contains("\"cardNoLast4\":\"1234\""));
         assertEquals("1234",card.getCardNoLast4());assertTrue(service.list(2).isEmpty());
+    }
+    @Test void testCardNumberDisplay_编辑保留或更换卡号时返回正确首尾四位() {
+        var req=request();
+        var card=create(1,req);
+        long id=Long.parseLong(card.getId());
+        req.setCardNo(null);
+        req.setAlias("工资卡");
+        var unchanged=tx.execute(s->service.save(1,id,req));
+        assertEquals("6222",unchanged.getCardNoFirst4());
+        assertEquals("1234",unchanged.getCardNoLast4());
+        req.setCardNo("0012 3456 7890 5678 901");
+        var changed=tx.execute(s->service.save(1,id,req));
+        assertEquals("0012",changed.getCardNoFirst4());
+        assertEquals("8901",changed.getCardNoLast4());
+        assertEquals("0012",service.list(1).getFirst().getCardNoFirst4());
     }
     @Test void customBankCanBeCreatedRenamedAndSwitchedWithoutChangingSystemDictionary() {
         var req=request(); req.setBankId(null);req.setCustomBankName("  自定义地方银行  ");

@@ -1,10 +1,10 @@
 package top.aiolife.bankcard.pojo.vo;
 
-import lombok.Getter;
-import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 /** 只含脱敏信息；文件 ID 来自 file 反向关联。 */
 @Getter
@@ -18,6 +18,7 @@ public class BankCardVO {
     private String cardName;
     private String alias;
     private String cardType;
+    private String cardNoFirst4;
     private String cardNoLast4;
     private String branchName;
     private String status;

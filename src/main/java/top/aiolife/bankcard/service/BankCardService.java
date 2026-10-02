@@ -1,6 +1,8 @@
 package top.aiolife.bankcard.service;
 
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import java.net.URI;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -11,8 +13,6 @@ import top.aiolife.bankcard.pojo.entity.BankCardEntity;
 import top.aiolife.bankcard.pojo.req.BankCardReq;
 import top.aiolife.bankcard.pojo.req.BankCardTagReq;
 import top.aiolife.bankcard.pojo.vo.BankCardVO;
-import java.net.URI;
-import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -51,6 +51,7 @@ public class BankCardService {
             var vo = new BankCardVO();
             BeanUtils.copyProperties(card, vo);
             vo.setId(card.getId().toString());
+            vo.setCardNoFirst4(crypto.decrypt(card.getCardNoCiphertext(), userId, card.getId()).substring(0, 4));
             vo.setBankId(card.getBankId() == null ? null : card.getBankId().toString());
             var bank = bankMap.get(vo.getBankId());
             vo.setBankName(card.getBankId() == null ? card.getCustomBankName() : bank == null ? "银行配置不可用" : bank.name());
