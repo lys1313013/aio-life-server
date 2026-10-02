@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "baseline": {
+    "revision": "64156465fe8eae58c79f21cd42153766358178f1",
+    "schema": "sql/1_init_table/2026-08-18_init_all_tables.sql",
+    "sha256": "0db3634cebb05d6dbaa32486208d74e117ddd564b120f00a6af1ee180234a44b"
+  },
+  "target_schema": "sql/1_init_table/2026-08-18_init_all_tables.sql",
+  "migrations": [
+    {
+      "path": "sql/1_init_table/2026-09-30_add_wechat_phone_login.sql",
+      "sha256": "a58abec0efd5a6080c6bb099c5dec17951ac38d4b1fb6ed0e011a56dade4060f"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-02_bank_card_cover_template.sql",
+      "sha256": "39fdd9d12a92ba6d77c34a06434fda0ad10d89d064cad9601e91c9af08ef08bd"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-02_bank_card_optional_number.sql",
+      "sha256": "e99e31eee28d9e4d5d01ba71a20e93935f77860f0d627ebd10fc98652105586f"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-02_menu_icon_color.sql",
+      "sha256": "5c8adf73e36a311472fe6cb0093c795662a8e704d7b20a4485614b719432ae67"
+    },
+    {
+      "path": "sql/2_ini_data/2026-10-02_bank_card_cover_menu.sql",
+      "sha256": "ef46412142f8b68f818e48f6417f718ccb6ffd3836c9a72040480995859372d4"
+    },
+    {
+      "path": "sql/2_ini_data/2026-10-02_storage_admin_menu.sql",
+      "sha256": "2c0ba6a63e027e270a13f8c40cbd501355927fe08d1c74184a018d20c8d2a309"
+    }
+  ]
+}

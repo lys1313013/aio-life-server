@@ -29,7 +29,7 @@
 
 - **MySQL 8.x** — 关系型数据库
 - **Redis** — 分布式缓存、Session 存储
-- 菜单缓存：用户菜单锁 ID（按用户隔离，含空结果）和启用菜单配置使用 Redis，TTL 为 5 小时；`/menu/all` 仍按当前角色过滤。菜单锁修改、菜单增删改/启停/排序在成功写入后切换共享缓存版本，事务中在提交后失效；旧查询只能写入旧版本，旧数据键按 TTL 回收。服务端菜单锁拦截复用同一份配置，密码解锁仍为 30 分钟。
+- 菜单与二级锁配置直接通过 Mapper 读取数据库权威状态，避免数据库提交后 Redis 缓存失效失败留下旧授权配置；`/menu/all` 仍按当前角色过滤。代价是增加小配置读取，不缓存跨请求的授权配置。密码解锁状态仍使用 Redis，时长为 30 分钟。
 - **Caffeine** — 本地内存缓存（二级缓存）
 - **Neo4j** — 图数据库（人际关系图谱，可选）
 - **MinIO** — 对象存储服务
@@ -41,15 +41,27 @@ Web 入口为「系统管理 → 对象存储」。读取 `AIO_LIFE_MINIO_BUCKET
 - `GET /api/system/storage/objects`：`prefix`、`cursor`、`pageSize`；`nextCursor` 为空表示末页，切换前缀后重置游标。
 - `GET /api/system/storage/preview?key=...`：预览不超过 20 MB 的 JPG、PNG、GIF、WebP、AVIF、BMP 图片。
 - `GET /api/system/storage/download?key=...`：以附件方式下载，其他格式也可使用。
-- `DELETE /api/system/storage/object?key=...`：删除具体文件前实时查询 `file` 表；匹配完整对象名、历史带桶路径及旧文件名/属主/业务目录组合。有任意关联（包括 `biz_id` 为空、软删除记录）均返回 HTTP 409，并提示关联记录 ID 和业务；查库失败不会执行存储删除。
+- `DELETE /api/system/storage/object?key=...`：删除与上传按桶名/对象名共用互斥锁，在锁内实时查询 `file` 及 CBTI 图片引用；匹配完整对象名、历史带桶路径及旧文件名/属主/业务目录组合。有任意关联（包括 `biz_id` 为空、软删除记录）或对象正在处理均返回 HTTP 409；加锁/查库失败不会执行存储删除。上传锁保持到数据库事务完成，回滚清理早于释放锁。
+
+上传和删除实例需同步升级以遵循同一对象锁协议；滚动升级存在旧实例时应暂停管理员清理。
 
 所有入口都校验 `admin` 角色，包括预览、下载和删除。前端通过 Authorization 请求图片 Blob；不返回 MinIO 凭据、公开链接或签名链接，不修改现有桶访问策略。对象 key 按原始值传递，由请求客户端编码，保留中文、空格、`+`、`#` 和目录分隔符。文件大小沿用全局 Long 序列化约定，Web 兼容字符串数值。
 
-已有数据库升级时执行 `sql/2_ini_data/2026-10-02_storage_admin_menu.sql`（可重复执行）。SQL 直接写菜单不会主动清理 Redis 菜单缓存：执行后在管理员「权限菜单」中保存一次菜单，触发共享缓存版本更新，再重新登录以刷新前端路由。MinIO 凭据需要业务桶的 ListBucket、GetObject 与 DeleteObject 权限。
+已有数据库升级时执行 `sql/2_ini_data/2026-10-02_storage_admin_menu.sql`（可重复执行）。菜单配置直接读取数据库；执行后重新登录或刷新前端菜单以更新路由。MinIO 凭据需要业务桶的 ListBucket、GetObject 与 DeleteObject 权限。
 
 ### 认证与安全
 
 - **Sa-Token 1.40.0** — 轻量级认证框架（JWT 模式）
+
+#### 阅读与观影封面
+
+自动导入封面只请求白名单 CDN 的 HTTPS 地址，端口仅允许默认端口或 443，拒绝 URL 用户信息和片段，不跟随任何重定向。主机名通过 URI 解析，允许白名单域名本身及其任意子域名，按点号边界匹配；例如 `img1.doubanio.com` 可用，`fakedoubanio.com` 和 `doubanio.com.evil.com` 不可用。
+
+`AIO_LIFE_DOUBAN_COVER_ALLOWED_DOMAINS` 配置逗号分隔的域名，默认 `doubanio.com`，无需列举 `img1`、`img2` 等前缀。配置值不带前导点号或 `*.`；显式设为空值可禁用远程封面下载。配置一个域名即信任其全部子域名，仅应配置已核实的豆瓣图片域名，不添加任意第三方域名或 IP。
+
+自定义封面通过图片上传接口获取 `fileId`，新增/编辑阅读及观影记录时提交该 ID；非白名单 `coverImgUrl` 且没有 `fileId` 的请求会被拒绝。豆瓣解析遇到被拒绝的封面来源时仍返回书影信息，但清空封面 URL，可手动上传封面。
+
+本策略限制可信来源并阻止重定向绕过；尚未实现 DNS/IP 固定连接及网络出口隔离，不能视为完整的通用 URL 抓取防护。
 
 ### AI 能力
 
@@ -126,9 +138,13 @@ CREATE DATABASE `aio_life` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 # 执行初始化脚本
 mysql -u root -p aio_life < sql/1_init_table/2026-08-18_init_all_tables.sql
-# ... 执行其他 SQL 脚本
-mysql -u root -p aio_life < sql/2_ini_data/*.sql
+# 全量结构已经包含历史 ALTER，不能再次逐个执行增量结构脚本
+for sql_file in sql/2_ini_data/*.sql; do
+  mysql -u root -p aio_life < "$sql_file"
+done
 ```
+
+已有数据库升级及发布前只读结构预检见 [数据库升级验证](docs/数据库升级验证.md)。CI 分别验证新库与固定历史版本的增量升级，二者成功才允许镜像发布。
 
 #### 3. 配置环境变量
 
