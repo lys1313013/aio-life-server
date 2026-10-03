@@ -45,6 +45,12 @@
     </dependencyManagement>
 
     <dependencies>
+        <!-- JDK ImageIO 不支持 WebP；真实内容解码校验需保留已有 WebP 支持。 -->
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-webp</artifactId>
+            <version>3.15.2</version>
+        </dependency>
         <!-- 显式声明运行时已有的 BC 版本，用于银行卡 SM4-GCM / SM3。 -->
         <dependency>
             <groupId>org.bouncycastle</groupId>

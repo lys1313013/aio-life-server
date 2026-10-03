@@ -40,7 +40,7 @@ class FileControllerTest {
     void preview_默认桶头像无需登录或文件记录(String configuredBucket) throws Exception {
         minioConfig.setBucketName(configuredBucket);
         String bucket = configuredBucket.isEmpty() ? "aiolife" : configuredBucket;
-        byte[] content = {1, 2, 3};
+        byte[] content = top.aiolife.support.ImageFixtures.image("png");
         when(minioUtil.getFile(bucket, AVATAR)).thenReturn(new ByteArrayInputStream(content));
 
         mvc.perform(get("/file/preview/" + bucket + "/" + AVATAR))
@@ -73,7 +73,7 @@ class FileControllerTest {
     @Test
     void preview_CBTI公共图片仍可匿名访问() throws Exception {
         String object = "images/cbti/characters/public.png";
-        when(minioUtil.getFile("cbti", object)).thenReturn(new ByteArrayInputStream(new byte[]{1}));
+        when(minioUtil.getFile("cbti", object)).thenReturn(new ByteArrayInputStream(top.aiolife.support.ImageFixtures.image("png")));
         mvc.perform(get("/file/preview/cbti/" + object)).andExpect(status().isOk());
         verifyNoInteractions(fileService, guard);
     }

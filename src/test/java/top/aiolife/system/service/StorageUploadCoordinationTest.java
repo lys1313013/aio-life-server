@@ -74,7 +74,7 @@ class StorageUploadCoordinationTest {
         });
         locks = new StorageObjectLock(redis);
         uploads = mock(MinioUtil.class); deletes = mock(MinioClient.class);
-        doAnswer(call -> { key.set(call.getArgument(2)); return null; }).when(uploads).uploadFile(anyString(), any(), anyString());
+        doAnswer(call -> { key.set(call.getArgument(1)); return null; }).when(uploads).putObject(anyString(), anyString(), any(), anyLong(), anyString());
         var config = new MinioConfig(); config.setBucketName("business");
         var target = new FileServiceImpl(uploads, config, locks, new top.aiolife.record.service.DoubanCoverUrlPolicy("doubanio.com")) {
             @Override public boolean save(FileEntity entity) {
@@ -103,7 +103,7 @@ class StorageUploadCoordinationTest {
         return executor.submit(() -> {
             try (var login = mockStatic(StpUtil.class)) {
                 login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
-                files.upload(new MockMultipartFile("file", "image.png", "image/png", new byte[]{1}), FileBizType.AVATAR);
+                files.upload(new MockMultipartFile("file", "image.png", "image/png", top.aiolife.support.ImageFixtures.image("png")), FileBizType.AVATAR);
             }
         });
     }
@@ -146,10 +146,9 @@ class StorageUploadCoordinationTest {
         var request = mock(HttpRequest.class, RETURNS_SELF);
         when(request.header(anyString(), anyString())).thenReturn(request);
         var response = mock(HttpResponse.class);
-        when(request.execute()).thenReturn(response);
+        when(request.executeAsync()).thenReturn(response);
         when(response.getStatus()).thenReturn(200);
-        when(response.header("Content-Type")).thenReturn("image/png");
-        when(response.bodyBytes()).thenReturn(new byte[]{1});
+        when(response.bodyStream()).thenReturn(new java.io.ByteArrayInputStream(top.aiolife.support.ImageFixtures.image("png")));
         doAnswer(call -> { key.set(call.getArgument(1)); return null; }).when(uploads).putObject(anyString(), anyString(), any(), anyLong(), anyString());
         try {
             var result = executor.submit(() -> {

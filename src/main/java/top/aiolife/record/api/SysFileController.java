@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.util.MinioUtil;
+import top.aiolife.core.util.FileContentPolicy;
 import top.aiolife.record.enums.FileBizType;
 import top.aiolife.record.pojo.entity.FileEntity;
 import top.aiolife.record.pojo.vo.FileVO;
@@ -24,9 +25,6 @@ import top.aiolife.record.service.FilePreviewGuard;
 import top.aiolife.record.service.IFileService;
 
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -108,38 +106,8 @@ public class SysFileController {
             return;
         }
 
-        try (InputStream inputStream = minioUtil.getFile(bucketName, objectName);
-             OutputStream outputStream = response.getOutputStream()) {
-
-            String contentType = fileEntity.getFileType();
-            if (!StringUtils.hasText(contentType)) {
-                contentType = "application/octet-stream";
-                if (objectName.toLowerCase().endsWith(".jpg") || objectName.toLowerCase().endsWith(".jpeg")) {
-                    contentType = "image/jpeg";
-                } else if (objectName.toLowerCase().endsWith(".png")) {
-                    contentType = "image/png";
-                } else if (objectName.toLowerCase().endsWith(".gif")) {
-                    contentType = "image/gif";
-                } else if (objectName.toLowerCase().endsWith(".webp")) {
-                    contentType = "image/webp";
-                }
-            }
-            response.setContentType(contentType);
-
-            if (isDownload) {
-                String fileName = fileEntity.getFileName();
-                if (!StringUtils.hasText(fileName)) {
-                    fileName = objectName.substring(objectName.lastIndexOf("/") + 1);
-                }
-                response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
-            }
-
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, len);
-            }
-            outputStream.flush();
+        try (InputStream inputStream = minioUtil.getFile(bucketName, objectName)) {
+            FileContentPolicy.writeResponse(inputStream, response, objectName, isDownload);
         } catch (Exception e) {
             log.error("获取文件失败", e);
             log.error("获取文件失败: id={}, bucket={}, objectName={}", id, bucketName, objectName);

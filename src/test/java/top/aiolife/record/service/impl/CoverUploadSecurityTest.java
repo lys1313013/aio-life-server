@@ -61,7 +61,7 @@ class CoverUploadSecurityTest {
         var request = mock(HttpRequest.class, RETURNS_SELF);
         when(request.header(anyString(), anyString())).thenReturn(request);
         var response = mock(HttpResponse.class);
-        when(request.execute()).thenReturn(response);
+        when(request.executeAsync()).thenReturn(response);
         when(response.getStatus()).thenReturn(302);
         try (var http = mockStatic(HttpRequest.class); var auth = mockStatic(StpUtil.class)) {
             http.when(() -> HttpRequest.get(anyString())).thenReturn(request);
@@ -81,17 +81,17 @@ class CoverUploadSecurityTest {
         var request = mock(HttpRequest.class, RETURNS_SELF);
         when(request.header(anyString(), anyString())).thenReturn(request);
         var response = mock(HttpResponse.class);
-        when(request.execute()).thenReturn(response);
+        when(request.executeAsync()).thenReturn(response);
         when(response.getStatus()).thenReturn(200);
-        when(response.bodyBytes()).thenReturn(new byte[]{1, 2, 3});
-        when(response.header("Content-Type")).thenReturn("image/jpeg");
+        byte[] content = top.aiolife.support.ImageFixtures.image("jpeg");
+        when(response.bodyStream()).thenReturn(new java.io.ByteArrayInputStream(content));
         try (var http = mockStatic(HttpRequest.class); var auth = mockStatic(StpUtil.class)) {
             http.when(() -> HttpRequest.get(anyString())).thenReturn(request);
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
             assertEquals("cover-file-id",
                     files.uploadFromUrl("https://img1.doubanio.com/cover.jpg", bizType).getId());
             verify(request).setFollowRedirects(false);
-            verify(minio).putObject(eq("aiolife"), anyString(), any(), eq(3L), eq("image/jpeg"));
+            verify(minio).putObject(eq("aiolife"), anyString(), any(), eq((long) content.length), eq("image/jpeg"));
             verify(response).close();
         }
     }

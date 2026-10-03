@@ -16,6 +16,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import top.aiolife.config.MinioConfig;
 import top.aiolife.core.util.MinioUtil;
+import top.aiolife.core.util.FileContentPolicy;
 import top.aiolife.record.enums.FileBizType;
 import top.aiolife.record.mapper.IFileMapper;
 import top.aiolife.record.pojo.entity.FileEntity;
@@ -23,7 +24,6 @@ import top.aiolife.record.pojo.vo.FileVO;
 import top.aiolife.record.service.IFileService;
 import top.aiolife.record.service.DoubanCoverUrlPolicy;
 
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 
@@ -60,18 +60,39 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
 
         boolean template = bizType == FileBizType.BANK_CARD_TEMPLATE_COVER;
         if (template) StpUtil.checkRole("admin");
-        String validatedContentType = bizType == FileBizType.BANK_CARD_COVER || template ? validateBankCover(file) : file.getContentType();
+        if (file.getSize() > FileContentPolicy.MAX_IMAGE_BYTES) {
+            throw new IllegalArgumentException("文件不能超过10MB");
+        }
+        byte[] uploadBytes;
+        try (var input = file.getInputStream()) {
+            uploadBytes = input.readNBytes(FileContentPolicy.MAX_IMAGE_BYTES + 1);
+        } catch (java.io.IOException e) {
+            throw new IllegalArgumentException("文件无法读取", e);
+        }
+        if (uploadBytes.length > FileContentPolicy.MAX_IMAGE_BYTES) {
+            throw new IllegalArgumentException("文件不能超过10MB");
+        }
+        var imageType = switch (bizType) {
+            case AVATAR, WARDROBE_ITEM, MOVIE, READ_RECORD, BANK_CARD_COVER, BANK_CARD_TEMPLATE_COVER ->
+                    FileContentPolicy.requireImage(uploadBytes);
+            default -> FileContentPolicy.detectImage(uploadBytes);
+        };
+        String validatedContentType = imageType == null ? "application/octet-stream" : imageType.contentType();
+        if (bizType == FileBizType.BANK_CARD_COVER || template) {
+            validateBankCover(uploadBytes, validatedContentType);
+        }
         long userId = StpUtil.getLoginIdAsLong();
         String bucketName = resolveBucketName();
-        String objectName = buildObjectName(userId, bizType, file.getOriginalFilename());
+        String objectName = buildObjectName(userId, bizType,
+                imageType == null ? file.getOriginalFilename() : "image." + imageType.extension());
 
         objectLock.holdUntilTransactionCompletion(bucketName, objectName);
-        long storedSize=file.getSize();
+        long storedSize=uploadBytes.length;
         try {
             if (template) {
                 // 无论源文件是 JPEG 还是 PNG，系统卡面统一解码重编码为 PNG。
                 java.awt.image.BufferedImage image;
-                try (var input=file.getInputStream()) { image=javax.imageio.ImageIO.read(input); }
+                try (var input=new ByteArrayInputStream(uploadBytes)) { image=javax.imageio.ImageIO.read(input); }
                 if (image==null) throw new IllegalArgumentException("卡面图片无法读取");
                 var output=new java.io.ByteArrayOutputStream();
                 javax.imageio.ImageIO.write(image,"png",output);
@@ -80,7 +101,8 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
                 storedSize=bytes.length;
                 minioUtil.putObject(bucketName,objectName,new ByteArrayInputStream(bytes),bytes.length,"image/png");
                 validatedContentType="image/png";
-            } else minioUtil.uploadFile(bucketName, file, objectName);
+            } else minioUtil.putObject(bucketName, objectName, new ByteArrayInputStream(uploadBytes),
+                    storedSize, validatedContentType);
             registerRollbackCleanup(bucketName, objectName);
 
             FileEntity fileEntity = new FileEntity();
@@ -120,19 +142,22 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
                 .timeout(10000)
                 // 禁止白名单 CDN 通过重定向转向其他主机。
                 .setFollowRedirects(false)
-                .execute()) {
+                // 流式读取，避免默认 execute() 在限额校验前缓冲整个响应。
+                .executeAsync()) {
             int status = response.getStatus();
             if (status != 200) {
                 throw new IllegalStateException("下载封面图失败，HTTP " + status);
             }
-            bodyBytes = response.bodyBytes();
-            contentType = response.header("Content-Type");
-            if (StrUtil.isBlank(contentType) || !contentType.startsWith("image/")) {
-                throw new IllegalStateException("下载的不是图片，Content-Type=" + contentType + ", bodySize=" + bodyBytes.length);
+            try (var input = response.bodyStream()) {
+                bodyBytes = input.readNBytes(FileContentPolicy.MAX_IMAGE_BYTES + 1);
+            } catch (java.io.IOException e) {
+                throw new IllegalStateException("读取封面图失败", e);
             }
         }
 
-        String extension = extractExtension(imageUrl, contentType);
+        var imageType = FileContentPolicy.requireImage(bodyBytes);
+        contentType = imageType.contentType();
+        String extension = "." + imageType.extension();
         String objectName = buildObjectName(userId, bizType, "cover" + extension);
         objectLock.holdUntilTransactionCompletion(bucketName, objectName);
 
@@ -158,35 +183,11 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
         }
     }
 
-    private String validateBankCover(MultipartFile file) {
-        if (file.getSize() > 5 * 1024 * 1024) throw new IllegalArgumentException("卡面图片不能超过5MB");
-        try (var input = javax.imageio.ImageIO.createImageInputStream(file.getInputStream())) {
-            var readers = javax.imageio.ImageIO.getImageReaders(input);
-            if (!readers.hasNext()) throw new IllegalArgumentException("卡面仅支持PNG或JPEG图片");
-            var reader = readers.next();
-            try {
-                reader.setInput(input);
-                String format = reader.getFormatName().toLowerCase(Locale.ROOT);
-                if (!java.util.Set.of("png", "jpeg", "jpg").contains(format)
-                        || (long) reader.getWidth(0) * reader.getHeight(0) > 16_000_000)
-                    throw new IllegalArgumentException("卡面须为不超过1600万像素的PNG或JPEG图片");
-                return "png".equals(format) ? "image/png" : "image/jpeg";
-            } finally { reader.dispose(); }
-        } catch (java.io.IOException e) { throw new IllegalArgumentException("卡面图片无法读取"); }
-    }
-
-    private String extractExtension(String imageUrl, String contentType) {
-        String path = imageUrl.contains("?") ? imageUrl.substring(0, imageUrl.indexOf("?")) : imageUrl;
-        String ext = StrUtil.subAfter(path, ".", true);
-        if (StrUtil.isNotBlank(ext) && ext.matches("[A-Za-z0-9]{1,10}")) {
-            return "." + ext.toLowerCase(Locale.ROOT);
+    private void validateBankCover(byte[] bytes, String contentType) {
+        if (bytes.length > 5 * 1024 * 1024) throw new IllegalArgumentException("卡面图片不能超过5MB");
+        if (!java.util.Set.of("image/png", "image/jpeg").contains(contentType)) {
+            throw new IllegalArgumentException("卡面仅支持PNG或JPEG图片");
         }
-        return switch (contentType) {
-            case "image/png" -> ".png";
-            case "image/gif" -> ".gif";
-            case "image/webp" -> ".webp";
-            default -> ".jpg";
-        };
     }
 
     private String resolveBucketName() {

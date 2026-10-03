@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static top.aiolife.support.ImageFixtures.image;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -62,7 +64,7 @@ class FileServiceImplTest {
     void upload_使用MockMinio生成路径并保存公开头像() throws Exception {
         when(minioConfig.getBucketName()).thenReturn("test-bucket");
         MockMultipartFile file = new MockMultipartFile(
-                "file", "Avatar.JPG", "image/jpeg", new byte[]{1, 2, 3}
+                "file", "Avatar.JPG", "image/jpeg", image("jpeg")
         );
         when(fileMapper.insert(any(FileEntity.class))).thenAnswer(invocation -> {
             FileEntity entity = invocation.getArgument(0);
@@ -80,7 +82,7 @@ class FileServiceImplTest {
             assertEquals("http://preview/file-id", result.getFileUrl());
 
             ArgumentCaptor<String> objectNameCaptor = ArgumentCaptor.forClass(String.class);
-            verify(minioUtil).uploadFile(eq("test-bucket"), eq(file), objectNameCaptor.capture());
+            verify(minioUtil).putObject(eq("test-bucket"), objectNameCaptor.capture(), any(), eq(file.getSize()), any());
             assertTrue(objectNameCaptor.getValue().matches("42/avatar/[0-9a-f-]+\\.jpg"));
 
             ArgumentCaptor<FileEntity> entityCaptor = ArgumentCaptor.forClass(FileEntity.class);
@@ -99,7 +101,7 @@ class FileServiceImplTest {
     void upload_私有业务写入私有标记() throws Exception {
         when(minioConfig.getBucketName()).thenReturn("test-bucket");
         MockMultipartFile file = new MockMultipartFile(
-                "file", "device.png", "image/png", new byte[]{1}
+                "file", "device.png", "image/png", image("png")
         );
         when(fileMapper.insert(any(FileEntity.class))).thenAnswer(invocation -> {
             FileEntity entity = invocation.getArgument(0);
@@ -123,7 +125,7 @@ class FileServiceImplTest {
     void upload_数据库回滚时通过Mock删除Minio对象() throws Exception {
         when(minioConfig.getBucketName()).thenReturn("test-bucket");
         MockMultipartFile file = new MockMultipartFile(
-                "file", "photo.png", "image/png", new byte[]{1}
+                "file", "photo.png", "image/png", image("png")
         );
         when(fileMapper.insert(any(FileEntity.class)))
                 .thenThrow(new IllegalStateException("database error"));
@@ -138,7 +140,7 @@ class FileServiceImplTest {
             assertTrue(exception.getMessage().startsWith("上传失败:"));
 
             ArgumentCaptor<String> objectNameCaptor = ArgumentCaptor.forClass(String.class);
-            verify(minioUtil).uploadFile(eq("test-bucket"), eq(file), objectNameCaptor.capture());
+            verify(minioUtil).putObject(eq("test-bucket"), objectNameCaptor.capture(), any(), eq(file.getSize()), any());
 
             completeTransaction(TransactionSynchronization.STATUS_ROLLED_BACK);
             verify(minioUtil).removeObject("test-bucket", objectNameCaptor.getValue());
@@ -156,7 +158,7 @@ class FileServiceImplTest {
                 () -> fileService.upload(emptyFile, FileBizType.DEVICE)
         );
 
-        verify(minioUtil, never()).uploadFile(any(), any(), any());
+        verify(minioUtil, never()).putObject(any(), any(), any(), anyLong(), any());
     }
 
     private void completeTransaction(int status) {

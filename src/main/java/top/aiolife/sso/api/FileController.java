@@ -13,12 +13,12 @@ import org.springframework.web.bind.annotation.RestController;
 import top.aiolife.config.CbtiConfig;
 import top.aiolife.config.MinioConfig;
 import top.aiolife.core.util.MinioUtil;
+import top.aiolife.core.util.FileContentPolicy;
 import top.aiolife.record.pojo.entity.FileEntity;
 import top.aiolife.record.service.FilePreviewGuard;
 import top.aiolife.record.service.IFileService;
 
 import java.io.InputStream;
-import java.io.OutputStream;
 
 /**
  * 文件控制器（按 桶名/对象路径 直接访问的兼容接口）。
@@ -108,30 +108,8 @@ public class FileController {
             response.setHeader("Cache-Control","no-store");
             response.setHeader("X-Content-Type-Options","nosniff");
         }
-        try (InputStream inputStream = minioUtil.getFile(bucketName, objectName);
-             OutputStream outputStream = response.getOutputStream()) {
-
-            // 根据文件后缀名动态设置Content-Type
-            String contentType = "application/octet-stream"; // 默认类型
-            if (objectName.toLowerCase().endsWith(".jpg") || objectName.toLowerCase().endsWith(".jpeg")) {
-                contentType = "image/jpeg";
-            } else if (objectName.toLowerCase().endsWith(".png")) {
-                contentType = "image/png";
-            } else if (objectName.toLowerCase().endsWith(".gif")) {
-                contentType = "image/gif";
-            } else if (objectName.toLowerCase().endsWith(".bmp")) {
-                contentType = "image/bmp";
-            } else if (objectName.toLowerCase().endsWith(".webp")) {
-                contentType = "image/webp";
-            }
-            response.setContentType(contentType);
-
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = inputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, len);
-            }
-            outputStream.flush();
+        try (InputStream inputStream = minioUtil.getFile(bucketName, objectName)) {
+            FileContentPolicy.writeResponse(inputStream, response, objectName, false);
         } catch (Exception e) {
             log.error("获取文件失败: bucket={}, objectName={}", bucketName, objectName, e);
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
