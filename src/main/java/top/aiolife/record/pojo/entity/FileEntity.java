@@ -12,6 +12,8 @@ import java.time.LocalDateTime;
 @Data
 @TableName("file")
 public class FileEntity {
+    private Long storageObjectId;
+
 
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;

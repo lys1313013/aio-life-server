@@ -42,7 +42,7 @@ class StorageDeleteTest {
         factory.setConfiguration(mybatis);
         var session = new SqlSessionTemplate(factory.getObject());
         service = new StorageAdminService(config, mock(StorageListClient.class), minio,
-                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class), new top.aiolife.config.CbtiConfig()), mock(top.aiolife.core.lock.StorageObjectLock.class));
+                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class), new top.aiolife.config.CbtiConfig(), mock(top.aiolife.system.mapper.StorageObjectMapper.class)), mock(top.aiolife.core.lock.StorageObjectLock.class));
     }
 
     void record(String name, Long owner, String type, Long bizId, int deleted) {

@@ -18,8 +18,11 @@ import top.aiolife.record.enums.FileBizType;
 public class StorageFileReferenceGuard {
     private final StorageFileReferenceMapper mapper;
     private final CbtiConfig cbtiConfig;
+    private final top.aiolife.system.mapper.StorageObjectMapper storageObjects;
 
     public void check(String bucket, String key) {
+        if (storageObjects.countStoredObject(bucket, key) > 0)
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "不允许删除：图片对象由共享文件引用管理");
         if ((!StringUtils.hasText(cbtiConfig.getBucketName()) || bucket.equals(cbtiConfig.getBucketName()))
                 && mapper.countCbtiReferencesIncludingDeleted(key) > 0)
             throw new ResponseStatusException(HttpStatus.CONFLICT, "不允许删除：CBTI 人格存在图片引用（含软删除记录）");

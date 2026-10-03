@@ -38,3 +38,5 @@ docker/volumes/*/data/
 
 # macOS
 .DS_Store
+
+/artifacts/video-cover-migration/

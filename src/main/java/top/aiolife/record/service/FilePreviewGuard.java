@@ -22,6 +22,8 @@ public class FilePreviewGuard {
     private final top.aiolife.bankcard.mapper.BankCardFileMapper bankCardFileMapper;
     private final top.aiolife.sso.service.AccountStatusGuard accountStatusGuard;
 
+    private final top.aiolife.record.mapper.IBVideoMapper videoMapper;
+
     /**
      * 访问判定结果
      */
@@ -83,6 +85,14 @@ public class FilePreviewGuard {
      * @return 访问判定结果
      */
     public AccessDecision check(FileEntity fileEntity, Long userId) {
+        if ("b_video_cover".equals(fileEntity.getBizType())) {
+            if (userId == null) return AccessDecision.UNAUTHORIZED;
+            if (!userId.equals(fileEntity.getCreateUser()) || fileEntity.getBizId() == null)
+                return AccessDecision.FORBIDDEN;
+            secondaryLockGuard.checkMenus(userId, "/record/videoWatch");
+            return videoMapper.countCoverReference(fileEntity.getBizId(), userId, fileEntity.getId()) > 0
+                    ? AccessDecision.ALLOW : AccessDecision.FORBIDDEN;
+        }
         if ("bank_card_template_cover".equals(fileEntity.getBizType())) {
             if (userId==null) return AccessDecision.UNAUTHORIZED;
             if (isAdmin(userId)) return AccessDecision.ALLOW;

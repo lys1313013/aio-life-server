@@ -9,6 +9,9 @@ import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BVideoVO {
+    private String coverFileId;
+    private String coverState;
+
 
     private Long id;
 

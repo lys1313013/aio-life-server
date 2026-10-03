@@ -35,6 +35,7 @@ import java.util.List;
 @RequestMapping("/file")
 public class SysFileController {
 
+    private final top.aiolife.system.mapper.StorageObjectMapper storageObjects;
     private final IFileService fileService;
     private final MinioUtil minioUtil;
     private final top.aiolife.config.MinioConfig minioConfig;
@@ -94,6 +95,21 @@ public class SysFileController {
         if ("bank_card_cover".equals(fileEntity.getBizType()) || "bank_card_template_cover".equals(fileEntity.getBizType())) {
             response.setHeader("Cache-Control", "no-store");
             response.setHeader("X-Content-Type-Options", "nosniff");
+        }
+        if (fileEntity.getStorageObjectId() != null) {
+            var object = storageObjects.selectById(fileEntity.getStorageObjectId());
+            if (object == null || !"system".equals(object.getBucket())
+                    || !object.getObjectKey().matches("bvedio/[a-f0-9]{64}\\.(jpg|png|gif|webp|bmp)")) {
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND); return;
+            }
+            response.setHeader("Cache-Control", "no-store");
+            try (var input = minioUtil.getFile(object.getBucket(), object.getObjectKey())) {
+                FileContentPolicy.writeResponse(input, response, object.getObjectKey(), isDownload);
+            } catch (Exception e) {
+                log.warn("内部图片读取失败 fileId={}", id);
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            }
+            return;
         }
         // 从 MinIO 拿取文件
         String bucketName = StringUtils.hasText(minioConfig.getBucketName()) ? minioConfig.getBucketName() : "aiolife";

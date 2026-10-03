@@ -50,6 +50,7 @@ public class BVideoController {
             ProgressStatusEnum.COMPLETED.getCode());
 
     private IBVideoMapper bVideoMapper;
+    private top.aiolife.record.service.VideoCoverService videoCovers;
 
     public IBVideoMapper getBaseMapper() {
         return bVideoMapper;
@@ -76,6 +77,7 @@ public class BVideoController {
     }
 
     @PostMapping
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> insert(@Valid @RequestBody BVideoCreateReq entityReq) {
         BVideoEntity entity = RecordApiConvertor.INSTANCE.fromBVideoCreateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
@@ -97,10 +99,12 @@ public class BVideoController {
             entity.setWatchedDuration(entity.getDuration());
         }
         boolean b = getBaseMapper().insert(entity) > 0;
+        if (b) videoCovers.enqueue(entity.getId(), userId, entity.getCover(), false);
         return ApiResponse.success(b);
     }
 
     @PutMapping("/{id}")
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> update(@PathVariable Long id, @Valid @RequestBody BVideoUpdateReq entityReq) {
         BVideoEntity entity = RecordApiConvertor.INSTANCE.fromBVideoUpdateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
@@ -109,11 +113,13 @@ public class BVideoController {
         wrapper.eq(BVideoEntity::getId, id);
         wrapper.eq(BVideoEntity::getUserId, userId);
 
-        BVideoEntity existEntity = getBaseMapper().selectOne(wrapper);
+        BVideoEntity existEntity = bVideoMapper.lockOwned(id, userId);
         if (existEntity == null) {
             return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "无权限更新该数据或数据不存在");
         }
 
+        if (entityReq.getCover() != null) videoCovers.enqueue(id, userId, entityReq.getCover(), false);
+        entity.setCover(null); // 封面来源及版本由导入服务在同一事务内维护。
         entity.setId(id);
         entity.setUserId(userId);
         entity.setUpdateUser(userId);
@@ -128,6 +134,7 @@ public class BVideoController {
 
 
     @DeleteMapping("/{id}")
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> delete(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
 
@@ -140,6 +147,23 @@ public class BVideoController {
             return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "无权限删除该数据或数据不存在");
         }
         return ApiResponse.success(b);
+    }
+
+    /** 只读取导入状态，不发起外网下载；批量限制防止无限 IN 查询。 */
+    @GetMapping("/covers")
+    public ApiResponse<List<top.aiolife.record.pojo.vo.BVideoCoverVO>> covers(@RequestParam List<Long> ids) {
+        if (ids.isEmpty() || ids.size() > 100) throw new IllegalArgumentException("每次最多查询100张封面");
+        long owner = StpUtil.getLoginIdAsLong();
+        var rows = bVideoMapper.selectList(new LambdaQueryWrapper<BVideoEntity>()
+                .eq(BVideoEntity::getUserId, owner).in(BVideoEntity::getId, ids));
+        return ApiResponse.success(rows.stream().map(v -> new top.aiolife.record.pojo.vo.BVideoCoverVO(
+                v.getId(), v.getCoverFileId(), v.getCoverState())).toList());
+    }
+
+    @PostMapping("/{id}/cover/retry")
+    public ApiResponse<Void> retryCover(@PathVariable Long id) {
+        videoCovers.retry(id, StpUtil.getLoginIdAsLong());
+        return ApiResponse.success();
     }
 
     @GetMapping("/getStatusCount")
@@ -171,6 +195,7 @@ public class BVideoController {
     }
 
     @PostMapping("/tagVideo")
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> tagVideo(@Valid @RequestBody BVideoCreateReq entityReq) {
         BVideoEntity entity = RecordApiConvertor.INSTANCE.fromBVideoCreateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
@@ -191,10 +216,12 @@ public class BVideoController {
             entity.setStatus(ProgressStatusEnum.IN_PROGRESS);
         }
         getBaseMapper().insert(entity);
+        videoCovers.enqueue(entity.getId(), userId, entity.getCover(), false);
         return ApiResponse.success();
     }
 
     @PostMapping("/syncProgress")
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> syncProgress(@Valid @RequestBody BVideoProgressReq entityReq) {
         BVideoEntity entity = RecordApiConvertor.INSTANCE.fromBVideoProgressReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
@@ -208,6 +235,7 @@ public class BVideoController {
         BVideoEntity exist = getBaseMapper().selectOne(queryWrapper);
 
         if (exist != null) {
+            if (entityReq.getCover() != null) videoCovers.enqueue(exist.getId(), userId, entityReq.getCover(), false);
             LambdaUpdateWrapper<BVideoEntity> updateWrapper = new LambdaUpdateWrapper<>();
             updateWrapper.set(BVideoEntity::getCurrentEpisode, entity.getCurrentEpisode());
             updateWrapper.set(BVideoEntity::getWatchedDuration, entity.getWatchedDuration());
@@ -227,6 +255,7 @@ public class BVideoController {
                 entity.setStatus(ProgressStatusEnum.IN_PROGRESS);
             }
             getBaseMapper().insert(entity);
+            videoCovers.enqueue(entity.getId(), userId, entity.getCover(), false);
             log.info("syncProgress inserted, bvid: {}", entity.getBvid());
         }
         return ApiResponse.success();

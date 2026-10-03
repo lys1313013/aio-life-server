@@ -240,7 +240,7 @@ class BankCardServiceTest {
     @Test void privateCoverGuardChecksOwnerAndDeletedBankCard() {
         var lock=org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class);
         var preview=new top.aiolife.record.service.FilePreviewGuard(lock,fileMapper,
-                org.mockito.Mockito.mock(top.aiolife.sso.service.AccountStatusGuard.class));
+                org.mockito.Mockito.mock(top.aiolife.sso.service.AccountStatusGuard.class), org.mockito.Mockito.mock(top.aiolife.record.mapper.IBVideoMapper.class));
         var file=new top.aiolife.record.pojo.entity.FileEntity();
         file.setBizType("bank_card_cover");file.setCreateUser(1L);file.setIsPublic(1);
         assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));
@@ -330,7 +330,7 @@ class BankCardServiceTest {
         long id=template();var req=request();req.setCoverTemplateId(id);create(1,req);
         var menu=org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class);
         var preview=org.mockito.Mockito.spy(new top.aiolife.record.service.FilePreviewGuard(menu,fileMapper,
-                org.mockito.Mockito.mock(top.aiolife.sso.service.AccountStatusGuard.class)));
+                org.mockito.Mockito.mock(top.aiolife.sso.service.AccountStatusGuard.class), org.mockito.Mockito.mock(top.aiolife.record.mapper.IBVideoMapper.class)));
         org.mockito.Mockito.doReturn(false).when(preview).isAdmin(org.mockito.ArgumentMatchers.anyLong());
         var file=new top.aiolife.record.pojo.entity.FileEntity();file.setBizType(BankCardCoverTemplateService.FILE_TYPE);file.setIsPublic(1);
         assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));

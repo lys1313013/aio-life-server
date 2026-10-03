@@ -121,7 +121,7 @@ class CredentialRevocationTest {
         when(lastActive.preHandle(any(), any(), any())).thenReturn(true);
         var registry = new TestRegistry();
         new SaTokenConfig(apiKeyInterceptor, locks, lastActive, accountGuard).addInterceptors(registry);
-        var files = new FilePreviewGuard(mock(SecondaryLockGuard.class), mock(BankCardFileMapper.class), accountGuard);
+        var files = new FilePreviewGuard(mock(SecondaryLockGuard.class), mock(BankCardFileMapper.class), accountGuard, mock(top.aiolife.record.mapper.IBVideoMapper.class));
         mvc = MockMvcBuilders.standaloneSetup(new ProbeController(files))
                 .setControllerAdvice(new ExceptionHandle()).addInterceptors(registry.interceptors()).build();
     }

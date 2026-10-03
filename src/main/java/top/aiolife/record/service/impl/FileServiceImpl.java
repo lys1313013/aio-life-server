@@ -228,8 +228,15 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
         if (CollectionUtils.isEmpty(fileIds)) {
             return;
         }
+        if ("b_video_cover".equals(bizType))
+            throw new IllegalArgumentException("视频封面只能通过视频导入绑定");
+        if ("bank_card_cover".equals(bizType) || "bank_card_template_cover".equals(bizType))
+            throw new IllegalArgumentException("请通过银行卡页面绑定卡面");
+        if (this.count(new LambdaQueryWrapper<FileEntity>()
+                .in(FileEntity::getId, fileIds).eq(FileEntity::getBizType, "b_video_cover")) > 0)
+            throw new IllegalArgumentException("视频封面只能通过视频导入绑定");
         // 银行卡卡面只能通过银行卡事务绑定，不能被通用入口迁走。
-        if ("bank_card_cover".equals(bizType) || "bank_card_template_cover".equals(bizType) || this.count(new LambdaQueryWrapper<FileEntity>()
+        if (this.count(new LambdaQueryWrapper<FileEntity>()
                 .in(FileEntity::getId, fileIds).in(FileEntity::getBizType, "bank_card_cover", "bank_card_template_cover")) > 0)
             throw new IllegalArgumentException("请通过银行卡页面绑定卡面");
         // 只允许绑定当前用户自己上传的文件
@@ -264,6 +271,10 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
         BeanUtils.copyProperties(entity, vo);
         vo.setId(entity.getId());
         // 构造文件预览 URL
+        if (entity.getStorageObjectId() != null) {
+            vo.setFileUrl("/api/file/preview/" + entity.getId());
+            return vo;
+        }
         String bucketName = resolveBucketName();
         vo.setFileUrl(minioUtil.getPreviewUrl(bucketName, entity.getFileName()));
         return vo;

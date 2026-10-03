@@ -36,7 +36,7 @@ class FilePreviewSecurityTest {
     void setup() {
         var config = new MinioConfig();
         config.setBucketName("aiolife");
-        mvc = MockMvcBuilders.standaloneSetup(new SysFileController(files, minio, config, guard, mock(SecondaryLockGuard.class)),
+        mvc = MockMvcBuilders.standaloneSetup(new SysFileController(mock(top.aiolife.system.mapper.StorageObjectMapper.class), files, minio, config, guard, mock(SecondaryLockGuard.class)),
                 new FileController(minio, config, new CbtiConfig(), files, guard)).build();
         file.setId(ID);
         file.setFileName(OBJECT);

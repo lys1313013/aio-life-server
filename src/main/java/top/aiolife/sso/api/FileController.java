@@ -71,6 +71,9 @@ public class FileController {
             return;
         }
 
+        if ("system".equals(bucketName) && objectName.startsWith("bvedio/")) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN); return;
+        }
         // 仅允许访问配置的桶，防止任意 bucket 读取
         if (!isAllowedBucket(bucketName)) {
             log.warn("拒绝访问未配置的桶: bucket={}", bucketName);

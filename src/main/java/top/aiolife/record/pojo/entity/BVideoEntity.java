@@ -17,6 +17,10 @@ import java.time.LocalDateTime;
 @Data
 @TableName("b_video")
 public class BVideoEntity extends BaseEntity{
+    private String coverFileId;
+    private String coverState;
+    private Long coverVersion;
+
 
     /**
      * 视频标题
