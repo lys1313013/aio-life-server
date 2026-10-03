@@ -31,7 +31,9 @@ public class UserInfoVO {
     /**
      * 头像url
      */
-    private String avatar;
+    private String avatarFileId;
+
+    private String avatarUrl;
 
     /**
      * 邮件

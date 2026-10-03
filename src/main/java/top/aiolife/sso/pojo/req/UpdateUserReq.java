@@ -22,7 +22,15 @@ public class UpdateUserReq {
     private String introduction;
 
     /**
-     * 头像
+     * 头像文件 ID
      */
-    private String avatar;
+    private String avatarFileId;
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private boolean avatarFileIdSpecified;
+
+    @com.fasterxml.jackson.annotation.JsonSetter("avatarFileId")
+    public void setAvatarFileId(String avatarFileId) {
+        this.avatarFileId = avatarFileId;
+        this.avatarFileIdSpecified = true;
+    }
 }

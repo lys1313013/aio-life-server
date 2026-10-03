@@ -25,9 +25,9 @@ public class UserUpdateReq {
     private String nickname;
 
     /**
-     * 头像
+     * 头像文件 ID
      */
-    private String avatar;
+    private String avatarFileId;
 
     /**
      * 邮箱
@@ -43,4 +43,12 @@ public class UserUpdateReq {
      * 个人简介
      */
     private String introduction;
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private boolean avatarFileIdSpecified;
+
+    @com.fasterxml.jackson.annotation.JsonSetter("avatarFileId")
+    public void setAvatarFileId(String avatarFileId) {
+        this.avatarFileId = avatarFileId;
+        this.avatarFileIdSpecified = true;
+    }
 }

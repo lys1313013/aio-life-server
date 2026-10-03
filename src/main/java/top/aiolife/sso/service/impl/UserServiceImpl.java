@@ -48,6 +48,7 @@ import top.aiolife.sso.pojo.vo.UserLoginVO;
 import top.aiolife.sso.pojo.vo.UserVO;
 import top.aiolife.sso.service.IUserService;
 import top.aiolife.sso.service.LoginSessionService;
+import top.aiolife.sso.service.UserAvatarFileService;
 import top.aiolife.sso.util.PasswordUtil;
 
 /**
@@ -70,6 +71,7 @@ public class UserServiceImpl implements IUserService {
     private final RedisUtil redisUtil;
     private final UserSecondaryLockMenuMapper lockMenuMapper;
     private final SecondaryLockMenuCache secondaryLockMenuCache;
+    private final UserAvatarFileService avatarFiles;
 
     @Value("${spring.auth.code.interval-seconds:180}")
     private long intervalSeconds;
@@ -132,7 +134,8 @@ public class UserServiceImpl implements IUserService {
             userInfoVO.setPhoneMasked("+" + userEntity.getPhoneCountryCode() + " ****"
                     + phone.substring(Math.max(0, phone.length() - 4)));
         }
-        userInfoVO.setAvatar(userEntity.getAvatar());
+        userInfoVO.setAvatarFileId(userEntity.getAvatarFileId());
+        userInfoVO.setAvatarUrl(avatarFiles.publicUrl(userEntity.getId(), userEntity.getAvatarFileId()));
         userInfoVO.setEmail(userEntity.getEmail());
         userInfoVO.setIntroduction(userEntity.getIntroduction());
         userInfoVO.setRoles(StringUtils.hasText(userEntity.getRole()) ? Arrays.asList(userEntity.getRole().split(",")) : Collections.singletonList("user"));
@@ -149,18 +152,35 @@ public class UserServiceImpl implements IUserService {
         UserBasicInfoVO vo = new UserBasicInfoVO();
         vo.setId(userEntity.getId());
         vo.setNickname(userEntity.getNickname());
-        vo.setAvatar(userEntity.getAvatar());
+        vo.setAvatarFileId(userEntity.getAvatarFileId());
+        vo.setAvatarUrl(avatarFiles.publicUrl(userEntity.getId(), userEntity.getAvatarFileId()));
         return vo;
     }
 
     @Override
     @CacheEvict(value = {"userInfo", "userBasicInfo"}, key = "#userEntity.id")
+    @Transactional(rollbackFor = Exception.class)
     public void updateUser(UserEntity userEntity) {
+        updateUser(userEntity, userEntity.getAvatarFileId() != null);
+    }
+
+    @Override
+    @CacheEvict(value = {"userInfo", "userBasicInfo"}, key = "#userEntity.id")
+    @Transactional(rollbackFor = Exception.class)
+    public void updateUser(UserEntity userEntity, boolean avatarFileIdSpecified) {
         // 禁止通过此接口修改密码
         userEntity.setPassword(null);
         userEntity.setPasswordSalt(null);
         clearExternalCredentials(userEntity);
-        userMapper.updateById(userEntity);
+        if (avatarFileIdSpecified) avatarFiles.validateForBinding(userEntity.getId(), userEntity.getAvatarFileId());
+        if (avatarFileIdSpecified) {
+            userMapper.update(userEntity, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<UserEntity>()
+                    .eq(UserEntity::getId, userEntity.getId())
+                    .set(UserEntity::getAvatarFileId, userEntity.getAvatarFileId()));
+        } else if (userEntity.getNickname() != null || userEntity.getIntroduction() != null
+                || userEntity.getUsername() != null || userEntity.getEmail() != null || userEntity.getRole() != null) {
+            userMapper.updateById(userEntity);
+        }
     }
 
     @Override
@@ -266,8 +286,10 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void addUser(UserEntity userEntity) {
         clearExternalCredentials(userEntity);
+        avatarFiles.validateForBinding(userEntity.getId(), userEntity.getAvatarFileId());
         if (!StringUtils.hasText(userEntity.getPassword())) {
             userEntity.setPassword("123456");
         }

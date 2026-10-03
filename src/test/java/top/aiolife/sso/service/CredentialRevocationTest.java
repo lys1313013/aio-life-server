@@ -72,7 +72,7 @@ class CredentialRevocationTest {
                 CREATE TABLE `user` (
                     id BIGINT PRIMARY KEY, username VARCHAR(255), password VARCHAR(255), password_salt VARCHAR(255),
                     secondary_password VARCHAR(255), secondary_password_salt VARCHAR(255), nickname VARCHAR(255),
-                    avatar VARCHAR(255), email VARCHAR(255), phone_country_code VARCHAR(32), phone VARCHAR(64),
+                    avatar_file_id VARCHAR(32), email VARCHAR(255), phone_country_code VARCHAR(32), phone VARCHAR(64),
                     phone_verified_at TIMESTAMP, wechat_openid VARCHAR(255), wechat_unionid VARCHAR(255),
                     role VARCHAR(255), introduction VARCHAR(255), is_deleted INT DEFAULT 0, last_active_at TIMESTAMP,
                     create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP)
@@ -99,7 +99,8 @@ class CredentialRevocationTest {
         redis = mock(RedisUtil.class);
         var implementation = new UserServiceImpl(userMapper, apiKeyMapper, mock(LoginSessionService.class),
                 mock(LoginLogMapper.class), mock(IMailService.class), redis,
-                mock(UserSecondaryLockMenuMapper.class), mock(SecondaryLockMenuCache.class));
+                mock(UserSecondaryLockMenuMapper.class), mock(SecondaryLockMenuCache.class),
+                mock(UserAvatarFileService.class));
         var proxy = new ProxyFactory(implementation);
         proxy.setProxyTargetClass(true);
         proxy.addAdvice(new TransactionInterceptor(new DataSourceTransactionManager(source),

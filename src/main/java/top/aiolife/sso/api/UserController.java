@@ -124,8 +124,8 @@ public class UserController {
         userEntity.setId(id);
         userEntity.setNickname(req.getNickname());
         userEntity.setIntroduction(req.getIntroduction());
-        userEntity.setAvatar(req.getAvatar());
-        userService.updateUser(userEntity);
+        userEntity.setAvatarFileId(req.getAvatarFileId());
+        userService.updateUser(userEntity, req.isAvatarFileIdSpecified());
         return ApiResponse.success();
     }
 

@@ -26,9 +26,9 @@ public class UserCreateReq {
     private String nickname;
 
     /**
-     * 头像
+     * 头像文件 ID
      */
-    private String avatar;
+    private String avatarFileId;
 
     /**
      * 邮箱

@@ -78,6 +78,8 @@ public interface IUserService {
 
     void updateUser(UserEntity userEntity);
 
+    void updateUser(UserEntity userEntity, boolean avatarFileIdSpecified);
+
     /**
      * 修改密码
      */

@@ -71,7 +71,7 @@ class FileServiceImplTest {
             entity.setId("file-id");
             return 1;
         });
-        when(minioUtil.getPreviewUrl(any(), any())).thenReturn("http://preview/file-id");
+        when(minioUtil.getFilePreviewUrl("file-id")).thenReturn("https://preview/file-id");
 
         try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
             stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
@@ -79,7 +79,7 @@ class FileServiceImplTest {
             var result = fileService.upload(file, FileBizType.AVATAR);
 
             assertEquals("file-id", result.getId());
-            assertEquals("http://preview/file-id", result.getFileUrl());
+            assertEquals("https://preview/file-id", result.getFileUrl());
 
             ArgumentCaptor<String> objectNameCaptor = ArgumentCaptor.forClass(String.class);
             verify(minioUtil).putObject(eq("test-bucket"), objectNameCaptor.capture(), any(), eq(file.getSize()), any());

@@ -62,9 +62,10 @@ public class UserEntity extends AuditEntity {
     private String nickname;
 
     /**
-     * 头像
+     * 头像文件 ID（file.id），展示地址不入库
      */
-    private String avatar;
+    @TableField(updateStrategy = com.baomidou.mybatisplus.annotation.FieldStrategy.NEVER)
+    private String avatarFileId;
 
     /**
      * 邮箱

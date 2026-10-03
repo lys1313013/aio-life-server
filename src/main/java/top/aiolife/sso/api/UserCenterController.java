@@ -38,7 +38,7 @@ public class UserCenterController {
     @PutMapping
     public ApiResponse<Void> update(@Valid @RequestBody UserUpdateReq userEntityReq) {
         UserEntity userEntity = SsoApiConvertor.INSTANCE.fromUserUpdateReq(userEntityReq);
-        userService.updateUser(userEntity);
+        userService.updateUser(userEntity, userEntityReq.isAvatarFileIdSpecified());
         return ApiResponse.success();
     }
 

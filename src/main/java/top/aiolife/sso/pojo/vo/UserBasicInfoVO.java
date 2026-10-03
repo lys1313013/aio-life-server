@@ -17,5 +17,7 @@ public class UserBasicInfoVO {
     /**
      * 头像url
      */
-    private String avatar;
+    private String avatarFileId;
+
+    private String avatarUrl;
 }

@@ -252,6 +252,13 @@ mvn clean package -DskipTests
 | 主应用 | 45678 | API 服务，context-path: `/api` |
 | 管理端点 | 45679 | Prometheus、Health、Info |
 
+### 头像文件绑定与公网部署
+
+- 用户表只保存 `avatar_file_id`（关联 `file.id`），不保存头像 URL。更新资料提交 `avatarFileId`：不传保持原值，传 `null` 清除，非空必须是当前用户上传、未删除且公开的头像图片。
+- `/user/info`、`/auth/info` 和 `/user/{id}/basic` 返回 `avatarFileId`、`avatarUrl`；展示地址为当前 `AIO_LIFE_SERVER_BASE_URL` + `/file/preview/{fileId}`。部署变量必须使用 `SERVER` 拼写并配置公网 HTTPS，如 `https://aiolife.top/api`。
+- 旧库执行 `2026-10-03_user_avatar_file_id.sql`：直接删除 `avatar` 列，不迁移旧头像，用户需重新上传。先备份，协调后端、Web 与移动端一起升级；旧客户端的 `avatar` 不再作为头像保存字段。
+- `avatar_file_id` 外键阻止直接删除被引用的文件记录；存储管理仍禁止删除 file 表关联的对象。解除绑定不自动删除文件。回滚旧程序需要同时恢复旧结构备份，不能只切换镜像。
+
 ### API 文档
 
 推荐渐进读取：`GET /api/docs/catalog` 查看模块，`GET /api/docs/operations?keyword=目标` 分页搜索，`GET /api/docs/operations/{operationId}` 获取单接口定义及必要 Schema。三个入口均无需登录或 API Key。

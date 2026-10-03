@@ -27,6 +27,13 @@ public class MinioUtil {
     @Value("${aio.life.server.base-url}")
     private String serveBaseUrl;
 
+    /** 公开头像按文件 ID 预览，客户端不再绑定对象路径或历史域名。 */
+    public String getFilePreviewUrl(String fileId) {
+        if (fileId == null || !fileId.matches("[a-fA-F0-9]{32}"))
+            throw new IllegalArgumentException("文件 ID 无效");
+        return serveBaseUrl.replaceAll("/+$", "") + "/file/preview/" + fileId;
+    }
+
     /**
      * 获取文件的预览 URL
      *
