@@ -30,6 +30,14 @@
     {
       "path": "sql/2_ini_data/2026-10-02_storage_admin_menu.sql",
       "sha256": "2c0ba6a63e027e270a13f8c40cbd501355927fe08d1c74184a018d20c8d2a309"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-03_video_cover_storage.sql",
+      "sha256": "436c32fff11d18907971ac21ee97640e477cca6b34d232d18f6c1e46a0f29a26"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-03_user_avatar_file_id.sql",
+      "sha256": "70f26c749576d0a3ab43cac3733929053ef5af466a7af5de23b16c8c6e69e394"
     }
   ]
 }

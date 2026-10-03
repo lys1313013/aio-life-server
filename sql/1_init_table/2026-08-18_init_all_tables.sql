@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS `user` (
     `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `last_active_at` timestamp NULL DEFAULT NULL COMMENT '最后活跃时间',
     `email` varchar(50) DEFAULT NULL COMMENT '邮箱',
-    `avatar` varchar(100) DEFAULT NULL,
+    `avatar_file_id` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '头像文件ID',
+    KEY `idx_user_avatar_file` (`avatar_file_id`),
     `password_salt` varchar(32) DEFAULT NULL COMMENT '密码盐值',
     `role` varchar(50) DEFAULT 'user' COMMENT '角色类型',
     `introduction` varchar(255) DEFAULT NULL COMMENT '个人简介',
@@ -840,6 +841,9 @@ CREATE TABLE IF NOT EXISTS `movie` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='影视记录表';
 
 CREATE TABLE IF NOT EXISTS `b_video` (
+    `cover_file_id` varchar(32) DEFAULT NULL,
+    `cover_state` varchar(16) NOT NULL DEFAULT 'NONE',
+    `cover_version` bigint NOT NULL DEFAULT 0,
     `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `title` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '视频标题',
     `url` varchar(1000) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'B站视频URL',
@@ -1180,6 +1184,8 @@ CREATE TABLE IF NOT EXISTS `chat_message` (
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS `file` (
+    `storage_object_id` bigint DEFAULT NULL,
+    KEY `idx_file_storage_object` (`storage_object_id`),
     `id` varchar(32) NOT NULL COMMENT '主键UUID',
     `file_name` varchar(255) NOT NULL COMMENT '文件原名',
     `file_size` bigint DEFAULT NULL COMMENT '文件大小(字节)',
@@ -1197,6 +1203,8 @@ CREATE TABLE IF NOT EXISTS `file` (
     KEY `idx_biz` (`biz_type`, `biz_id`),
     KEY `idx_hash` (`hash_value`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统文件表';
+
+ALTER TABLE `user` ADD CONSTRAINT `fk_user_avatar_file` FOREIGN KEY (`avatar_file_id`) REFERENCES `file` (`id`) ON DELETE RESTRICT;
 
 CREATE TABLE IF NOT EXISTS `bank_card_cover_template` (
   `id` BIGINT NOT NULL COMMENT '雪花ID',
@@ -1216,3 +1224,41 @@ CREATE TABLE IF NOT EXISTS `bank_card_cover_template` (
   CONSTRAINT `chk_cover_template_type` CHECK (`card_type` IN ('debit','credit')),
   CONSTRAINT `chk_cover_template_enabled` CHECK (`is_enabled` IN (0,1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='公共银行卡卡面';
+
+CREATE TABLE IF NOT EXISTS `storage_object` (
+    `id` bigint NOT NULL,
+    `bucket` varchar(63) NOT NULL,
+    `object_key` varchar(255) NOT NULL,
+    `sha256` char(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    `file_size` bigint NOT NULL,
+    `content_type` varchar(100) NOT NULL,
+    `create_user` bigint DEFAULT NULL,
+    `create_time` datetime NOT NULL,
+    `update_user` bigint DEFAULT NULL,
+    `update_time` datetime NOT NULL,
+    `is_deleted` tinyint NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_storage_hash` (`bucket`, `sha256`),
+    UNIQUE KEY `uk_storage_key` (`bucket`, `object_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='不可变图片对象';
+
+CREATE TABLE IF NOT EXISTS `image_import_task` (
+    `id` bigint NOT NULL,
+    `video_id` bigint NOT NULL,
+    `cover_version` bigint NOT NULL,
+    `source_url` varchar(1000) NOT NULL,
+    `state` varchar(16) NOT NULL,
+    `attempts` int NOT NULL DEFAULT 0,
+    `next_attempt_at` datetime NOT NULL,
+    `lease_token` varchar(32) DEFAULT NULL,
+    `lease_until` datetime DEFAULT NULL,
+    `error_code` varchar(64) DEFAULT NULL,
+    `create_user` bigint DEFAULT NULL,
+    `create_time` datetime NOT NULL,
+    `update_user` bigint DEFAULT NULL,
+    `update_time` datetime NOT NULL,
+    `is_deleted` tinyint NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_image_import_version` (`video_id`, `cover_version`),
+    KEY `idx_image_import_due` (`state`, `next_attempt_at`, `lease_until`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='视频封面持久化导入任务';

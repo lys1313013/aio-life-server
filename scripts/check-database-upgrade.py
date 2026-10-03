@@ -132,12 +132,28 @@ def verify(args, mysql):
         mysql.run((ROOT / 'sql/upgrade-tests/baseline-data.sql').read_text(), old)
         before = mysql.run("SELECT id,username,password,nickname FROM user WHERE id=-900001;"
                            "SELECT id,card_no_ciphertext,HEX(card_no_fingerprint),card_no_last4 FROM bank_card WHERE id=-900001", old)
+        mysql.run("UPDATE user SET avatar='http://localhost:45678/old-avatar.png' WHERE id=-900001", old)
         for path, source in migrations:
             mysql.run(source, old)
             print(f'Applied {path}')
         after = mysql.run("SELECT id,username,password,nickname FROM user WHERE id=-900001;"
                           "SELECT id,card_no_ciphertext,HEX(card_no_fingerprint),card_no_last4 FROM bank_card WHERE id=-900001", old)
         assert_true(before == after, 'Upgrade changed existing account or card data')
+        assert_true(mysql.run("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='user' AND column_name='avatar'", old) == '0',
+                    'Legacy avatar column was not removed')
+        assert_true(mysql.run("SELECT COUNT(*) FROM user WHERE id=-900001 AND avatar_file_id IS NULL", old) == '1',
+                    'Legacy avatar must not be migrated')
+        file_id = 'abcdef0123456789abcdef0123456789'
+        mysql.run(f"INSERT INTO file(id,file_name,biz_type,is_public,create_user,create_time,update_time) VALUES('{file_id}','fixture.png','avatar',1,-900001,NOW(),NOW());"
+                  f"UPDATE user SET avatar_file_id='{file_id}' WHERE id=-900001", old)
+        try:
+            mysql.run(f"DELETE FROM file WHERE id='{file_id}'", old)
+        except RuntimeError as error:
+            assert_true('ERROR 1451 ' in str(error), f'Unexpected avatar reference error: {error}')
+        else:
+            raise RuntimeError('Referenced avatar file was deleted')
+        mysql.run(f"UPDATE user SET avatar_file_id=NULL WHERE id=-900001;DELETE FROM file WHERE id='{file_id}'", old)
+
         assert_true(mysql.run('SELECT COUNT(*) FROM user WHERE id=-900001 AND phone IS NULL AND wechat_openid IS NULL', old) == '1',
                     'Upgrade unexpectedly bound an existing account')
         assert_true(mysql.run("SELECT COUNT(*) FROM sys_menu WHERE name IN ('StorageAdmin','BankCardCoverAdmin') AND roles='admin'", old) == '2',
@@ -173,7 +189,7 @@ def verify(args, mysql):
         report = {'baseline': plan['baseline'], 'migrations': plan['migrations'],
                   'mysql_version': mysql.run('SELECT VERSION()'), 'result': 'passed',
                   'checks': ['full schema parity', 'existing data retained', 'admin menus',
-                             'phone/openid uniqueness', 'phone pair constraint', 'soft-delete reuse', 'optional card number']}
+                             'phone/openid uniqueness', 'phone pair constraint', 'soft-delete reuse', 'optional card number', 'avatar file reference and legacy removal']}
         (args.report_dir / 'upgrade-report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
         print(f'Upgrade passed: {len(expected["tables"])} tables; reports: {args.report_dir}')
     finally:
