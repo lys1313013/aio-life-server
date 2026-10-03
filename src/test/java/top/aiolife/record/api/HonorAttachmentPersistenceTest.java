@@ -51,6 +51,7 @@ class HonorAttachmentPersistenceTest {
                 """);
         jdbc.execute("""
                 CREATE TABLE file (
+                    storage_object_id BIGINT,
                     id VARCHAR(32) PRIMARY KEY, biz_type VARCHAR(50), biz_id BIGINT,
                     file_name VARCHAR(255), file_size BIGINT, file_type VARCHAR(100), hash_value VARCHAR(255),
                     create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP,
