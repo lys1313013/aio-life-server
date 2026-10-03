@@ -97,9 +97,7 @@ public class UserServiceImpl implements IUserService {
 
         if (userEntity == null || !StringUtils.hasText(userEntity.getPassword())
                 || !StringUtils.hasText(loginReq.getPassword())) {
-            // 【有意保留】登录失败时写入明文密码到 login_log.password，用于抓取弱密码/常见密码样本（密码本）。
-            // 非缺陷，勿删除。见 docs/数据库表结构审查报告.md「已决策不回改」。
-            loginLogEntity.setPassword(loginReq.getPassword());
+            // 失败登录也不记录输入密码，避免把真实旧密码或输错的密码写入日志。
             loginLogMapper.insert(loginLogEntity);
             throw new RuntimeException("用户名或密码错误");
         }
@@ -107,8 +105,6 @@ public class UserServiceImpl implements IUserService {
         // 校验密码
         String encryptedPassword = PasswordUtil.encryptPassword(loginReq.getPassword(), userEntity.getPasswordSalt());
         if (!userEntity.getPassword().equals(encryptedPassword)) {
-            // 【有意保留】同上：密码错误时记录明文，供密码本抓取。非缺陷，勿删除。
-            loginLogEntity.setPassword(loginReq.getPassword());
             loginLogMapper.insert(loginLogEntity);
             throw new RuntimeException("用户名或密码错误");
         }

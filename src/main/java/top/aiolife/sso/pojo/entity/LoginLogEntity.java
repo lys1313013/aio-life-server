@@ -27,7 +27,7 @@ public class LoginLogEntity {
      */
     private String username;
     /**
-     * 明文密码（仅登录失败时记录）——【有意保留，勿删勿改】：用于抓取弱密码样本构建密码本。非缺陷。
+     * 历史兼容字段；新登录日志不再写入密码，历史记录须单独按保留策略清理。
      */
     private String password;
     /**

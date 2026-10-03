@@ -3,6 +3,7 @@ package top.aiolife.core.exception;
 import cn.dev33.satoken.exception.NotLoginException;
 import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.util.LogSafeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
@@ -39,7 +40,7 @@ public class ExceptionHandle {
     @ExceptionHandler(NoResourceFoundException.class)
     public ApiResponse<Object> handleNoResourceFound(NoResourceFoundException e) {
         String path = e.getResourcePath();
-        log.warn("访问不存在的接口：{}", path);
+        log.warn("访问不存在的接口");
         // getResourcePath() 返回不带前导斜杠的路径，如 relationships/graph
         if (path != null && path.replaceFirst("^/", "").startsWith("relationships")) {
             return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL,
@@ -56,26 +57,27 @@ public class ExceptionHandle {
 
     @ExceptionHandler(Exception.class)
     public ApiResponse<Object> handleException(Exception e) {
-        log.error("发生异常：{}", e.getMessage(), e);
+        log.error("接口调用异常", LogSafeException.withoutMessages(e));
         return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
     }
 
     /**
-     * 数据库/SQL 异常兜底：内部细节（SQL、表名、错误码）只进日志，不返回前端
+     * 数据库/SQL 异常兜底：日志仅保留异常类型和代码栈，不记录可能含参数值的 SQL 异常消息
      * <p>
      * MyBatis/Druid SQL 异常统一收敛到 {@link DataAccessException} 父类下，具体类型优先级高于兜底
      * {@link Exception}，故不会被其透传。
      */
     @ExceptionHandler(DataAccessException.class)
     public ApiResponse<Object> handleDataAccessException(DataAccessException e) {
-        log.error("数据库异常：{}", e.getMessage(), e);
+        log.error("数据库异常", LogSafeException.withoutMessages(e));
         return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "系统异常，请稍后重试");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ApiResponse<Object> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult().getFieldError().getDefaultMessage();
-        log.error("参数校验异常：{}", message);
+        var fieldError = e.getBindingResult().getFieldError();
+        String message = fieldError == null ? "参数校验失败" : fieldError.getDefaultMessage();
+        log.warn("参数校验失败，错误数量={}", e.getBindingResult().getErrorCount());
         return ApiResponse.error(ResponseCodeConst.RECODE_PARAM_FAIL, message);
     }
 

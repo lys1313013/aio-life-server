@@ -1,6 +1,5 @@
 package top.aiolife.record.aop;
 
-import com.alibaba.fastjson2.JSON;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -9,8 +8,7 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
-import java.util.Arrays;
+import org.springframework.web.servlet.HandlerMapping;
 
 /**
  * 接口调用日志切面
@@ -35,41 +33,20 @@ public class LogAspect {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         HttpServletRequest request = attributes != null ? attributes.getRequest() : null;
 
-        String methodName = joinPoint.getSignature().getName();
-        String url = request != null ? request.getRequestURI() : "unknown";
+        // 只记录框架路由模板，不记录原始 URL、查询参数、请求头、入参或返回值。
+        // 默认禁止参数日志，新增认证入口或嵌套凭证也无需维护排除名单。
+        Object pattern = request == null ? null : request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+        String route = pattern == null ? "[unmapped]" : pattern.toString();
         String httpMethod = request != null ? request.getMethod() : "unknown";
-
-
-        // 登录及微信认证接口不打印一次性凭证、票据或密码
-        if (!"login".equals(methodName)
-                && !(joinPoint.getTarget() instanceof top.aiolife.sso.api.WechatAuthController)
-                && !(joinPoint.getTarget() instanceof top.aiolife.bankcard.api.BankCardController)) {
-            Object[] args = joinPoint.getArgs();
-            if (args != null && args.length > 0) {
-                try {
-                    // 过滤掉无法序列化的对象
-                    Object[] logArgs = Arrays.stream(args)
-                            .filter(arg -> !(arg instanceof jakarta.servlet.ServletRequest)
-                                    && !(arg instanceof jakarta.servlet.ServletResponse)
-                                    && !(arg instanceof org.springframework.web.multipart.MultipartFile))
-                            .toArray();
-                    log.info("[{} {}], 参数：{}", httpMethod, url, JSON.toJSONString(logArgs));
-                } catch (Exception e) {
-                    log.info("[{} {}]", httpMethod, url);
-                    log.warn("请求参数序列化失败: {}", e.getMessage());
-
-                }
-            }
-        } else {
-            log.info(">>> 请求参数: [PROTECTED]");
-        }
-
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
+        boolean completed = false;
         try {
-            return joinPoint.proceed();
+            Object result = joinPoint.proceed();
+            completed = true;
+            return result;
         } finally {
-            long endTime = System.currentTimeMillis();
-            log.info("耗时: {}ms", (endTime - startTime));
+            log.info("[{} {}] completed={} durationMs={}", httpMethod, route, completed,
+                    (System.nanoTime() - startTime) / 1_000_000);
         }
 
     }

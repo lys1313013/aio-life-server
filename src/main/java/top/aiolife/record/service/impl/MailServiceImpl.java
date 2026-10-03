@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import top.aiolife.record.service.IMailService;
 import top.aiolife.sso.mapper.MailLogMapper;
 import top.aiolife.sso.pojo.entity.MailLogEntity;
+import top.aiolife.core.util.LogSafeException;
 
 import java.time.LocalDateTime;
 
@@ -47,7 +48,8 @@ public class MailServiceImpl implements IMailService {
         MailLogEntity logEntity = new MailLogEntity();
         logEntity.setSendTo(sendTo);
         logEntity.setSubject(title);
-        logEntity.setContent(content);
+        // 邮件日志仅作投递审计；正文可能携带验证码，不复制到持久化日志。
+        logEntity.setContent("[REDACTED]");
         logEntity.setBizType(bizType);
         logEntity.setIpAddress(ipAddress);
         logEntity.setCreateTime(LocalDateTime.now());
@@ -62,17 +64,17 @@ public class MailServiceImpl implements IMailService {
             mailSender.send(message);
 
             logEntity.setStatus(1);
-            log.info("邮件发送成功，收件人：{}， 标题：{}， 内容：{}", sendTo, title, content);
+            log.info("邮件发送成功");
         } catch (Exception e) {
             logEntity.setStatus(0);
-            logEntity.setErrorMsg(e.getMessage());
-            log.error("邮件发送失败", e);
+            logEntity.setErrorMsg(e.getClass().getName());
+            log.error("邮件发送失败", LogSafeException.withoutMessages(e));
             throw e;
         } finally {
             try {
                 mailLogMapper.insert(logEntity);
             } catch (Exception e) {
-                log.error("保存邮件发送日志失败", e);
+                log.error("保存邮件发送日志失败", LogSafeException.withoutMessages(e));
             }
         }
     }
@@ -87,7 +89,7 @@ public class MailServiceImpl implements IMailService {
         MailLogEntity logEntity = new MailLogEntity();
         logEntity.setSendTo(sendTo);
         logEntity.setSubject(title);
-        logEntity.setContent(htmlContent);
+        logEntity.setContent("[REDACTED]");
         logEntity.setBizType(bizType);
         logEntity.setIpAddress(ipAddress);
         logEntity.setCreateTime(LocalDateTime.now());
@@ -103,22 +105,22 @@ public class MailServiceImpl implements IMailService {
             mailSender.send(message);
 
             logEntity.setStatus(1);
-            log.info("HTML邮件发送成功，收件人：{}， 标题：{}", sendTo, title);
+            log.info("HTML邮件发送成功");
         } catch (MessagingException e) {
             logEntity.setStatus(0);
-            logEntity.setErrorMsg(e.getMessage());
-            log.error("HTML邮件发送失败", e);
+            logEntity.setErrorMsg(e.getClass().getName());
+            log.error("HTML邮件发送失败", LogSafeException.withoutMessages(e));
             throw e;
         } catch (Exception e) {
             logEntity.setStatus(0);
-            logEntity.setErrorMsg(e.getMessage());
-            log.error("HTML邮件发送失败", e);
+            logEntity.setErrorMsg(e.getClass().getName());
+            log.error("HTML邮件发送失败", LogSafeException.withoutMessages(e));
             throw new RuntimeException(e);
         } finally {
             try {
                 mailLogMapper.insert(logEntity);
             } catch (Exception e) {
-                log.error("保存邮件发送日志失败", e);
+                log.error("保存邮件发送日志失败", LogSafeException.withoutMessages(e));
             }
         }
     }

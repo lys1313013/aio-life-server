@@ -97,8 +97,10 @@ spring:
 
 logging:
   level:
-    top.aiolife.record.mapper: debug
-    org.springframework.jdbc: debug
+    # SQL DEBUG/TRACE 会输出绑定参数；常规运行不记录业务字段值。
+    top.aiolife.record.mapper: info
+    top.aiolife.sso.mapper: info
+    org.springframework.jdbc: info
   pattern:
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%replace{%X{traceId}}{^(.{16}).*}{$1},%X{spanId}] [%thread] %-5level %logger{50} - %msg%n"
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%replace{%X{traceId}}{^(.{16}).*}{$1},%X{spanId}] [%thread] %-5level %logger{50} - %msg%n"

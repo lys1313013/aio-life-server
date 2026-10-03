@@ -32,7 +32,7 @@ public class MailLogEntity {
     private String subject;
 
     /**
-     * 邮件内容
+     * 历史兼容字段；新日志使用 [REDACTED]，不保存可能含验证码的邮件正文
      */
     private String content;
 
@@ -47,7 +47,7 @@ public class MailLogEntity {
     private Integer status;
 
     /**
-     * 失败原因
+     * 失败异常类型；不保存可能包含正文或认证信息的异常消息
      */
     private String errorMsg;
 
