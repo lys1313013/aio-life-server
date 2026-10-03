@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.*;
 import top.aiolife.bankcard.pojo.entity.BankCardCoverTemplateEntity;
 import top.aiolife.bankcard.pojo.dto.BankCardTemplateCover;
 import top.aiolife.bankcard.pojo.vo.BankCardCoverTemplateVO;
+import top.aiolife.bankcard.pojo.query.BankCardCoverQuery;
 import java.util.List;
 
 @Mapper
@@ -22,6 +23,24 @@ public interface BankCardCoverTemplateMapper extends BaseMapper<BankCardCoverTem
 
     @Select(DETAIL_SELECT + " ORDER BY t.sort_order,t.id")
     List<BankCardCoverTemplateVO> selectDetails();
+
+    String PAGE_FILTER = """
+        <if test="query.bankId != null"> AND t.bank_id=#{query.bankId}</if>
+        <if test="query.cardType != null"> AND t.card_type=#{query.cardType}</if>
+        <if test="query.isEnabled != null"> AND t.is_enabled=#{query.isEnabled}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+          AND (LOCATE(#{query.keyword},t.name)>0 OR LOCATE(#{query.keyword},d.dict_label)>0)
+        </if>
+        """;
+
+    @Select("<script>" + DETAIL_SELECT + PAGE_FILTER
+            + " ORDER BY t.sort_order,t.id LIMIT #{query.size} OFFSET #{offset}</script>")
+    List<BankCardCoverTemplateVO> selectPage(@Param("query") BankCardCoverQuery query, @Param("offset") long offset);
+
+    @Select("<script>SELECT COUNT(*) FROM bank_card_cover_template t "
+            + "LEFT JOIN sys_dict_data d ON d.dict_code=t.bank_id WHERE t.is_deleted=0 "
+            + PAGE_FILTER + "</script>")
+    long countPage(@Param("query") BankCardCoverQuery query);
 
     @Select(DETAIL_SELECT + " AND t.id=#{id}")
     BankCardCoverTemplateVO selectDetail(@Param("id") long id);

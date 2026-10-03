@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.bankcard.pojo.entity.BankCardCoverTemplateEntity;
 import top.aiolife.bankcard.pojo.req.BankCardCoverTemplateReq;
 import top.aiolife.bankcard.pojo.vo.BankCardCoverTemplateVO;
+import top.aiolife.bankcard.pojo.query.BankCardCoverQuery;
+import top.aiolife.core.resq.PageResp;
 
 /** 公共模板及文件绑定；锁顺序为银行字典类型、模板、文件。 */
 @Service
@@ -25,6 +27,10 @@ public class BankCardCoverTemplateService {
 
     public List<BankCardCoverTemplateVO> list() {
         return mapper.selectDetails();
+    }
+    public PageResp<BankCardCoverTemplateVO> page(BankCardCoverQuery query) {
+        if (query.getKeyword() != null) query.setKeyword(query.getKeyword().strip());
+        return PageResp.of(mapper.selectPage(query, ((long) query.getPage() - 1) * query.getSize()), mapper.countPage(query));
     }
     public BankCardCoverTemplateVO detail(long id) {
         var detail = mapper.selectDetail(id);

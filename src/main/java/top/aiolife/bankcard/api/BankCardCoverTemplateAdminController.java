@@ -11,6 +11,8 @@ import top.aiolife.bankcard.pojo.req.*;
 import top.aiolife.bankcard.pojo.vo.*;
 import top.aiolife.bankcard.service.*;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.resq.PageResp;
+import top.aiolife.bankcard.pojo.query.BankCardCoverQuery;
 import top.aiolife.record.enums.FileBizType;
 import top.aiolife.record.pojo.vo.FileVO;
 import top.aiolife.record.service.IFileService;
@@ -26,6 +28,10 @@ public class BankCardCoverTemplateAdminController {
     private final IFileService files;
     @GetMapping
     public ApiResponse<List<BankCardCoverTemplateVO>> list() { return ApiResponse.success(service.list()); }
+    @GetMapping("/page")
+    public ApiResponse<PageResp<BankCardCoverTemplateVO>> page(@Valid @ModelAttribute BankCardCoverQuery query) {
+        return ApiResponse.success(service.page(query));
+    }
     @GetMapping("/banks")
     public ApiResponse<List<BankCardVO.Bank>> banks() { return ApiResponse.success(cards.banks()); }
     @PostMapping

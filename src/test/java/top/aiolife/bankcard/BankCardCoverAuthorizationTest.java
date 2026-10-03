@@ -72,7 +72,7 @@ class BankCardCoverAuthorizationTest {
     @Test
     void 管理端全部操作拒绝普通用户且不调用服务() throws Exception {
         String token=StpUtil.getStpLogic().createLoginSession(2L);
-        for (var req : List.of(get("/system/bank-card-covers"),get("/system/bank-card-covers/banks"),
+        for (var req : List.of(get("/system/bank-card-covers"),get("/system/bank-card-covers/page"),get("/system/bank-card-covers/banks"),
                 post("/system/bank-card-covers").contentType("application/json").content("{}"),
                 put("/system/bank-card-covers/1").contentType("application/json").content("{}"),
                 put("/system/bank-card-covers/1/enabled").contentType("application/json").content("{\"isEnabled\":0}"),
