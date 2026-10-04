@@ -1,10 +1,15 @@
 package top.aiolife.record.mcp;
 
+import cn.dev33.satoken.stp.StpUtil;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import top.aiolife.record.mcp.req.DoubanWishlistAddMcpReq;
 import top.aiolife.record.mcp.vo.DoubanWishlistAddMcpVO;
@@ -15,6 +20,7 @@ import top.aiolife.record.pojo.req.ReadRecordReq;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IReadRecordService;
+import top.aiolife.sso.service.SecondaryLockGuard;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,16 +41,16 @@ class DoubanWishlistMcpToolsTest {
     private IReadRecordService readRecordService;
 
     @Mock
-    private top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
-    private org.mockito.MockedStatic<cn.dev33.satoken.stp.StpUtil> login;
+    private SecondaryLockGuard secondaryLockGuard;
+    private MockedStatic<StpUtil> login;
 
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     void login() {
-        login = org.mockito.Mockito.mockStatic(cn.dev33.satoken.stp.StpUtil.class);
-        login.when(cn.dev33.satoken.stp.StpUtil::getLoginIdAsLong).thenReturn(11L);
+        login = Mockito.mockStatic(StpUtil.class);
+        login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
     }
 
-    @org.junit.jupiter.api.AfterEach
+    @AfterEach
     void logout() { login.close(); }
 
     @InjectMocks

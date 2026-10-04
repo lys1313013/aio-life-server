@@ -5,6 +5,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Record;
+import org.neo4j.driver.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.neo4j.core.Neo4jTemplate;
 import org.springframework.stereotype.Service;
@@ -82,7 +83,7 @@ public class PersonServiceImpl implements IPersonService {
         personRepository.deleteById(personId);
     }
 
-    private String toString(org.neo4j.driver.Value value) {
+    private String toString(Value value) {
         // Value.toString() 会给字符串带 Cypher 风格的双引号，需先 asObject() 解包
         if (value == null || value.isNull()) return null;
         Object obj = value.asObject();

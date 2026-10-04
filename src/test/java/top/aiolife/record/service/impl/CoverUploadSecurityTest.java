@@ -1,5 +1,6 @@
 package top.aiolife.record.service.impl;
 
+import java.io.ByteArrayInputStream;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -19,6 +20,7 @@ import top.aiolife.record.pojo.req.MovieReq;
 import top.aiolife.record.pojo.req.ReadRecordReq;
 import top.aiolife.record.service.DoubanCoverUrlPolicy;
 import top.aiolife.record.service.IFileService;
+import top.aiolife.support.ImageFixtures;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -83,8 +85,8 @@ class CoverUploadSecurityTest {
         var response = mock(HttpResponse.class);
         when(request.executeAsync()).thenReturn(response);
         when(response.getStatus()).thenReturn(200);
-        byte[] content = top.aiolife.support.ImageFixtures.image("jpeg");
-        when(response.bodyStream()).thenReturn(new java.io.ByteArrayInputStream(content));
+        byte[] content = ImageFixtures.image("jpeg");
+        when(response.bodyStream()).thenReturn(new ByteArrayInputStream(content));
         try (var http = mockStatic(HttpRequest.class); var auth = mockStatic(StpUtil.class)) {
             http.when(() -> HttpRequest.get(anyString())).thenReturn(request);
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(1L);

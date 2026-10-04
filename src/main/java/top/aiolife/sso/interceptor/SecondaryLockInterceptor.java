@@ -7,15 +7,19 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.PathContainer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.util.ServletRequestPathUtils;
 import top.aiolife.core.cache.SecondaryLockMenuCache;
 import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.util.RedisUtil;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * 二级锁拦截器，在 SaInterceptor 之后执行，校验二级密码验证状态。
@@ -46,13 +50,13 @@ public class SecondaryLockInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        var parsed = org.springframework.web.util.ServletRequestPathUtils.hasParsedRequestPath(request)
-                ? org.springframework.web.util.ServletRequestPathUtils.getParsedRequestPath(request)
-                : org.springframework.web.util.ServletRequestPathUtils.parseAndCache(request);
+        var parsed = ServletRequestPathUtils.hasParsedRequestPath(request)
+                ? ServletRequestPathUtils.getParsedRequestPath(request)
+                : ServletRequestPathUtils.parseAndCache(request);
         String path = parsed.pathWithinApplication().elements().stream()
-                .map(element -> element instanceof org.springframework.http.server.PathContainer.PathSegment segment
+                .map(element -> element instanceof PathContainer.PathSegment segment
                         ? segment.valueToMatch() : element.value())
-                .collect(java.util.stream.Collectors.joining());
+                .collect(Collectors.joining());
         if (request.getContextPath().isEmpty() && path.startsWith("/api/")) path = path.substring(4);
         String lockedMenu = menuCache.findMatchedPaths(userId, path).stream()
                 .filter(menu -> !redisUtil.hasKey(unlockKey(userId, menu))).findFirst().orElse(null);
@@ -62,7 +66,7 @@ public class SecondaryLockInterceptor implements HandlerInterceptor {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         ApiResponse<?> resp = ApiResponse.error(ResponseCodeConst.SECONDARY_LOCK_REQUIRED,
-                "需要二级密码验证", java.util.Map.of("menuPath", lockedMenu));
+                "需要二级密码验证", Map.of("menuPath", lockedMenu));
         response.getWriter().write(objectMapper.writeValueAsString(resp));
         return false;
     }

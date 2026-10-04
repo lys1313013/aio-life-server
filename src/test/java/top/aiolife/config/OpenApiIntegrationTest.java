@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -106,7 +107,7 @@ class OpenApiIntegrationTest {
                 String documentedPath = PathUtils.parsePath(path, new LinkedHashMap<>());
                 assertTrue(document.path("paths").has(documentedPath), "缺少路由 " + path);
                 mapping.getMethodsCondition().getMethods().forEach(method -> assertTrue(
-                        document.path("paths").path(documentedPath).has(method.name().toLowerCase(java.util.Locale.ROOT)),
+                        document.path("paths").path(documentedPath).has(method.name().toLowerCase(Locale.ROOT)),
                         "缺少操作 " + method + " " + path));
             }
         });

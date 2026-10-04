@@ -6,6 +6,7 @@ import top.aiolife.core.ApiRequestFixtures;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.record.mapper.IMemoMapper;
 import top.aiolife.record.pojo.entity.MemoEntity;
+import top.aiolife.record.pojo.query.MemoQuery;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,7 +35,7 @@ class MemoControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new MemoEntity());
 
-        var response = memoController.query(ApiRequestFixtures.query(query, top.aiolife.record.pojo.query.MemoQuery.class));
+        var response = memoController.query(ApiRequestFixtures.query(query, MemoQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);

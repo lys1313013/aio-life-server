@@ -4,10 +4,12 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.reflect.*;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -24,14 +26,26 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import top.aiolife.config.CbtiConfig;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.llm.convertor.LlmApiConvertor;
 import top.aiolife.llm.pojo.entity.LLMKeyEntity;
+import top.aiolife.record.api.CbtiController;
+import top.aiolife.record.api.MovieController;
+import top.aiolife.record.api.ReadRecordController;
 import top.aiolife.record.api.TaskController;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mapper.ITaskMapper;
 import top.aiolife.record.pojo.entity.*;
+import top.aiolife.record.pojo.query.MovieQuery;
+import top.aiolife.record.pojo.query.ReadRecordQuery;
 import top.aiolife.record.pojo.req.*;
+import top.aiolife.record.pojo.vo.MovieVO;
+import top.aiolife.record.pojo.vo.ReadRecordVO;
+import top.aiolife.record.service.ICbtiService;
+import top.aiolife.record.service.IDoubanMovieImportService;
+import top.aiolife.record.service.IMovieService;
+import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.service.ITaskDetail;
 import top.aiolife.record.service.ITaskService;
 
@@ -184,37 +198,37 @@ class ApiBoundaryContractTest {
 
     @Test
     void 观影与阅读分页只返回记录和总数() {
-        var movies = mock(top.aiolife.record.service.IMovieService.class);
-        var movie = new top.aiolife.record.pojo.vo.MovieVO(); movie.setId("9007199254740993");
-        var moviePage = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<top.aiolife.record.pojo.vo.MovieVO>(2, 20, 41);
+        var movies = mock(IMovieService.class);
+        var movie = new MovieVO(); movie.setId("9007199254740993");
+        var moviePage = new Page<MovieVO>(2, 20, 41);
         moviePage.setRecords(List.of(movie));
         when(movies.pageList(any())).thenReturn(moviePage);
-        var movieController = new top.aiolife.record.api.MovieController(movies, mock(top.aiolife.record.service.IDoubanMovieImportService.class));
-        JsonNode result = json.valueToTree(movieController.pageList(new top.aiolife.record.pojo.query.MovieQuery()).getData());
+        var movieController = new MovieController(movies, mock(IDoubanMovieImportService.class));
+        JsonNode result = json.valueToTree(movieController.pageList(new MovieQuery()).getData());
         assertEquals(2, result.size());
         assertEquals("9007199254740993", result.path("items").get(0).path("id").asText());
         assertEquals(41, result.path("total").asInt());
-        var reads = mock(top.aiolife.record.service.IReadRecordService.class);
-        var readPage = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<top.aiolife.record.pojo.vo.ReadRecordVO>(1, 20, 0);
+        var reads = mock(IReadRecordService.class);
+        var readPage = new Page<ReadRecordVO>(1, 20, 0);
         readPage.setRecords(List.of()); when(reads.pageList(any())).thenReturn(readPage);
-        var readController = new top.aiolife.record.api.ReadRecordController(reads);
-        result = json.valueToTree(readController.pageList(new top.aiolife.record.pojo.query.ReadRecordQuery()).getData());
+        var readController = new ReadRecordController(reads);
+        result = json.valueToTree(readController.pageList(new ReadRecordQuery()).getData());
         assertEquals(2, result.size()); assertEquals(0, result.path("items").size()); assertEquals(0, result.path("total").asInt());
     }
 
     @Test
     void 动态人格结果不透传持久化对象和内部归属() {
-        var service = mock(top.aiolife.record.service.ICbtiService.class);
+        var service = mock(ICbtiService.class);
         var personality = new CbtiPersonalityEntity();
         personality.setCode("fixture"); personality.setImageObject("fixture/image.png");
         personality.setCreateTime(LocalDateTime.now()); personality.setIsDeleted(0);
-        var history = new java.util.HashMap<String, Object>();
+        var history = new HashMap<String, Object>();
         history.put("id", 9007199254740993L); history.put("imageObject", "fixture/image.png");
-        var detail = new java.util.HashMap<String, Object>();
+        var detail = new HashMap<String, Object>();
         detail.put("id", 9007199254740993L); detail.put("userId", 11L); detail.put("personality", personality);
         when(service.getUserHistory(11L)).thenReturn(List.of(history));
         when(service.getHistoryDetail(1L, 11L)).thenReturn(detail);
-        var controller = new top.aiolife.record.api.CbtiController(service, json, new top.aiolife.config.CbtiConfig());
+        var controller = new CbtiController(service, json, new CbtiConfig());
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
             JsonNode list = json.valueToTree(controller.results().getData());

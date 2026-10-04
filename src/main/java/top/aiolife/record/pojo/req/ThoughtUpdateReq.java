@@ -17,5 +17,5 @@ public class ThoughtUpdateReq {
     private Boolean hiddenContent;
 
     @Valid
-    private java.util.List<ThoughtEventUpdateReq> events;
+    private List<ThoughtEventUpdateReq> events;
 }

@@ -6,6 +6,7 @@ import top.aiolife.core.ApiRequestFixtures;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.record.mapper.IThoughtMapper;
 import top.aiolife.record.pojo.entity.ThoughtEntity;
+import top.aiolife.record.pojo.query.ThoughtQuery;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,7 +35,7 @@ class ThoughtControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new ThoughtEntity());
 
-        var response = thoughtController.query(ApiRequestFixtures.query(query, top.aiolife.record.pojo.query.ThoughtQuery.class));
+        var response = thoughtController.query(ApiRequestFixtures.query(query, ThoughtQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);

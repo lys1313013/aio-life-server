@@ -12,6 +12,7 @@ import top.aiolife.record.pojo.entity.ReadRecordEntity;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.enums.RelateTypeEnum;
+import top.aiolife.record.pojo.query.TimeRecordQuery;
 import top.aiolife.record.pojo.query.TimeWeekQuery;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.service.IMovieService;
@@ -119,7 +120,7 @@ class TimeRecordControllerIntegrationTest extends BaseIntegrationTest {
         String id = "test_time_" + System.currentTimeMillis();
         timeRecordMapper.insert(createTimeRecord(id, LocalDate.now()));
 
-        var query = new top.aiolife.record.pojo.query.TimeRecordQuery();
+        var query = new TimeRecordQuery();
         query.setDate(LocalDate.now());
         var response = timeRecordController.query(query);
         assertSuccess(response);
@@ -142,7 +143,7 @@ class TimeRecordControllerIntegrationTest extends BaseIntegrationTest {
         condition.setEndDate(LocalDate.now().plusDays(1));
         query.setCondition(condition);
 
-        var response = timeRecordController.queryByDateRange(ApiRequestFixtures.query(query, top.aiolife.record.pojo.query.TimeWeekQuery.class));
+        var response = timeRecordController.queryByDateRange(ApiRequestFixtures.query(query, TimeWeekQuery.class));
         assertSuccess(response);
         var list = response.getData();
         assertNotNull(list);

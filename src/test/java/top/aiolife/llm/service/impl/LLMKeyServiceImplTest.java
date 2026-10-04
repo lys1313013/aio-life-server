@@ -5,6 +5,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -71,7 +72,7 @@ class LLMKeyServiceImplTest {
         when(llmKeyMapper.selectById(testKeyId)).thenReturn(existing);
         testKey.setApiKey("  ");
         llmKeyService.updateLLMKey(testKey);
-        var saved = org.mockito.ArgumentCaptor.forClass(LLMKeyEntity.class);
+        var saved = ArgumentCaptor.forClass(LLMKeyEntity.class);
         verify(llmKeyMapper).updateById(saved.capture());
         assertNull(saved.getValue().getApiKey(), "MyBatis ignores null, preserving the stored key");
         assertEquals("existing-secret", existing.getApiKey());

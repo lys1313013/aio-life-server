@@ -1,5 +1,7 @@
 package top.aiolife.sso.pojo.req;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import lombok.Data;
 
 /**
@@ -25,10 +27,10 @@ public class UpdateUserReq {
      * 头像文件 ID
      */
     private String avatarFileId;
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonIgnore
     private boolean avatarFileIdSpecified;
 
-    @com.fasterxml.jackson.annotation.JsonSetter("avatarFileId")
+    @JsonSetter("avatarFileId")
     public void setAvatarFileId(String avatarFileId) {
         this.avatarFileId = avatarFileId;
         this.avatarFileIdSpecified = true;

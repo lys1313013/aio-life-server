@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -11,7 +12,9 @@ import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CachingConfigurer;
 import org.springframework.cache.annotation.EnableCaching;
@@ -20,10 +23,14 @@ import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import top.aiolife.config.JsonConfig;
 import top.aiolife.config.RedisConfig;
+import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mapper.ITimeRecordMapper;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
@@ -91,7 +98,7 @@ class TimeRecordDayQueryTest {
         service.queryDay(2L, date);
         service.queryDay(1L, date.plusDays(1));
         verify(mapper, times(3)).selectList(any(Wrapper.class));
-        var query = org.mockito.ArgumentCaptor.forClass(Wrapper.class);
+        var query = ArgumentCaptor.forClass(Wrapper.class);
         verify(mapper, times(3)).selectList(query.capture());
         assertTrue(query.getAllValues().getFirst().getSqlSegment().contains("user_id"));
         assertTrue(query.getAllValues().getFirst().getSqlSegment().contains("date"));
@@ -162,7 +169,7 @@ class TimeRecordDayQueryTest {
 
     @Test
     void testRedisFailure_注解缓存读写失败仍返回数据库结果() {
-        var failed = mock(org.springframework.cache.Cache.class);
+        var failed = mock(Cache.class);
         when(failed.getName()).thenReturn("timeRecordDay:v1");
         when(failed.get(any())).thenThrow(new IllegalStateException("Redis unavailable"));
         doThrow(new IllegalStateException("Redis unavailable")).when(failed).put(any(), any());
@@ -174,14 +181,14 @@ class TimeRecordDayQueryTest {
 
     @Test
     void testRedisConfiguration_一小时过期且日期大整数往返一致() {
-        var json = new top.aiolife.config.JsonConfig().jacksonObjectMapper(
-                org.springframework.http.converter.json.Jackson2ObjectMapperBuilder.json());
+        var json = new JsonConfig().jacksonObjectMapper(
+                Jackson2ObjectMapperBuilder.json());
         var manager = new RedisConfig().cacheManager(
-                mock(org.springframework.data.redis.connection.RedisConnectionFactory.class), json);
+                mock(RedisConnectionFactory.class), json);
         manager.afterPropertiesSet();
         var config = manager.getCacheConfigurations().get("timeRecordDay:v1");
-        assertEquals(java.time.Duration.ofHours(1), config.getTtl());
-        var row = top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toTimeRecordListVO(record("7", date));
+        assertEquals(Duration.ofHours(1), config.getTtl());
+        var row = RecordApiConvertor.INSTANCE.toTimeRecordListVO(record("7", date));
         var encoded = config.getValueSerializationPair().getWriter().write(List.of(row));
         var decoded = config.getValueSerializationPair().getReader().read(encoded);
         assertEquals(List.of(row), decoded);

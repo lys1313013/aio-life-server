@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import java.util.Collection;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import top.aiolife.bankcard.service.BankCardDictionaryGuard;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
@@ -42,7 +44,7 @@ import top.aiolife.record.pojo.vo.SysDictDataRecordVO;
 @AllArgsConstructor
 @RequestMapping("/sysDictData")
 public class SysDictDataController {
-    private top.aiolife.bankcard.service.BankCardDictionaryGuard bankCardGuard;
+    private BankCardDictionaryGuard bankCardGuard;
     private ISysDictDataMapper sysDictDataMapper;
     private ISysDictTypeMapper sysDictTypeMapper;
 
@@ -110,7 +112,7 @@ public class SysDictDataController {
     }
 
     @SaCheckRole("admin")
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     @PutMapping("/{dictCode}")
     public ApiResponse<Boolean> update(@PathVariable("dictCode") Long dictCode, @Valid @RequestBody SysDictDataUpdateReq entityReq) {
         SysDictDataEntity entity = RecordApiConvertor.INSTANCE.fromSysDictDataUpdateReq(entityReq);
@@ -122,7 +124,7 @@ public class SysDictDataController {
     }
 
     @SaCheckRole("admin")
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     @DeleteMapping("/{dictCode}")
     public ApiResponse<Boolean> delete(@PathVariable("dictCode") Long dictCode) {
         bankCardGuard.checkBankChange(dictCode, null, true);

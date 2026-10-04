@@ -37,7 +37,7 @@ class IncomeControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new IncomeQuery());
 
-        var response = incomeController.query(ApiRequestFixtures.query(query, top.aiolife.record.pojo.query.IncomeQuery.class));
+        var response = incomeController.query(ApiRequestFixtures.query(query, IncomeQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);

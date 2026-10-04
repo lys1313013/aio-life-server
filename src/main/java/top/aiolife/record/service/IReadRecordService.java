@@ -1,5 +1,6 @@
 package top.aiolife.record.service;
 
+import java.util.List;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import top.aiolife.record.pojo.entity.ReadRecordEntity;
@@ -22,7 +23,7 @@ public interface IReadRecordService extends IService<ReadRecordEntity> {
 
     void updateCoverFileId(Long id, String fileId);
 
-    java.util.List<ReadRecordVO> listActive();
+    List<ReadRecordVO> listActive();
 
     ReadRecordVO getVOById(Long id);
 }

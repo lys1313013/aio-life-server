@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import top.aiolife.mcp.auth.McpSaTokenScope;
 import top.aiolife.mcp.registry.McpToolRegistry;
+import top.aiolife.sso.service.SecondaryLockGuard;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
@@ -22,7 +23,7 @@ import java.util.Map;
 public class McpToolInvoker {
 
     private final ObjectMapper objectMapper;
-    private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
+    private final SecondaryLockGuard secondaryLockGuard;
 
     public McpSchema.CallToolResult invoke(McpToolRegistry.RegisteredMcpTool tool,
                                            Map<String, Object> arguments,

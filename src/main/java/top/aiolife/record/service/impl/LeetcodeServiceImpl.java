@@ -34,7 +34,9 @@ import top.aiolife.record.util.RedisUtil;
 import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -181,12 +183,12 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
         if (sendEmail && !finishedToday) {
             // 获取当前时间和星期几
             LocalDate now = LocalDate.now();
-            java.time.DayOfWeek dayOfWeek = now.getDayOfWeek();
-            java.time.LocalTime currentTime = java.time.LocalTime.now();
+            DayOfWeek dayOfWeek = now.getDayOfWeek();
+            LocalTime currentTime = LocalTime.now();
 
             // 判断是否为周一到周五且时间在19点前
             boolean isWeekday = dayOfWeek.getValue() >= 1 && dayOfWeek.getValue() <= 5;
-            boolean isBefore7pm = currentTime.isBefore(java.time.LocalTime.of(19, 0));
+            boolean isBefore7pm = currentTime.isBefore(LocalTime.of(19, 0));
 
             // 只有在非工作日或者19点后才发送邮件
             if (!isWeekday || !isBefore7pm) {

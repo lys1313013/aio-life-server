@@ -13,6 +13,7 @@ import top.aiolife.record.api.TaskDetailController;
 import top.aiolife.record.api.ThoughtController;
 import top.aiolife.record.api.TimeRecordController;
 import top.aiolife.record.api.TimeTrackerCategoryController;
+import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mcp.req.TaskDetailSaveMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordSaveMcpReq;
@@ -22,6 +23,7 @@ import top.aiolife.record.mcp.vo.TimeTrackerCategoryMcpVO;
 import top.aiolife.record.pojo.entity.TaskDetailEntity;
 import top.aiolife.record.pojo.entity.TaskEntity;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
+import top.aiolife.record.pojo.req.TaskDetailCreateReq;
 import top.aiolife.record.pojo.req.ThoughtSaveReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.vo.TaskDetailVO;
@@ -88,7 +90,7 @@ public class RecordMcpTools {
             actualReq.setDate(date);
         }
 
-        timeRecordController.save(top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toTimeRecordSaveReq(actualReq));
+        timeRecordController.save(RecordApiConvertor.INSTANCE.toTimeRecordSaveReq(actualReq));
 
         // 格式化时间并返回给大模型
         String startTimeStr = String.format("%02d:%02d", startTime / 60, startTime % 60);
@@ -146,7 +148,7 @@ public class RecordMcpTools {
             throw new IllegalArgumentException("任务不存在或无权限访问该任务");
         }
 
-        top.aiolife.record.pojo.req.TaskDetailCreateReq entity = new top.aiolife.record.pojo.req.TaskDetailCreateReq();
+        TaskDetailCreateReq entity = new TaskDetailCreateReq();
         entity.setTaskId(req.getTaskId());
         entity.setContent(req.getContent());
         // 设置默认值，避免数据库报错或逻辑异常

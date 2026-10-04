@@ -29,6 +29,7 @@ import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.entity.UserDictTypeEntity;
 import top.aiolife.record.pojo.query.BVideoQuery;
 import top.aiolife.record.pojo.query.DeviceQuery;
 import top.aiolife.record.pojo.query.ExerciseRecordQuery;
@@ -46,6 +47,7 @@ import top.aiolife.record.pojo.req.BVideoUpdateReq;
 import top.aiolife.record.pojo.req.DeviceCreateReq;
 import top.aiolife.record.pojo.req.DeviceUpdateReq;
 import top.aiolife.record.pojo.req.ExerciseRecordCreateReq;
+import top.aiolife.record.pojo.req.ExerciseRecordReq;
 import top.aiolife.record.pojo.req.ExerciseRecordUpdateReq;
 import top.aiolife.record.pojo.req.ExpenseCreateReq;
 import top.aiolife.record.pojo.req.ExpenseUpdateReq;
@@ -83,6 +85,7 @@ import top.aiolife.record.pojo.req.TaskUpdateReq;
 import top.aiolife.record.pojo.req.ThoughtEventUpdateReq;
 import top.aiolife.record.pojo.req.ThoughtUpdateReq;
 import top.aiolife.record.pojo.req.TimeRecordDeleteByDateReq;
+import top.aiolife.record.pojo.req.TimeRecordExerciseReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.req.TimeRecordSaveReq;
 import top.aiolife.record.pojo.req.TimeTrackerCategoryAdminCreateReq;
@@ -110,6 +113,7 @@ import top.aiolife.record.pojo.vo.MemoVO;
 import top.aiolife.record.pojo.vo.MilestoneVO;
 import top.aiolife.record.pojo.vo.PasswordVaultVO;
 import top.aiolife.record.pojo.vo.PerformanceVO;
+import top.aiolife.record.pojo.vo.RecommendNextVO;
 import top.aiolife.record.pojo.vo.SysDictDataRecordVO;
 import top.aiolife.record.pojo.vo.SysDictTypeVO;
 import top.aiolife.record.pojo.vo.TaskColumnVO;
@@ -118,9 +122,11 @@ import top.aiolife.record.pojo.vo.TaskVO;
 import top.aiolife.record.pojo.vo.ThoughtEventVO;
 import top.aiolife.record.pojo.vo.ThoughtRecordVO;
 import top.aiolife.record.pojo.vo.TimeRecordListVO;
+import top.aiolife.record.pojo.vo.TimeRecordRecommendationVO;
 import top.aiolife.record.pojo.vo.TimeTrackerCategoryVO;
 import top.aiolife.record.pojo.vo.UserBindVO;
 import top.aiolife.record.pojo.vo.UserDictDataVO;
+import top.aiolife.record.pojo.vo.UserDictTypeVO;
 
 /** 接口模型与持久化模型的显式转换，响应仅暴露 VO 声明的字段。 */
 @Mapper(builder = @Builder(disableBuilder = true), unmappedTargetPolicy = ReportingPolicy.ERROR)
@@ -513,7 +519,7 @@ public interface RecordApiConvertor {
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
     TimeRecordReq fromTimeRecordSaveReq(TimeRecordSaveReq request);
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
-    top.aiolife.record.pojo.req.ExerciseRecordReq fromTimeRecordExerciseReq(top.aiolife.record.pojo.req.TimeRecordExerciseReq request);
+    ExerciseRecordReq fromTimeRecordExerciseReq(TimeRecordExerciseReq request);
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
     @Mapping(target = "rating", ignore = true)
     MovieReq fromMovieCreateReq(MovieCreateReq request);
@@ -523,8 +529,8 @@ public interface RecordApiConvertor {
     }
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
     ReadRecordReq fromReadRecordCreateReq(ReadRecordCreateReq request);
-    top.aiolife.record.pojo.vo.UserDictTypeVO toUserDictTypeVO(top.aiolife.record.pojo.entity.UserDictTypeEntity entity);
-    top.aiolife.record.pojo.vo.TimeRecordRecommendationVO toTimeRecordRecommendationVO(top.aiolife.record.pojo.vo.RecommendNextVO result);
+    UserDictTypeVO toUserDictTypeVO(UserDictTypeEntity entity);
+    TimeRecordRecommendationVO toTimeRecordRecommendationVO(RecommendNextVO result);
     TimeRecordSaveReq toTimeRecordSaveReq(TimeRecordReq request);
-    top.aiolife.record.pojo.req.TimeRecordExerciseReq toTimeRecordExerciseReq(top.aiolife.record.pojo.req.ExerciseRecordReq request);
+    TimeRecordExerciseReq toTimeRecordExerciseReq(ExerciseRecordReq request);
 }

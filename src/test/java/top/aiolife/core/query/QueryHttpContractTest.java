@@ -1,8 +1,11 @@
 package top.aiolife.core.query;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -23,6 +26,9 @@ import top.aiolife.record.api.*;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.query.ExpenseQuery;
 import top.aiolife.record.pojo.query.MovieQuery;
+import top.aiolife.record.pojo.query.TimeRecordQuery;
+import top.aiolife.record.pojo.vo.TimeRecordListVO;
+import top.aiolife.record.service.ITimeRecordService;
 import top.aiolife.sso.api.AuthController;
 import top.aiolife.sso.api.UserCenterController;
 import top.aiolife.sso.service.IUserService;
@@ -134,16 +140,16 @@ class QueryHttpContractTest {
         mvc(controller).perform(get("/timeRecord/query").param("date", "2026-09-12")
                         .param("categoryId", "9007199254740993"))
                 .andExpect(status().isOk());
-        ArgumentCaptor<top.aiolife.record.pojo.query.TimeRecordQuery> captor = ArgumentCaptor.forClass(top.aiolife.record.pojo.query.TimeRecordQuery.class);
+        ArgumentCaptor<TimeRecordQuery> captor = ArgumentCaptor.forClass(TimeRecordQuery.class);
         verify(controller).query(captor.capture());
         assertEquals(LocalDate.of(2026, 9, 12), captor.getValue().getDate());
-        assertFalse(java.util.Arrays.stream(captor.getValue().getClass().getDeclaredFields())
+        assertFalse(Arrays.stream(captor.getValue().getClass().getDeclaredFields())
                 .anyMatch(field -> field.getName().equals("categoryId")));
     }
 
     @Test
     void testTimeRecord_完整数组返回且日期必填() throws Exception {
-        var service = mock(top.aiolife.record.service.ITimeRecordService.class);
+        var service = mock(ITimeRecordService.class);
         var controller = new TimeRecordController(null, service, null, null, null);
         mvc(controller).perform(get("/timeRecord/query"))
                 .andExpect(status().isBadRequest())
@@ -155,11 +161,11 @@ class QueryHttpContractTest {
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(service);
         var date = LocalDate.of(2026, 10, 4);
-        var row = new top.aiolife.record.pojo.vo.TimeRecordListVO();
+        var row = new TimeRecordListVO();
         row.setId("9223372036854775807"); row.setCategoryId(9223372036854775806L); row.setDate(date);
-        when(service.queryDay(1L, date)).thenReturn(java.util.Collections.nCopies(151, row));
-        try (var login = mockStatic(cn.dev33.satoken.stp.StpUtil.class)) {
-            login.when(cn.dev33.satoken.stp.StpUtil::getLoginIdAsLong).thenReturn(1L);
+        when(service.queryDay(1L, date)).thenReturn(Collections.nCopies(151, row));
+        try (var login = mockStatic(StpUtil.class)) {
+            login.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
             mvc(controller).perform(get("/timeRecord/query").param("date", date.toString()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.length()").value(151))

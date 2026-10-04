@@ -3,6 +3,7 @@ package top.aiolife.record.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.io.ByteArrayInputStream;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,7 +30,7 @@ public class VideoCoverStorage {
         var type = FileContentPolicy.requireImage(bytes);
         String hash;
         try { hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)); }
-        catch (java.security.NoSuchAlgorithmException e) { throw new IllegalStateException(e); }
+        catch (NoSuchAlgorithmException e) { throw new IllegalStateException(e); }
         String key = PREFIX + hash + "." + type.extension();
         objectLock.holdUntilTransactionCompletion(BUCKET, key);
         var object = objects.selectOne(new LambdaQueryWrapper<StorageObjectEntity>()

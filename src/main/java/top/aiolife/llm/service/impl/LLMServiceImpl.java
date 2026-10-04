@@ -1,5 +1,6 @@
 package top.aiolife.llm.service.impl;
 
+import java.time.Duration;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
@@ -19,7 +20,7 @@ public class LLMServiceImpl implements LLMService {
                     .apiKey(apiKey)
                     .baseUrl(baseUrl)
                     .modelName(modelName)
-                    .timeout(java.time.Duration.ofSeconds(300))
+                    .timeout(Duration.ofSeconds(300))
                     .logRequests(true)
                     .logResponses(true)
                     .build();
@@ -36,7 +37,7 @@ public class LLMServiceImpl implements LLMService {
                     .apiKey(apiKey)
                     .baseUrl(baseUrl)
                     .modelName(modelName)
-                    .timeout(java.time.Duration.ofSeconds(300))
+                    .timeout(Duration.ofSeconds(300))
                     .logRequests(true)
                     .logResponses(true)
                     .build();

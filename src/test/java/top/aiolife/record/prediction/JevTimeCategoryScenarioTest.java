@@ -7,6 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mockito;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -17,15 +18,21 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import top.aiolife.record.mapper.ITimeRecordMapper;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
+import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
+import top.aiolife.record.service.ITimeTrackerCategoryService;
 import top.aiolife.record.service.impl.TimeRecordServiceImpl;
+import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.system.service.IWorkCalendarService;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -49,20 +56,20 @@ class JevTimeCategoryScenarioTest {
     void testReferenceDate_生产推荐使用日历服务返回的参考日期(String target, String expected) {
         var mapper = mock(ITimeRecordMapper.class);
         var calendar = spy(JevCalendarFixture.calendar());
-        var categories = mock(top.aiolife.record.service.ITimeTrackerCategoryService.class);
-        var category = new top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity();
+        var categories = mock(ITimeTrackerCategoryService.class);
+        var category = new TimeTrackerCategoryEntity();
         category.setId(104L);
         category.setName("工作");
-        when(categories.listUserVisibleCategories(1L)).thenReturn(java.util.List.of(category));
-        var service = new TimeRecordServiceImpl(mapper, null, null, null, calendar, org.mockito.Mockito.mock(top.aiolife.record.prediction.JevCategoryRecommendationService.class, invocation -> null), new top.aiolife.record.prediction.RecommendationDataCache(15000), categories, org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class));
+        when(categories.listUserVisibleCategories(1L)).thenReturn(List.of(category));
+        var service = new TimeRecordServiceImpl(mapper, null, null, null, calendar, Mockito.mock(JevCategoryRecommendationService.class, invocation -> null), new RecommendationDataCache(15000), categories, Mockito.mock(SecondaryLockGuard.class));
         ReflectionTestUtils.setField(service, "baseMapper", mapper);
         var referenceRecord = new TimeRecordEntity();
         referenceRecord.setCategoryId(104L);
-        when(mapper.findReferenceRecords(1L, expected, 600, 1440)).thenReturn(java.util.List.of(referenceRecord));
+        when(mapper.findReferenceRecords(1L, expected, 600, 1440)).thenReturn(List.of(referenceRecord));
 
-        try (var clock = mockStatic(java.time.LocalDateTime.class, CALLS_REAL_METHODS)) {
-            var now = java.time.LocalDateTime.of(2026, 12, 31, 12, 0);
-            clock.when(java.time.LocalDateTime::now).thenReturn(now);
+        try (var clock = mockStatic(LocalDateTime.class, CALLS_REAL_METHODS)) {
+            var now = LocalDateTime.of(2026, 12, 31, 12, 0);
+            clock.when(LocalDateTime::now).thenReturn(now);
             assertEquals(104L, service.recommendType(1L, target, 600, null));
         }
         verify(mapper).findReferenceRecords(1L, expected, 600, 1440);
@@ -136,7 +143,7 @@ class JevTimeCategoryScenarioTest {
         assertFalse(record.has("categoryId"));
         assertEquals(4, record.size(), "模型记录仅包含日期、起止时间及中文分类");
         int minute = LocalTime.parse(record.path("startTime").asText()).toSecondOfDay() / 60;
-        var original = java.util.stream.StreamSupport.stream(scenario.path("records").spliterator(), false)
+        var original = StreamSupport.stream(scenario.path("records").spliterator(), false)
                 .filter(item -> item.path("date").equals(record.path("date"))
                         && item.path("startMinute").asInt() == minute)
                 .findFirst().orElseThrow();

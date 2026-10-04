@@ -3,9 +3,11 @@ package top.aiolife.record.weread;
 import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,7 @@ import top.aiolife.record.mapper.UserBindMapper;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.req.WereadConnectionReq;
 import top.aiolife.record.service.impl.WereadServiceImpl;
+import java.time.LocalDateTime;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -71,7 +74,7 @@ class WereadServiceTest {
         var request = new WereadConnectionReq();
         request.setApiKey("wrk-test-secret");
         assertFalse(JSON.toJSONString(new Object[]{request}).contains("wrk-test-secret"));
-        assertFalse(json.copy().disable(com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS).writeValueAsString(request).contains("wrk-test-secret"));
+        assertFalse(json.copy().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS).writeValueAsString(request).contains("wrk-test-secret"));
         assertEquals("wrk-test-secret", json.readValue("{\"apiKey\":\"wrk-test-secret\"}", WereadConnectionReq.class).getApiKey());
     }
 
@@ -88,8 +91,8 @@ class WereadServiceTest {
             String sql = captor.getValue().getSqlSegment();
             assertTrue(sql.contains("user_id"));
             assertTrue(sql.contains("platform"));
-            assertTrue(((com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?,?,?>)captor.getValue()).getParamNameValuePairs().containsValue("weread"));
-            assertTrue(((com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?,?,?>)captor.getValue()).getParamNameValuePairs().containsValue(42L));
+            assertTrue(((AbstractWrapper<?,?,?>)captor.getValue()).getParamNameValuePairs().containsValue("weread"));
+            assertTrue(((AbstractWrapper<?,?,?>)captor.getValue()).getParamNameValuePairs().containsValue(42L));
         }
     }
 
@@ -182,7 +185,7 @@ class WereadServiceTest {
         when(mapper.selectOne(any())).thenReturn(row);
         try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            assertEquals(java.time.LocalDateTime.of(2026,9,11,12,30), service.connection().lastSyncTime());
+            assertEquals(LocalDateTime.of(2026,9,11,12,30), service.connection().lastSyncTime());
         }
     }
 
@@ -212,7 +215,7 @@ class WereadServiceTest {
             ArgumentCaptor<Wrapper<UserBindEntity>> captor = ArgumentCaptor.forClass(Wrapper.class);
             order.verify(mapper).delete(captor.capture());
             assertTrue(captor.getValue().getSqlSegment().contains("platform"));
-            var params = ((com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?,?,?>)captor.getValue()).getParamNameValuePairs();
+            var params = ((AbstractWrapper<?,?,?>)captor.getValue()).getParamNameValuePairs();
             assertTrue(params.containsValue(42L));
             assertTrue(params.containsValue("weread"));
         }
@@ -231,7 +234,7 @@ class WereadServiceTest {
             ArgumentCaptor<Wrapper<UserBindEntity>> captor = ArgumentCaptor.forClass(Wrapper.class);
             verify(mapper).selectOne(captor.capture());
             captor.getValue().getSqlSegment();
-            assertTrue(((com.baomidou.mybatisplus.core.conditions.AbstractWrapper<?,?,?>)captor.getValue()).getParamNameValuePairs().containsValue(42L));
+            assertTrue(((AbstractWrapper<?,?,?>)captor.getValue()).getParamNameValuePairs().containsValue(42L));
         }
     }
 

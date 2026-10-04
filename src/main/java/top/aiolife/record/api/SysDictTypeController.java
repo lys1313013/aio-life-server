@@ -8,7 +8,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.bankcard.service.BankCardDictionaryGuard;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
@@ -37,7 +39,7 @@ import top.aiolife.record.pojo.vo.SysDictTypeVO;
 @AllArgsConstructor
 @RequestMapping("/sysDictType")
 public class SysDictTypeController {
-    private top.aiolife.bankcard.service.BankCardDictionaryGuard bankCardGuard;
+    private BankCardDictionaryGuard bankCardGuard;
 
     private ISysDictTypeMapper sysDictTypeMapper;
     private ISysDictDataMapper sysDictDataMapper;
@@ -100,7 +102,7 @@ public class SysDictTypeController {
     }
 
     @SaCheckRole("admin")
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     @PutMapping("/{dictId}")
     public ApiResponse<Boolean> update(@PathVariable("dictId") Long dictId, @Valid @RequestBody SysDictTypeUpdateReq entityReq) {
         SysDictTypeEntity entity = RecordApiConvertor.INSTANCE.fromSysDictTypeUpdateReq(entityReq);
@@ -112,7 +114,7 @@ public class SysDictTypeController {
     }
 
     @SaCheckRole("admin")
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     @DeleteMapping("/{dictId}")
     public ApiResponse<Boolean> delete(@PathVariable("dictId") Long dictId) {
         bankCardGuard.checkTypeChange(dictId, null, true);

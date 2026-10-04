@@ -6,6 +6,7 @@ import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mybatis.spring.SqlSessionTemplate;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -73,7 +74,7 @@ class UserAvatarPersistenceTest {
         tx.executeWithoutResult(s -> users.updateUser(update(ID),true));
         var other = update(null); other.setNickname("changed");
         tx.executeWithoutResult(s -> users.updateUser(other,false)); assertEquals(ID,saved());
-        assertThrows(org.springframework.dao.DataIntegrityViolationException.class, () -> jdbc.update("DELETE FROM file WHERE id=?",ID));
+        assertThrows(DataIntegrityViolationException.class, () -> jdbc.update("DELETE FROM file WHERE id=?",ID));
         tx.executeWithoutResult(s -> users.updateUser(update(null),true)); assertNull(saved());
         assertNull(users.getUserInfo(42L).getAvatarUrl());
         assertEquals(1,jdbc.update("DELETE FROM file WHERE id=?",ID));

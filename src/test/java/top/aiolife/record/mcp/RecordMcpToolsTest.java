@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
+import java.lang.reflect.Proxy;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,9 +12,11 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.record.api.*;
+import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mapper.ITaskMapper;
 import top.aiolife.record.mcp.req.TaskDetailSaveMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
@@ -24,10 +27,16 @@ import top.aiolife.record.pojo.entity.TaskDetailEntity;
 import top.aiolife.record.pojo.entity.TaskEntity;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
+import top.aiolife.record.pojo.req.TaskDetailCreateReq;
 import top.aiolife.record.pojo.req.ThoughtSaveReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
+import top.aiolife.record.pojo.req.TimeRecordSaveReq;
+import top.aiolife.record.pojo.vo.TaskDetailVO;
+import top.aiolife.record.pojo.vo.TaskVO;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
+import top.aiolife.record.pojo.vo.TimeTrackerCategoryVO;
 import top.aiolife.record.service.ITimeRecordService;
+import top.aiolife.sso.service.SecondaryLockGuard;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -68,7 +77,7 @@ class RecordMcpToolsTest {
         savedTimeRecord = null;
         savedTaskDetail = null;
 
-        TimeRecordController timeRecordController = new TimeRecordController(org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class), null, null, null, null) {
+        TimeRecordController timeRecordController = new TimeRecordController(Mockito.mock(SecondaryLockGuard.class), null, null, null, null) {
             @Override
             public ApiResponse<List<TimeRecordDateRangeVO>> queryByDateRangeForAI(TimeRecordDateRangeMcpReq req) {
                 TimeRecordDateRangeVO vo = new TimeRecordDateRangeVO();
@@ -77,8 +86,8 @@ class RecordMcpToolsTest {
             }
 
             @Override
-            public ApiResponse<String> save(top.aiolife.record.pojo.req.TimeRecordSaveReq req) {
-                savedTimeRecord = top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.fromTimeRecordSaveReq(req);
+            public ApiResponse<String> save(TimeRecordSaveReq req) {
+                savedTimeRecord = RecordApiConvertor.INSTANCE.fromTimeRecordSaveReq(req);
                 return ApiResponse.success("2099999999999999999");
             }
         };
@@ -93,20 +102,20 @@ class RecordMcpToolsTest {
 
         TimeTrackerCategoryController timeTrackerCategoryController = new TimeTrackerCategoryController(null) {
             @Override
-            public ApiResponse<List<top.aiolife.record.pojo.vo.TimeTrackerCategoryVO>> list() {
+            public ApiResponse<List<TimeTrackerCategoryVO>> list() {
                 TimeTrackerCategoryEntity category = new TimeTrackerCategoryEntity();
                 category.setId(1L);
                 category.setName("Category1");
-                return ApiResponse.success(top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toTimeTrackerCategoryVOList(Collections.singletonList(category)));
+                return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeTrackerCategoryVOList(Collections.singletonList(category)));
             }
         };
 
-        ITimeRecordService timeRecordService = (ITimeRecordService) java.lang.reflect.Proxy.newProxyInstance(
+        ITimeRecordService timeRecordService = (ITimeRecordService) Proxy.newProxyInstance(
                 ITimeRecordService.class.getClassLoader(),
                 new Class[]{ITimeRecordService.class},
                 (proxy, method, args) -> {
                     if ("lambdaQuery".equals(method.getName())) {
-                        BaseMapper<TimeRecordEntity> dummyMapper = (BaseMapper<TimeRecordEntity>) java.lang.reflect.Proxy.newProxyInstance(
+                        BaseMapper<TimeRecordEntity> dummyMapper = (BaseMapper<TimeRecordEntity>) Proxy.newProxyInstance(
                                 BaseMapper.class.getClassLoader(),
                                 new Class[]{BaseMapper.class},
                                 (mProxy, mMethod, mArgs) -> {
@@ -125,7 +134,7 @@ class RecordMcpToolsTest {
                 }
         );
 
-        ITaskMapper taskMapper = (ITaskMapper) java.lang.reflect.Proxy.newProxyInstance(
+        ITaskMapper taskMapper = (ITaskMapper) Proxy.newProxyInstance(
                 ITaskMapper.class.getClassLoader(),
                 new Class[]{ITaskMapper.class},
                 (proxy, method, args) -> {
@@ -141,13 +150,13 @@ class RecordMcpToolsTest {
 
         TaskController taskController = new TaskController(null, null, null) {
             @Override
-            public ApiResponse<PageResp<top.aiolife.record.pojo.vo.TaskVO>> query(Long taskId, int get, int pageSize) {
+            public ApiResponse<PageResp<TaskVO>> query(Long taskId, int get, int pageSize) {
                 TaskEntity task = new TaskEntity();
                 task.setId(1L);
                 task.setContent("Task1");
                 PageResp<TaskEntity> pageResp = new PageResp<>();
                 pageResp.setItems(Collections.singletonList(task));
-                return ApiResponse.success(top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toTaskVOPage(pageResp));
+                return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskVOPage(pageResp));
             }
 
             @Override
@@ -158,18 +167,18 @@ class RecordMcpToolsTest {
 
         TaskDetailController taskDetailController = new TaskDetailController(null, null) {
             @Override
-            public ApiResponse<List<top.aiolife.record.pojo.vo.TaskDetailVO>> list(Long taskId) {
+            public ApiResponse<List<TaskDetailVO>> list(Long taskId) {
                 TaskDetailEntity detail = new TaskDetailEntity();
                 detail.setId(1L);
                 detail.setContent("Detail1");
                 detail.setIsCompleted(0);
-                return ApiResponse.success(top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toTaskDetailVOList(Collections.singletonList(detail)));
+                return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVOList(Collections.singletonList(detail)));
             }
 
             @Override
-            public ApiResponse<top.aiolife.record.pojo.vo.TaskDetailVO> create(top.aiolife.record.pojo.req.TaskDetailCreateReq request) {
-                savedTaskDetail = top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.fromTaskDetailCreateReq(request);
-                return ApiResponse.success(top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toTaskDetailVO(savedTaskDetail));
+            public ApiResponse<TaskDetailVO> create(TaskDetailCreateReq request) {
+                savedTaskDetail = RecordApiConvertor.INSTANCE.fromTaskDetailCreateReq(request);
+                return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVO(savedTaskDetail));
             }
         };
 

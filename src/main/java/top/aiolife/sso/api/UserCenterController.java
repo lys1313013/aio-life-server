@@ -10,6 +10,7 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.sso.convertor.SsoApiConvertor;
 import top.aiolife.sso.pojo.entity.UserEntity;
+import top.aiolife.sso.pojo.query.UserQuery;
 import top.aiolife.sso.pojo.req.UserCreateReq;
 import top.aiolife.sso.pojo.req.UserUpdateReq;
 import top.aiolife.sso.pojo.vo.UserVO;
@@ -24,7 +25,7 @@ public class UserCenterController {
     private final IUserService userService;
 
     @GetMapping("/list")
-    public ApiResponse<PageResp<UserVO>> list(@QueryParams CommonQuery<top.aiolife.sso.pojo.query.UserQuery> query) {
+    public ApiResponse<PageResp<UserVO>> list(@QueryParams CommonQuery<UserQuery> query) {
         return ApiResponse.success(userService.getUserList(query));
     }
 

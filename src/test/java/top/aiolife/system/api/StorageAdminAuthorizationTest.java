@@ -2,18 +2,23 @@ package top.aiolife.system.api;
 
 import cn.dev33.satoken.SaManager;
 import cn.dev33.satoken.config.SaTokenConfig;
+import cn.dev33.satoken.context.SaTokenContext;
+import cn.dev33.satoken.dao.SaTokenDao;
 import cn.dev33.satoken.dao.SaTokenDaoDefaultImpl;
 import cn.dev33.satoken.interceptor.SaInterceptor;
 import cn.dev33.satoken.spring.SaTokenContextForSpringInJakartaServlet;
 import cn.dev33.satoken.stp.StpInterface;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
+import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.core.exception.ExceptionHandle;
 import top.aiolife.system.pojo.vo.StoragePageVO;
 import top.aiolife.system.service.StorageAdminService;
@@ -33,8 +38,8 @@ class StorageAdminAuthorizationTest {
     private final PreviousState previous = new PreviousState();
 
     private static class PreviousState {
-        final cn.dev33.satoken.context.SaTokenContext context = SaManager.getSaTokenContext();
-        final cn.dev33.satoken.dao.SaTokenDao dao = SaManager.getSaTokenDao();
+        final SaTokenContext context = SaManager.getSaTokenContext();
+        final SaTokenDao dao = SaManager.getSaTokenDao();
         final StpInterface roles = SaManager.getStpInterface();
     }
 
@@ -105,7 +110,7 @@ class StorageAdminAuthorizationTest {
     @Test
     void 存储异常返回HTTP错误而不是伪装成文件() throws Exception {
         String token = StpUtil.getStpLogic().createLoginSession(1L);
-        doThrow(new java.io.IOException("fixture connection failure")).when(service).read(anyString(), anyBoolean(), any());
+        doThrow(new IOException("fixture connection failure")).when(service).read(anyString(), anyBoolean(), any());
         mvc.perform(get("/system/storage/preview").param("key", "private.jpg")
                 .header("Authorization", "Bearer " + token))
                 .andExpect(status().isBadGateway()).andExpect(jsonPath("$.rscode").value("502"));
@@ -124,7 +129,7 @@ class StorageAdminAuthorizationTest {
                         .header("Authorization", "Bearer " + admin))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.rscode").value("0"));
         verify(service).delete("中文 +#.jpg");
-        doThrow(new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,
+        doThrow(new ResponseStatusException(HttpStatus.CONFLICT,
                 "file 表存在关联记录")).when(service).delete("linked.jpg");
         mvc.perform(delete("/system/storage/object").param("key", "linked.jpg")
                         .header("Authorization", "Bearer " + admin))

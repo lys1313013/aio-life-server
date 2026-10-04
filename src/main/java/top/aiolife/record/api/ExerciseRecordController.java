@@ -21,6 +21,7 @@ import top.aiolife.record.mapper.IExerciseRecordMapper;
 import top.aiolife.record.pojo.dto.ExerciseStatisticsDTO;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
 import top.aiolife.record.pojo.query.ExerciseRecordQuery;
+import top.aiolife.record.pojo.query.ExerciseStatisticsQuery;
 import top.aiolife.record.pojo.req.CommonReq;
 import top.aiolife.record.pojo.req.ExerciseRecordCreateReq;
 import top.aiolife.record.pojo.req.ExerciseRecordUpdateReq;
@@ -128,7 +129,7 @@ public class ExerciseRecordController {
      * 返回业务字段，不包含所属用户或审计字段
      */
     @GetMapping("/statistics")
-    public ApiResponse<List<ExerciseRecordVO>> getStatistics(@QueryParams top.aiolife.record.pojo.query.ExerciseStatisticsQuery params) {
+    public ApiResponse<List<ExerciseRecordVO>> getStatistics(@QueryParams ExerciseStatisticsQuery params) {
         Long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, userId);
@@ -143,10 +144,10 @@ public class ExerciseRecordController {
             String startDate = params.getStartDate();
             String endDate = params.getEndDate();
             if (SysUtil.isNotEmpty(startDate)) {
-                lambdaQueryWrapper.ge(ExerciseRecordEntity::getExerciseDate, java.time.LocalDate.parse(startDate));
+                lambdaQueryWrapper.ge(ExerciseRecordEntity::getExerciseDate, LocalDate.parse(startDate));
             }
             if (SysUtil.isNotEmpty(endDate)) {
-                lambdaQueryWrapper.le(ExerciseRecordEntity::getExerciseDate, java.time.LocalDate.parse(endDate));
+                lambdaQueryWrapper.le(ExerciseRecordEntity::getExerciseDate, LocalDate.parse(endDate));
             }
         } else {
             // 默认限制时间范围为最近一年
@@ -166,7 +167,7 @@ public class ExerciseRecordController {
      * 获取轻量级运动记录统计数据，仅包含统计所需字段
      */
     @GetMapping("/statistics/light")
-    public ApiResponse<List<ExerciseStatisticsDTO>> getLightStatistics(@QueryParams top.aiolife.record.pojo.query.ExerciseStatisticsQuery params) {
+    public ApiResponse<List<ExerciseStatisticsDTO>> getLightStatistics(@QueryParams ExerciseStatisticsQuery params) {
         Long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, userId);
@@ -181,10 +182,10 @@ public class ExerciseRecordController {
             String startDate = params.getStartDate();
             String endDate = params.getEndDate();
             if (SysUtil.isNotEmpty(startDate)) {
-                lambdaQueryWrapper.ge(ExerciseRecordEntity::getExerciseDate, java.time.LocalDate.parse(startDate));
+                lambdaQueryWrapper.ge(ExerciseRecordEntity::getExerciseDate, LocalDate.parse(startDate));
             }
             if (SysUtil.isNotEmpty(endDate)) {
-                lambdaQueryWrapper.le(ExerciseRecordEntity::getExerciseDate, java.time.LocalDate.parse(endDate));
+                lambdaQueryWrapper.le(ExerciseRecordEntity::getExerciseDate, LocalDate.parse(endDate));
             }
         } else {
             // 默认限制时间范围为最近一年

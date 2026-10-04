@@ -19,10 +19,15 @@ import top.aiolife.record.pojo.vo.WereadConnectionVO;
 import top.aiolife.record.pojo.vo.WereadBookLinkVO;
 import top.aiolife.record.service.IWereadService;
 import top.aiolife.record.weread.WereadClient;
+import java.net.URI;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /** 用户隔离的只读同步。不合并现有阅读记录，不写入微信读书。 */
 @Service
@@ -71,7 +76,7 @@ public class WereadServiceImpl implements IWereadService {
         String value = metadata(connection).getString("lastSyncTime");
         if (!StringUtils.hasText(value)) return null;
         try { return LocalDateTime.parse(value.replace(' ', 'T')); }
-        catch (java.time.format.DateTimeParseException e) { return null; }
+        catch (DateTimeParseException e) { return null; }
     }
 
     private String credential(UserBindEntity connection) {
@@ -94,14 +99,14 @@ public class WereadServiceImpl implements IWereadService {
             connection.setUserId(userId);
             connection.setPlatform("weread");
             JSONObject meta = new JSONObject();
-            meta.put("connectionVersion", java.util.UUID.randomUUID().toString());
+            meta.put("connectionVersion", UUID.randomUUID().toString());
             connection.setMetaFields(meta.toJSONString());
             connection.setAccessToken(apiKey);
             mapper.insert(connection);
         } else {
             JSONObject meta = metadata(connection);
             meta.remove("lastSyncTime");
-            meta.put("connectionVersion", java.util.UUID.randomUUID().toString());
+            meta.put("connectionVersion", UUID.randomUUID().toString());
             mapper.update(null, new LambdaUpdateWrapper<UserBindEntity>()
                     .eq(UserBindEntity::getUserId, userId)
                     .eq(UserBindEntity::getPlatform, "weread")
@@ -146,7 +151,7 @@ public class WereadServiceImpl implements IWereadService {
     @Override
     public JsonNode sync(String mode, long baseTime) {
         validateMode(mode);
-        if (baseTime < 0 || baseTime > java.time.Instant.now().getEpochSecond()) {
+        if (baseTime < 0 || baseTime > Instant.now().getEpochSecond()) {
             throw new IllegalArgumentException("统计日期不能晚于今天");
         }
         long userId = StpUtil.getLoginIdAsLong();
@@ -174,7 +179,7 @@ public class WereadServiceImpl implements IWereadService {
     @Override
     public JsonNode stats(String mode, long baseTime) {
         validateMode(mode);
-        if (baseTime < 0 || baseTime > java.time.Instant.now().getEpochSecond()) {
+        if (baseTime < 0 || baseTime > Instant.now().getEpochSecond()) {
             throw new IllegalArgumentException("统计日期不能晚于今天");
         }
         String key = credential(requireConnection(StpUtil.getLoginIdAsLong()));
@@ -243,10 +248,10 @@ public class WereadServiceImpl implements IWereadService {
         String key = credential(requireConnection(StpUtil.getLoginIdAsLong()));
         String link = client.call(key, "/book/info", Map.of("bookId", bookId)).path("deepLink").asText("");
         try {
-            java.net.URI uri = java.net.URI.create(link);
+            URI uri = URI.create(link);
             String host = uri.getHost();
             if (!"https".equalsIgnoreCase(uri.getScheme()) || host == null
-                    || !(host.equalsIgnoreCase("weread.qq.com") || host.toLowerCase(java.util.Locale.ROOT).endsWith(".weread.qq.com"))
+                    || !(host.equalsIgnoreCase("weread.qq.com") || host.toLowerCase(Locale.ROOT).endsWith(".weread.qq.com"))
                     || uri.getUserInfo() != null) {
                 throw new IllegalArgumentException();
             }

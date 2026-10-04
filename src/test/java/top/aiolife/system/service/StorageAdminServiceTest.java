@@ -13,11 +13,13 @@ import java.util.ArrayList;
 import java.util.List;
 import okhttp3.Headers;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.config.MinioConfig;
+import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.system.pojo.query.StorageObjectQuery;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -61,7 +63,7 @@ class StorageAdminServiceTest {
         var config = config();
         config.setEndpoint("http://127.0.0.1:" + server.getAddress().getPort());
         try (var listClient = new StorageListClient(config)) {
-            var service = new StorageAdminService(config, listClient, mock(MinioClient.class), mock(StorageFileReferenceGuard.class), mock(top.aiolife.core.lock.StorageObjectLock.class));
+            var service = new StorageAdminService(config, listClient, mock(MinioClient.class), mock(StorageFileReferenceGuard.class), mock(StorageObjectLock.class));
             var query = new StorageObjectQuery();
             query.setPageSize(2);
             var page = service.list(query);
@@ -96,14 +98,14 @@ class StorageAdminServiceTest {
         when(client.getObject(any(GetObjectArgs.class))).thenReturn(new GetObjectResponse(
                 new Headers.Builder().build(), "business", "us-east-1", "中文 +#.JPG",
                 new ByteArrayInputStream(new byte[]{1, 2, 3})));
-        var service = new StorageAdminService(config(), mock(StorageListClient.class), client, mock(StorageFileReferenceGuard.class), mock(top.aiolife.core.lock.StorageObjectLock.class));
+        var service = new StorageAdminService(config(), mock(StorageListClient.class), client, mock(StorageFileReferenceGuard.class), mock(StorageObjectLock.class));
         var response = new MockHttpServletResponse();
         service.read("中文 +#.JPG", false, response);
         assertEquals("image/jpeg", response.getContentType());
         assertEquals("no-store", response.getHeader("Cache-Control"));
         assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
         assertArrayEquals(new byte[]{1, 2, 3}, response.getContentAsByteArray());
-        var args = org.mockito.ArgumentCaptor.forClass(GetObjectArgs.class);
+        var args = ArgumentCaptor.forClass(GetObjectArgs.class);
         verify(client).getObject(args.capture());
         assertEquals("中文 +#.JPG", args.getValue().object());
         assertEquals("business", args.getValue().bucket());
@@ -115,7 +117,7 @@ class StorageAdminServiceTest {
         var stat = mock(StatObjectResponse.class);
         when(stat.size()).thenReturn(21 * 1024 * 1024L);
         when(client.statObject(any(StatObjectArgs.class))).thenReturn(stat);
-        var service = new StorageAdminService(config(), mock(StorageListClient.class), client, mock(StorageFileReferenceGuard.class), mock(top.aiolife.core.lock.StorageObjectLock.class));
+        var service = new StorageAdminService(config(), mock(StorageListClient.class), client, mock(StorageFileReferenceGuard.class), mock(StorageObjectLock.class));
         for (String key : List.of("unsafe.svg", "unsafe.html", "large.jpg")) {
             var error = assertThrows(ResponseStatusException.class,
                     () -> service.read(key, false, new MockHttpServletResponse()));
@@ -136,7 +138,7 @@ class StorageAdminServiceTest {
         var config = config();
         config.setBucketName("");
         var listClient = mock(StorageListClient.class);
-        var service = new StorageAdminService(config, listClient, mock(MinioClient.class), mock(StorageFileReferenceGuard.class), mock(top.aiolife.core.lock.StorageObjectLock.class));
+        var service = new StorageAdminService(config, listClient, mock(MinioClient.class), mock(StorageFileReferenceGuard.class), mock(StorageObjectLock.class));
         assertThrows(ResponseStatusException.class, () -> service.list(new StorageObjectQuery()));
         verifyNoInteractions(listClient);
     }

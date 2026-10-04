@@ -1,5 +1,6 @@
 package top.aiolife.security;
 
+import java.util.List;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
@@ -27,7 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 class CategoryOwnershipTest {
     @BeforeAll
     static void tables() {
-        for (Class<?> type : java.util.List.of(TimeTrackerCategoryEntity.class, WardrobeCategoryEntity.class)) {
+        for (Class<?> type : List.of(TimeTrackerCategoryEntity.class, WardrobeCategoryEntity.class)) {
             TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), type.getName()), type);
         }
     }
@@ -54,7 +55,7 @@ class CategoryOwnershipTest {
         var categories = mock(ITimeTrackerCategoryService.class);
         when(categories.count(any(Wrapper.class))).thenReturn(1L);
         var visible = new TimeTrackerCategoryEntity(); visible.setId(22L);
-        when(categories.listUserVisibleCategories(11L)).thenReturn(java.util.List.of(visible));
+        when(categories.listUserVisibleCategories(11L)).thenReturn(List.of(visible));
         var service = spy(new TimeRecordServiceImpl(null, null, null, null, null, null, null,
                 categories, mock(SecondaryLockGuard.class)));
         doAnswer(call -> {

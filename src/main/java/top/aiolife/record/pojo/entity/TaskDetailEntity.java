@@ -2,6 +2,7 @@ package top.aiolife.record.pojo.entity;
 
 import top.aiolife.core.pojo.entity.BaseEntity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Getter;
 import lombok.Setter;
@@ -49,6 +50,6 @@ public class TaskDetailEntity extends BaseEntity {
     /**
      * 冗余字段：所属任务名称
      */
-    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    @TableField(exist = false)
     private String taskName;
 }

@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Constants;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 import top.aiolife.record.pojo.entity.BVideoEntity;
 import top.aiolife.record.pojo.vo.StatusCount;
 
@@ -18,12 +20,12 @@ import java.util.List;
  * @date 2025/10/06 23:03
  */
 public interface IBVideoMapper extends BaseMapper<BVideoEntity> {
-    @org.apache.ibatis.annotations.Select("SELECT * FROM b_video WHERE id=#{id} AND user_id=#{userId} AND is_deleted=0 FOR UPDATE")
-    @org.apache.ibatis.annotations.Options(useCache=false, flushCache=org.apache.ibatis.annotations.Options.FlushCachePolicy.TRUE)
+    @Select("SELECT * FROM b_video WHERE id=#{id} AND user_id=#{userId} AND is_deleted=0 FOR UPDATE")
+    @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
     BVideoEntity lockOwned(long id, long userId);
 
 
-    @org.apache.ibatis.annotations.Select("SELECT COUNT(*) FROM b_video WHERE id=#{videoId} AND user_id=#{userId} AND cover_file_id=#{fileId} AND is_deleted=0")
+    @Select("SELECT COUNT(*) FROM b_video WHERE id=#{videoId} AND user_id=#{userId} AND cover_file_id=#{fileId} AND is_deleted=0")
     long countCoverReference(long videoId, long userId, String fileId);
 
     /**

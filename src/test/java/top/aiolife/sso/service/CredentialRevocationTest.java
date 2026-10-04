@@ -1,6 +1,8 @@
 package top.aiolife.sso.service;
 
 import cn.dev33.satoken.SaManager;
+import cn.dev33.satoken.context.SaTokenContext;
+import cn.dev33.satoken.dao.SaTokenDao;
 import cn.dev33.satoken.dao.SaTokenDaoDefaultImpl;
 import cn.dev33.satoken.spring.SaTokenContextForSpringInJakartaServlet;
 import cn.dev33.satoken.stp.SaLoginModel;
@@ -30,6 +32,7 @@ import top.aiolife.bankcard.mapper.BankCardFileMapper;
 import top.aiolife.config.SaTokenConfig;
 import top.aiolife.core.cache.SecondaryLockMenuCache;
 import top.aiolife.core.exception.ExceptionHandle;
+import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.service.FilePreviewGuard;
 import top.aiolife.record.service.IMailService;
 import top.aiolife.record.util.RedisUtil;
@@ -53,8 +56,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /** 真实 Mapper、事务、Sa-Token 和生产拦截器；H2 与内存会话隔离外部服务。 */
 class CredentialRevocationTest {
     private final StpLogic previousLogic = StpUtil.getStpLogic();
-    private final cn.dev33.satoken.context.SaTokenContext previousContext = SaManager.getSaTokenContext();
-    private final cn.dev33.satoken.dao.SaTokenDao previousDao = SaManager.getSaTokenDao();
+    private final SaTokenContext previousContext = SaManager.getSaTokenContext();
+    private final SaTokenDao previousDao = SaManager.getSaTokenDao();
     private SaTokenDaoDefaultImpl sessionDao;
     private JdbcTemplate jdbc;
     private UserServiceImpl users;
@@ -122,7 +125,7 @@ class CredentialRevocationTest {
         when(lastActive.preHandle(any(), any(), any())).thenReturn(true);
         var registry = new TestRegistry();
         new SaTokenConfig(apiKeyInterceptor, locks, lastActive, accountGuard).addInterceptors(registry);
-        var files = new FilePreviewGuard(mock(SecondaryLockGuard.class), mock(BankCardFileMapper.class), accountGuard, mock(top.aiolife.record.mapper.IBVideoMapper.class));
+        var files = new FilePreviewGuard(mock(SecondaryLockGuard.class), mock(BankCardFileMapper.class), accountGuard, mock(IBVideoMapper.class));
         mvc = MockMvcBuilders.standaloneSetup(new ProbeController(files))
                 .setControllerAdvice(new ExceptionHandle()).addInterceptors(registry.interceptors()).build();
     }

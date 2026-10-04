@@ -1,5 +1,7 @@
 package top.aiolife.feedback.api;
 
+import java.util.ArrayList;
+import java.util.List;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -86,13 +88,13 @@ public class FeedbackAdminController {
      * 管理员用户列表（用于配置通知接收人下拉）
      */
     @GetMapping("/admin-users")
-    public ApiResponse<java.util.List<AdminUserVO>> adminUsers() {
+    public ApiResponse<List<AdminUserVO>> adminUsers() {
         LambdaQueryWrapper<UserEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(UserEntity::getRole, "admin")
                 .eq(UserEntity::getIsDeleted, 0)
                 .orderByAsc(UserEntity::getId);
-        java.util.List<UserEntity> users = userMapper.selectList(wrapper);
-        java.util.List<AdminUserVO> result = new java.util.ArrayList<>();
+        List<UserEntity> users = userMapper.selectList(wrapper);
+        List<AdminUserVO> result = new ArrayList<>();
         for (UserEntity u : users) {
             AdminUserVO vo = new AdminUserVO();
             vo.setId(String.valueOf(u.getId()));

@@ -1,13 +1,18 @@
 package top.aiolife.record.service.impl;
 
+import jakarta.annotation.Resource;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.convertor.TimeRecordConvertor;
 import top.aiolife.record.mapper.ITimeRecordMapper;
@@ -21,13 +26,17 @@ import top.aiolife.record.pojo.vo.TimeRecordListVO;
 import top.aiolife.record.prediction.JevCategoryRecommendationService;
 import top.aiolife.record.prediction.RecommendationDataCache;
 import top.aiolife.record.service.*;
+import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.system.service.IWorkCalendarService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 时间记录Service实现类
@@ -40,8 +49,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRecordEntity> implements ITimeRecordService {
 
-    @jakarta.annotation.Resource(name = "cacheManager")
-    private org.springframework.cache.CacheManager timeRecordCacheManager;
+    @Resource(name = "cacheManager")
+    private CacheManager timeRecordCacheManager;
     private final ITimeRecordMapper timeRecordMapper;
     private final IExerciseRecordService exerciseRecordService;
     private final IReadRecordService readRecordService;
@@ -50,10 +59,10 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     private final JevCategoryRecommendationService jevRecommendationService;
     private final RecommendationDataCache recommendationDataCache;
     private final ITimeTrackerCategoryService timeTrackerCategoryService;
-    private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
+    private final SecondaryLockGuard secondaryLockGuard;
 
     @Override
-    @org.springframework.cache.annotation.Cacheable(
+    @Cacheable(
             cacheNames = "timeRecordDay:v1", cacheManager = "cacheManager",
             key = "#userId + ':' + #date",
             condition = "!T(org.springframework.transaction.support.TransactionSynchronizationManager).isActualTransactionActive()")
@@ -73,7 +82,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     /** 日期修改需要清理新旧两天；直接访问缓存，避免同类调用使注解失效。 */
     private void invalidateDayCache(long userId, LocalDate... dates) {
         Runnable invalidate = () -> {
-            for (LocalDate date : java.util.Arrays.stream(dates).filter(java.util.Objects::nonNull).distinct().toList()) {
+            for (LocalDate date : Arrays.stream(dates).filter(Objects::nonNull).distinct().toList()) {
                 try {
                     var cache = timeRecordCacheManager.getCache("timeRecordDay:v1");
                     if (cache != null) cache.evict(userId + ":" + date);
@@ -82,9 +91,9 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
                 }
             }
         };
-        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
-            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
-                    new org.springframework.transaction.support.TransactionSynchronization() {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
                         @Override
                         public void afterCommit() { invalidate.run(); }
                     });
@@ -108,7 +117,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
                         .or().eq(TimeTrackerCategoryEntity::getUserId, 0L))) > 0;
         if (!allowed) throw new IllegalArgumentException("分类不存在或无权使用");
         if (!existingCategory && timeTrackerCategoryService.listUserVisibleCategories(userId).stream()
-                .noneMatch(c -> java.util.Objects.equals(c.getId(), categoryId))) {
+                .noneMatch(c -> Objects.equals(c.getId(), categoryId))) {
             throw new IllegalArgumentException("分类或上级分类已停用，请重新选择");
         }
     }
@@ -166,7 +175,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
         if (exerciseRecordReqs != null && !exerciseRecordReqs.isEmpty()) {
             secondaryLockGuard.checkMenus(userId, "/record/exercise");
-            List<ExerciseRecordEntity> validExercises = new java.util.ArrayList<>();
+            List<ExerciseRecordEntity> validExercises = new ArrayList<>();
             for (ExerciseRecordReq exerciseReq : exerciseRecordReqs) {
                 if (exerciseReq.getExerciseTypeId() == null) {
                     continue;
@@ -200,7 +209,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         if (existing == null || existing.getUserId() == null || existing.getUserId() != userId) {
             throw new RuntimeException("记录不存在或无权限");
         }
-        validateCategory(entity.getCategoryId(), userId, java.util.Objects.equals(entity.getCategoryId(), existing.getCategoryId()));
+        validateCategory(entity.getCategoryId(), userId, Objects.equals(entity.getCategoryId(), existing.getCategoryId()));
         // 防止请求方篡改记录归属
         entity.setUserId(null);
         entity.setUpdateUser(userId);
@@ -226,7 +235,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         // 添加新的运动记录
         if (exerciseRecordReqs != null && !exerciseRecordReqs.isEmpty()) {
             secondaryLockGuard.checkMenus(userId, "/record/exercise");
-            List<ExerciseRecordEntity> validExercises = new java.util.ArrayList<>();
+            List<ExerciseRecordEntity> validExercises = new ArrayList<>();
             for (ExerciseRecordReq exerciseReq : exerciseRecordReqs) {
                 if (exerciseReq.getExerciseTypeId() == null) {
                     continue;
@@ -347,7 +356,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         List<TimeTrackerCategoryEntity> categories = recommendationDataCache.get("visibleCategories",
                 () -> timeTrackerCategoryService.listUserVisibleCategories(userId), userId);
         var visibleIds = categories.stream().filter(c -> c.getId() != null && c.getName() != null)
-                .map(TimeTrackerCategoryEntity::getId).collect(java.util.stream.Collectors.toSet());
+                .map(TimeTrackerCategoryEntity::getId).collect(Collectors.toSet());
         if (visibleIds.isEmpty()) return noReferenceRecommendation(userId, date, minute, "NO_VISIBLE_CATEGORIES");
 
         List<TimeRecordEntity> records = recommendationDataCache.get("referenceRecords",
@@ -380,7 +389,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         queryWrapper.select(TimeRecordEntity::getStartTime, TimeRecordEntity::getEndTime, TimeRecordEntity::getCategoryId)
                 .eq(TimeRecordEntity::getUserId, userId)
                 .eq(TimeRecordEntity::getDate, targetDate);
-        List<TimeRecordEntity> records = new java.util.ArrayList<>(recommendationDataCache.get("nextRecords",
+        List<TimeRecordEntity> records = new ArrayList<>(recommendationDataCache.get("nextRecords",
                 () -> this.list(queryWrapper), userId, targetDate));
         
         TimeRecordEntity recommend = calculateRecommendNext(records, targetDate);

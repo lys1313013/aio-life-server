@@ -1,5 +1,10 @@
 package top.aiolife.record.pojo.req;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.util.List;
@@ -13,13 +18,13 @@ import java.util.List;
 @Data
 public class ThoughtSaveReq {
 
-    @jakarta.validation.constraints.NotBlank(message = "闪念内容不能为空")
+    @NotBlank(message = "闪念内容不能为空")
     private String content;
 
-    @jakarta.validation.constraints.Min(0)
-    @jakarta.validation.constraints.Max(1)
+    @Min(0)
+    @Max(1)
     private Integer isPinned;
 
-    @jakarta.validation.Valid
-    private List<@jakarta.validation.constraints.NotNull ThoughtSaveEventReq> events;
+    @Valid
+    private List<@NotNull ThoughtSaveEventReq> events;
 }

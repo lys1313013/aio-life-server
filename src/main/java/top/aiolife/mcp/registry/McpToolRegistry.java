@@ -1,11 +1,13 @@
 package top.aiolife.mcp.registry;
 
+import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.agent.tool.ToolSpecifications;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import top.aiolife.mcp.adapter.LangChain4jToolSchemaAdapter;
@@ -28,7 +30,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class McpToolRegistry {
 
-    private final org.springframework.context.ApplicationContext applicationContext;
+    private final ApplicationContext applicationContext;
     private final LangChain4jToolSchemaAdapter schemaAdapter;
 
     private final Map<String, RegisteredMcpTool> registeredTools = new LinkedHashMap<>();
@@ -51,7 +53,7 @@ public class McpToolRegistry {
     private void registerTools(Object bean) {
         Class<?> targetClass = AopUtils.getTargetClass(Objects.requireNonNull(bean));
         for (Method method : targetClass.getDeclaredMethods()) {
-            if (method.getAnnotation(dev.langchain4j.agent.tool.Tool.class) == null) {
+            if (method.getAnnotation(Tool.class) == null) {
                 continue;
             }
             if (method.getParameterCount() > 1) {

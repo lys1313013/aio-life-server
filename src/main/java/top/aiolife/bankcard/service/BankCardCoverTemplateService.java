@@ -13,6 +13,7 @@ import top.aiolife.bankcard.pojo.req.BankCardCoverTemplateReq;
 import top.aiolife.bankcard.pojo.vo.BankCardCoverTemplateVO;
 import top.aiolife.bankcard.pojo.query.BankCardCoverQuery;
 import top.aiolife.core.resq.PageResp;
+import top.aiolife.core.util.MinioUtil;
 
 /** 公共模板及文件绑定；锁顺序为银行字典类型、模板、文件。 */
 @Service
@@ -25,7 +26,7 @@ public class BankCardCoverTemplateService {
     private final BankCardMapper cardMapper;
     private final BankCardFileMapper fileMapper;
 
-    private final top.aiolife.core.util.MinioUtil minio;
+    private final MinioUtil minio;
 
     public String publicUrl(String fileId) { return minio.getPublicImageUrl(fileId, "image/png"); }
     private BankCardCoverTemplateVO withUrl(BankCardCoverTemplateVO cover) {

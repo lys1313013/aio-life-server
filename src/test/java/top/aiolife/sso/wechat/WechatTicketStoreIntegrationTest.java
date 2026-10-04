@@ -11,6 +11,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
@@ -25,7 +26,7 @@ class WechatTicketStoreIntegrationTest {
         var ticket = new WechatTicketStore.Ticket("test-openid", null, null, null);
         String value = store.issue(ticket);
         try (var executor = Executors.newFixedThreadPool(8)) {
-            var calls = IntStream.range(0, 8).<java.util.concurrent.Callable<Boolean>>mapToObj(i -> () -> {
+            var calls = IntStream.range(0, 8).<Callable<Boolean>>mapToObj(i -> () -> {
                 try { return store.consume(value).equals(ticket); }
                 catch (ResponseStatusException e) { return false; }
             }).toList();

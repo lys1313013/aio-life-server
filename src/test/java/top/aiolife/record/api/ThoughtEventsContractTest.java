@@ -16,6 +16,7 @@ import top.aiolife.record.mapper.IRelaEventMapper;
 import top.aiolife.record.mapper.IThoughtMapper;
 import top.aiolife.record.pojo.entity.ThoughtEntity;
 import top.aiolife.record.pojo.entity.ThoughtRelaEventEntity;
+import top.aiolife.record.pojo.req.ThoughtUpdateReq;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,16 +37,16 @@ class ThoughtEventsContractTest {
         IThoughtMapper thoughts = mock(IThoughtMapper.class); IRelaEventMapper events = mock(IRelaEventMapper.class);
         ThoughtController controller = new ThoughtController(thoughts, events, null);
         when(thoughts.update(any(ThoughtEntity.class), any(Wrapper.class))).thenReturn(1);
-        asUser(() -> controller.update(2L,ApiRequestFixtures.request(new ThoughtEntity(), top.aiolife.record.pojo.req.ThoughtUpdateReq.class))); verifyNoInteractions(events);
+        asUser(() -> controller.update(2L,ApiRequestFixtures.request(new ThoughtEntity(), ThoughtUpdateReq.class))); verifyNoInteractions(events);
         when(thoughts.update(any(ThoughtEntity.class), any(Wrapper.class))).thenReturn(0);
         ThoughtEntity payload = new ThoughtEntity(); payload.setEvents(List.of());
-        asUser(() -> assertNotEquals("0", controller.update(2L,ApiRequestFixtures.request(payload, top.aiolife.record.pojo.req.ThoughtUpdateReq.class)).getRscode())); verifyNoInteractions(events);
+        asUser(() -> assertNotEquals("0", controller.update(2L,ApiRequestFixtures.request(payload, ThoughtUpdateReq.class)).getRscode())); verifyNoInteractions(events);
     }
     @Test void testUpdate_空事件列表只清空当前闪念() {
         IThoughtMapper thoughts = mock(IThoughtMapper.class); IRelaEventMapper events = mock(IRelaEventMapper.class);
         ThoughtController controller = new ThoughtController(thoughts, events, null);
         when(thoughts.update(any(ThoughtEntity.class), any(Wrapper.class))).thenReturn(1);
-        ThoughtEntity payload = new ThoughtEntity(); payload.setEvents(List.of()); asUser(() -> controller.update(2L,ApiRequestFixtures.request(payload, top.aiolife.record.pojo.req.ThoughtUpdateReq.class)));
+        ThoughtEntity payload = new ThoughtEntity(); payload.setEvents(List.of()); asUser(() -> controller.update(2L,ApiRequestFixtures.request(payload, ThoughtUpdateReq.class)));
         ArgumentCaptor<Wrapper<ThoughtRelaEventEntity>> captor = ArgumentCaptor.forClass(Wrapper.class); verify(events).delete(captor.capture());
         assertTrue(captor.getValue().getSqlSegment().contains("thought_id =")); assertFalse(captor.getValue().getSqlSegment().contains("NOT IN"));
         assertTrue(((AbstractWrapper<?, ?, ?>) captor.getValue()).getParamNameValuePairs().containsValue(2L));
@@ -59,7 +60,7 @@ class ThoughtEventsContractTest {
         when(events.insert(any(ThoughtRelaEventEntity.class))).thenAnswer(invocation -> { invocation.<ThoughtRelaEventEntity>getArgument(0).setId(33L); return 1; });
         ThoughtRelaEventEntity existing = new ThoughtRelaEventEntity(); existing.setId(31L); existing.setContent("模拟原事件");
         ThoughtRelaEventEntity added = new ThoughtRelaEventEntity(); added.setContent("模拟新事件");
-        ThoughtEntity payload = new ThoughtEntity(); payload.setEvents(List.of(existing, added)); asUser(() -> controller.update(2L,ApiRequestFixtures.request(payload, top.aiolife.record.pojo.req.ThoughtUpdateReq.class))); assertEquals(31L, existing.getId());
+        ThoughtEntity payload = new ThoughtEntity(); payload.setEvents(List.of(existing, added)); asUser(() -> controller.update(2L,ApiRequestFixtures.request(payload, ThoughtUpdateReq.class))); assertEquals(31L, existing.getId());
         ArgumentCaptor<Wrapper<ThoughtRelaEventEntity>> captor = ArgumentCaptor.forClass(Wrapper.class); verify(events).delete(captor.capture());
         assertTrue(captor.getValue().getSqlSegment().contains("NOT IN"));
         assertTrue(((AbstractWrapper<?, ?, ?>) captor.getValue()).getParamNameValuePairs().values().containsAll(List.of(2L, 31L, 33L)));
@@ -71,6 +72,6 @@ class ThoughtEventsContractTest {
         when(events.update(any(ThoughtRelaEventEntity.class), any(Wrapper.class))).thenReturn(0);
         ThoughtRelaEventEntity foreign = new ThoughtRelaEventEntity(); foreign.setId(99L); foreign.setContent("模拟越权事件");
         ThoughtEntity payload = new ThoughtEntity(); payload.setEvents(List.of(foreign));
-        asUser(() -> assertThrows(IllegalArgumentException.class, () -> controller.update(2L,ApiRequestFixtures.request(payload, top.aiolife.record.pojo.req.ThoughtUpdateReq.class)))); verify(events, never()).delete(any(Wrapper.class));
+        asUser(() -> assertThrows(IllegalArgumentException.class, () -> controller.update(2L,ApiRequestFixtures.request(payload, ThoughtUpdateReq.class)))); verify(events, never()).delete(any(Wrapper.class));
     }
 }

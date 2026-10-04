@@ -22,6 +22,7 @@ import top.aiolife.record.enums.DictTypeEnum;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
+import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.enums.RelateTypeEnum;
 import top.aiolife.record.pojo.query.TimeRecordQuery;
@@ -33,11 +34,13 @@ import top.aiolife.record.pojo.vo.RecommendNextVO;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
 import top.aiolife.record.pojo.vo.TimeRecordExerciseVO;
 import top.aiolife.record.pojo.vo.TimeRecordListVO;
+import top.aiolife.record.pojo.vo.TimeRecordRecommendationVO;
 import top.aiolife.record.pojo.vo.TimeRecordVO;
 import top.aiolife.record.service.IExerciseRecordService;
 import top.aiolife.record.service.ITimeRecordService;
 import top.aiolife.record.service.ITimeTrackerCategoryService;
 import top.aiolife.record.service.UserDictDataService;
+import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.sso.util.RequestLoginContext;
 
 /**
@@ -51,7 +54,7 @@ import top.aiolife.sso.util.RequestLoginContext;
 @AllArgsConstructor
 @RequestMapping("/timeRecord")
 public class TimeRecordController {
-    private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
+    private final SecondaryLockGuard secondaryLockGuard;
     private final ITimeRecordService timeRecordService;
     private final IExerciseRecordService exerciseRecordService;
     private final ITimeTrackerCategoryService timeTrackerCategoryService;
@@ -97,13 +100,13 @@ public class TimeRecordController {
 
         Map<Long, String> categoryNameMap = Collections.emptyMap();
         if (!categoryIds.isEmpty()) {
-            categoryNameMap = timeTrackerCategoryService.list(new LambdaQueryWrapper<top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity>()
-                            .in(top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity::getId, categoryIds)
-                            .and(w -> w.eq(top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity::getUserId, userId)
-                                    .or().eq(top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity::getUserId, 0L))).stream()
+            categoryNameMap = timeTrackerCategoryService.list(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
+                            .in(TimeTrackerCategoryEntity::getId, categoryIds)
+                            .and(w -> w.eq(TimeTrackerCategoryEntity::getUserId, userId)
+                                    .or().eq(TimeTrackerCategoryEntity::getUserId, 0L))).stream()
                     .collect(Collectors.toMap(
-                            top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity::getId,
-                            top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity::getName
+                            TimeTrackerCategoryEntity::getId,
+                            TimeTrackerCategoryEntity::getName
                     ));
         }
 
@@ -324,7 +327,7 @@ public class TimeRecordController {
      * @param date 日期 yyyy-MM-dd
      */
     @GetMapping("/recommendNext")
-    public ApiResponse<top.aiolife.record.pojo.vo.TimeRecordRecommendationVO> recommendNext(String date) {
+    public ApiResponse<TimeRecordRecommendationVO> recommendNext(String date) {
         long userId = RequestLoginContext.requireUserId();
         RecommendNextVO result = timeRecordService.recommendNext(userId, date);
 

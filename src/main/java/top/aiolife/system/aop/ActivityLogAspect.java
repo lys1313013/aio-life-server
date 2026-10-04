@@ -1,5 +1,6 @@
 package top.aiolife.system.aop;
 
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -76,7 +77,7 @@ public class ActivityLogAspect {
     }
 
     static String action(String method, String name) {
-        String lower = name.toLowerCase(java.util.Locale.ROOT);
+        String lower = name.toLowerCase(Locale.ROOT);
         if (lower.contains("export")) return "导出";
         if ("DELETE".equals(method) || lower.startsWith("delete") || lower.startsWith("remove")) return "删除";
         if ("GET".equals(method) || lower.startsWith("query") || lower.startsWith("list") || lower.startsWith("get")) return "查询";

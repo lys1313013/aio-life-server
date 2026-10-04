@@ -1,5 +1,6 @@
 package top.aiolife.record.service.impl;
 
+import javax.imageio.ImageIO;
 import top.aiolife.core.lock.StorageObjectLock;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -27,10 +28,14 @@ import top.aiolife.record.service.DoubanCoverUrlPolicy;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -66,7 +71,7 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
         byte[] uploadBytes;
         try (var input = file.getInputStream()) {
             uploadBytes = input.readNBytes(FileContentPolicy.MAX_IMAGE_BYTES + 1);
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException("文件无法读取", e);
         }
         if (uploadBytes.length > FileContentPolicy.MAX_IMAGE_BYTES) {
@@ -91,11 +96,11 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
         try {
             if (template) {
                 // 无论源文件是 JPEG 还是 PNG，系统卡面统一解码重编码为 PNG。
-                java.awt.image.BufferedImage image;
-                try (var input=new ByteArrayInputStream(uploadBytes)) { image=javax.imageio.ImageIO.read(input); }
+                BufferedImage image;
+                try (var input=new ByteArrayInputStream(uploadBytes)) { image=ImageIO.read(input); }
                 if (image==null) throw new IllegalArgumentException("卡面图片无法读取");
-                var output=new java.io.ByteArrayOutputStream();
-                javax.imageio.ImageIO.write(image,"png",output);
+                var output=new ByteArrayOutputStream();
+                ImageIO.write(image,"png",output);
                 if (output.size()>5*1024*1024) throw new IllegalArgumentException("处理后的卡面不能超过5MB");
                 byte[] bytes=output.toByteArray();
                 storedSize=bytes.length;
@@ -150,7 +155,7 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
             }
             try (var input = response.bodyStream()) {
                 bodyBytes = input.readNBytes(FileContentPolicy.MAX_IMAGE_BYTES + 1);
-            } catch (java.io.IOException e) {
+            } catch (IOException e) {
                 throw new IllegalStateException("读取封面图失败", e);
             }
         }
@@ -185,7 +190,7 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
 
     private void validateBankCover(byte[] bytes, String contentType) {
         if (bytes.length > 5 * 1024 * 1024) throw new IllegalArgumentException("卡面图片不能超过5MB");
-        if (!java.util.Set.of("image/png", "image/jpeg").contains(contentType)) {
+        if (!Set.of("image/png", "image/jpeg").contains(contentType)) {
             throw new IllegalArgumentException("卡面仅支持PNG或JPEG图片");
         }
     }

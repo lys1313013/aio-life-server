@@ -5,7 +5,9 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.MinioClient;
+import java.io.ByteArrayInputStream;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.*;
@@ -26,14 +28,22 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.web.server.ResponseStatusException;
+import top.aiolife.config.CbtiConfig;
 import top.aiolife.config.MinioConfig;
 import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.core.util.MinioUtil;
+import top.aiolife.record.api.CbtiAdminController;
+import top.aiolife.record.config.CbtiImageInitUtil;
 import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.mapper.ICbtiPersonalityMapper;
 import top.aiolife.record.mapper.IFileMapper;
+import top.aiolife.record.pojo.entity.CbtiPersonalityEntity;
 import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.service.DoubanCoverUrlPolicy;
 import top.aiolife.record.service.impl.FileServiceImpl;
+import top.aiolife.support.ImageFixtures;
 import top.aiolife.system.mapper.StorageFileReferenceMapper;
+import top.aiolife.system.mapper.StorageObjectMapper;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -76,7 +86,7 @@ class StorageUploadCoordinationTest {
         uploads = mock(MinioUtil.class); deletes = mock(MinioClient.class);
         doAnswer(call -> { key.set(call.getArgument(1)); return null; }).when(uploads).putObject(anyString(), anyString(), any(), anyLong(), anyString());
         var config = new MinioConfig(); config.setBucketName("business");
-        var target = new FileServiceImpl(uploads, config, locks, new top.aiolife.record.service.DoubanCoverUrlPolicy("doubanio.com")) {
+        var target = new FileServiceImpl(uploads, config, locks, new DoubanCoverUrlPolicy("doubanio.com")) {
             @Override public boolean save(FileEntity entity) {
                 boolean saved = super.save(entity);
                 written.countDown();
@@ -91,7 +101,7 @@ class StorageUploadCoordinationTest {
         proxy.addAdvice(new TransactionInterceptor(new DataSourceTransactionManager(ds), new AnnotationTransactionAttributeSource()));
         files = (FileServiceImpl) proxy.getProxy();
         admin = new StorageAdminService(config, mock(StorageListClient.class), deletes,
-                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class), new top.aiolife.config.CbtiConfig(), mock(top.aiolife.system.mapper.StorageObjectMapper.class)), locks);
+                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class), new CbtiConfig(), mock(StorageObjectMapper.class)), locks);
     }
 
     @AfterEach void close() throws Exception {
@@ -103,7 +113,7 @@ class StorageUploadCoordinationTest {
         return executor.submit(() -> {
             try (var login = mockStatic(StpUtil.class)) {
                 login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
-                files.upload(new MockMultipartFile("file", "image.png", "image/png", top.aiolife.support.ImageFixtures.image("png")), FileBizType.AVATAR);
+                files.upload(new MockMultipartFile("file", "image.png", "image/png", ImageFixtures.image("png")), FileBizType.AVATAR);
             }
         });
     }
@@ -148,7 +158,7 @@ class StorageUploadCoordinationTest {
         var response = mock(HttpResponse.class);
         when(request.executeAsync()).thenReturn(response);
         when(response.getStatus()).thenReturn(200);
-        when(response.bodyStream()).thenReturn(new java.io.ByteArrayInputStream(top.aiolife.support.ImageFixtures.image("png")));
+        when(response.bodyStream()).thenReturn(new ByteArrayInputStream(ImageFixtures.image("png")));
         doAnswer(call -> { key.set(call.getArgument(1)); return null; }).when(uploads).putObject(anyString(), anyString(), any(), anyLong(), anyString());
         try {
             var result = executor.submit(() -> {
@@ -177,21 +187,21 @@ class StorageUploadCoordinationTest {
     }
 
     @Test void CBTI直接上传的对象与人格引用更新也在共享锁内() throws Exception {
-        var cbti = new top.aiolife.config.CbtiConfig();
+        var cbti = new CbtiConfig();
         var config = new MinioConfig(); config.setBucketName("business");
-        var mapper = mock(top.aiolife.record.mapper.ICbtiPersonalityMapper.class);
-        var entity = new top.aiolife.record.pojo.entity.CbtiPersonalityEntity(); entity.setId(7L); entity.setCode("TEST");
+        var mapper = mock(ICbtiPersonalityMapper.class);
+        var entity = new CbtiPersonalityEntity(); entity.setId(7L); entity.setCode("TEST");
         when(mapper.selectOne(any())).thenReturn(entity);
         jdbc.update("INSERT INTO cbti_personality VALUES(7, 'old.png', 0)");
-        when(mapper.updateById(any(top.aiolife.record.pojo.entity.CbtiPersonalityEntity.class))).thenAnswer(call ->
-                jdbc.update("UPDATE cbti_personality SET image_object=? WHERE id=7", call.getArgument(0, top.aiolife.record.pojo.entity.CbtiPersonalityEntity.class).getImageObject()));
+        when(mapper.updateById(any(CbtiPersonalityEntity.class))).thenAnswer(call ->
+                jdbc.update("UPDATE cbti_personality SET image_object=? WHERE id=7", call.getArgument(0, CbtiPersonalityEntity.class).getImageObject()));
         doAnswer(call -> {
             key.set(call.getArgument(2)); written.countDown();
             if (!finish.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("test timeout");
             return key.get();
         }).when(uploads).uploadFile(anyString(), any(), anyString());
-        var controller = new top.aiolife.record.api.CbtiAdminController(mapper, new com.fasterxml.jackson.databind.ObjectMapper(),
-                uploads, config, cbti, mock(top.aiolife.record.config.CbtiImageInitUtil.class), locks);
+        var controller = new CbtiAdminController(mapper, new ObjectMapper(),
+                uploads, config, cbti, mock(CbtiImageInitUtil.class), locks);
         var result = executor.submit(() -> {
             try (var login = mockStatic(StpUtil.class)) {
                 login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
+import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -34,7 +36,7 @@ public class LangChain4jToolSchemaAdapter {
 
     public McpSchema.Tool toMcpTool(String name,
                                     String description,
-                                    java.lang.reflect.Method method,
+                                    Method method,
                                     ToolSpecification toolSpecification) {
         Map<String, Object> schemaMap;
         if (method.getParameterCount() == 0) {
@@ -214,7 +216,7 @@ public class LangChain4jToolSchemaAdapter {
                 || LocalDateTime.class.isAssignableFrom(type)
                 || OffsetDateTime.class.isAssignableFrom(type)
                 || ZonedDateTime.class.isAssignableFrom(type)
-                || java.time.temporal.Temporal.class.isAssignableFrom(type);
+                || Temporal.class.isAssignableFrom(type);
     }
 
     private Map<String, Object> mapValue(Object value) {

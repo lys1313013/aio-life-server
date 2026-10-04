@@ -1,7 +1,9 @@
 package top.aiolife.sso.pojo.req;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import lombok.Data;
@@ -43,10 +45,10 @@ public class UserUpdateReq {
      * 个人简介
      */
     private String introduction;
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonIgnore
     private boolean avatarFileIdSpecified;
 
-    @com.fasterxml.jackson.annotation.JsonSetter("avatarFileId")
+    @JsonSetter("avatarFileId")
     public void setAvatarFileId(String avatarFileId) {
         this.avatarFileId = avatarFileId;
         this.avatarFileIdSpecified = true;

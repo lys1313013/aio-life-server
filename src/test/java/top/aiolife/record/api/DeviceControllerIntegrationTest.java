@@ -8,6 +8,7 @@ import top.aiolife.core.ApiRequestFixtures;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.record.mapper.IDeviceMapper;
 import top.aiolife.record.pojo.entity.DeviceEntity;
+import top.aiolife.record.pojo.query.DeviceQuery;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,7 +37,7 @@ class DeviceControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new DeviceEntity());
 
-        var response = deviceController.query(ApiRequestFixtures.query(query, top.aiolife.record.pojo.query.DeviceQuery.class));
+        var response = deviceController.query(ApiRequestFixtures.query(query, DeviceQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);

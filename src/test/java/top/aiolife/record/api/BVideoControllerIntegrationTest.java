@@ -7,6 +7,7 @@ import top.aiolife.core.query.CommonQuery;
 import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.pojo.entity.BVideoEntity;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
+import top.aiolife.record.pojo.query.BVideoQuery;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -35,7 +36,7 @@ class BVideoControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new BVideoEntity());
 
-        var response = bVideoController.query(ApiRequestFixtures.query(query, top.aiolife.record.pojo.query.BVideoQuery.class));
+        var response = bVideoController.query(ApiRequestFixtures.query(query, BVideoQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);

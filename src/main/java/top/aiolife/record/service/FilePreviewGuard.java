@@ -1,9 +1,14 @@
 package top.aiolife.record.service;
 
+import lombok.RequiredArgsConstructor;
 import cn.dev33.satoken.context.SaHolder;
 import cn.dev33.satoken.stp.StpUtil;
 import org.springframework.stereotype.Component;
+import top.aiolife.bankcard.mapper.BankCardFileMapper;
+import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.sso.service.AccountStatusGuard;
+import top.aiolife.sso.service.SecondaryLockGuard;
 
 import java.util.List;
 
@@ -15,14 +20,14 @@ import java.util.List;
  * @author Lys
  */
 @Component
-@lombok.RequiredArgsConstructor
+@RequiredArgsConstructor
 public class FilePreviewGuard {
 
-    private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
-    private final top.aiolife.bankcard.mapper.BankCardFileMapper bankCardFileMapper;
-    private final top.aiolife.sso.service.AccountStatusGuard accountStatusGuard;
+    private final SecondaryLockGuard secondaryLockGuard;
+    private final BankCardFileMapper bankCardFileMapper;
+    private final AccountStatusGuard accountStatusGuard;
 
-    private final top.aiolife.record.mapper.IBVideoMapper videoMapper;
+    private final IBVideoMapper videoMapper;
 
     /**
      * 访问判定结果

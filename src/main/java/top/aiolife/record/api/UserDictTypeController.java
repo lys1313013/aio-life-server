@@ -6,6 +6,7 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.enums.DictTypeEnum;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.entity.UserDictTypeEntity;
@@ -47,8 +48,8 @@ public class UserDictTypeController {
         List<UserDictDataEntity> dataList = userDictDataService.listUserVisibleDictData(userId, dictType);
 
         UserDictTypeDetailVO detailVO = new UserDictTypeDetailVO();
-        detailVO.setUserDictTypeEntity(top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toUserDictTypeVO(typeVO));
-        detailVO.setDictDetailList(top.aiolife.record.convertor.RecordApiConvertor.INSTANCE.toUserDictDataVOList(dataList));
+        detailVO.setUserDictTypeEntity(RecordApiConvertor.INSTANCE.toUserDictTypeVO(typeVO));
+        detailVO.setDictDetailList(RecordApiConvertor.INSTANCE.toUserDictDataVOList(dataList));
 
         return ApiResponse.success(detailVO);
     }

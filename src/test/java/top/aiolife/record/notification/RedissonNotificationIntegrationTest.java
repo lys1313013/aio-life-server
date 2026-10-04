@@ -18,6 +18,7 @@ import top.aiolife.sso.pojo.entity.UserEntity;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntConsumer;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -157,7 +158,7 @@ class RedissonNotificationIntegrationTest {
         }
     }
 
-    static void runConcurrent(int count, java.util.function.IntConsumer action) throws Exception {
+    static void runConcurrent(int count, IntConsumer action) throws Exception {
         try (var pool = Executors.newFixedThreadPool(count)) {
             var ready = new CountDownLatch(count);
             var start = new CountDownLatch(1);

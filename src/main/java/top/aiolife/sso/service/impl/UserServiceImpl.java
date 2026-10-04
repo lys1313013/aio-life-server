@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -13,6 +14,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -38,6 +40,7 @@ import top.aiolife.sso.pojo.entity.ApiKeyEntity;
 import top.aiolife.sso.pojo.entity.LoginLogEntity;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.pojo.entity.UserSecondaryLockMenuEntity;
+import top.aiolife.sso.pojo.query.UserQuery;
 import top.aiolife.sso.pojo.req.ChangePasswordReq;
 import top.aiolife.sso.pojo.req.LoginReq;
 import top.aiolife.sso.pojo.req.RegisterReq;
@@ -174,7 +177,7 @@ public class UserServiceImpl implements IUserService {
         clearExternalCredentials(userEntity);
         if (avatarFileIdSpecified) avatarFiles.validateForBinding(userEntity.getId(), userEntity.getAvatarFileId());
         if (avatarFileIdSpecified) {
-            userMapper.update(userEntity, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<UserEntity>()
+            userMapper.update(userEntity, new LambdaUpdateWrapper<UserEntity>()
                     .eq(UserEntity::getId, userEntity.getId())
                     .set(UserEntity::getAvatarFileId, userEntity.getAvatarFileId()));
         } else if (userEntity.getNickname() != null || userEntity.getIntroduction() != null
@@ -203,7 +206,7 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public PageResp<UserVO> getUserList(CommonQuery<top.aiolife.sso.pojo.query.UserQuery> query) {
+    public PageResp<UserVO> getUserList(CommonQuery<UserQuery> query) {
         Page<UserEntity> page = new Page<>(query.getPage(), query.getPageSize());
         LambdaQueryWrapper<UserEntity> wrapper = new LambdaQueryWrapper<>();
         String keyword = query.getCondition() == null ? null : query.getCondition().getKeyword();
@@ -524,7 +527,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public boolean hasSecondaryPassword(long userId) {
         UserEntity user = userMapper.selectById(userId);
-        return user != null && org.springframework.util.StringUtils.hasText(user.getSecondaryPassword());
+        return user != null && StringUtils.hasText(user.getSecondaryPassword());
     }
 
     @Override
@@ -535,8 +538,8 @@ public class UserServiceImpl implements IUserService {
         }
 
         // 如果已有二级密码，需要验证旧密码
-        if (org.springframework.util.StringUtils.hasText(user.getSecondaryPassword())) {
-            if (!org.springframework.util.StringUtils.hasText(oldPassword)) {
+        if (StringUtils.hasText(user.getSecondaryPassword())) {
+            if (!StringUtils.hasText(oldPassword)) {
                 throw new RuntimeException("请提供旧二级密码");
             }
             String encryptedOld = PasswordUtil.encryptPassword(oldPassword, user.getSecondaryPasswordSalt());
@@ -557,7 +560,7 @@ public class UserServiceImpl implements IUserService {
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
-        if (!org.springframework.util.StringUtils.hasText(user.getSecondaryPassword())) {
+        if (!StringUtils.hasText(user.getSecondaryPassword())) {
             throw new RuntimeException("未设置二级密码");
         }
 
@@ -566,10 +569,10 @@ public class UserServiceImpl implements IUserService {
         }
         String path = menuPath.split("\\?", 2)[0];
         if (path.startsWith("/api/")) path = path.substring(4);
-        java.util.Set<String> paths = secondaryLockMenuCache.findMatchedPaths(userId, path);
+        Set<String> paths = secondaryLockMenuCache.findMatchedPaths(userId, path);
         verifySecondaryPasswordOrThrow(user, password);
         // 一次密码验证同时满足当前菜单及其父级锁；键仍是原锁定菜单路径。
-        if (paths.isEmpty()) paths = java.util.Set.of(menuPath);
+        if (paths.isEmpty()) paths = Set.of(menuPath);
         String unlockKey = null;
         for (String lockedPath : paths) {
             unlockKey = SecondaryLockInterceptor.unlockKey(userId, lockedPath);
@@ -615,7 +618,7 @@ public class UserServiceImpl implements IUserService {
         if (user == null) {
             throw new RuntimeException("用户不存在");
         }
-        if (!org.springframework.util.StringUtils.hasText(user.getSecondaryPassword())) {
+        if (!StringUtils.hasText(user.getSecondaryPassword())) {
             throw new RuntimeException("未设置二级密码，无法保存菜单锁");
         }
         // 修改菜单锁必须验证二级密码

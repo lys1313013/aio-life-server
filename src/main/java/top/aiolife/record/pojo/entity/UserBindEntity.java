@@ -2,6 +2,7 @@ package top.aiolife.record.pojo.entity;
 
 import top.aiolife.core.pojo.entity.BaseEntity;
 
+import com.alibaba.fastjson2.annotation.JSONField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
 
@@ -34,7 +35,7 @@ public class UserBindEntity extends BaseEntity {
     /**
      * 访问令牌
      */
-    @com.alibaba.fastjson2.annotation.JSONField(serialize = false)
+    @JSONField(serialize = false)
     @ToString.Exclude
     private String accessToken;
 

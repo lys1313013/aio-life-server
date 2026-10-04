@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.constant.StatusConst;
@@ -27,9 +28,11 @@ import top.aiolife.record.pojo.query.BVideoQuery;
 import top.aiolife.record.pojo.req.BVideoCreateReq;
 import top.aiolife.record.pojo.req.BVideoProgressReq;
 import top.aiolife.record.pojo.req.BVideoUpdateReq;
+import top.aiolife.record.pojo.vo.BVideoCoverVO;
 import top.aiolife.record.pojo.vo.BVideoStatisticsVO;
 import top.aiolife.record.pojo.vo.BVideoVO;
 import top.aiolife.record.pojo.vo.StatusCount;
+import top.aiolife.record.service.VideoCoverService;
 
 /**
  * 类功能描述
@@ -50,7 +53,7 @@ public class BVideoController {
             ProgressStatusEnum.COMPLETED.getCode());
 
     private IBVideoMapper bVideoMapper;
-    private top.aiolife.record.service.VideoCoverService videoCovers;
+    private VideoCoverService videoCovers;
 
     public IBVideoMapper getBaseMapper() {
         return bVideoMapper;
@@ -77,7 +80,7 @@ public class BVideoController {
     }
 
     @PostMapping
-    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> insert(@Valid @RequestBody BVideoCreateReq entityReq) {
         BVideoEntity entity = RecordApiConvertor.INSTANCE.fromBVideoCreateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
@@ -104,7 +107,7 @@ public class BVideoController {
     }
 
     @PutMapping("/{id}")
-    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> update(@PathVariable Long id, @Valid @RequestBody BVideoUpdateReq entityReq) {
         BVideoEntity entity = RecordApiConvertor.INSTANCE.fromBVideoUpdateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
@@ -134,7 +137,7 @@ public class BVideoController {
 
 
     @DeleteMapping("/{id}")
-    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> delete(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
 
@@ -151,12 +154,12 @@ public class BVideoController {
 
     /** 只读取导入状态，不发起外网下载；批量限制防止无限 IN 查询。 */
     @GetMapping("/covers")
-    public ApiResponse<List<top.aiolife.record.pojo.vo.BVideoCoverVO>> covers(@RequestParam List<Long> ids) {
+    public ApiResponse<List<BVideoCoverVO>> covers(@RequestParam List<Long> ids) {
         if (ids.isEmpty() || ids.size() > 100) throw new IllegalArgumentException("每次最多查询100张封面");
         long owner = StpUtil.getLoginIdAsLong();
         var rows = bVideoMapper.selectList(new LambdaQueryWrapper<BVideoEntity>()
                 .eq(BVideoEntity::getUserId, owner).in(BVideoEntity::getId, ids));
-        return ApiResponse.success(rows.stream().map(v -> new top.aiolife.record.pojo.vo.BVideoCoverVO(
+        return ApiResponse.success(rows.stream().map(v -> new BVideoCoverVO(
                 v.getId(), v.getCoverFileId(), v.getCoverState())).toList());
     }
 
@@ -195,7 +198,7 @@ public class BVideoController {
     }
 
     @PostMapping("/tagVideo")
-    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> tagVideo(@Valid @RequestBody BVideoCreateReq entityReq) {
         BVideoEntity entity = RecordApiConvertor.INSTANCE.fromBVideoCreateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
@@ -221,7 +224,7 @@ public class BVideoController {
     }
 
     @PostMapping("/syncProgress")
-    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> syncProgress(@Valid @RequestBody BVideoProgressReq entityReq) {
         BVideoEntity entity = RecordApiConvertor.INSTANCE.fromBVideoProgressReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();

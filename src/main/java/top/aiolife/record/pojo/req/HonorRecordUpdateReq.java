@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.Data;
 
 /** HonorRecordUpdateReq：仅包含接口允许写入的字段。 */
@@ -37,5 +38,5 @@ public class HonorRecordUpdateReq {
 
     private Integer sortOrder;
 
-    private java.util.List<String> fileIds;
+    private List<String> fileIds;
 }

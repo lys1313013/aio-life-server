@@ -6,6 +6,7 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import top.aiolife.system.mapper.StorageFileReferenceMapper;
+import top.aiolife.system.mapper.StorageObjectMapper;
 import top.aiolife.system.pojo.dto.StorageFileReference;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -18,7 +19,7 @@ import top.aiolife.record.enums.FileBizType;
 public class StorageFileReferenceGuard {
     private final StorageFileReferenceMapper mapper;
     private final CbtiConfig cbtiConfig;
-    private final top.aiolife.system.mapper.StorageObjectMapper storageObjects;
+    private final StorageObjectMapper storageObjects;
 
     public void check(String bucket, String key) {
         if (storageObjects.countStoredObject(bucket, key) > 0)

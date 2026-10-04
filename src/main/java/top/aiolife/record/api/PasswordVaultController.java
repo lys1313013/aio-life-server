@@ -4,8 +4,11 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -128,12 +131,12 @@ public class PasswordVaultController {
         wrapper.groupBy(PasswordVaultEntity::getCategory);
         List<PasswordVaultEntity> list = passwordVaultMapper.selectList(wrapper);
 
-        java.util.Set<String> categorySet = new java.util.LinkedHashSet<>(Arrays.asList("工作", "生活", "学习", "金融", "社交", "游戏", "其他"));
+        Set<String> categorySet = new LinkedHashSet<>(Arrays.asList("工作", "生活", "学习", "金融", "社交", "游戏", "其他"));
         for (PasswordVaultEntity entity : list) {
             if (entity.getCategory() != null && !entity.getCategory().isEmpty()) {
                 categorySet.add(entity.getCategory());
             }
         }
-        return ApiResponse.success(new java.util.ArrayList<>(categorySet));
+        return ApiResponse.success(new ArrayList<>(categorySet));
     }
 }

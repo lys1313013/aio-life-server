@@ -1,5 +1,7 @@
 package top.aiolife.bankcard.pojo.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -24,7 +26,7 @@ public class BankCardVO {
     private String status;
     private LocalDate openedDate;
     private LocalDate expiryMonth;
-    @com.fasterxml.jackson.databind.annotation.JsonSerialize(using = com.fasterxml.jackson.databind.ser.std.ToStringSerializer.class)
+    @JsonSerialize(using = ToStringSerializer.class)
     private BigDecimal creditLimit;
     private Integer statementDay;
     private Integer repaymentDay;

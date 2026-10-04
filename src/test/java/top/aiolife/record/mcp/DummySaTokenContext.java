@@ -5,6 +5,7 @@ import cn.dev33.satoken.context.model.SaRequest;
 import cn.dev33.satoken.context.model.SaResponse;
 import cn.dev33.satoken.context.model.SaStorage;
 
+import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,13 +18,13 @@ public class DummySaTokenContext implements SaTokenContext {
         @Override public SaStorage delete(String key) { map.remove(key); return this; }
     };
     
-    private final SaRequest request = (SaRequest) java.lang.reflect.Proxy.newProxyInstance(
+    private final SaRequest request = (SaRequest) Proxy.newProxyInstance(
             SaRequest.class.getClassLoader(),
             new Class[]{SaRequest.class},
             (proxy, method, args) -> null
     );
     
-    private final SaResponse response = (SaResponse) java.lang.reflect.Proxy.newProxyInstance(
+    private final SaResponse response = (SaResponse) Proxy.newProxyInstance(
             SaResponse.class.getClassLoader(),
             new Class[]{SaResponse.class},
             (proxy, method, args) -> null

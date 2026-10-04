@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.apache.ibatis.annotations.*;
 import top.aiolife.bankcard.pojo.vo.BankCardVO;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /** 银行卡私有标签复用用户字典实体，查询始终限制用户及字典类型。 */
@@ -26,7 +27,7 @@ public interface BankCardTagMapper extends BaseMapper<UserDictDataEntity> {
                 .eq(UserDictDataEntity::getDictType, "bank_card_tag")
                 .set(UserDictDataEntity::getDictLabel, name).set(UserDictDataEntity::getColor, color)
                 .set(UserDictDataEntity::getStatus, status).set(UserDictDataEntity::getUpdateUser, userId)
-                .set(UserDictDataEntity::getUpdateTime, java.time.LocalDateTime.now()));
+                .set(UserDictDataEntity::getUpdateTime, LocalDateTime.now()));
     }
 
     @Update("UPDATE user_dict_data SET is_deleted=1,update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE id=#{id} AND user_id=#{userId} AND dict_type='bank_card_tag' AND is_deleted=0")

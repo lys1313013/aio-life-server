@@ -4,6 +4,7 @@ import java.util.List;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.sso.pojo.entity.UserEntity;
+import top.aiolife.sso.pojo.query.UserQuery;
 import top.aiolife.sso.pojo.req.ChangePasswordReq;
 import top.aiolife.sso.pojo.req.LoginReq;
 import top.aiolife.sso.pojo.req.RegisterReq;
@@ -88,7 +89,7 @@ public interface IUserService {
     /**
      * 获取用户列表
      */
-    PageResp<UserVO> getUserList(CommonQuery<top.aiolife.sso.pojo.query.UserQuery> query);
+    PageResp<UserVO> getUserList(CommonQuery<UserQuery> query);
 
     /**
      * 新增用户

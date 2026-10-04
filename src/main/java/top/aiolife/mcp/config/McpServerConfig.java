@@ -1,5 +1,7 @@
 package top.aiolife.mcp.config;
 
+import java.util.HashMap;
+import java.util.Map;
 import cn.dev33.satoken.stp.StpUtil;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpServer;
@@ -29,7 +31,7 @@ public class McpServerConfig {
                 .mcpEndpoint("/mcp")
                 .jsonMapper(mcpJsonConfig.get())
                 .contextExtractor(serverRequest -> {
-                    java.util.Map<String, Object> context = new java.util.HashMap<>();
+                    Map<String, Object> context = new HashMap<>();
                     context.put(LOGIN_ID_CONTEXT_KEY, StpUtil.getLoginIdDefaultNull());
                     return McpTransportContext.create(context);
                 })

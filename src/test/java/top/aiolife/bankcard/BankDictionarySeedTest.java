@@ -9,6 +9,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -48,7 +49,7 @@ class BankDictionarySeedTest {
         }
     }
 
-    private void execute(java.sql.Connection connection, String filename) throws Exception {
+    private void execute(Connection connection, String filename) throws Exception {
         // H2 无 MySQL USE / DROP TEMPORARY TABLE 语法，其他 DML 原样执行。
         String sql = Files.readString(Path.of("sql/2_ini_data", filename))
                 .replace("USE `aio_life`;", "")

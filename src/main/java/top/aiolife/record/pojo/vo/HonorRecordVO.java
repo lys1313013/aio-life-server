@@ -3,6 +3,7 @@ package top.aiolife.record.pojo.vo;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.Data;
 
 /** HonorRecordVO：仅包含接口需要返回的字段。 */
@@ -29,7 +30,7 @@ public class HonorRecordVO {
 
     private String tags;
 
-    private java.util.List<top.aiolife.record.pojo.vo.FileVO> files;
+    private List<FileVO> files;
 
     private Integer isTop;
 

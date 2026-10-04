@@ -1,5 +1,6 @@
 package top.aiolife.llm.pojo.req;
 
+import jakarta.validation.constraints.NotBlank;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.*;
 import java.util.*;
@@ -9,7 +10,7 @@ import lombok.Data;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChatReq {
-    @jakarta.validation.constraints.NotBlank
+    @NotBlank
     private String prompt;
     private Long conversationId;
 }

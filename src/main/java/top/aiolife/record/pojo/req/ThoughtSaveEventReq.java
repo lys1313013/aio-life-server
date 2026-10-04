@@ -1,5 +1,6 @@
 package top.aiolife.record.pojo.req;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 /**
@@ -11,6 +12,6 @@ import lombok.Data;
 @Data
 public class ThoughtSaveEventReq {
 
-    @jakarta.validation.constraints.NotBlank(message = "关联事件内容不能为空")
+    @NotBlank(message = "关联事件内容不能为空")
     private String content;
 }

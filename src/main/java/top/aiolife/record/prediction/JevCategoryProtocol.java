@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -44,7 +45,7 @@ public final class JevCategoryProtocol {
         JsonNode categories = scenario.required("categories");
         List<JsonNode> sorted = new ArrayList<>();
         scenario.required("records").forEach(sorted::add);
-        sorted.sort(java.util.Comparator.comparing((JsonNode r) -> r.path("date").asText())
+        sorted.sort(Comparator.comparing((JsonNode r) -> r.path("date").asText())
                 .thenComparingInt(r -> r.path("startMinute").asInt()));
         state.putNull("previousCategoryName");
         for (JsonNode record : sorted) {

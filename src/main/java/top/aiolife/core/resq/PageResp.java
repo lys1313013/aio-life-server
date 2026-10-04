@@ -1,6 +1,7 @@
 package top.aiolife.core.resq;
 
 import java.util.List;
+import java.util.function.Function;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,7 +34,7 @@ public class PageResp<T> {
   }
 
   /** 仅转换记录字段，保留分页总数及空值语义。 */
-  public <R> PageResp<R> map(java.util.function.Function<T, R> mapper) {
+  public <R> PageResp<R> map(Function<T, R> mapper) {
     return new PageResp<>(items == null ? null : items.stream().map(mapper).toList(), total);
   }
 

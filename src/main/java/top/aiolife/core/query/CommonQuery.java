@@ -1,5 +1,6 @@
 package top.aiolife.core.query;
 
+import java.util.function.Function;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,7 +30,7 @@ public class CommonQuery<T> {
   T condition;
 
   /** 保留分页参数，将接口筛选模型转换成业务查询条件。 */
-  public <R> CommonQuery<R> map(java.util.function.Function<T, R> mapper) {
+  public <R> CommonQuery<R> map(Function<T, R> mapper) {
     CommonQuery<R> result = new CommonQuery<>();
     result.setPage(page);
     result.setPageSize(pageSize);

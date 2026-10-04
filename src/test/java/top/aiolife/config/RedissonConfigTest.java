@@ -1,8 +1,15 @@
 package top.aiolife.config;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.redisson.api.RedissonClient;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.autoconfigure.data.redis.RedisConnectionDetails;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import java.time.Duration;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -53,20 +60,20 @@ class RedissonConfigTest {
         assertThrows(IllegalStateException.class, () -> config.createConfig(details, new RedisProperties()));
     }
     @Test
-    @org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable(named = "AIO_LOCK_TEST_REDIS_PORT", matches = ".+")
+    @EnabledIfEnvironmentVariable(named = "AIO_LOCK_TEST_REDIS_PORT", matches = ".+")
     void redissonClient_自动配置共存且保留Lettuce连接() {
-        new org.springframework.boot.test.context.runner.ApplicationContextRunner()
-                .withConfiguration(org.springframework.boot.autoconfigure.AutoConfigurations.of(
-                        org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration.class))
+        new ApplicationContextRunner()
+                .withConfiguration(AutoConfigurations.of(
+                        RedisAutoConfiguration.class))
                 .withUserConfiguration(RedissonConfig.class)
                 .withPropertyValues("spring.data.redis.host=127.0.0.1",
                         "spring.data.redis.port=" + System.getenv("AIO_LOCK_TEST_REDIS_PORT"),
                         "spring.data.redis.database=2")
                 .run(context -> {
                     assertNull(context.getStartupFailure());
-                    assertInstanceOf(org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory.class,
-                            context.getBean(org.springframework.data.redis.connection.RedisConnectionFactory.class));
-                    var client = context.getBean(org.redisson.api.RedissonClient.class);
+                    assertInstanceOf(LettuceConnectionFactory.class,
+                            context.getBean(RedisConnectionFactory.class));
+                    var client = context.getBean(RedissonClient.class);
                     assertEquals(2, client.getConfig().useSingleServer().getDatabase());
                     assertTrue(client.getLock("test:config").tryLock());
                     client.getLock("test:config").unlock();

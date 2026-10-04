@@ -1,6 +1,7 @@
 package top.aiolife.record.pojo.req;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.time.*;
 import java.util.*;
 import lombok.Data;
@@ -12,8 +13,8 @@ public class MbtiResultSaveReq {
     private String testId;
     private String mbtiType;
     private String resultsPage;
-    private com.fasterxml.jackson.databind.JsonNode predictions;
-    private com.fasterxml.jackson.databind.JsonNode traitOrderConscious;
-    private com.fasterxml.jackson.databind.JsonNode traitOrderShadow;
-    private com.fasterxml.jackson.databind.JsonNode matches;
+    private JsonNode predictions;
+    private JsonNode traitOrderConscious;
+    private JsonNode traitOrderShadow;
+    private JsonNode matches;
 }

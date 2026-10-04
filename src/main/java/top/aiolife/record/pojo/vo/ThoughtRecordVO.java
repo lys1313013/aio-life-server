@@ -25,5 +25,5 @@ public class ThoughtRecordVO {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateTime;
 
-    private java.util.List<ThoughtEventVO> events;
+    private List<ThoughtEventVO> events;
 }

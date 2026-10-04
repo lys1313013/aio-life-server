@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.multipart.MultipartFile;
 import top.aiolife.config.MinioConfig;
 import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.core.util.FileContentPolicy;
@@ -112,7 +113,7 @@ class FileUploadContentSecurityTest {
 
     @Test
     void 超大上传在读取流或写存储前拒绝() throws Exception {
-        var file = mock(org.springframework.web.multipart.MultipartFile.class);
+        var file = mock(MultipartFile.class);
         when(file.getSize()).thenReturn((long) FileContentPolicy.MAX_IMAGE_BYTES + 1);
         assertThrows(IllegalArgumentException.class, () -> service.upload(file, FileBizType.AVATAR));
         verify(file, never()).getInputStream();

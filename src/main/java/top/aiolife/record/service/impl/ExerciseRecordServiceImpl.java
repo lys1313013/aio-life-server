@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -148,7 +149,7 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
                 List<ExerciseDashboardTrendPointVO> trend = new ArrayList<>(5);
                 prevHistoryByType.get(typeId).tailMap(date, true).entrySet().stream().limit(5)
                         .forEach(point -> trend.add(new ExerciseDashboardTrendPointVO(point.getKey(), point.getValue())));
-                java.util.Collections.reverse(trend);
+                Collections.reverse(trend);
                 item.setTrend(trend);
                 items.add(item);
             }
@@ -234,7 +235,7 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
             return Map.of();
         }
         List<UserDictDataEntity> dicts = userDictDataService.listUserVisibleDictData(userId, DictTypeEnum.EXERCISE_TYPE.getValue());
-        Map<Long, UserDictDataEntity> map = new java.util.HashMap<>(dicts.size());
+        Map<Long, UserDictDataEntity> map = new HashMap<>(dicts.size());
         for (UserDictDataEntity dict : dicts) {
             if (dict.getId() != null) {
                 map.put(dict.getId(), dict);

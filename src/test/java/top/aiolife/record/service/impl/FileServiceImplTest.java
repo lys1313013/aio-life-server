@@ -14,10 +14,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import top.aiolife.config.MinioConfig;
+import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.record.enums.FileBizType;
 import top.aiolife.record.mapper.IFileMapper;
 import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.service.DoubanCoverUrlPolicy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -48,7 +50,7 @@ class FileServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        fileService = new FileServiceImpl(minioUtil, minioConfig, mock(top.aiolife.core.lock.StorageObjectLock.class), new top.aiolife.record.service.DoubanCoverUrlPolicy("doubanio.com"));
+        fileService = new FileServiceImpl(minioUtil, minioConfig, mock(StorageObjectLock.class), new DoubanCoverUrlPolicy("doubanio.com"));
         ReflectionTestUtils.setField(fileService, "baseMapper", fileMapper);
         TransactionSynchronizationManager.initSynchronization();
     }

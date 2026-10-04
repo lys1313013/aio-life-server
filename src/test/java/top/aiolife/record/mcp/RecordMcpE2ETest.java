@@ -1,18 +1,31 @@
 package top.aiolife.record.mcp;
 
+import cn.dev33.satoken.context.SaTokenContext;
+import cn.dev33.satoken.context.model.SaRequest;
+import cn.dev33.satoken.context.model.SaResponse;
+import cn.dev33.satoken.context.model.SaStorage;
+import cn.dev33.satoken.dao.SaTokenDao;
+import cn.dev33.satoken.dao.SaTokenDaoDefaultImpl;
+import cn.dev33.satoken.dao.SaTokenDaoRedisJackson;
+import cn.dev33.satoken.stp.StpLogic;
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import io.modelcontextprotocol.spec.McpSchema;
+import java.lang.reflect.Proxy;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
@@ -22,16 +35,23 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Primary;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.mcp.auth.McpSaTokenScope;
 import top.aiolife.record.api.*;
+import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
+import top.aiolife.record.pojo.req.TimeRecordSaveReq;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
+import top.aiolife.record.service.IAnniversaryRecordService;
+import top.aiolife.record.service.IGoalService;
 import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.service.ITaskService;
 import top.aiolife.record.service.ITimeRecordService;
+import top.aiolife.sso.service.SecondaryLockGuard;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -47,47 +67,47 @@ public class RecordMcpE2ETest {
     private int port;
 
     private McpSyncClient mcpClient;
-    private cn.dev33.satoken.stp.StpLogic originalStpLogic;
+    private StpLogic originalStpLogic;
 
     @Configuration
     @EnableAutoConfiguration(exclude = {
             DataSourceAutoConfiguration.class,
             DataSourceTransactionManagerAutoConfiguration.class,
             HibernateJpaAutoConfiguration.class,
-            cn.dev33.satoken.dao.SaTokenDaoRedisJackson.class
+            SaTokenDaoRedisJackson.class
     })
     @ComponentScan(basePackages = {
             "top.aiolife.mcp",
             "top.aiolife.record.mcp"
     }, excludeFilters = {
-            @ComponentScan.Filter(type = org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE, classes = {
-                    top.aiolife.mcp.auth.McpSaTokenScope.class
+            @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
+                    McpSaTokenScope.class
             }),
-            @ComponentScan.Filter(type = org.springframework.context.annotation.FilterType.REGEX, pattern = "top\\.aiolife\\.sso\\..*")
+            @ComponentScan.Filter(type = FilterType.REGEX, pattern = "top\\.aiolife\\.sso\\..*")
     })
     static class MinimalTestApp {
         @Bean
-        public top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard() {
-            return org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class);
+        public SecondaryLockGuard secondaryLockGuard() {
+            return Mockito.mock(SecondaryLockGuard.class);
         }
 
         @Bean
         @Primary
-        public cn.dev33.satoken.context.SaTokenContext saTokenContext() {
-            return new cn.dev33.satoken.context.SaTokenContext() {
-                private final cn.dev33.satoken.context.model.SaStorage storage = new cn.dev33.satoken.context.model.SaStorage() {
-                    private final Map<String, Object> map = new java.util.concurrent.ConcurrentHashMap<>();
+        public SaTokenContext saTokenContext() {
+            return new SaTokenContext() {
+                private final SaStorage storage = new SaStorage() {
+                    private final Map<String, Object> map = new ConcurrentHashMap<>();
                     @Override public Object getSource() { return map; }
                     @Override public Object get(String key) { return map.get(key); }
-                    @Override public cn.dev33.satoken.context.model.SaStorage set(String key, Object value) { map.put(key, value); return this; }
-                    @Override public cn.dev33.satoken.context.model.SaStorage delete(String key) { map.remove(key); return this; }
+                    @Override public SaStorage set(String key, Object value) { map.put(key, value); return this; }
+                    @Override public SaStorage delete(String key) { map.remove(key); return this; }
                 };
-                @Override public cn.dev33.satoken.context.model.SaRequest getRequest() {
-                    return new cn.dev33.satoken.context.model.SaRequest() {
+                @Override public SaRequest getRequest() {
+                    return new SaRequest() {
                         @Override public Object getSource() { return this; }
                         @Override public String getParam(String name) { return null; }
-                        @Override public java.util.Collection<String> getParamNames() { return java.util.Collections.emptyList(); }
-                        @Override public java.util.Map<String, String> getParamMap() { return java.util.Collections.emptyMap(); }
+                        @Override public Collection<String> getParamNames() { return Collections.emptyList(); }
+                        @Override public Map<String, String> getParamMap() { return Collections.emptyMap(); }
                         @Override public String getHeader(String name) { return null; }
                         @Override public String getCookieValue(String name) { return null; }
                         @Override public String getCookieFirstValue(String name) { return null; }
@@ -98,30 +118,30 @@ public class RecordMcpE2ETest {
                         @Override public Object forward(String path) { return null; }
                     };
                 }
-                @Override public cn.dev33.satoken.context.model.SaResponse getResponse() {
-                    return new cn.dev33.satoken.context.model.SaResponse() {
+                @Override public SaResponse getResponse() {
+                    return new SaResponse() {
                         @Override public Object getSource() { return this; }
-                        @Override public cn.dev33.satoken.context.model.SaResponse setStatus(int sc) { return this; }
-                        @Override public cn.dev33.satoken.context.model.SaResponse setHeader(String name, String value) { return this; }
-                        @Override public cn.dev33.satoken.context.model.SaResponse addHeader(String name, String value) { return this; }
+                        @Override public SaResponse setStatus(int sc) { return this; }
+                        @Override public SaResponse setHeader(String name, String value) { return this; }
+                        @Override public SaResponse addHeader(String name, String value) { return this; }
                         @Override public Object redirect(String url) { return null; }
                     };
                 }
-                @Override public cn.dev33.satoken.context.model.SaStorage getStorage() { return storage; }
+                @Override public SaStorage getStorage() { return storage; }
                 @Override public boolean matchPath(String pattern, String path) { return true; }
             };
         }
 
         @Bean
         @Primary
-        public cn.dev33.satoken.dao.SaTokenDao saTokenDao() {
-            return new cn.dev33.satoken.dao.SaTokenDaoDefaultImpl();
+        public SaTokenDao saTokenDao() {
+            return new SaTokenDaoDefaultImpl();
         }
 
         @Bean
         @Primary
         public TimeRecordController timeRecordController() {
-            return new TimeRecordController(org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class), null, null, null, null) {
+            return new TimeRecordController(Mockito.mock(SecondaryLockGuard.class), null, null, null, null) {
                 @Override
                 public ApiResponse<List<TimeRecordDateRangeVO>> queryByDateRangeForAI(TimeRecordDateRangeMcpReq req) {
                     TimeRecordDateRangeVO vo = new TimeRecordDateRangeVO();
@@ -130,7 +150,7 @@ public class RecordMcpE2ETest {
                 }
 
                 @Override
-                public ApiResponse<String> save(top.aiolife.record.pojo.req.TimeRecordSaveReq req) {
+                public ApiResponse<String> save(TimeRecordSaveReq req) {
                     return ApiResponse.success("2099999999999999999");
                 }
             };
@@ -139,12 +159,12 @@ public class RecordMcpE2ETest {
         @Bean
         @Primary
         public ITimeRecordService timeRecordService() {
-            return (ITimeRecordService) java.lang.reflect.Proxy.newProxyInstance(
+            return (ITimeRecordService) Proxy.newProxyInstance(
                     ITimeRecordService.class.getClassLoader(),
                     new Class[]{ITimeRecordService.class},
                     (proxy, method, args) -> {
                         if ("lambdaQuery".equals(method.getName())) {
-                            BaseMapper<TimeRecordEntity> dummyMapper = (BaseMapper<TimeRecordEntity>) java.lang.reflect.Proxy.newProxyInstance(
+                            BaseMapper<TimeRecordEntity> dummyMapper = (BaseMapper<TimeRecordEntity>) Proxy.newProxyInstance(
                                     BaseMapper.class.getClassLoader(),
                                     new Class[]{BaseMapper.class},
                                     (mProxy, mMethod, mArgs) -> {
@@ -171,43 +191,43 @@ public class RecordMcpE2ETest {
         @Bean @Primary public MovieController movieController() { return new MovieController(null, null); }
         @Bean @Primary public ReadRecordController readRecordController() { return new ReadRecordController(null); }
         @Bean @Primary public ITaskService taskService() {
-            return (ITaskService) java.lang.reflect.Proxy.newProxyInstance(
+            return (ITaskService) Proxy.newProxyInstance(
                 ITaskService.class.getClassLoader(), new Class[]{ITaskService.class}, (p, m, a) -> null);
         }
 
         @Bean @Primary public IMovieService movieService() {
-            return (IMovieService) java.lang.reflect.Proxy.newProxyInstance(
+            return (IMovieService) Proxy.newProxyInstance(
                 IMovieService.class.getClassLoader(), new Class[]{IMovieService.class}, (p, m, a) -> null);
         }
 
         @Bean @Primary public IReadRecordService readRecordService() {
-            return (IReadRecordService) java.lang.reflect.Proxy.newProxyInstance(
+            return (IReadRecordService) Proxy.newProxyInstance(
                 IReadRecordService.class.getClassLoader(), new Class[]{IReadRecordService.class}, (p, m, a) -> null);
         }
 
-        @Bean @Primary public top.aiolife.record.service.IAnniversaryRecordService anniversaryRecordService() {
-            return (top.aiolife.record.service.IAnniversaryRecordService) java.lang.reflect.Proxy.newProxyInstance(
-                top.aiolife.record.service.IAnniversaryRecordService.class.getClassLoader(),
-                new Class[]{top.aiolife.record.service.IAnniversaryRecordService.class}, (p, m, a) -> null);
+        @Bean @Primary public IAnniversaryRecordService anniversaryRecordService() {
+            return (IAnniversaryRecordService) Proxy.newProxyInstance(
+                IAnniversaryRecordService.class.getClassLoader(),
+                new Class[]{IAnniversaryRecordService.class}, (p, m, a) -> null);
         }
 
-        @Bean @Primary public top.aiolife.record.service.IGoalService goalService() {
-            return (top.aiolife.record.service.IGoalService) java.lang.reflect.Proxy.newProxyInstance(
-                top.aiolife.record.service.IGoalService.class.getClassLoader(),
-                new Class[]{top.aiolife.record.service.IGoalService.class}, (p, m, a) -> null);
+        @Bean @Primary public IGoalService goalService() {
+            return (IGoalService) Proxy.newProxyInstance(
+                IGoalService.class.getClassLoader(),
+                new Class[]{IGoalService.class}, (p, m, a) -> null);
         }
 
-        @Bean @Primary public top.aiolife.record.mapper.IBVideoMapper bVideoMapper() {
-            return (top.aiolife.record.mapper.IBVideoMapper) java.lang.reflect.Proxy.newProxyInstance(
-                top.aiolife.record.mapper.IBVideoMapper.class.getClassLoader(),
-                new Class[]{top.aiolife.record.mapper.IBVideoMapper.class}, (p, m, a) -> null);
+        @Bean @Primary public IBVideoMapper bVideoMapper() {
+            return (IBVideoMapper) Proxy.newProxyInstance(
+                IBVideoMapper.class.getClassLoader(),
+                new Class[]{IBVideoMapper.class}, (p, m, a) -> null);
         }
     }
 
     @BeforeEach
     void setUp() {
-        originalStpLogic = cn.dev33.satoken.stp.StpUtil.getStpLogic();
-        cn.dev33.satoken.stp.StpLogic mockLogic = new cn.dev33.satoken.stp.StpLogic("login") {
+        originalStpLogic = StpUtil.getStpLogic();
+        StpLogic mockLogic = new StpLogic("login") {
             @Override
             public long getLoginIdAsLong() {
                 return 1L;
@@ -221,7 +241,7 @@ public class RecordMcpE2ETest {
                 // 不做任何检查
             }
         };
-        cn.dev33.satoken.stp.StpUtil.setStpLogic(mockLogic);
+        StpUtil.setStpLogic(mockLogic);
 
         String url = "http://localhost:" + port + "/mcp";
         HttpClientStreamableHttpTransport transport = HttpClientStreamableHttpTransport.builder(url).build();
@@ -236,7 +256,7 @@ public class RecordMcpE2ETest {
             }
         } finally {
             // StpUtil 是全局状态，不能让 MCP 的测试身份影响后续真实鉴权测试。
-            cn.dev33.satoken.stp.StpUtil.setStpLogic(originalStpLogic);
+            StpUtil.setStpLogic(originalStpLogic);
         }
     }
 

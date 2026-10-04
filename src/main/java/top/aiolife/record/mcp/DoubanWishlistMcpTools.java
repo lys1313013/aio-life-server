@@ -1,5 +1,6 @@
 package top.aiolife.record.mcp;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.util.DoubanSubjectUrl;
+import top.aiolife.sso.service.SecondaryLockGuard;
 
 /**
  * 豆瓣想看/想读 MCP 工具。
@@ -22,7 +24,7 @@ import top.aiolife.record.util.DoubanSubjectUrl;
 @RequiredArgsConstructor
 public class DoubanWishlistMcpTools {
 
-    private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
+    private final SecondaryLockGuard secondaryLockGuard;
     private final IMovieService movieService;
     private final IReadRecordService readRecordService;
 
@@ -32,7 +34,7 @@ public class DoubanWishlistMcpTools {
             throw new IllegalArgumentException("请求参数不能为空");
         }
         DoubanSubjectUrl.Subject subject = DoubanSubjectUrl.parse(req.getUrl());
-        secondaryLockGuard.checkMenus(cn.dev33.satoken.stp.StpUtil.getLoginIdAsLong(),
+        secondaryLockGuard.checkMenus(StpUtil.getLoginIdAsLong(),
                 subject.mediaType() == DoubanSubjectUrl.MediaType.MOVIE ? "/record/movie" : "/record/read");
         return switch (subject.mediaType()) {
             case MOVIE -> addMovie(subject);

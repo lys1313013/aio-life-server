@@ -1,5 +1,6 @@
 package top.aiolife.sso.pojo.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -64,7 +65,7 @@ public class UserEntity extends AuditEntity {
     /**
      * 头像文件 ID（file.id），展示地址不入库
      */
-    @TableField(updateStrategy = com.baomidou.mybatisplus.annotation.FieldStrategy.NEVER)
+    @TableField(updateStrategy = FieldStrategy.NEVER)
     private String avatarFileId;
 
     /**

@@ -14,6 +14,7 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.pojo.entity.MbtiResultEntity;
 import top.aiolife.record.pojo.req.MbtiResultSaveReq;
+import top.aiolife.record.pojo.vo.MbtiResultDetailVO;
 import top.aiolife.record.pojo.vo.MbtiResultVO;
 import top.aiolife.record.service.IMbtiResultService;
 
@@ -83,14 +84,14 @@ public class MbtiController {
     }
 
     @GetMapping("/result/{id}")
-    public ApiResponse<top.aiolife.record.pojo.vo.MbtiResultDetailVO> getById(@PathVariable Long id) {
+    public ApiResponse<MbtiResultDetailVO> getById(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
         MbtiResultEntity result = mbtiResultService.getById(id);
         if (result == null || result.getUserId() == null || result.getUserId() != userId) {
             return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "记录不存在或无权限");
         }
 
-        var response = new top.aiolife.record.pojo.vo.MbtiResultDetailVO();
+        var response = new MbtiResultDetailVO();
         response.setId(result.getId());
         response.setTestId(result.getTestId());
         response.setMbtiType(result.getMbtiType());

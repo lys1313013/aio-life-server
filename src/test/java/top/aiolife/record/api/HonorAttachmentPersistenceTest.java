@@ -19,11 +19,14 @@ import org.springframework.transaction.annotation.AnnotationTransactionAttribute
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 import top.aiolife.config.MinioConfig;
 import top.aiolife.core.ApiRequestFixtures;
+import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.record.mapper.IFileMapper;
 import top.aiolife.record.mapper.IHonorRecordMapper;
 import top.aiolife.record.pojo.entity.HonorRecordEntity;
+import top.aiolife.record.pojo.req.HonorRecordUpdateReq;
 import top.aiolife.record.pojo.vo.FileVO;
+import top.aiolife.record.service.DoubanCoverUrlPolicy;
 import top.aiolife.record.service.impl.FileServiceImpl;
 import top.aiolife.record.service.impl.HonorRecordServiceImpl;
 
@@ -68,8 +71,8 @@ class HonorAttachmentPersistenceTest {
         var honors = new HonorRecordServiceImpl();
         var honorMapper = session.getMapper(IHonorRecordMapper.class);
         ReflectionTestUtils.setField(honors, "baseMapper", honorMapper);
-        var files = new FileServiceImpl(mock(MinioUtil.class), mock(MinioConfig.class), mock(top.aiolife.core.lock.StorageObjectLock.class),
-                new top.aiolife.record.service.DoubanCoverUrlPolicy("doubanio.com"));
+        var files = new FileServiceImpl(mock(MinioUtil.class), mock(MinioConfig.class), mock(StorageObjectLock.class),
+                new DoubanCoverUrlPolicy("doubanio.com"));
         ReflectionTestUtils.setField(files, "baseMapper", session.getMapper(IFileMapper.class));
         var proxy = new ProxyFactory(new HonorRecordController(honorMapper, honors, files));
         proxy.addAdvice(new TransactionInterceptor(new DataSourceTransactionManager(source),
@@ -156,7 +159,7 @@ class HonorAttachmentPersistenceTest {
         request.setId(100L);
         request.setTitle("更新后的荣誉");
         request.setFileIds(fileIds);
-        assertEquals("0", controller.updateHonorRecord(ApiRequestFixtures.request(request, top.aiolife.record.pojo.req.HonorRecordUpdateReq.class)).getRscode());
+        assertEquals("0", controller.updateHonorRecord(ApiRequestFixtures.request(request, HonorRecordUpdateReq.class)).getRscode());
     }
 
     private List<String> attachmentIds() {

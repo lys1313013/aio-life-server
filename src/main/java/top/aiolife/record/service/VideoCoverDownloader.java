@@ -1,10 +1,15 @@
 package top.aiolife.record.service;
 
+import com.alibaba.fastjson2.JSON;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Proxy;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import okhttp3.Dns;
@@ -30,22 +35,22 @@ public class VideoCoverDownloader {
         // 本地代理 Fake-IP 也不能作为图片连接目标。通过固定 HTTPS DNS 服务取得真实地址，
         // 仍逐个验证并把同一批地址直接交给连接器，避免校验后再次解析造成 DNS rebinding。
         try (var response = DNS_CLIENT.newCall(new Request.Builder()
-                .url("https://dns.google/resolve?type=A&name=" + java.net.URLEncoder.encode(host, java.nio.charset.StandardCharsets.UTF_8))
+                .url("https://dns.google/resolve?type=A&name=" + URLEncoder.encode(host, StandardCharsets.UTF_8))
                 .header("Accept", "application/dns-json").build()).execute()) {
-            if (!response.isSuccessful() || response.body() == null) throw new java.io.IOException("DNS_QUERY_FAILED");
+            if (!response.isSuccessful() || response.body() == null) throw new IOException("DNS_QUERY_FAILED");
             byte[] body = response.body().byteStream().readNBytes(65537);
-            if (body.length > 65536) throw new java.io.IOException("DNS_RESPONSE_TOO_LARGE");
-            var answers = com.alibaba.fastjson2.JSON.parseObject(body).getJSONArray("Answer");
-            var result = new java.util.ArrayList<InetAddress>();
+            if (body.length > 65536) throw new IOException("DNS_RESPONSE_TOO_LARGE");
+            var answers = JSON.parseObject(body).getJSONArray("Answer");
+            var result = new ArrayList<InetAddress>();
             if (answers != null) for (int i=0; i<answers.size(); i++) {
                 var answer = answers.getJSONObject(i);
                 String value = answer.getString("data");
                 if (answer.getIntValue("type") != 1 || value == null || !value.matches("[0-9.]{7,15}")) continue;
                 var address = InetAddress.getByName(value);
-                if (!isPublicAddress(address)) throw new java.io.IOException("DNS_NON_PUBLIC_ADDRESS");
+                if (!isPublicAddress(address)) throw new IOException("DNS_NON_PUBLIC_ADDRESS");
                 result.add(address);
             }
-            if (result.isEmpty()) throw new java.io.IOException("DNS_NO_PUBLIC_ADDRESS");
+            if (result.isEmpty()) throw new IOException("DNS_NO_PUBLIC_ADDRESS");
             return result;
         } catch (Exception e) {
             throw new UnknownHostException("无法解析公网图片地址");
@@ -97,7 +102,7 @@ public class VideoCoverDownloader {
             byte[] bytes = response.body().byteStream().readNBytes(FileContentPolicy.MAX_IMAGE_BYTES + 1);
             FileContentPolicy.requireImage(bytes);
             return bytes;
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             throw new IllegalStateException("IMAGE_DOWNLOAD_FAILED", e);
         }
     }

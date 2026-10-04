@@ -7,6 +7,7 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.mcp.invoker.McpToolInvoker;
 import top.aiolife.mcp.registry.McpToolRegistry;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +25,7 @@ public class McpController {
         var tools = toolRegistry.getAllTools().stream()
                 .map(tool -> {
                     var mcpTool = tool.mcpTool();
-                    Map<String, Object> info = new java.util.LinkedHashMap<>();
+                    Map<String, Object> info = new LinkedHashMap<>();
                     info.put("name", tool.name());
                     info.put("description", tool.description());
                     info.put("inputSchema", mcpTool.inputSchema());
@@ -42,7 +43,7 @@ public class McpController {
         }
         Map<String, Object> args = request.arguments() != null ? request.arguments() : Map.of();
         var result = toolInvoker.invoke(tool, args, null, null);
-        Map<String, Object> resp = new java.util.LinkedHashMap<>();
+        Map<String, Object> resp = new LinkedHashMap<>();
         resp.put("content", result.content());
         resp.put("isError", result.isError());
         return ApiResponse.success(resp);

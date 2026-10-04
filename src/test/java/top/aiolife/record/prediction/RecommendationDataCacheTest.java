@@ -1,8 +1,13 @@
 package top.aiolife.record.prediction;
 
+import top.aiolife.record.pojo.req.TimeRecordReq;
+import top.aiolife.record.service.impl.TimeRecordServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -60,19 +65,19 @@ class RecommendationDataCacheTest {
     @Test
     void testCache_实际业务写方法触发切面清理() {
         var cache = new RecommendationDataCache(15000);
-        var target = org.mockito.Mockito.mock(top.aiolife.record.service.impl.TimeRecordServiceImpl.class);
-        var factory = new org.springframework.aop.aspectj.annotation.AspectJProxyFactory(target);
+        var target = Mockito.mock(TimeRecordServiceImpl.class);
+        var factory = new AspectJProxyFactory(target);
         factory.setProxyTargetClass(true);
         factory.addAspect(new RecommendationCacheInvalidationAspect(cache));
-        top.aiolife.record.service.impl.TimeRecordServiceImpl proxy = factory.getProxy();
+        TimeRecordServiceImpl proxy = factory.getProxy();
         cache.get("records", () -> 1, 7L);
-        proxy.saveTimeRecord(new top.aiolife.record.pojo.req.TimeRecordReq());
+        proxy.saveTimeRecord(new TimeRecordReq());
         assertEquals(2, cache.get("records", () -> 2, 7L));
-        proxy.updateTimeRecord(new top.aiolife.record.pojo.req.TimeRecordReq());
+        proxy.updateTimeRecord(new TimeRecordReq());
         assertEquals(3, cache.get("records", () -> 3, 7L));
         proxy.removeById("1", 7L);
         assertEquals(4, cache.get("records", () -> 4, 7L));
-        proxy.removeByDate(java.time.LocalDate.now(), 7L);
+        proxy.removeByDate(LocalDate.now(), 7L);
         assertEquals(5, cache.get("records", () -> 5, 7L));
     }
 

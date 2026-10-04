@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.util.List;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
@@ -21,10 +22,12 @@ import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.vo.RecommendNextVO;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
+import top.aiolife.record.pojo.vo.TimeRecordRecommendationVO;
 import top.aiolife.record.service.IExerciseRecordService;
 import top.aiolife.record.service.ITimeRecordService;
 import top.aiolife.record.service.ITimeTrackerCategoryService;
 import top.aiolife.record.service.UserDictDataService;
+import top.aiolife.sso.service.SecondaryLockGuard;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -80,8 +83,8 @@ class TimeRecordControllerTest {
         assertEquals(20L, recommend.getCategoryId());
     }
 
-    private ApiResponse<top.aiolife.record.pojo.vo.TimeRecordRecommendationVO> recommendNextAsUser(ITimeRecordService timeRecordService) {
-        TimeRecordController controller = new TimeRecordController(org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class), timeRecordService, null, null, null);
+    private ApiResponse<TimeRecordRecommendationVO> recommendNextAsUser(ITimeRecordService timeRecordService) {
+        TimeRecordController controller = new TimeRecordController(Mockito.mock(SecondaryLockGuard.class), timeRecordService, null, null, null);
         StpLogic originalStpLogic = StpUtil.getStpLogic();
         StpUtil.setStpLogic(new StpLogic("login") {
             @Override
@@ -141,7 +144,7 @@ class TimeRecordControllerTest {
         ITimeTrackerCategoryService categoryService = proxy(ITimeTrackerCategoryService.class,
                 (method, args) -> null);
 
-        TimeRecordController controller = new TimeRecordController(org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class),
+        TimeRecordController controller = new TimeRecordController(Mockito.mock(SecondaryLockGuard.class),
                 timeRecordService, exerciseRecordService, categoryService, userDictDataService);
         TimeRecordDateRangeMcpReq req = new TimeRecordDateRangeMcpReq();
         req.setStartDate(LocalDate.of(2026, 8, 9));

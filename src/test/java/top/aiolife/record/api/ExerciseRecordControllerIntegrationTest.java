@@ -9,6 +9,8 @@ import top.aiolife.core.ApiRequestFixtures;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.record.mapper.IExerciseRecordMapper;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
+import top.aiolife.record.pojo.query.ExerciseRecordQuery;
+import top.aiolife.record.pojo.query.ExerciseStatisticsQuery;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,7 +39,7 @@ class ExerciseRecordControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new ExerciseRecordEntity());
 
-        var response = exerciseRecordController.query(ApiRequestFixtures.query(query, top.aiolife.record.pojo.query.ExerciseRecordQuery.class));
+        var response = exerciseRecordController.query(ApiRequestFixtures.query(query, ExerciseRecordQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);
@@ -63,7 +65,7 @@ class ExerciseRecordControllerIntegrationTest extends BaseIntegrationTest {
         params.put("startDate", LocalDate.now().minusMonths(1).toString());
         params.put("endDate", LocalDate.now().plusDays(1).toString());
 
-        var response = exerciseRecordController.getStatistics(ApiRequestFixtures.request(params, top.aiolife.record.pojo.query.ExerciseStatisticsQuery.class));
+        var response = exerciseRecordController.getStatistics(ApiRequestFixtures.request(params, ExerciseStatisticsQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
     }

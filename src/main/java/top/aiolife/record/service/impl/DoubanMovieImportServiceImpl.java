@@ -17,6 +17,7 @@ import top.aiolife.record.service.IDoubanMovieImportService;
 import top.aiolife.record.service.IUserBindService;
 import top.aiolife.record.util.DoubanSubjectUrl;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -102,7 +103,7 @@ public class DoubanMovieImportServiceImpl implements IDoubanMovieImportService {
 
         Map<String, MovieEntity> existingBySubjectId = loadExisting(userId);
         Set<String> fileSubjectIds = new HashSet<>();
-        List<NormalizedItem> items = new java.util.ArrayList<>();
+        List<NormalizedItem> items = new ArrayList<>();
         for (int i = 0; i < records.size(); i++) {
             DoubanMovieImportItemReq row = records.get(i);
             int rowNumber = row != null && row.getRowNumber() != null ? row.getRowNumber() : i + 2;

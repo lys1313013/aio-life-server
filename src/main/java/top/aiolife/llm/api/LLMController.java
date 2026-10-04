@@ -3,6 +3,7 @@ package top.aiolife.llm.api;
 import cn.dev33.satoken.stp.StpUtil;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.util.List;
@@ -72,7 +73,7 @@ public class LLMController {
     }
 
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter chatStream(@Valid @RequestBody ChatReq request, jakarta.servlet.http.HttpServletResponse response) {
+    public SseEmitter chatStream(@Valid @RequestBody ChatReq request, HttpServletResponse response) {
         response.setHeader("Cache-Control", "no-cache");
         response.setHeader("X-Accel-Buffering", "no");
 

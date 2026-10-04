@@ -3,6 +3,7 @@ package top.aiolife.record.pojo.req;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.Data;
 
 /** HonorRecordCreateReq：仅包含接口允许写入的字段。 */
@@ -33,5 +34,5 @@ public class HonorRecordCreateReq {
 
     private Integer sortOrder;
 
-    private java.util.List<String> fileIds;
+    private List<String> fileIds;
 }

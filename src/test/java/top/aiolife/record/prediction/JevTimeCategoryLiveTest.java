@@ -7,6 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.io.IOException;
@@ -41,7 +42,7 @@ class JevTimeCategoryLiveTest {
             // 不输出上游正文或认证信息。
             fail("Jev HTTP " + e.getStatusCode().value() + "，样例 " + scenario.path("id").asText());
             return;
-        } catch (org.springframework.web.client.RestClientException e) {
+        } catch (RestClientException e) {
             fail("Jev 网络调用失败，样例 " + scenario.path("id").asText());
             return;
         }

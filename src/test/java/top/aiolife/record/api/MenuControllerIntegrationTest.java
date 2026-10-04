@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import top.aiolife.system.api.MenuController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -15,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class MenuControllerIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
-    private top.aiolife.system.api.MenuController menuController;
+    private MenuController menuController;
 
     @Test
     void testAll_获取菜单路由() {

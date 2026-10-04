@@ -1,5 +1,6 @@
 package top.aiolife.core.exception;
 
+import java.util.Map;
 import cn.dev33.satoken.exception.NotLoginException;
 import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.resq.ApiResponse;
@@ -52,7 +53,7 @@ public class ExceptionHandle {
     @ExceptionHandler(SecondaryLockRequiredException.class)
     public ApiResponse<Object> handleSecondaryLock(SecondaryLockRequiredException e) {
         return ApiResponse.error(ResponseCodeConst.SECONDARY_LOCK_REQUIRED, e.getMessage(),
-                java.util.Map.of("menuPath", e.getMenuPath()));
+                Map.of("menuPath", e.getMenuPath()));
     }
 
     @ExceptionHandler(Exception.class)

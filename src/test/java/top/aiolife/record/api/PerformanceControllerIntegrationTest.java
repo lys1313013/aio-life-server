@@ -1,10 +1,14 @@
 package top.aiolife.record.api;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import top.aiolife.core.ApiRequestFixtures;
 import top.aiolife.record.mapper.IPerformanceMapper;
 import top.aiolife.record.pojo.entity.PerformanceEntity;
+import top.aiolife.record.pojo.req.PerformanceCreateReq;
+import top.aiolife.record.pojo.req.PerformanceUpdateReq;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,7 +41,7 @@ class PerformanceControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     void testCreate_新增演出记录() {
         PerformanceEntity entity = createPerformance(null);
-        var response = performanceController.createPerformance(ApiRequestFixtures.request(entity, top.aiolife.record.pojo.req.PerformanceCreateReq.class));
+        var response = performanceController.createPerformance(ApiRequestFixtures.request(entity, PerformanceCreateReq.class));
         var created = assertSuccessWithData(response);
         assertNotNull(created.getId());
 
@@ -59,7 +63,7 @@ class PerformanceControllerIntegrationTest extends BaseIntegrationTest {
         updateParam.setId(perfId);
         updateParam.setPerformanceName("改名后的演出");
         updateParam.setCity("上海");
-        var response = performanceController.updatePerformance(ApiRequestFixtures.request(updateParam, top.aiolife.record.pojo.req.PerformanceUpdateReq.class));
+        var response = performanceController.updatePerformance(ApiRequestFixtures.request(updateParam, PerformanceUpdateReq.class));
         assertSuccess(response);
 
         PerformanceEntity dbEntity = performanceMapper.selectById(perfId);
@@ -89,10 +93,10 @@ class PerformanceControllerIntegrationTest extends BaseIntegrationTest {
         entity.setPerformanceName("测试演出");
         entity.setPerformer("测试演员");
         entity.setPerformanceType("演唱会");
-        entity.setPerformanceDate(java.time.LocalDate.now());
+        entity.setPerformanceDate(LocalDate.now());
         entity.setCity("北京");
         entity.setVenue("国家大剧院");
-        entity.setTicketPrice(java.math.BigDecimal.valueOf(100));
+        entity.setTicketPrice(BigDecimal.valueOf(100));
         return entity;
     }
 }

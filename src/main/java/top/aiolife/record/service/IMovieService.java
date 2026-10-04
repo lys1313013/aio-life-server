@@ -1,5 +1,6 @@
 package top.aiolife.record.service;
 
+import java.util.List;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import top.aiolife.record.pojo.entity.MovieEntity;
@@ -23,7 +24,7 @@ public interface IMovieService extends IService<MovieEntity> {
 
     void updateCoverFileId(Long id, String fileId);
 
-    java.util.List<MovieVO> listActive();
+    List<MovieVO> listActive();
 
     MovieVO getVOById(Long id);
 }

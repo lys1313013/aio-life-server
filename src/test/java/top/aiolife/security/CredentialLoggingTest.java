@@ -32,6 +32,8 @@ import top.aiolife.record.service.impl.MailServiceImpl;
 import top.aiolife.sso.mapper.MailLogMapper;
 import top.aiolife.sso.pojo.entity.MailLogEntity;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Properties;
 
@@ -160,9 +162,9 @@ class CredentialLoggingTest {
             verify(sender).send(message);
             // 原文确实存在于发出的 MIME 邮件中，脱敏只作用于日志。
             message.saveChanges();
-            var bytes = new java.io.ByteArrayOutputStream();
+            var bytes = new ByteArrayOutputStream();
             message.writeTo(bytes);
-            assertTrue(bytes.toString(java.nio.charset.StandardCharsets.UTF_8).contains(PASSWORD));
+            assertTrue(bytes.toString(StandardCharsets.UTF_8).contains(PASSWORD));
             var audit = captureAudit(mapper);
             assertEquals(fail ? 0 : 1, audit.getStatus());
             assertEquals("[REDACTED]", audit.getContent());

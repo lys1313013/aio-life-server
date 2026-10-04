@@ -1,6 +1,7 @@
 package top.aiolife.record.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,8 +13,10 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Profile;
 import top.aiolife.config.*;
 import top.aiolife.core.lock.StorageObjectLock;
+import top.aiolife.core.util.FileContentPolicy;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.record.mapper.*;
 import top.aiolife.record.pojo.entity.*;
@@ -23,7 +26,7 @@ import top.aiolife.system.mapper.StorageObjectMapper;
 public final class VideoCoverMigration {
     private VideoCoverMigration() {}
     @Configuration
-    @org.springframework.context.annotation.Profile("video-cover-migration")
+    @Profile("video-cover-migration")
     @EnableAutoConfiguration
     @Import({MybatisPlusConfig.class, MinioConfig.class, RedissonConfig.class, MinioUtil.class,
             StorageObjectLock.class, VideoCoverDownloader.class, VideoCoverStorage.class,
@@ -86,10 +89,10 @@ public final class VideoCoverMigration {
                     logicalBytes+=object.getFileSize();
                     if (!verified.add(object.getId())) continue;
                     try (InputStream stream=minio.getFile(object.getBucket(),object.getObjectKey())) {
-                        byte[] bytes=stream.readNBytes(top.aiolife.core.util.FileContentPolicy.MAX_IMAGE_BYTES+1);
+                        byte[] bytes=stream.readNBytes(FileContentPolicy.MAX_IMAGE_BYTES+1);
                         String hash=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
                         if (!hash.equals(object.getSha256()) || bytes.length!=object.getFileSize()) throw new IllegalStateException("OBJECT_HASH_MISMATCH");
-                        top.aiolife.core.util.FileContentPolicy.requireImage(bytes); storedBytes+=bytes.length;
+                        FileContentPolicy.requireImage(bytes); storedBytes+=bytes.length;
                     }
                 }
                 report.put("verifiedObjects",verified.size()); report.put("logicalBytes",logicalBytes);
@@ -98,8 +101,8 @@ public final class VideoCoverMigration {
             }
             report.put("finishedAt",Instant.now().toString());
             var output=Path.of(reportPath); Files.createDirectories(output.toAbsolutePath().getParent());
-            new com.fasterxml.jackson.databind.ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(output.toFile(),report);
-            System.out.println("VIDEO_COVER_MIGRATION " + new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(report));
+            new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(output.toFile(),report);
+            System.out.println("VIDEO_COVER_MIGRATION " + new ObjectMapper().writeValueAsString(report));
             if (apply && !Boolean.TRUE.equals(report.get("success"))) throw new IllegalStateException("迁移未全部成功，请检查报告后重跑");
         }
     }

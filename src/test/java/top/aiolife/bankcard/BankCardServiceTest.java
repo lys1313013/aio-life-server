@@ -3,21 +3,33 @@ package top.aiolife.bankcard;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionTemplate;
 import top.aiolife.bankcard.mapper.*;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mybatis.spring.SqlSessionTemplate;
 import top.aiolife.bankcard.pojo.req.*;
 import top.aiolife.bankcard.pojo.vo.BankCardVO;
 import top.aiolife.bankcard.service.*;
+import top.aiolife.core.util.MinioUtil;
+import top.aiolife.record.mapper.IBVideoMapper;
+import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.service.FilePreviewGuard;
+import top.aiolife.sso.service.AccountStatusGuard;
+import top.aiolife.sso.service.SecondaryLockGuard;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -69,8 +81,8 @@ class BankCardServiceTest {
         var files = session.getMapper(BankCardFileMapper.class);
         fileMapper = files;
         guard = new BankCardDictionaryGuard(dictionaries, cards, covers);
-        var minio = new top.aiolife.core.util.MinioUtil();
-        org.springframework.test.util.ReflectionTestUtils.setField(minio, "serveBaseUrl", "https://example.test/api");
+        var minio = new MinioUtil();
+        ReflectionTestUtils.setField(minio, "serveBaseUrl", "https://example.test/api");
         templateService = new BankCardCoverTemplateService(covers, guard, dictionaries, cards, files, minio);
         service = new BankCardService(cards, crypto, guard, dictionaries,
                 session.getMapper(BankCardTagMapper.class), session.getMapper(BankCardTagRelMapper.class),
@@ -86,7 +98,7 @@ class BankCardServiceTest {
         String encrypted=jdbc.queryForObject("SELECT card_no_ciphertext FROM bank_card WHERE id=?",String.class,id);
         assertFalse(encrypted.contains(NUMBER));assertEquals(NUMBER,service.reveal(1,id));
         assertThrows(IllegalArgumentException.class,()->service.reveal(2,id));
-        String json=new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules().writeValueAsString(service.list(1));
+        String json=new ObjectMapper().findAndRegisterModules().writeValueAsString(service.list(1));
         assertFalse(json.contains(NUMBER));assertFalse(json.contains("ciphertext"));assertFalse(json.contains("fingerprint"));
         assertEquals("6222",card.getCardNoFirst4());
         assertTrue(json.contains("\"cardNoFirst4\":\"6222\""));
@@ -240,17 +252,17 @@ class BankCardServiceTest {
         assertEquals(NUMBER,crypto.normalize("6222 0000-0000 1234"));
     }
     @Test void privateCoverGuardChecksOwnerAndDeletedBankCard() {
-        var lock=org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class);
-        var preview=new top.aiolife.record.service.FilePreviewGuard(lock,fileMapper,
-                org.mockito.Mockito.mock(top.aiolife.sso.service.AccountStatusGuard.class), org.mockito.Mockito.mock(top.aiolife.record.mapper.IBVideoMapper.class));
-        var file=new top.aiolife.record.pojo.entity.FileEntity();
+        var lock=Mockito.mock(SecondaryLockGuard.class);
+        var preview=new FilePreviewGuard(lock,fileMapper,
+                Mockito.mock(AccountStatusGuard.class), Mockito.mock(IBVideoMapper.class));
+        var file=new FileEntity();
         file.setBizType("bank_card_cover");file.setCreateUser(1L);file.setIsPublic(1);
-        assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));
-        assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,2L));
-        assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,1L));
+        assertEquals(FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));
+        assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,2L));
+        assertEquals(FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,1L));
         file.setBizId(123L);
-        assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,1L));
-        org.mockito.Mockito.verify(lock,org.mockito.Mockito.atLeastOnce()).checkMenus(1L,"/finance/bank-cards");
+        assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,1L));
+        Mockito.verify(lock,Mockito.atLeastOnce()).checkMenus(1L,"/finance/bank-cards");
     }
 
     BankCardCoverTemplateService templates() { return templateService; }
@@ -336,18 +348,18 @@ class BankCardServiceTest {
     }
     @Test void 公共图片拒绝匿名和临时图读取停用只允许已有引用者() {
         long id=template();var req=request();req.setCoverTemplateId(id);create(1,req);
-        var menu=org.mockito.Mockito.mock(top.aiolife.sso.service.SecondaryLockGuard.class);
-        var preview=org.mockito.Mockito.spy(new top.aiolife.record.service.FilePreviewGuard(menu,fileMapper,
-                org.mockito.Mockito.mock(top.aiolife.sso.service.AccountStatusGuard.class), org.mockito.Mockito.mock(top.aiolife.record.mapper.IBVideoMapper.class)));
-        org.mockito.Mockito.doReturn(false).when(preview).isAdmin(org.mockito.ArgumentMatchers.anyLong());
-        var file=new top.aiolife.record.pojo.entity.FileEntity();file.setBizType(BankCardCoverTemplateService.FILE_TYPE);file.setIsPublic(1);
-        assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));
-        assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,2L));
+        var menu=Mockito.mock(SecondaryLockGuard.class);
+        var preview=Mockito.spy(new FilePreviewGuard(menu,fileMapper,
+                Mockito.mock(AccountStatusGuard.class), Mockito.mock(IBVideoMapper.class)));
+        Mockito.doReturn(false).when(preview).isAdmin(ArgumentMatchers.anyLong());
+        var file=new FileEntity();file.setBizType(BankCardCoverTemplateService.FILE_TYPE);file.setIsPublic(1);
+        assertEquals(FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));
+        assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,2L));
         file.setBizId(id);
-        assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,2L));
+        assertEquals(FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,2L));
         tx.execute(s->templates().setEnabled(1,id,0));
-        assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,2L));
-        assertEquals(top.aiolife.record.service.FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,1L));
+        assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,2L));
+        assertEquals(FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,1L));
     }
     @Test void 并发删除与选用不会产生悬空引用() throws Exception {
         long id=template();var req=request();req.setCoverTemplateId(id);
@@ -364,10 +376,10 @@ class BankCardServiceTest {
         var req = request();
         req.setAlias("旧别名"); req.setCardName("旧卡名"); req.setBranchName("旧支行");
         req.setRemark("旧备注"); req.setCoverColor("#abcdef");
-        req.setOpenedDate(java.time.LocalDate.of(2020, 1, 1));
-        req.setExpiryMonth(java.time.LocalDate.of(2030, 1, 1));
+        req.setOpenedDate(LocalDate.of(2020, 1, 1));
+        req.setExpiryMonth(LocalDate.of(2030, 1, 1));
         long id = Long.parseLong(create(1, req).getId());
-        var createdAt = jdbc.queryForObject("SELECT create_time FROM bank_card WHERE id=?", java.time.LocalDateTime.class, id);
+        var createdAt = jdbc.queryForObject("SELECT create_time FROM bank_card WHERE id=?", LocalDateTime.class, id);
         req.setAlias(null); req.setCardName(null); req.setBranchName(null); req.setRemark(null);
         req.setCoverColor(null); req.setOpenedDate(null); req.setExpiryMonth(null); req.setCardNo(null);
         var edited = tx.execute(status -> service.save(1, id, req));
@@ -375,7 +387,7 @@ class BankCardServiceTest {
         assertNull(edited.getRemark()); assertNull(edited.getCoverColor());
         assertNull(edited.getOpenedDate()); assertNull(edited.getExpiryMonth());
         assertEquals(NUMBER, service.reveal(1, id));
-        assertEquals(createdAt, jdbc.queryForObject("SELECT create_time FROM bank_card WHERE id=?", java.time.LocalDateTime.class, id));
+        assertEquals(createdAt, jdbc.queryForObject("SELECT create_time FROM bank_card WHERE id=?", LocalDateTime.class, id));
         assertEquals(1L, jdbc.queryForObject("SELECT create_user FROM bank_card WHERE id=?", Long.class, id));
     }
 

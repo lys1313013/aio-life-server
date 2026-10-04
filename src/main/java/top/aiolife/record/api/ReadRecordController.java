@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import java.util.List;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -57,7 +58,7 @@ public class ReadRecordController {
     }
 
     @GetMapping("/active")
-    public ApiResponse<java.util.List<ReadRecordVO>> listActive() {
+    public ApiResponse<List<ReadRecordVO>> listActive() {
         return ApiResponse.success(readRecordService.listActive());
     }
 

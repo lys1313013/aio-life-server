@@ -1,8 +1,13 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.DigestUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,10 +30,10 @@ public class PublicImageController {
     private final MinioConfig config;
 
     @GetMapping("/public/images/{id:[a-fA-F0-9]{32}}.{extension:png|jpg|webp|gif|bmp}")
-    @io.swagger.v3.oas.annotations.Operation(summary = "读取已发布的公共图片（无需登录）")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "图片二进制内容，不是 ApiResponse JSON",
-            content = @io.swagger.v3.oas.annotations.media.Content(mediaType = "image/*",
-                    schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", format = "binary")))
+    @Operation(summary = "读取已发布的公共图片（无需登录）")
+    @ApiResponse(responseCode = "200", description = "图片二进制内容，不是 ApiResponse JSON",
+            content = @Content(mediaType = "image/*",
+                    schema = @Schema(type = "string", format = "binary")))
     public void image(@PathVariable String id, @PathVariable String extension,
                       HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setHeader("Cache-Control", "no-store");
@@ -54,7 +59,7 @@ public class PublicImageController {
             return;
         }
         // 按实际内容生成 ETag，避免仅依赖声明的 MIME/后缀或历史哈希字段。
-        String etag = "\"" + org.springframework.util.DigestUtils.md5DigestAsHex(bytes) + "\"";
+        String etag = "\"" + DigestUtils.md5DigestAsHex(bytes) + "\"";
         response.setContentType(type.contentType());
         response.setHeader("ETag", etag);
         response.setHeader("Cache-Control", "public, max-age=86400, s-maxage=2592000");

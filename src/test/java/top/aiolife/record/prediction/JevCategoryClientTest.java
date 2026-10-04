@@ -1,5 +1,6 @@
 package top.aiolife.record.prediction;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Level;
@@ -8,20 +9,27 @@ import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.Property;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mock.http.client.MockClientHttpRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
+import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
@@ -57,7 +65,7 @@ class JevCategoryClientTest {
         response = JevScenarioSupport.mockResponse(scenario);
     }
 
-    @org.junit.jupiter.api.AfterEach
+    @AfterEach
     void cleanup() {
         client.close();
         logger.removeAppender(appender);
@@ -68,7 +76,7 @@ class JevCategoryClientTest {
 
     private String logs() {
         return events.stream().map(event -> event.getMessage().getFormattedMessage())
-                .collect(java.util.stream.Collectors.joining("\n"));
+                .collect(Collectors.joining("\n"));
     }
 
     @Test
@@ -79,8 +87,8 @@ class JevCategoryClientTest {
         server = MockRestServiceServer.bindTo(builder).build();
         ReflectionTestUtils.setField(client, "client", builder.build());
         server.expect(requestTo(JevCategoryClient.ENDPOINT)).andRespond(req -> {
-            java.util.concurrent.locks.LockSupport.parkNanos(java.time.Duration.ofSeconds(2).toNanos());
-            throw new java.io.IOException("simulated delay");
+            LockSupport.parkNanos(Duration.ofSeconds(2).toNanos());
+            throw new IOException("simulated delay");
         });
         long started = System.nanoTime();
         assertNull(client.predict(request));
@@ -99,12 +107,12 @@ class JevCategoryClientTest {
         server.expect(requestTo(JevCategoryClient.ENDPOINT))
                 .andExpect(header("Authorization", "Bearer test-key"))
                 .andExpect(req -> {
-                    String sentBody = ((org.springframework.mock.http.client.MockClientHttpRequest) req).getBodyAsString();
+                    String sentBody = ((MockClientHttpRequest) req).getBodyAsString();
                     String loggedBody = events.stream().map(event -> event.getMessage().getFormattedMessage())
                             .filter(message -> message.contains("请求体="))
                             .findFirst().orElseThrow().split("请求体=", 2)[1];
                     assertEquals(sentBody, loggedBody);
-                    assertEquals("jev-latest", new com.fasterxml.jackson.databind.ObjectMapper()
+                    assertEquals("jev-latest", new ObjectMapper()
                             .readTree(loggedBody).path("model").asText());
                 })
                 .andRespond(withSuccess(response.toString(), MediaType.APPLICATION_JSON));
@@ -208,7 +216,7 @@ class JevCategoryClientTest {
             release.countDown();
             assertTrue(finished.await(1, TimeUnit.SECONDS));
             client.close();
-            var executor = (java.util.concurrent.ExecutorService) ReflectionTestUtils.getField(client, "executor");
+            var executor = (ExecutorService) ReflectionTestUtils.getField(client, "executor");
             assertTrue(executor.awaitTermination(1, TimeUnit.SECONDS));
             assertTrue(logs().contains("原因=TOTAL_TIMEOUT"));
             assertFalse(logs().contains("结果=ACCEPTED"));

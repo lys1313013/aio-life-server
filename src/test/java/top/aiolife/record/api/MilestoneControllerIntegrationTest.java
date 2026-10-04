@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import top.aiolife.record.mapper.IMilestoneMapper;
@@ -38,7 +39,7 @@ class MilestoneControllerIntegrationTest extends BaseIntegrationTest {
         entity.setId(milestoneId);
         entity.setUserId(TEST_USER_ID);
         entity.setTitle("测试里程碑");
-        entity.setDate(java.time.LocalDate.now().toString());
+        entity.setDate(LocalDate.now().toString());
         entity.setIsDeleted(0);
         entity.fillCreateCommonField(TEST_USER_ID);
         return entity;

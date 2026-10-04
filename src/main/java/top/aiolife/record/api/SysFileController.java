@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import cn.dev33.satoken.stp.StpUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import top.aiolife.config.MinioConfig;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.core.util.FileContentPolicy;
@@ -23,6 +25,8 @@ import top.aiolife.record.pojo.entity.FileEntity;
 import top.aiolife.record.pojo.vo.FileVO;
 import top.aiolife.record.service.FilePreviewGuard;
 import top.aiolife.record.service.IFileService;
+import top.aiolife.sso.service.SecondaryLockGuard;
+import top.aiolife.system.mapper.StorageObjectMapper;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -35,12 +39,12 @@ import java.util.List;
 @RequestMapping("/file")
 public class SysFileController {
 
-    private final top.aiolife.system.mapper.StorageObjectMapper storageObjects;
+    private final StorageObjectMapper storageObjects;
     private final IFileService fileService;
     private final MinioUtil minioUtil;
-    private final top.aiolife.config.MinioConfig minioConfig;
+    private final MinioConfig minioConfig;
     private final FilePreviewGuard filePreviewGuard;
-    private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
+    private final SecondaryLockGuard secondaryLockGuard;
 
     /**
      * 统一文件上传入口。
@@ -49,7 +53,7 @@ public class SysFileController {
     public ApiResponse<FileVO> upload(@RequestParam("file") MultipartFile file,
                                       @RequestParam("bizType") String bizType) {
         if ("bank_card_cover".equals(bizType)) secondaryLockGuard.checkMenus(
-                cn.dev33.satoken.stp.StpUtil.getLoginIdAsLong(), "/finance/bank-cards");
+                StpUtil.getLoginIdAsLong(), "/finance/bank-cards");
         return ApiResponse.success(fileService.upload(file, FileBizType.fromBizType(bizType)));
     }
 

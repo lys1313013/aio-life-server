@@ -1,10 +1,13 @@
 package top.aiolife.record.service;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import javax.imageio.ImageIO;
 import org.h2.jdbcx.JdbcDataSource;
@@ -15,10 +18,18 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
+import org.springframework.transaction.support.TransactionTemplate;
+import top.aiolife.bankcard.mapper.BankCardFileMapper;
 import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.core.util.MinioUtil;
+import top.aiolife.record.api.BVideoController;
 import top.aiolife.record.mapper.*;
 import top.aiolife.record.pojo.entity.*;
+import top.aiolife.record.pojo.req.BVideoCreateReq;
+import top.aiolife.record.pojo.req.BVideoProgressReq;
+import top.aiolife.record.pojo.req.BVideoUpdateReq;
+import top.aiolife.sso.service.AccountStatusGuard;
+import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.system.mapper.StorageObjectMapper;
 import top.aiolife.system.pojo.entity.StorageObjectEntity;
 import static org.junit.jupiter.api.Assertions.*;
@@ -42,7 +53,7 @@ class VideoCoverServiceTest {
         var ds = new JdbcDataSource(); ds.setURL("jdbc:h2:mem:cover_"+UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds); tx = new DataSourceTransactionManager(ds);
         // 从真实全量结构截取本功能四张表，去除 H2 不支持的 MySQL 排序规则及前缀索引。
-        String schema = java.nio.file.Files.readString(java.nio.file.Path.of("sql/1_init_table/2026-08-18_init_all_tables.sql"));
+        String schema = Files.readString(Path.of("sql/1_init_table/2026-08-18_init_all_tables.sql"));
         for (String table : List.of("b_video", "file", "storage_object", "image_import_task")) {
             int start = schema.indexOf("CREATE TABLE IF NOT EXISTS `"+table+"`");
             String sql = schema.substring(start, schema.indexOf(";",start));
@@ -96,7 +107,7 @@ class VideoCoverServiceTest {
     }
     @Test void 编辑相同来源不重复排队且事务回滚不留下任务() {
         video(1,11); service.enqueue(1,11,URL,false); service.enqueue(1,11,URL,false); assertEquals(1,tasks.selectCount(null));
-        var template=new org.springframework.transaction.support.TransactionTemplate(tx);
+        var template=new TransactionTemplate(tx);
         template.executeWithoutResult(s -> { service.enqueue(1,11,"https://i0.hdslb.com/bfs/archive/new.jpg",false); s.setRollbackOnly(); });
         assertEquals(1,tasks.selectCount(null)); assertEquals(URL,videos.selectById(1L).getCover());
     }
@@ -112,21 +123,21 @@ class VideoCoverServiceTest {
         service.complete(task.getId(),"second",png); assertEquals(1,files.selectCount(null));
     }
     @Test void 新增编辑及浏览器两个入口均使用相同导入任务() {
-        var controller=proxy(new top.aiolife.record.api.BVideoController(videos,service));
-        try (var stp=mockStatic(cn.dev33.satoken.stp.StpUtil.class)) {
-            stp.when(cn.dev33.satoken.stp.StpUtil::getLoginIdAsLong).thenReturn(11L);
-            var create=new top.aiolife.record.pojo.req.BVideoCreateReq();
+        var controller=proxy(new BVideoController(videos,service));
+        try (var stp=mockStatic(StpUtil.class)) {
+            stp.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
+            var create=new BVideoCreateReq();
             create.setTitle("测试"); create.setUrl("https://www.bilibili.com/video/BVtest");
             create.setDuration(60); create.setCover(URL); create.setBvid("BVone");
             assertEquals("0",controller.insert(create).getRscode());
             var first=videos.selectList(null).getFirst();
             assertEquals("PENDING",first.getCoverState()); assertEquals(1,tasks.selectCount(null));
-            var update=new top.aiolife.record.pojo.req.BVideoUpdateReq(); update.setTitle("仅修改标题");
+            var update=new BVideoUpdateReq(); update.setTitle("仅修改标题");
             controller.update(first.getId(),update); assertEquals(1,tasks.selectCount(null));
             update.setCover("https://i0.hdslb.com/bfs/archive/replacement.jpg");
             controller.update(first.getId(),update); assertEquals(2,tasks.selectCount(null));
             create.setBvid("BVtwo"); controller.tagVideo(create); assertEquals(3,tasks.selectCount(null));
-            var sync=new top.aiolife.record.pojo.req.BVideoProgressReq();
+            var sync=new BVideoProgressReq();
             sync.setTitle("浏览器同步"); sync.setUrl(create.getUrl()); sync.setDuration(60);
             sync.setWatchedDuration(10); sync.setCurrentEpisode(1);
             sync.setBvid("BVthree"); sync.setCover(URL);
@@ -147,8 +158,8 @@ class VideoCoverServiceTest {
     @Test void 非属主不可重试且假装公开的文件也必须按业务授权() {
         video(1,11); service.enqueue(1,11,URL,false); finishNext();
         assertThrows(IllegalArgumentException.class,()->service.retry(1,22));
-        var lock=mock(top.aiolife.sso.service.SecondaryLockGuard.class);
-        var guard=new FilePreviewGuard(lock,mock(top.aiolife.bankcard.mapper.BankCardFileMapper.class),mock(top.aiolife.sso.service.AccountStatusGuard.class),videos);
+        var lock=mock(SecondaryLockGuard.class);
+        var guard=new FilePreviewGuard(lock,mock(BankCardFileMapper.class),mock(AccountStatusGuard.class),videos);
         var file=files.selectById(videos.selectById(1L).getCoverFileId()); file.setIsPublic(1);
         assertEquals(FilePreviewGuard.AccessDecision.UNAUTHORIZED,guard.check(file,null));
         assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,guard.check(file,22L));

@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import java.util.List;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -81,7 +82,7 @@ public class MovieController {
     }
 
     @GetMapping("/active")
-    public ApiResponse<java.util.List<MovieVO>> listActive() {
+    public ApiResponse<List<MovieVO>> listActive() {
         return ApiResponse.success(movieService.listActive());
     }
 

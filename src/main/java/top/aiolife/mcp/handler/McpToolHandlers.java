@@ -2,6 +2,7 @@ package top.aiolife.mcp.handler;
 
 import cn.dev33.satoken.stp.StpUtil;
 import io.modelcontextprotocol.server.McpServerFeatures;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -41,7 +42,7 @@ public class McpToolHandlers {
                 .toList();
     }
 
-    private Object currentLoginId(io.modelcontextprotocol.server.McpSyncServerExchange exchange) {
+    private Object currentLoginId(McpSyncServerExchange exchange) {
         Object transportLoginId = exchange.transportContext().get(McpServerConfig.LOGIN_ID_CONTEXT_KEY);
         if (transportLoginId != null) {
             return transportLoginId;

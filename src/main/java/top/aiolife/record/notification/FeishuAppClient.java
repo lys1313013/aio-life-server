@@ -10,6 +10,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -145,7 +146,7 @@ public class FeishuAppClient {
                         openId, notification, getTenantAccessToken(appId, appSecret, true));
             }
             return result;
-        } catch (java.net.http.HttpTimeoutException e) {
+        } catch (HttpTimeoutException e) {
             return SendResult.failed("TIMEOUT", "请求飞书超时", true, false);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

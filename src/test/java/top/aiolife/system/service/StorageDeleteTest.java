@@ -2,7 +2,10 @@ package top.aiolife.system.service;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import org.mockito.ArgumentCaptor;
 import org.mybatis.spring.SqlSessionTemplate;
+import top.aiolife.config.CbtiConfig;
+import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.system.mapper.StorageFileReferenceMapper;
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
@@ -12,9 +15,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.config.MinioConfig;
+import top.aiolife.system.mapper.StorageObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -42,7 +47,7 @@ class StorageDeleteTest {
         factory.setConfiguration(mybatis);
         var session = new SqlSessionTemplate(factory.getObject());
         service = new StorageAdminService(config, mock(StorageListClient.class), minio,
-                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class), new top.aiolife.config.CbtiConfig(), mock(top.aiolife.system.mapper.StorageObjectMapper.class)), mock(top.aiolife.core.lock.StorageObjectLock.class));
+                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class), new CbtiConfig(), mock(StorageObjectMapper.class)), mock(StorageObjectLock.class));
     }
 
     void record(String name, Long owner, String type, Long bizId, int deleted) {
@@ -88,7 +93,7 @@ class StorageDeleteTest {
         assertThrows(ResponseStatusException.class, () -> service.delete("中文 +#%_!.png"));
         verifyNoInteractions(minio);
         service.delete("中文 +#OTHER.png");
-        var args = org.mockito.ArgumentCaptor.forClass(RemoveObjectArgs.class);
+        var args = ArgumentCaptor.forClass(RemoveObjectArgs.class);
         verify(minio).removeObject(args.capture());
         assertEquals("business", args.getValue().bucket());
         assertEquals("中文 +#OTHER.png", args.getValue().object());
@@ -111,7 +116,7 @@ class StorageDeleteTest {
     @Test
     void 查库失败时拒绝继续删除() {
         jdbc.execute("DROP TABLE file");
-        assertThrows(org.springframework.dao.DataAccessException.class, () -> service.delete("orphan.jpg"));
+        assertThrows(DataAccessException.class, () -> service.delete("orphan.jpg"));
         verifyNoInteractions(minio);
     }
 

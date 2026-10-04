@@ -95,6 +95,12 @@ mvn test -Dtest=TimeTrackerCategoryControllerIntegrationTest#testList_获取分�
 
 ## 关键约定
 
+### Java 类名与导入
+
+- 普通 Java 代码（含测试）优先使用显式 `import` 和简单类名，避免在字段、方法签名、注解及方法体中重复书写全限定类名。
+- 遇到同名类、内部类型遮蔽等冲突时，保留必要的全限定类名；不要为了缩短引用改变类型绑定。
+- SpEL、AOP 切点、反射类名、MapStruct `expression` 等字符串中的类名按框架要求处理，不能直接依赖当前文件的 Java `import`，也不能批量替换。
+
 ### 数据库
 
 - **逻辑删除**：全局配置 `is_deleted` 字段（0=未删除，1=已删除）

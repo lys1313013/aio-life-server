@@ -3,9 +3,12 @@ package top.aiolife.record.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import top.aiolife.record.mapper.ITimeRecordMapper;
 import top.aiolife.record.mapper.ITimeTrackerCategoryMapper;
+import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.service.ITimeTrackerCategoryService;
 
@@ -21,8 +24,8 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCategoryMapper, TimeTrackerCategoryEntity> implements ITimeTrackerCategoryService {
-    @org.springframework.beans.factory.annotation.Autowired
-    private top.aiolife.record.mapper.ITimeRecordMapper timeRecordMapper;
+    @Autowired
+    private ITimeRecordMapper timeRecordMapper;
 
     /** 分类规模很小，按主键顺序锁定分类关系，避免并发移动/新增造成第三级或环。 */
     void lockHierarchy() {
@@ -55,8 +58,8 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
     }
 
     private void ensureNoRecords(Long id) {
-        if (timeRecordMapper.selectCount(new LambdaQueryWrapper<top.aiolife.record.pojo.entity.TimeRecordEntity>()
-                .eq(top.aiolife.record.pojo.entity.TimeRecordEntity::getCategoryId, id)) > 0) {
+        if (timeRecordMapper.selectCount(new LambdaQueryWrapper<TimeRecordEntity>()
+                .eq(TimeRecordEntity::getCategoryId, id)) > 0) {
             throw new IllegalArgumentException("该分类已有时迹记录，请停用或隐藏分类");
         }
     }
