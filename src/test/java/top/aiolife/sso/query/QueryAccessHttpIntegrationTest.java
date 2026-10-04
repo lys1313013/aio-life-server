@@ -1,6 +1,7 @@
 package top.aiolife.sso.query;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -119,8 +120,14 @@ class QueryAccessHttpIntegrationTest {
 
     @Test void 授权后重新锁定时迹仍然拒绝() throws Exception {
         var grant = issue();
-        SysMenuEntity menu = new SysMenuEntity(); menu.setPath("/time/time-tracker"); menu.setName("查询锁测试");
-        menu.setStatus(1); menu.setMobileStatus(1); menu.fillCreateCommonField(userId); menus.insert(menu);
+        assertEquals("0", evaluate(grant, KEY).path("rscode").asText());
+        // CI 已通过初始化脚本创建菜单；复用现有记录，空库才补充测试夹具。
+        SysMenuEntity menu = menus.selectOne(new LambdaQueryWrapper<SysMenuEntity>()
+                .eq(SysMenuEntity::getPath, "/time/time-tracker"));
+        if (menu == null) {
+            menu = new SysMenuEntity(); menu.setPath("/time/time-tracker"); menu.setName("查询锁测试");
+            menu.setStatus(1); menu.setMobileStatus(1); menu.fillCreateCommonField(userId); menus.insert(menu);
+        }
         UserSecondaryLockMenuEntity lock = new UserSecondaryLockMenuEntity();
         lock.setUserId(userId); lock.setMenuId(menu.getId()); lock.fillCreateCommonField(userId); locks.insert(lock);
         assertEquals("2001", evaluate(grant, KEY).path("rscode").asText());
