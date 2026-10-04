@@ -10,18 +10,21 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.membership.convertor.MembershipApiConvertor;
-import top.aiolife.membership.mapper.IMembershipMapper;
 import top.aiolife.membership.pojo.entity.MembershipRecordEntity;
 import top.aiolife.membership.pojo.req.MembershipCreateReq;
 import top.aiolife.membership.pojo.req.MembershipReq;
 import top.aiolife.membership.pojo.vo.MembershipStatsVO;
 import top.aiolife.membership.pojo.vo.MembershipVO;
 import top.aiolife.membership.service.IMembershipService;
+import top.aiolife.membership.service.MembershipProviderService;
+import top.aiolife.membership.service.MembershipRecordWriteService;
+import top.aiolife.membership.pojo.entity.MembershipProviderEntity;
 
 /**
  * 会员记录控制器
@@ -44,7 +47,8 @@ public class MembershipController {
             "week", "two_weeks", "month", "quarter", "half_year", "year"
     );
 
-    private final IMembershipMapper membershipMapper;
+    private final MembershipRecordWriteService recordWriter;
+    private final MembershipProviderService providers;
     private final IMembershipService membershipService;
 
     @GetMapping("/list")
@@ -54,8 +58,10 @@ public class MembershipController {
         queryWrapper.eq(MembershipRecordEntity::getUserId, userId)
                 .orderByAsc(MembershipRecordEntity::getExpiryDate);
         LocalDate today = LocalDate.now();
-        List<MembershipVO> voList = membershipService.list(queryWrapper).stream()
-                .map(entity -> toVO(entity, today))
+        List<MembershipRecordEntity> entities = membershipService.list(queryWrapper);
+        Map<Long, MembershipProviderEntity> platformMap = providers.findAll(entities.stream().map(MembershipRecordEntity::getProviderId).toList());
+        List<MembershipVO> voList = entities.stream()
+                .map(entity -> toVO(entity, today, entity.getProviderId() == null ? null : platformMap.get(entity.getProviderId())))
                 .toList();
         return ApiResponse.success(voList);
     }
@@ -100,11 +106,7 @@ public class MembershipController {
         MembershipReq req = MembershipApiConvertor.INSTANCE.fromMembershipCreateReq(request);
         long userId = StpUtil.getLoginIdAsLong();
         normalizeCost(req);
-        MembershipRecordEntity entity = new MembershipRecordEntity();
-        BeanUtil.copyProperties(req, entity);
-        entity.setUserId(userId);
-        entity.fillCreateCommonField(userId);
-        membershipMapper.insert(entity);
+        MembershipRecordEntity entity = recordWriter.create(userId, req);
         return ApiResponse.success(toVO(entity, LocalDate.now()));
     }
 
@@ -112,17 +114,7 @@ public class MembershipController {
     public ApiResponse<MembershipVO> update(@RequestBody MembershipReq req) {
         long userId = StpUtil.getLoginIdAsLong();
         normalizeCost(req);
-        MembershipRecordEntity entity = new MembershipRecordEntity();
-        BeanUtil.copyProperties(req, entity);
-        entity.setUserId(null);
-        entity.fillUpdateCommonField(userId);
-        LambdaUpdateWrapper<MembershipRecordEntity> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.eq(MembershipRecordEntity::getId, req.getId())
-                .eq(MembershipRecordEntity::getUserId, userId);
-        membershipService.update(entity, updateWrapper);
-        MembershipRecordEntity updated = membershipService.getOne(new LambdaQueryWrapper<MembershipRecordEntity>()
-                .eq(MembershipRecordEntity::getId, req.getId())
-                .eq(MembershipRecordEntity::getUserId, userId));
+        MembershipRecordEntity updated = recordWriter.update(userId, req);
         return ApiResponse.success(toVO(updated, LocalDate.now()));
     }
 
@@ -140,11 +132,21 @@ public class MembershipController {
     }
 
     private MembershipVO toVO(MembershipRecordEntity entity, LocalDate today) {
+        MembershipProviderEntity provider = entity == null || entity.getProviderId() == null ? null
+                : providers.findAll(List.of(entity.getProviderId())).get(entity.getProviderId());
+        return toVO(entity, today, provider);
+    }
+
+    private MembershipVO toVO(MembershipRecordEntity entity, LocalDate today, MembershipProviderEntity provider) {
         if (entity == null) {
             return null;
         }
         MembershipVO vo = new MembershipVO();
         BeanUtil.copyProperties(entity, vo);
+        if (provider != null) {
+            vo.setProviderName(provider.getName());
+            vo.setProviderIconKey(provider.getIconKey());
+        }
         vo.setStatus(calcStatus(entity, today));
         vo.setRemainingDays(ChronoUnit.DAYS.between(today, entity.getExpiryDate()));
         return vo;

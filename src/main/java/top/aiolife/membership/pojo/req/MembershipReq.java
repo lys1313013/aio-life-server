@@ -1,6 +1,10 @@
 package top.aiolife.membership.pojo.req;
 
 import lombok.Data;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,6 +25,20 @@ public class MembershipReq {
     private String category;
 
     private String provider;
+
+    private Long providerId;
+
+    @JsonIgnore
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private boolean providerIdProvided;
+
+    public void setProviderId(Long providerId) {
+        this.providerId = providerId;
+        this.providerIdProvided = true;
+    }
+
+    public boolean hasProviderId() { return providerIdProvided; }
 
     private String icon;
 

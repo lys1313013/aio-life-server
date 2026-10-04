@@ -45,6 +45,7 @@ public final class SecondaryLockPolicy {
             Map.entry("/system/user-dict", List.of("/userDictData/admin", "/userDictType")),
             Map.entry("/system/feedback", List.of("/feedback/admin")),
             Map.entry("/system/config", List.of("/system-config")),
+            Map.entry("/system/membership-providers", List.of("/system/membership-providers")),
             Map.entry("/system/operation-log", List.of("/system/logs/operation")),
             Map.entry("/system/access-log", List.of("/system/logs/access")),
             Map.entry("/config-management/sysDictType", List.of("/sysDictType")),
@@ -82,6 +83,10 @@ public final class SecondaryLockPolicy {
         if (under(path, "/timeTrackerCategory/admin")) result.remove("/time/my-categories");
         if (under(path, "/feedback/admin")) result.remove("/my-hub/feedback");
         if (under(path, "/userDictData/admin")) result.remove("/my-hub/exercise/category-config");
+        // 平台和内置图标目录是共享元数据，不属于个人会员记录。
+        if ("/membership/providers".equals(path) || "/membership/provider-icons".equals(path)) {
+            result.remove("/membership");
+        }
         if (path != null && (path.startsWith("/income/statistics") || path.startsWith("/expense/statistics"))) {
             result.add("/finance/dashboard");
         }

@@ -29,6 +29,8 @@ public class MembershipRecordEntity extends BaseEntity {
 
     private String provider;
 
+    private Long providerId;
+
     private String icon;
 
     private String color;

@@ -1,0 +1,357 @@
+[
+  {
+    "key": "tencent_video",
+    "name": "腾讯视频",
+    "file": "tencent_video.png",
+    "source": "https://vfiles.gtimg.cn/wuji_dashboard/xy/starter/4ea79867.png",
+    "sourcePage": "https://v.qq.com/",
+    "license": "Official brand asset; no open redistribution license found; trademark and copyright belong to respective owner",
+    "sourceFile": "sources/tencent_video.png",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "PNG exported as RGBA without resize or geometry changes; downscaled proportionally to maximum 128px with Lanczos",
+    "notes": "",
+    "sha256": "b0abd33882d1d598ff07b3d387308809ea3239737ac12efb17a94458979f8af3",
+    "bytes": 7634
+  },
+  {
+    "key": "iqiyi",
+    "name": "爱奇艺",
+    "file": "iqiyi.png",
+    "source": "https://www.iqiyi.com/favicon.ico",
+    "sourcePage": "https://www.iqiyi.com/",
+    "license": "Official brand asset; no open redistribution license found; trademark and copyright belong to respective owner",
+    "sourceFile": "sources/iqiyi.ico",
+    "dimensions": [
+      64,
+      64
+    ],
+    "conversion": "ICO largest frame decoded with Pillow; PNG exported as RGBA without resize",
+    "notes": "",
+    "sha256": "c9f739cc67a1e3524d6908e8193de330e029ffaa87efcd52e101361b6d14f0fb",
+    "bytes": 7033
+  },
+  {
+    "key": "youku",
+    "name": "优酷",
+    "file": "youku.png",
+    "source": "https://img.alicdn.com/imgextra/i2/O1CN01BeAcgL1ywY0G5nSn8_!!6000000006643-2-tps-195-195.png",
+    "sourcePage": "https://www.youku.com/",
+    "license": "Official brand asset; no open redistribution license found; trademark and copyright belong to respective owner",
+    "sourceFile": "sources/youku.png",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "PNG exported as RGBA without resize or geometry changes; downscaled proportionally to maximum 128px with Lanczos",
+    "notes": "",
+    "sha256": "9a26cebac1eed2f746b0636ec89287d024aa934ecc75e7e20e207aab5b2d9c26",
+    "bytes": 6217
+  },
+  {
+    "key": "bilibili",
+    "name": "哔哩哔哩",
+    "file": "bilibili.png",
+    "source": "https://github.com/simple-icons/simple-icons/blob/16.33.0/icons/bilibili.svg",
+    "upstreamBrandSource": "https://www.bilibili.com",
+    "license": "CC0-1.0 (Simple Icons); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/bilibili.svg",
+    "color": "#00A1D6",
+    "conversion": "SVG currentColor replaced with Simple Icons brand color; Chromium transparent 128x128 PNG rasterization; geometry unchanged",
+    "sha256": "4742dcfe12fe4c889e236d67b49b77304c84e2667bc76755b48f6ba4a80b9e13",
+    "bytes": 3209,
+    "dimensions": [
+      128,
+      128
+    ],
+    "upstreamOriginalFile": "sources/bilibili.original.svg"
+  },
+  {
+    "key": "qq_music",
+    "name": "QQ音乐",
+    "file": "qq_music.png",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/b5/d0/26/b5d0262d-f36a-cd5c-035f-4420491df4ed/AppIcon-0-0-1x_U007ephone-0-1-0-sRGB-85-220.png/512x512bb.jpg",
+    "sourcePage": "https://apps.apple.com/cn/app/qq%E9%9F%B3%E4%B9%90-%E5%90%AC%E6%88%91%E6%83%B3%E5%90%AC/id414603431?uo=4",
+    "license": "Official brand asset; no open redistribution license found; trademark and copyright belong to respective owner",
+    "sourceFile": "sources/qq_music.appstore.jpg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Official publisher app artwork from Apple public iTunes lookup API, JPEG 512px decoded to RGBA and proportionally downscaled to 128px with Lanczos; geometry/colors/background retained",
+    "notes": "Public application icon, verified matching name/bundle/publisher; no user or login-state media",
+    "sha256": "dd8fc59ec7caaffd4ef85cc1ef53ca24c3aacd0906cb94900068482195c70ad1",
+    "bytes": 16957,
+    "previousOfficialSource": "https://y.qq.com/favicon.ico?max_age=2592000",
+    "publisher": "Tencent Technology (Shenzhen) Company Limited"
+  },
+  {
+    "key": "netease_music",
+    "name": "网易云音乐",
+    "file": "netease_music.png",
+    "source": "https://github.com/simple-icons/simple-icons/blob/16.33.0/icons/neteasecloudmusic.svg",
+    "upstreamBrandSource": "https://y.music.163.com/m",
+    "license": "CC0-1.0 (Simple Icons); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/netease_music.svg",
+    "color": "#D43C33",
+    "conversion": "SVG currentColor replaced with Simple Icons brand color; Chromium transparent 128x128 PNG rasterization; geometry unchanged",
+    "sha256": "0722abeb2cd634d357c29070d37064e1a3b3e2741fdbd8442c759b0044b6c621",
+    "bytes": 6237,
+    "dimensions": [
+      128,
+      128
+    ],
+    "upstreamOriginalFile": "sources/netease_music.original.svg"
+  },
+  {
+    "key": "kugou",
+    "name": "酷狗音乐",
+    "file": "kugou.png",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/cd/05/53/cd055382-f468-65cb-03b5-4ac9e905e080/AppIcon-0-0-1x_U007epad-0-1-85-220.png/512x512bb.jpg",
+    "sourcePage": "https://apps.apple.com/cn/app/%E9%85%B7%E7%8B%97%E9%9F%B3%E4%B9%90-%E5%B0%B1%E6%98%AF%E6%AD%8C%E5%A4%9A/id472208016?uo=4",
+    "license": "Official brand asset; no open redistribution license found; trademark and copyright belong to respective owner",
+    "sourceFile": "sources/kugou.appstore.jpg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Official publisher app artwork from Apple public iTunes lookup API, JPEG 512px decoded to RGBA and proportionally downscaled to 128px with Lanczos; geometry/colors/background retained",
+    "notes": "Public application icon, verified matching name/bundle/publisher; no user or login-state media",
+    "sha256": "ecaafced0d86e9ebf47400b21973729f64d118effdbc8cb8a17c934e759a2753",
+    "bytes": 11712,
+    "previousOfficialSource": "https://www.kugou.com/root/favicon.ico",
+    "publisher": "Guangzhou KuGou Technology  CO. , LTD"
+  },
+  {
+    "key": "spotify",
+    "name": "Spotify",
+    "file": "spotify.png",
+    "source": "https://github.com/simple-icons/simple-icons/blob/16.33.0/icons/spotify.svg",
+    "upstreamBrandSource": "https://developer.spotify.com/documentation/general/design-and-branding/#using-our-logo",
+    "license": "CC0-1.0 (Simple Icons); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/spotify.svg",
+    "color": "#1ED760",
+    "conversion": "SVG currentColor replaced with Simple Icons brand color; Chromium transparent 128x128 PNG rasterization; geometry unchanged",
+    "sha256": "cc40dbbf72f00f9650040a943e6c8139fb0b2adfb51c9696aa4f3f8f0b69c93a",
+    "bytes": 5372,
+    "dimensions": [
+      128,
+      128
+    ],
+    "upstreamOriginalFile": "sources/spotify.original.svg"
+  },
+  {
+    "key": "apple_music",
+    "name": "Apple Music",
+    "file": "apple_music.png",
+    "source": "https://github.com/simple-icons/simple-icons/blob/16.33.0/icons/applemusic.svg",
+    "upstreamBrandSource": "https://www.apple.com/itunes/marketing-on-music/identity-guidelines.html#apple-music-icon",
+    "license": "CC0-1.0 (Simple Icons); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/apple_music.svg",
+    "color": "#FA243C",
+    "conversion": "SVG currentColor replaced with Simple Icons brand color; Chromium transparent 128x128 PNG rasterization; geometry unchanged",
+    "sha256": "d6f439aa6bb4ad43efc5cd3634bc8a428c915ee6a14050d3166d5e51fc5d2c7a",
+    "bytes": 3044,
+    "dimensions": [
+      128,
+      128
+    ],
+    "upstreamOriginalFile": "sources/apple_music.original.svg"
+  },
+  {
+    "key": "jd",
+    "name": "京东",
+    "file": "jd.png",
+    "source": "https://storage.360buyimg.com/retail-mall/mall-common-component/favicon.ico",
+    "sourcePage": "https://www.jd.com/",
+    "license": "Official brand asset; no open redistribution license found; trademark and copyright belong to respective owner",
+    "sourceFile": "sources/jd.ico",
+    "dimensions": [
+      96,
+      96
+    ],
+    "conversion": "ICO largest frame decoded with Pillow; PNG exported as RGBA without resize",
+    "notes": "",
+    "sha256": "24bca0d227756d242d2108c484880a62b81f87bbbaffb9d1b9fc8d805c4f812e",
+    "bytes": 3525
+  },
+  {
+    "key": "taobao",
+    "name": "淘宝 / 88VIP",
+    "file": "taobao.png",
+    "source": "https://github.com/simple-icons/simple-icons/blob/16.33.0/icons/taobao.svg",
+    "upstreamBrandSource": "https://www.alibabagroup.com/en/ir/reports",
+    "license": "CC0-1.0 (Simple Icons); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/taobao.svg",
+    "color": "#E94F20",
+    "conversion": "SVG currentColor replaced with Simple Icons brand color; Chromium transparent 128x128 PNG rasterization; geometry unchanged",
+    "sha256": "97813fe7097e9b2876fab391dffbe1c86e7d46d1add4885d68516ad35e1a365f",
+    "bytes": 6908,
+    "dimensions": [
+      128,
+      128
+    ],
+    "upstreamOriginalFile": "sources/taobao.original.svg"
+  },
+  {
+    "key": "meituan",
+    "name": "美团",
+    "file": "meituan.png",
+    "source": "https://github.com/simple-icons/simple-icons/blob/16.33.0/icons/meituan.svg",
+    "upstreamBrandSource": "https://www.meituan.com/media",
+    "license": "CC0-1.0 (Simple Icons); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/meituan.svg",
+    "color": "#FFD100",
+    "conversion": "SVG currentColor replaced with Simple Icons brand color; Chromium transparent 128x128 PNG rasterization; geometry unchanged",
+    "sha256": "50c63ee56997994fba8f348b1162ec848cf50cb02a569cf2f881a5e9ab177234",
+    "bytes": 3222,
+    "dimensions": [
+      128,
+      128
+    ],
+    "upstreamOriginalFile": "sources/meituan.original.svg"
+  },
+  {
+    "key": "baidu_netdisk",
+    "name": "百度网盘",
+    "file": "baidu_netdisk.png",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/5b/1b/70/5b1b7063-e121-b536-dd0e-651f4a88081b/AppIcon-0-0-1x_U007ephone-0-1-0-0-sRGB-85-220.png/512x512bb.jpg",
+    "sourcePage": "https://apps.apple.com/cn/app/%E7%99%BE%E5%BA%A6%E7%BD%91%E7%9B%98/id547166701?uo=4",
+    "license": "Official brand asset; no open redistribution license found; trademark and copyright belong to respective owner",
+    "sourceFile": "sources/baidu_netdisk.appstore.jpg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Official publisher app artwork from Apple public iTunes lookup API, JPEG 512px decoded to RGBA and proportionally downscaled to 128px with Lanczos; geometry/colors/background retained",
+    "notes": "Public application icon, verified matching name/bundle/publisher; no user or login-state media",
+    "sha256": "b6d1e017fd1578effba4fd492244bd75b548d9db604e690fe0051065e51d821a",
+    "bytes": 10033,
+    "previousOfficialSource": "https://nd-static.bdstatic.com/m-static/wp-brand/favicon.ico",
+    "publisher": "Beijing Duyou Science and Technology Co.,Ltd."
+  },
+  {
+    "key": "quark",
+    "name": "夸克",
+    "file": "quark.png",
+    "source": "https://gw.alicdn.com/imgextra/i3/O1CN018r2tKf28YP7ev0fPF_!!6000000007944-2-tps-48-48.png",
+    "sourcePage": "https://www.quark.cn/",
+    "license": "Official brand asset; no open redistribution license found; trademark and copyright belong to respective owner",
+    "sourceFile": "sources/quark.png",
+    "dimensions": [
+      48,
+      48
+    ],
+    "conversion": "PNG exported as RGBA without resize or geometry changes",
+    "notes": "",
+    "sha256": "1fff68fa1a1e2002673403c0c0d42782ee636d644c022691a406615a1025059e",
+    "bytes": 1466
+  },
+  {
+    "key": "aliyundrive",
+    "name": "阿里云盘",
+    "file": "aliyundrive.png",
+    "source": "https://img.alicdn.com/imgextra/i2/O1CN01DOYcs71v3B6bOemVM_!!6000000006116-2-tps-512-512.png",
+    "sourcePage": "https://www.alipan.com/",
+    "license": "Official brand asset; no open redistribution license found; trademark and copyright belong to respective owner",
+    "sourceFile": "sources/aliyundrive.png",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "PNG exported as RGBA without resize or geometry changes; downscaled proportionally to maximum 128px with Lanczos",
+    "notes": "",
+    "sha256": "b636630f2c1cb1818c9c42e77fde52d59ea811c0db660c01bffde1367036a83d",
+    "bytes": 13756
+  },
+  {
+    "key": "xunlei",
+    "name": "迅雷",
+    "file": "xunlei.png",
+    "source": "https://www.xunlei.com/apple-touch-icon.png",
+    "sourcePage": "https://www.xunlei.com/",
+    "license": "Official brand asset; no open redistribution license found; trademark and copyright belong to respective owner",
+    "sourceFile": "sources/xunlei.png",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "PNG exported as RGBA without resize or geometry changes; downscaled proportionally to maximum 128px with Lanczos",
+    "notes": "",
+    "sha256": "9fb2a51d6eb89b15f33a5bcd96527165104aecffeca85f1a95504dcd24508658",
+    "bytes": 5303
+  },
+  {
+    "key": "chatgpt",
+    "name": "ChatGPT",
+    "file": "chatgpt.png",
+    "source": "https://github.com/lobehub/lobe-icons/blob/master/packages/static-svg/icons/openai.svg",
+    "sourcePage": "https://openai.com/brand/",
+    "license": "MIT (LobeHub); OpenAI trademark usage terms apply",
+    "sourceFile": "sources/chatgpt.svg",
+    "color": "#000000",
+    "conversion": "OpenAI Blossom mark rendered in black, geometry unchanged; Chromium transparent 128x128 PNG rasterization",
+    "sha256": "13917768feb36b8e7922e338ef6e12e18c8d587d9393f24c1bcc67de5c149652",
+    "bytes": 5725,
+    "dimensions": [
+      128,
+      128
+    ],
+    "upstreamOriginalFile": "sources/chatgpt.original.svg"
+  },
+  {
+    "key": "netflix",
+    "name": "Netflix",
+    "file": "netflix.png",
+    "source": "https://github.com/simple-icons/simple-icons/blob/16.33.0/icons/netflix.svg",
+    "upstreamBrandSource": "https://brand.netflix.com/en/assets/logos",
+    "license": "CC0-1.0 (Simple Icons); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/netflix.svg",
+    "color": "#E50914",
+    "conversion": "SVG currentColor replaced with Simple Icons brand color; Chromium transparent 128x128 PNG rasterization; geometry unchanged",
+    "sha256": "1661de00551b05e74387cb75e1cf5b4a2bcca652e1deb69779d0556c7b68e40e",
+    "bytes": 2851,
+    "dimensions": [
+      128,
+      128
+    ],
+    "upstreamOriginalFile": "sources/netflix.original.svg"
+  },
+  {
+    "key": "youtube",
+    "name": "YouTube",
+    "file": "youtube.png",
+    "source": "https://github.com/simple-icons/simple-icons/blob/16.33.0/icons/youtube.svg",
+    "upstreamBrandSource": "https://www.youtube.com/howyoutubeworks/resources/brand-resources/#logos-icons-and-colors",
+    "license": "CC0-1.0 (Simple Icons); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/youtube.svg",
+    "color": "#FF0000",
+    "conversion": "SVG currentColor replaced with Simple Icons brand color; Chromium transparent 128x128 PNG rasterization; geometry unchanged",
+    "sha256": "3442af21ceed6f60de396b8555986f96f92fa5f568a5bf052a3bc85ca3de9ca0",
+    "bytes": 1852,
+    "dimensions": [
+      128,
+      128
+    ],
+    "upstreamOriginalFile": "sources/youtube.original.svg"
+  },
+  {
+    "key": "disneyplus",
+    "name": "Disney+",
+    "file": "disneyplus.png",
+    "source": "https://static-assets.bamgrid.com/product/disneyplus/favicons/disPlus-favicon-180x180.7d56f648dc95f591721935193bc827cb.png",
+    "sourcePage": "https://www.disneyplus.com/en-gb",
+    "license": "Official brand asset; no open redistribution license found; trademark and copyright belong to respective owner",
+    "sourceFile": "sources/disneyplus.png",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "PNG exported as RGBA without resize or geometry changes; downscaled proportionally to maximum 128px with Lanczos",
+    "notes": "",
+    "sha256": "3bf7ef07a68f850f8fdd44ec0abb61141b956f54cf5038b52918b15b0262bdd5",
+    "bytes": 21013
+  }
+]

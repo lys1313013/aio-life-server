@@ -22,6 +22,12 @@ public class MembershipVO {
 
     private String provider;
 
+    private Long providerId;
+
+    private String providerName;
+
+    private String providerIconKey;
+
     private String icon;
 
     private String color;

@@ -22,12 +22,23 @@ import top.aiolife.system.mapper.ISysMenuMapper;
 import top.aiolife.system.pojo.entity.SysMenuEntity;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.any;
 
 class SecondaryLockBoundaryTest {
+    @Test
+    void membershipPlatforms_共享目录不触发个人锁且平台管理保留独立锁() {
+        assertEquals(Set.of("/membership"), SecondaryLockPolicy.requestMenus("/membership/list"));
+        assertEquals(Set.of("/membership"), SecondaryLockPolicy.requestMenus("/membership/123"));
+        assertTrue(SecondaryLockPolicy.requestMenus("/membership/providers").isEmpty());
+        assertTrue(SecondaryLockPolicy.requestMenus("/membership/provider-icons").isEmpty());
+        assertEquals(Set.of("/system/membership-providers"),
+                SecondaryLockPolicy.requestMenus("/system/membership-providers/123"));
+    }
+
     @Test
     void menuMapping_coversRestAliasesAndAllRegisteredTools() {
         assertTrue(SecondaryLockPolicy.requestMenus("/tasks").contains("/task/todo"));
@@ -45,12 +56,46 @@ class SecondaryLockBoundaryTest {
     }
 
     @Test
+    void homepageRoutes_preserveTheirBusinessSecondaryLocks() throws Exception {
+        var routes = Map.of(
+                "/goals/17/pin", "/task/goal",
+                "/goals/pinned-order", "/task/goal",
+                "/anniversaryRecords/17/pin", "/record/anniversary",
+                "/anniversaryRecords/pinned-order", "/record/anniversary",
+                "/read-record/page", "/record/read",
+                "/movie/page", "/record/movie",
+                "/membership/list", "/membership");
+        for (var route : routes.entrySet()) {
+            assertEquals(Set.of(route.getValue()), SecondaryLockPolicy.requestMenus(route.getKey()));
+            var locks = mock(UserSecondaryLockMenuMapper.class);
+            var menus = mock(ISysMenuMapper.class);
+            var locked = new UserSecondaryLockMenuEntity();
+            locked.setMenuId(1L);
+            when(locks.selectForAccessControl(11L)).thenReturn(List.of(locked));
+            when(menus.selectAllForAccessControl()).thenReturn(List.of(menu(1L, null, route.getValue())));
+            var cache = new SecondaryLockMenuCache(new MenuDataCache(locks, menus));
+            var redis = mock(RedisUtil.class);
+            var interceptor = new SecondaryLockInterceptor(cache, redis, new ObjectMapper());
+            try (var identity = mockStatic(RequestLoginContext.class)) {
+                identity.when(RequestLoginContext::userIdOrNull).thenReturn(11L);
+                var response = new MockHttpServletResponse();
+                assertFalse(interceptor.preHandle(new MockHttpServletRequest("PUT", route.getKey()), response, new Object()));
+                assertTrue(response.getContentAsString().contains("2001"));
+                assertTrue(response.getContentAsString().contains(route.getValue()));
+                when(redis.hasKey("secondary:unlock:11:" + route.getValue())).thenReturn(true);
+                assertTrue(interceptor.preHandle(new MockHttpServletRequest("PUT", route.getKey()),
+                        new MockHttpServletResponse(), new Object()));
+            }
+        }
+    }
+
+    @Test
     void parentAndLeafLocks_useDatabaseHierarchyAndOriginalUnlockKeys() {
         var locks = mock(UserSecondaryLockMenuMapper.class); var menus = mock(ISysMenuMapper.class);
         var parent = new UserSecondaryLockMenuEntity(); parent.setMenuId(1L);
         var child = new UserSecondaryLockMenuEntity(); child.setMenuId(2L);
         when(locks.selectForAccessControl(anyLong())).thenReturn(List.of(parent, child));
-        when(menus.selectEnabledForAccessControl()).thenReturn(List.of(menu(1L, null, "/record"),
+        when(menus.selectAllForAccessControl()).thenReturn(List.of(menu(1L, null, "/record"),
                 menu(2L, 1L, "/my-hub/honor")));
         var cache = new SecondaryLockMenuCache(new MenuDataCache(locks, menus));
         assertEquals(Set.of("/record", "/my-hub/honor"), cache.findMatchedPaths(11L, "/honorRecords/7"));
@@ -87,7 +132,7 @@ class SecondaryLockBoundaryTest {
         var target = new DummyTool();
         var tool = new McpToolRegistry.RegisteredMcpTool("task_list", "dummy", target,
                 DummyTool.class.getMethod("run"), null, null, null);
-        var result = invoker.invoke(tool, java.util.Map.of(), null, null);
+        var result = invoker.invoke(tool, Map.of(), null, null);
         assertTrue(result.isError()); assertFalse(target.called);
         verify(guard).checkTool("task_list");
     }
