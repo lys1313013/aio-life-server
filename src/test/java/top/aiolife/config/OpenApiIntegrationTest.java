@@ -85,6 +85,23 @@ class OpenApiIntegrationTest {
     }
 
     @Test
+    void 大模型调用接口已移除且历史管理与MCP接口保留() throws Exception {
+        JsonNode document = document("/v3/api-docs");
+        JsonNode paths = document.path("paths");
+        assertFalse(paths.has("/llm/chat"));
+        assertFalse(paths.has("/llm/chat/stream"));
+        assertFalse(document.path("components").path("schemas").has("ChatReq"));
+        assertTrue(paths.path("/llm/chat/history").has("get"));
+        assertTrue(paths.path("/llm/sessions").has("get"));
+        assertTrue(paths.path("/llm/key/list").has("get"));
+        assertTrue(paths.path("/mcp/tools/call").has("post"));
+        mappings.getHandlerMethods().keySet().forEach(mapping -> {
+            assertFalse(mapping.getPatternValues().contains("/llm/chat"));
+            assertFalse(mapping.getPatternValues().contains("/llm/chat/stream"));
+        });
+    }
+
+    @Test
     void 文档覆盖所有已加载业务路由且操作标识唯一() throws Exception {
         JsonNode document = document("/v3/api-docs");
         Files.createDirectories(Path.of("target/openapi"));

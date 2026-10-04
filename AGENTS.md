@@ -16,7 +16,7 @@ This file provides guidance to AI coding agents when working with code in this r
 - **Sa-Token 1.40.0** (认证授权，JWT 模式)
 - **MinIO** (对象存储)
 - **Neo4j** (关系图谱，可选模块)
-- **LangChain4j 1.12.2** + **MCP 0.14.0** (AI 能力)
+- **LangChain4j 1.12.2** + **MCP 0.14.0** (MCP 工具注册与 Schema 适配)
 - **MapStruct 1.6.0** (对象映射)
 - **Hutool 5.8.36** (Java 工具库)
 - **fastjson2 2.0.57** (JSON 处理)
@@ -63,7 +63,7 @@ mvn test -Dtest=TimeTrackerCategoryControllerIntegrationTest#testList_获取分�
 | `system` | 系统管理：用户、菜单、字典 |
 | `wardrobe` | 衣柜管理 |
 | `relationship` | 人际关系图谱（Neo4j），通过 `AIO_LIFE_NEO4J_ENABLED` 环境变量控制 |
-| `llm` | LLM/AI 功能：LangChain4j + OpenAI，API Key 管理 |
+| `llm` | 历史会话、消息及模型密钥配置管理；不提供大模型调用 |
 | `mcp` | MCP 协议支持：自定义注解驱动的 Tool 注册，含认证层 |
 | `core` | 公共组件：ApiResponse、异常处理、工具类、常量 |
 | `config` | 全局配置：Cache、CORS、JSON、MinIO、MyBatis Plus、Neo4j、Redis、Sa-Token |

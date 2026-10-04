@@ -239,15 +239,10 @@
             <version>8.6.0</version>
         </dependency>
 
-        <!-- LangChain4j 依赖 -->
+        <!-- MCP 工具注解与 Schema 适配仍使用 LangChain4j。 -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j</artifactId>
-            <version>1.12.2</version>
-        </dependency>
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-open-ai</artifactId>
             <version>1.12.2</version>
         </dependency>
         <dependency>

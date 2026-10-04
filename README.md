@@ -63,10 +63,12 @@ Web 入口为「系统管理 → 对象存储」。读取 `AIO_LIFE_MINIO_BUCKET
 
 本策略限制可信来源并阻止重定向绕过；尚未实现 DNS/IP 固定连接及网络出口隔离，不能视为完整的通用 URL 抓取防护。
 
-### AI 能力
+### MCP 工具能力
 
-- **LangChain4j 1.12.2** — LLM 应用开发框架
+- **LangChain4j 1.12.2** — MCP 工具注解与 Schema 适配
 - **MCP 0.14.0** — Model Context Protocol 支持
+
+服务端不提供大模型聊天或流式生成接口。`llm` 模块仅保留历史会话、消息及模型密钥配置管理，已有数据库表和数据保留。
 
 ### 工具库
 
@@ -95,7 +97,7 @@ aio-life-server/
 │   ├── system/           # 系统管理：用户、菜单、字典
 │   ├── wardrobe/         # 衣柜管理
 │   ├── relationship/     # 人际关系图谱（Neo4j，可选）
-│   ├── llm/              # LLM/AI 功能
+│   ├── llm/              # 历史会话、消息及模型密钥配置管理
 │   ├── mcp/              # MCP 协议支持
 │   ├── core/             # 公共组件：ApiResponse、异常处理、工具类
 │   └── config/           # 全局配置
@@ -284,7 +286,6 @@ mvn clean package -DskipTests
 - ✅ **第三方同步** — LeetCode、CSDN、GitHub 数据同步
 - ✅ **衣柜管理** — 衣物分类管理
 - ✅ **人际关系** — 人脉图谱（Neo4j，需启用）
-- ✅ **AI 助手** — LLM 集成，智能分析
 - ✅ **MCP 协议** — Model Context Protocol 支持
 
 ## 📊 监控与运维

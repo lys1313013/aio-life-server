@@ -30,24 +30,6 @@ public class ChatMessageServiceImpl extends ServiceImpl<ChatMessageMapper, ChatM
     }
 
     @Override
-    public ChatMessageEntity saveMessage(Long userId, String role, String content, String modelName) {
-        return saveMessage(userId, null, role, content, modelName);
-    }
-
-    @Override
-    public ChatMessageEntity saveMessage(Long userId, Long conversationId, String role, String content, String modelName) {
-        ChatMessageEntity message = new ChatMessageEntity();
-        message.setUserId(userId);
-        message.setConversationId(conversationId);
-        message.setRole(role);
-        message.setContent(content);
-        message.setModelName(modelName);
-        message.fillCreateCommonField(userId);
-        this.save(message);
-        return message;
-    }
-
-    @Override
     public void deleteByUserId(Long userId) {
         this.remove(new LambdaQueryWrapper<ChatMessageEntity>()
                 .eq(ChatMessageEntity::getUserId, userId));
