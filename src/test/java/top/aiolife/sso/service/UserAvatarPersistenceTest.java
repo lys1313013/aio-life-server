@@ -65,9 +65,9 @@ class UserAvatarPersistenceTest {
         tx.executeWithoutResult(s -> users.updateUser(update(ID),true));
         assertEquals(ID,saved());
         assertEquals(ID,users.getUserInfo(42L).getAvatarFileId());
-        assertEquals("https://example.test/api/file/preview/"+ID,users.getUserInfo(42L).getAvatarUrl());
+        assertEquals("https://example.test/api/public/images/"+ID+".png",users.getUserInfo(42L).getAvatarUrl());
         assertEquals(ID,users.getUserBasicInfo(42L).getAvatarFileId());
-        assertEquals("https://example.test/api/file/preview/"+ID,users.getUserBasicInfo(42L).getAvatarUrl());
+        assertEquals("https://example.test/api/public/images/"+ID+".png",users.getUserBasicInfo(42L).getAvatarUrl());
     }
     @Test void 缺省不变显式null清除并允许后续删除文件() {
         tx.executeWithoutResult(s -> users.updateUser(update(ID),true));
