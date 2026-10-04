@@ -2,12 +2,14 @@ package top.aiolife.record.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.record.mapper.UserDictDataMapper;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.vo.UserDictDataSortVO;
 import top.aiolife.record.service.UserDictDataService;
+import top.aiolife.record.service.UserDictDataCache;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -18,7 +20,10 @@ import java.util.stream.Collectors;
  * @author Lys
  */
 @Service
+@RequiredArgsConstructor
 public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, UserDictDataEntity> implements UserDictDataService {
+
+    private final UserDictDataCache dictDataCache;
 
     @Override
     public List<UserDictDataEntity> listUserVisibleDictData(Long userId, String dictType) {
@@ -28,16 +33,10 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
     @Override
     public List<UserDictDataEntity> listUserVisibleDictData(Long userId, String dictType, boolean includeDisabled) {
         // 1. 查询所有公共分类（userId = 0L，未删除）
-        List<UserDictDataEntity> publicCategories = this.list(new LambdaQueryWrapper<UserDictDataEntity>()
-                .eq(UserDictDataEntity::getUserId, 0L)
-                .eq(UserDictDataEntity::getDictType, dictType)
-                .eq(UserDictDataEntity::getIsDeleted, 0));
+        List<UserDictDataEntity> publicCategories = dictDataCache.list(0L, dictType);
 
-        // 2. 查询当前用户的所有记录（管理页需要看到停用项，业务页也需借此得知哪些公共分类被隐藏）
-        List<UserDictDataEntity> userRecords = this.list(new LambdaQueryWrapper<UserDictDataEntity>()
-                .eq(UserDictDataEntity::getUserId, userId)
-                .eq(UserDictDataEntity::getDictType, dictType)
-                .eq(UserDictDataEntity::getIsDeleted, 0));
+        // 2. 缓存包含停用项的原始记录，两种展示模式使用同一份数据，避免状态互相污染。
+        List<UserDictDataEntity> userRecords = dictDataCache.list(userId, dictType);
 
         // 构建覆盖 Map: templateId -> CategoryOverride
         Map<Long, UserDictDataEntity> overrideMap = userRecords.stream()
@@ -114,6 +113,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
         entity.fillCreateCommonField(userId);
         
         this.save(entity);
+        dictDataCache.evictAfterCommit(userId, entity.getDictType());
     }
 
     @Override
@@ -170,6 +170,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
         } else {
             throw new RuntimeException("无权修改此字典数据");
         }
+        dictDataCache.evictAfterCommit(userId, target.getDictType(), updates.getDictType());
     }
 
     @Override
@@ -215,6 +216,40 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
         } else {
             throw new RuntimeException("无权删除此字典数据");
         }
+        dictDataCache.evictAfterCommit(userId, target.getDictType());
+    }
+
+    @Override
+    public boolean createBaseDictData(UserDictDataEntity entity) {
+        entity.setUserId(0L);
+        entity.fillCreateCommonField(0L);
+        boolean saved = this.save(entity);
+        if (saved) dictDataCache.evictAfterCommit(0L, entity.getDictType());
+        return saved;
+    }
+
+    @Override
+    public boolean updateBaseDictData(Long id, UserDictDataEntity updates) {
+        UserDictDataEntity target = this.getById(id);
+        if (target == null || target.getUserId() != 0L) {
+            throw new RuntimeException("只能修改基础值");
+        }
+        updates.setId(id);
+        updates.fillUpdateCommonField(0L);
+        boolean updated = this.updateById(updates);
+        if (updated) dictDataCache.evictAfterCommit(0L, target.getDictType(), updates.getDictType());
+        return updated;
+    }
+
+    @Override
+    public boolean deleteBaseDictData(Long id) {
+        UserDictDataEntity target = this.getById(id);
+        if (target == null || target.getUserId() != 0L) {
+            throw new RuntimeException("只能删除基础值");
+        }
+        boolean deleted = this.removeById(id);
+        if (deleted) dictDataCache.evictAfterCommit(0L, target.getDictType());
+        return deleted;
     }
 
     @Override
@@ -272,6 +307,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
             throw new RuntimeException("字典排序更新失败");
         }
 
+        dictDataCache.evictAfterCommit(0L, dictType);
         return dictDataList.stream()
                 .map(item -> new UserDictDataSortVO(item.getId(), item.getDictSort()))
                 .toList();

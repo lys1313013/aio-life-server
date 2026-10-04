@@ -20,6 +20,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import top.aiolife.record.pojo.vo.TimeRecordListVO;
+import top.aiolife.record.pojo.entity.UserDictDataEntity;
+import top.aiolife.record.service.UserDictDataCache;
 
 /**
  * Redis配置类
@@ -48,20 +50,26 @@ public class RedisConfig implements CachingConfigurer {
                 objectMapper.getTypeFactory().constructCollectionType(List.class, TimeRecordListVO.class));
         var dayConfiguration = cacheConfiguration.entryTtl(Duration.ofHours(1))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(daySerializer));
+        var dictSerializer = new Jackson2JsonRedisSerializer<List<UserDictDataEntity>>(objectMapper,
+                objectMapper.getTypeFactory().constructCollectionType(List.class, UserDictDataEntity.class));
+        var dictConfiguration = cacheConfiguration.entryTtl(Duration.ofMinutes(5))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(dictSerializer));
         return RedisCacheManager.builder(factory)
                 .cacheDefaults(cacheConfiguration)
-                .withInitialCacheConfigurations(Map.of("timeRecordDay:v1", dayConfiguration))
+                .withInitialCacheConfigurations(Map.of("timeRecordDay:v1", dayConfiguration,
+                        UserDictDataCache.CACHE_NAME, dictConfiguration))
                 .build();
     }
 
-    /** 日列表缓存故障时回源；其他缓存保留原有异常行为。 */
+    /** 日列表和字典缓存故障时回源；其他缓存保留原有异常行为。 */
     @Override
     @Bean
     public CacheErrorHandler errorHandler() {
         return new CacheErrorHandler() {
             private void handle(RuntimeException exception, Cache cache) {
-                if (!"timeRecordDay:v1".equals(cache.getName())) throw exception;
-                log.warn("Time record cache operation failed", exception);
+                if (!"timeRecordDay:v1".equals(cache.getName())
+                        && !UserDictDataCache.CACHE_NAME.equals(cache.getName())) throw exception;
+                log.warn("Cache operation failed: cache={}", cache.getName(), exception);
             }
             @Override
             public void handleCacheGetError(RuntimeException e, Cache cache, Object key) { handle(e, cache); }

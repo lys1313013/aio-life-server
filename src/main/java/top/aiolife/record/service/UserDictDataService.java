@@ -40,6 +40,15 @@ public interface UserDictDataService extends IService<UserDictDataEntity> {
      */
     void deleteDictData(Long id, Long userId);
 
+    /** 创建公共字典，并清理共享缓存。 */
+    boolean createBaseDictData(UserDictDataEntity entity);
+
+    /** 修改公共字典，并清理新旧类型的共享缓存。 */
+    boolean updateBaseDictData(Long id, UserDictDataEntity entity);
+
+    /** 删除公共字典，并清理共享缓存。 */
+    boolean deleteBaseDictData(Long id);
+
     /**
      * 重新排列基础字典数据。
      */

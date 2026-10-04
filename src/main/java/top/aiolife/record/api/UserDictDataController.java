@@ -1,10 +1,12 @@
 package top.aiolife.record.api;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -71,7 +73,7 @@ public class UserDictDataController {
         int fromIndex = (current - 1) * size;
         int toIndex = Math.min(fromIndex + size, total);
 
-        List<UserDictDataEntity> pageList = new java.util.ArrayList<>();
+        List<UserDictDataEntity> pageList = new ArrayList<>();
         if (fromIndex < total) {
             pageList = dataList.subList(fromIndex, toIndex);
         }
@@ -114,7 +116,7 @@ public class UserDictDataController {
 
     // ================= 管理员 API =================
 
-    @cn.dev33.satoken.annotation.SaCheckRole("admin")
+    @SaCheckRole("admin")
     @GetMapping("/admin/query")
     public ApiResponse<PageResp<UserDictDataVO>> adminQuery(@QueryParams CommonQuery<UserDictDataQuery> requestQuery) {
         CommonQuery<UserDictDataEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromUserDictDataQuery);
@@ -143,32 +145,21 @@ public class UserDictDataController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserDictDataVOPage(pageResp));
     }
 
-    @cn.dev33.satoken.annotation.SaCheckRole("admin")
+    @SaCheckRole("admin")
     @PostMapping("/admin")
     public ApiResponse<Boolean> adminInsert(@Valid @RequestBody UserDictDataAdminCreateReq entityReq) {
         UserDictDataEntity entity = RecordApiConvertor.INSTANCE.fromUserDictDataAdminCreateReq(entityReq);
-        // userId = 0L 代表基础值
-        entity.setUserId(0L);
-        entity.fillCreateCommonField(0L);
-        boolean b = userDictDataService.save(entity);
-        return ApiResponse.success(b);
+        return ApiResponse.success(userDictDataService.createBaseDictData(entity));
     }
 
-    @cn.dev33.satoken.annotation.SaCheckRole("admin")
+    @SaCheckRole("admin")
     @PutMapping("/admin/{id}")
     public ApiResponse<Boolean> adminUpdate(@PathVariable("id") Long id, @Valid @RequestBody UserDictDataAdminUpdateReq entityReq) {
         UserDictDataEntity entity = RecordApiConvertor.INSTANCE.fromUserDictDataAdminUpdateReq(entityReq);
-        UserDictDataEntity target = userDictDataService.getById(id);
-        if (target == null || target.getUserId() != 0L) {
-            throw new RuntimeException("只能修改基础值");
-        }
-        entity.setId(id);
-        entity.fillUpdateCommonField(0L);
-        boolean b = userDictDataService.updateById(entity);
-        return ApiResponse.success(b);
+        return ApiResponse.success(userDictDataService.updateBaseDictData(id, entity));
     }
 
-    @cn.dev33.satoken.annotation.SaCheckRole("admin")
+    @SaCheckRole("admin")
     @PostMapping("/admin/reSort")
     public ApiResponse<List<UserDictDataSortVO>> adminReSort(@RequestBody UserDictDataReSortReq req) {
         List<UserDictDataSortVO> result = userDictDataService.reSortBaseDictData(
@@ -179,14 +170,9 @@ public class UserDictDataController {
         return ApiResponse.success(result);
     }
 
-    @cn.dev33.satoken.annotation.SaCheckRole("admin")
+    @SaCheckRole("admin")
     @DeleteMapping("/admin/{id}")
     public ApiResponse<Boolean> adminDelete(@PathVariable("id") Long id) {
-        UserDictDataEntity target = userDictDataService.getById(id);
-        if (target == null || target.getUserId() != 0L) {
-            throw new RuntimeException("只能删除基础值");
-        }
-        boolean b = userDictDataService.removeById(id);
-        return ApiResponse.success(b);
+        return ApiResponse.success(userDictDataService.deleteBaseDictData(id));
     }
 }
