@@ -83,7 +83,9 @@ class QueryHttpContractTest {
         mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isMethodNotAllowed());
         verifyNoInteractions(controller);
-        mvc.perform(get(path)).andExpect(status().isOk());
+        var getRequest = get(path);
+        if (path.equals("/timeRecord/query")) getRequest.param("date", "2026-10-04");
+        mvc.perform(getRequest).andExpect(status().isOk());
         assertEquals(1, mockingDetails(controller).getInvocations().size());
     }
 
@@ -127,18 +129,43 @@ class QueryHttpContractTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void testTimeRecord_保留日期大整数和默认分页() throws Exception {
+    void testTimeRecord_仅绑定单日日期不再分页() throws Exception {
         TimeRecordController controller = mock(TimeRecordController.class);
         mvc(controller).perform(get("/timeRecord/query").param("date", "2026-09-12")
                         .param("categoryId", "9007199254740993"))
                 .andExpect(status().isOk());
-        ArgumentCaptor<CommonQuery<top.aiolife.record.pojo.query.TimeRecordQuery>> captor = ArgumentCaptor.forClass(CommonQuery.class);
+        ArgumentCaptor<top.aiolife.record.pojo.query.TimeRecordQuery> captor = ArgumentCaptor.forClass(top.aiolife.record.pojo.query.TimeRecordQuery.class);
         verify(controller).query(captor.capture());
-        assertEquals(1, captor.getValue().getPage());
-        assertEquals(50, captor.getValue().getPageSize());
-        assertEquals(LocalDate.of(2026, 9, 12), captor.getValue().getCondition().getDate());
-        assertFalse(java.util.Arrays.stream(captor.getValue().getCondition().getClass().getDeclaredFields())
+        assertEquals(LocalDate.of(2026, 9, 12), captor.getValue().getDate());
+        assertFalse(java.util.Arrays.stream(captor.getValue().getClass().getDeclaredFields())
                 .anyMatch(field -> field.getName().equals("categoryId")));
+    }
+
+    @Test
+    void testTimeRecord_完整数组返回且日期必填() throws Exception {
+        var service = mock(top.aiolife.record.service.ITimeRecordService.class);
+        var controller = new TimeRecordController(null, service, null, null, null);
+        mvc(controller).perform(get("/timeRecord/query"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.result").value("date 不能为空"));
+        mvc(controller).perform(get("/timeRecord/query").param("date", ""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.result").value("date 不能为空"));
+        mvc(controller).perform(get("/timeRecord/query").param("date", "invalid"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(service);
+        var date = LocalDate.of(2026, 10, 4);
+        var row = new top.aiolife.record.pojo.vo.TimeRecordListVO();
+        row.setId("9223372036854775807"); row.setCategoryId(9223372036854775806L); row.setDate(date);
+        when(service.queryDay(1L, date)).thenReturn(java.util.Collections.nCopies(151, row));
+        try (var login = mockStatic(cn.dev33.satoken.stp.StpUtil.class)) {
+            login.when(cn.dev33.satoken.stp.StpUtil::getLoginIdAsLong).thenReturn(1L);
+            mvc(controller).perform(get("/timeRecord/query").param("date", date.toString()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(151))
+                    .andExpect(jsonPath("$.data[0].categoryId").value("9223372036854775806"))
+                    .andExpect(jsonPath("$.data[0].date").value("2026-10-04"));
+        }
     }
 
     @Test

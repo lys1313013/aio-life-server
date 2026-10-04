@@ -3,6 +3,8 @@ package top.aiolife.record.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.vo.RecommendNextVO;
+import top.aiolife.record.pojo.vo.TimeRecordListVO;
+import java.util.List;
 
 import top.aiolife.record.pojo.req.TimeRecordReq;
 
@@ -15,6 +17,9 @@ import java.time.LocalDate;
  * @date 2026-01-10 23:55
  */
 public interface ITimeRecordService extends IService<TimeRecordEntity> {
+
+    /** 查询指定用户的完整单日列表，缓存只用于非事务查询。 */
+    List<TimeRecordListVO> queryDay(long userId, LocalDate date);
 
     /**
      * 保存时间记录

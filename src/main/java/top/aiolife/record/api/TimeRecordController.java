@@ -3,8 +3,6 @@ package top.aiolife.record.api;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import java.util.Collections;
 import java.util.Comparator;
@@ -18,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.core.resq.PageResp;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.convertor.TimeRecordConvertor;
 import top.aiolife.record.enums.DictTypeEnum;
@@ -64,30 +61,11 @@ public class TimeRecordController {
         return timeRecordService;
     }
 
+    /** 查询当前用户指定日期的全部记录，不分页。 */
     @GetMapping("/query")
-    public ApiResponse<PageResp<TimeRecordListVO>> query(
-            @QueryParams CommonQuery<TimeRecordQuery> requestQuery) {
-        CommonQuery<TimeRecordEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromTimeRecordQuery);
-        long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<TimeRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.select(
-                TimeRecordEntity::getId,
-                TimeRecordEntity::getDate,
-                TimeRecordEntity::getCategoryId,
-                TimeRecordEntity::getStartTime,
-                TimeRecordEntity::getEndTime,
-                TimeRecordEntity::getTitle,
-                TimeRecordEntity::getRelateId,
-                TimeRecordEntity::getRelateType);
-        lambdaQueryWrapper.eq(TimeRecordEntity::getUserId, userId);
-        TimeRecordEntity condition = query.getCondition();
-        lambdaQueryWrapper.eq(TimeRecordEntity::getDate, condition.getDate());
-
-        lambdaQueryWrapper.orderByDesc(TimeRecordEntity::getUpdateTime);
-        Page<TimeRecordEntity> page = new Page<>(query.getPage(), query.getPageSize());
-        IPage<TimeRecordEntity> iPage = timeRecordService.page(page, lambdaQueryWrapper);
-        PageResp<TimeRecordEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeRecordListVOPage(objectPageResp));
+    public ApiResponse<List<TimeRecordListVO>> query(@Valid @QueryParams TimeRecordQuery requestQuery) {
+        return ApiResponse.success(timeRecordService.queryDay(
+                StpUtil.getLoginIdAsLong(), requestQuery.getDate()));
     }
 
     /**

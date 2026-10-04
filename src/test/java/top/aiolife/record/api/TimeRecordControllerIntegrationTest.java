@@ -119,21 +119,13 @@ class TimeRecordControllerIntegrationTest extends BaseIntegrationTest {
         String id = "test_time_" + System.currentTimeMillis();
         timeRecordMapper.insert(createTimeRecord(id, LocalDate.now()));
 
-        CommonQuery<TimeRecordEntity> query = new CommonQuery<>();
-        query.setPage(1);
-        query.setPageSize(10);
-        TimeRecordEntity condition = new TimeRecordEntity();
-        condition.setDate(LocalDate.now());
-        query.setCondition(condition);
-
-        var response = timeRecordController.query(ApiRequestFixtures.query(query, top.aiolife.record.pojo.query.TimeRecordQuery.class));
+        var query = new top.aiolife.record.pojo.query.TimeRecordQuery();
+        query.setDate(LocalDate.now());
+        var response = timeRecordController.query(query);
         assertSuccess(response);
-        var pageResp = response.getData();
-        assertNotNull(pageResp);
-        assertTrue(pageResp.getTotal() >= 1);
-
-        boolean found = pageResp.getItems().stream()
-                .anyMatch(r -> id.equals(r.getId()));
+        var records = response.getData();
+        assertNotNull(records);
+        boolean found = records.stream().anyMatch(r -> id.equals(r.getId()));
         assertTrue(found, "应该包含刚才插入的记录");
     }
 

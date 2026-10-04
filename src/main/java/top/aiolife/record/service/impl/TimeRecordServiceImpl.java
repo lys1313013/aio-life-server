@@ -4,36 +4,30 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import top.aiolife.core.util.SysUtil;
+import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.convertor.TimeRecordConvertor;
-import top.aiolife.record.prediction.JevCategoryRecommendationService;
-import top.aiolife.record.prediction.RecommendationDataCache;
 import top.aiolife.record.mapper.ITimeRecordMapper;
-import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
-import top.aiolife.record.pojo.entity.TimeRecordEntity;
+import top.aiolife.record.pojo.entity.*;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
+import top.aiolife.record.pojo.enums.RelateTypeEnum;
 import top.aiolife.record.pojo.req.ExerciseRecordReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.vo.RecommendNextVO;
-import top.aiolife.record.service.IExerciseRecordService;
-import top.aiolife.record.service.IReadRecordService;
-import top.aiolife.record.service.IMovieService;
-import top.aiolife.record.pojo.entity.ReadRecordEntity;
-import top.aiolife.record.pojo.entity.MovieEntity;
-import top.aiolife.record.pojo.enums.ProgressStatusEnum;
-import top.aiolife.record.pojo.enums.RelateTypeEnum;
-import top.aiolife.record.service.ITimeRecordService;
-import top.aiolife.record.service.ITimeTrackerCategoryService;
-import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
+import top.aiolife.record.pojo.vo.TimeRecordListVO;
+import top.aiolife.record.prediction.JevCategoryRecommendationService;
+import top.aiolife.record.prediction.RecommendationDataCache;
+import top.aiolife.record.service.*;
 import top.aiolife.system.service.IWorkCalendarService;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 时间记录Service实现类
@@ -43,9 +37,11 @@ import java.util.List;
  */
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRecordEntity> implements ITimeRecordService {
 
+    @jakarta.annotation.Resource(name = "cacheManager")
+    private org.springframework.cache.CacheManager timeRecordCacheManager;
     private final ITimeRecordMapper timeRecordMapper;
     private final IExerciseRecordService exerciseRecordService;
     private final IReadRecordService readRecordService;
@@ -55,6 +51,47 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     private final RecommendationDataCache recommendationDataCache;
     private final ITimeTrackerCategoryService timeTrackerCategoryService;
     private final top.aiolife.sso.service.SecondaryLockGuard secondaryLockGuard;
+
+    @Override
+    @org.springframework.cache.annotation.Cacheable(
+            cacheNames = "timeRecordDay:v1", cacheManager = "cacheManager",
+            key = "#userId + ':' + #date",
+            condition = "!T(org.springframework.transaction.support.TransactionSynchronizationManager).isActualTransactionActive()")
+    public List<TimeRecordListVO> queryDay(long userId, LocalDate date) {
+        Objects.requireNonNull(date, "date");
+        List<TimeRecordEntity> records = timeRecordMapper.selectList(new LambdaQueryWrapper<TimeRecordEntity>()
+                .select(TimeRecordEntity::getId, TimeRecordEntity::getDate,
+                        TimeRecordEntity::getCategoryId, TimeRecordEntity::getStartTime,
+                        TimeRecordEntity::getEndTime, TimeRecordEntity::getTitle,
+                        TimeRecordEntity::getRelateId, TimeRecordEntity::getRelateType)
+                .eq(TimeRecordEntity::getUserId, userId)
+                .eq(TimeRecordEntity::getDate, date)
+                .orderByDesc(TimeRecordEntity::getUpdateTime, TimeRecordEntity::getId));
+        return RecordApiConvertor.INSTANCE.toTimeRecordListVOList(records);
+    }
+
+    /** 日期修改需要清理新旧两天；直接访问缓存，避免同类调用使注解失效。 */
+    private void invalidateDayCache(long userId, LocalDate... dates) {
+        Runnable invalidate = () -> {
+            for (LocalDate date : java.util.Arrays.stream(dates).filter(java.util.Objects::nonNull).distinct().toList()) {
+                try {
+                    var cache = timeRecordCacheManager.getCache("timeRecordDay:v1");
+                    if (cache != null) cache.evict(userId + ":" + date);
+                } catch (RuntimeException exception) {
+                    log.warn("Time record cache eviction failed: userId={}, date={}", userId, date, exception);
+                }
+            }
+        };
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() { invalidate.run(); }
+                    });
+        } else {
+            invalidate.run();
+        }
+    }
 
     private void checkExistingExercises(long userId, List<String> timeIds) {
         if (!timeIds.isEmpty() && exerciseRecordService.count(new LambdaQueryWrapper<ExerciseRecordEntity>()
@@ -148,6 +185,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
                 exerciseRecordService.saveBatch(validExercises);
             }
         }
+        invalidateDayCache(userId, entity.getDate());
         return entity.getId();
     }
 
@@ -176,7 +214,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
             entity.setDuration(entity.getEndTime() - entity.getStartTime() + 1);
         }
 
-        this.updateById(entity);
+        if (!this.updateById(entity)) throw new IllegalStateException("更新时间记录失败");
         updateRelateStatusIfNecessary(entity, userId);
 
         checkExistingExercises(userId, List.of(entity.getId()));
@@ -208,11 +246,15 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
                 exerciseRecordService.saveBatch(validExercises);
             }
         }
+        invalidateDayCache(userId, existing.getDate(), entity.getDate());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void removeById(String id, long userId) {
+        TimeRecordEntity existing = this.getOne(new LambdaQueryWrapper<TimeRecordEntity>()
+                .eq(TimeRecordEntity::getId, id).eq(TimeRecordEntity::getUserId, userId));
+        if (existing == null) return;
         checkExistingExercises(userId, List.of(id));
         LambdaQueryWrapper<TimeRecordEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(TimeRecordEntity::getId, id);
@@ -223,6 +265,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         exerciseRecordService.remove(new LambdaQueryWrapper<ExerciseRecordEntity>()
                 .eq(ExerciseRecordEntity::getTimeId, id)
                 .eq(ExerciseRecordEntity::getUserId, userId));
+        invalidateDayCache(userId, existing.getDate());
     }
 
     @Override
@@ -249,6 +292,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
         // 3. 删除时间记录
         this.removeByIds(ids);
+        invalidateDayCache(userId, date);
     }
 
     @Override
