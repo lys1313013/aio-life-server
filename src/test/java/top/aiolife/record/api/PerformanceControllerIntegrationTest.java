@@ -2,6 +2,7 @@ package top.aiolife.record.api;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import top.aiolife.core.ApiRequestFixtures;
@@ -92,7 +93,12 @@ class PerformanceControllerIntegrationTest extends BaseIntegrationTest {
     void testOwnership_代录记录由所属用户查询修改删除且保留创建审计() {
         PerformanceEntity owned = createPerformance(null);
         owned.setCreateUser(2L);
+        // 固定小数秒，覆盖 MySQL DATETIME 舍入到下一秒的场景。
+        owned.setCreateTime(LocalDateTime.of(2026, 1, 2, 3, 4, 5, 750_000_000));
         performanceMapper.insert(owned);
+        // 创建审计是否被更新应比较持久化前后值，而非截断小数秒的内存值。
+        LocalDateTime persistedCreateTime = performanceMapper.selectById(owned.getId()).getCreateTime();
+        assertNotNull(persistedCreateTime);
         PerformanceEntity other = createPerformance(null);
         other.setUserId(2L); // 当前用户创建，但属于别人。
         performanceMapper.insert(other);
@@ -108,7 +114,7 @@ class PerformanceControllerIntegrationTest extends BaseIntegrationTest {
         PerformanceEntity stored = performanceMapper.selectById(owned.getId());
         assertEquals(TEST_USER_ID, stored.getUserId());
         assertEquals(2L, stored.getCreateUser());
-        assertEquals(owned.getCreateTime().withNano(0), stored.getCreateTime().withNano(0));
+        assertEquals(persistedCreateTime, stored.getCreateTime());
         assertEquals(TEST_USER_ID, stored.getUpdateUser());
         assertEquals("所属用户编辑", stored.getPerformanceName());
 
