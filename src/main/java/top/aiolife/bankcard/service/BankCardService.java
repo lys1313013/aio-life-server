@@ -69,6 +69,7 @@ public class BankCardService {
             var template=templateCovers.get(card.getCoverTemplateId());
             if (template!=null) {
                 vo.setCoverTemplateFileId(template.fileId());
+                vo.setCoverTemplatePublicUrl(templates.publicUrl(template.fileId()));
                 vo.setCoverTemplateName(template.name());
                 vo.setCoverSourceUrl(template.sourceUrl());
             }

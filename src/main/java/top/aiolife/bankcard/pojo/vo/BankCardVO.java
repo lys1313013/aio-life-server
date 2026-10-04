@@ -30,6 +30,7 @@ public class BankCardVO {
     private Integer repaymentDay;
     private String coverTemplateId;
     private String coverTemplateFileId;
+    private String coverTemplatePublicUrl;
     private String coverTemplateName;
     private String coverColor;
     private String coverSourceUrl;

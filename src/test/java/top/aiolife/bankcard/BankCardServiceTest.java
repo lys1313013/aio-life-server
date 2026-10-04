@@ -69,7 +69,9 @@ class BankCardServiceTest {
         var files = session.getMapper(BankCardFileMapper.class);
         fileMapper = files;
         guard = new BankCardDictionaryGuard(dictionaries, cards, covers);
-        templateService = new BankCardCoverTemplateService(covers, guard, dictionaries, cards, files);
+        var minio = new top.aiolife.core.util.MinioUtil();
+        org.springframework.test.util.ReflectionTestUtils.setField(minio, "serveBaseUrl", "https://example.test/api");
+        templateService = new BankCardCoverTemplateService(covers, guard, dictionaries, cards, files, minio);
         service = new BankCardService(cards, crypto, guard, dictionaries,
                 session.getMapper(BankCardTagMapper.class), session.getMapper(BankCardTagRelMapper.class),
                 files, covers, templateService);
@@ -269,10 +271,16 @@ class BankCardServiceTest {
         var first=create(1,req);var second=create(2,req);
         assertEquals(FILE_A,first.getCoverTemplateFileId());assertTrue(first.getCoverFileIds().isEmpty());
         assertEquals(2,templates().detail(id).usageCount());
+        String firstUrl = "https://example.test/api/public/images/" + FILE_A + ".png";
+        assertEquals(firstUrl, first.getCoverTemplatePublicUrl());
+        assertEquals(firstUrl, templates().detail(id).publicUrl());
+        assertEquals(firstUrl, templates().options(20,"debit").getFirst().publicUrl());
         templateFile(FILE_B,2);
         var edit=templateReq(FILE_B);edit.setName("新版卡面");edit.setSourceUrl("https://example.com/card");
         tx.execute(s->templates().save(2,id,edit));
         assertEquals(FILE_B,service.detail(1,Long.parseLong(first.getId())).getCoverTemplateFileId());
+        assertEquals("https://example.test/api/public/images/" + FILE_B + ".png",
+                service.detail(1,Long.parseLong(first.getId())).getCoverTemplatePublicUrl());
         assertEquals("新版卡面",service.detail(2,Long.parseLong(second.getId())).getCoverTemplateName());
         assertEquals("https://example.com/card",service.list(1).getFirst().getCoverSourceUrl());
         assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM file WHERE id=?",Integer.class,FILE_A));

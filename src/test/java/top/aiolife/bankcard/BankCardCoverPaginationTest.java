@@ -29,7 +29,7 @@ class BankCardCoverPaginationTest {
         var config=new MybatisConfiguration();config.addMapper(BankCardCoverTemplateMapper.class);
         var factory=new MybatisSqlSessionFactoryBean();factory.setDataSource(ds);factory.setConfiguration(config);
         var mapper=new SqlSessionTemplate(factory.getObject()).getMapper(BankCardCoverTemplateMapper.class);
-        service=new BankCardCoverTemplateService(mapper,null,null,null,null);
+        service=new BankCardCoverTemplateService(mapper,null,null,null,null,new top.aiolife.core.util.MinioUtil());
     }
     @Test void 公共卡面按页查询并在数据库筛选和排序() {
         for (int i=1; i<=28; i++) {

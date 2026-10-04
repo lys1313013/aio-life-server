@@ -25,20 +25,28 @@ public class BankCardCoverTemplateService {
     private final BankCardMapper cardMapper;
     private final BankCardFileMapper fileMapper;
 
+    private final top.aiolife.core.util.MinioUtil minio;
+
+    public String publicUrl(String fileId) { return minio.getPublicImageUrl(fileId, "image/png"); }
+    private BankCardCoverTemplateVO withUrl(BankCardCoverTemplateVO cover) {
+        return cover.withPublicUrl(publicUrl(cover.fileId()));
+    }
+
     public List<BankCardCoverTemplateVO> list() {
-        return mapper.selectDetails();
+        return mapper.selectDetails().stream().map(this::withUrl).toList();
     }
     public PageResp<BankCardCoverTemplateVO> page(BankCardCoverQuery query) {
         if (query.getKeyword() != null) query.setKeyword(query.getKeyword().strip());
-        return PageResp.of(mapper.selectPage(query, ((long) query.getPage() - 1) * query.getSize()), mapper.countPage(query));
+        return PageResp.of(mapper.selectPage(query, ((long) query.getPage() - 1) * query.getSize()).stream().map(this::withUrl).toList(), mapper.countPage(query));
     }
     public BankCardCoverTemplateVO detail(long id) {
         var detail = mapper.selectDetail(id);
         if (detail == null) throw new IllegalArgumentException("公共卡面不存在");
-        return detail;
+        return withUrl(detail);
     }
     public List<BankCardCoverTemplateVO.Option> options(long bankId, String cardType) {
-        return mapper.selectOptions(bankId, cardType);
+        return mapper.selectOptions(bankId, cardType).stream()
+                .map(c -> new BankCardCoverTemplateVO.Option(c.id(), c.name(), c.fileId(), publicUrl(c.fileId()))).toList();
     }
     private BankCardCoverTemplateEntity lock(long id) {
         var template = mapper.lockById(id);
