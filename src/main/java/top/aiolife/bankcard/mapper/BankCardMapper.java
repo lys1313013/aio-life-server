@@ -5,10 +5,19 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.apache.ibatis.annotations.*;
 import top.aiolife.bankcard.pojo.entity.BankCardEntity;
 import java.util.List;
+import top.aiolife.bankcard.pojo.vo.BankCardOrderVO;
 
 /** 银行卡持久化；所有用户操作都保留归属条件。 */
 @Mapper
 public interface BankCardMapper extends BaseMapper<BankCardEntity> {
+    /** 仅锁定排序数据，按主键加锁以串行化同一范围内的拖动。 */
+    @Select("SELECT id,sort_order FROM bank_card WHERE user_id=#{userId} AND is_deleted=0 ORDER BY id FOR UPDATE")
+    @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
+    List<BankCardOrderVO> lockOrder(@Param("userId") long userId);
+
+    @Update("UPDATE bank_card SET sort_order=#{sortOrder},update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE id=#{id} AND user_id=#{userId} AND is_deleted=0")
+    int updateOrder(@Param("userId") long userId, @Param("id") long id, @Param("sortOrder") int sortOrder);
+
     default List<BankCardEntity> list(long userId) {
         return selectList(Wrappers.<BankCardEntity>lambdaQuery()
                 .eq(BankCardEntity::getUserId, userId)

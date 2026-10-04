@@ -7,10 +7,20 @@ import top.aiolife.bankcard.pojo.entity.BankCardCoverTemplateEntity;
 import top.aiolife.bankcard.pojo.dto.BankCardTemplateCover;
 import top.aiolife.bankcard.pojo.vo.BankCardCoverTemplateVO;
 import top.aiolife.bankcard.pojo.query.BankCardCoverQuery;
+import java.time.LocalDateTime;
 import java.util.List;
+import top.aiolife.bankcard.pojo.vo.BankCardOrderVO;
 
 @Mapper
 public interface BankCardCoverTemplateMapper extends BaseMapper<BankCardCoverTemplateEntity> {
+    /** 仅锁定排序数据，按主键加锁以串行化同一范围内的拖动。 */
+    @Select("SELECT id,sort_order FROM bank_card_cover_template WHERE is_deleted=0 ORDER BY id FOR UPDATE")
+    @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
+    List<BankCardOrderVO> lockOrder();
+
+    @Update("UPDATE bank_card_cover_template SET sort_order=#{sortOrder},update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE id=#{id} AND is_deleted=0")
+    int updateOrder(@Param("userId") long userId, @Param("id") long id, @Param("sortOrder") int sortOrder);
+
     String DETAIL_SELECT = """
         SELECT t.id,t.name,t.bank_id,d.dict_label AS bank_name,t.card_type,t.source_url,
           t.is_enabled,t.sort_order,f.id AS file_id,
@@ -76,7 +86,7 @@ public interface BankCardCoverTemplateMapper extends BaseMapper<BankCardCoverTem
                 .eq(BankCardCoverTemplateEntity::getId, id)
                 .set(BankCardCoverTemplateEntity::getIsEnabled, enabled)
                 .set(BankCardCoverTemplateEntity::getUpdateUser, userId)
-                .set(BankCardCoverTemplateEntity::getUpdateTime, java.time.LocalDateTime.now()));
+                .set(BankCardCoverTemplateEntity::getUpdateTime, LocalDateTime.now()));
     }
 
     @Update("UPDATE bank_card_cover_template SET is_deleted=1,update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE id=#{id} AND is_deleted=0")

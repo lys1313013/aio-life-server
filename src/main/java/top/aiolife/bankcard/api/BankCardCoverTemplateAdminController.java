@@ -23,6 +23,11 @@ import top.aiolife.record.service.IFileService;
 @RequestMapping("/system/bank-card-covers")
 @SaCheckRole("admin")
 public class BankCardCoverTemplateAdminController {
+    private final BankCardOrderService orderService;
+    @PutMapping("/order")
+    public ApiResponse<List<BankCardOrderVO>> move(@Valid @RequestBody BankCardMoveReq req) {
+        return ApiResponse.success(orderService.moveCover(StpUtil.getLoginIdAsLong(), req));
+    }
     private final BankCardCoverTemplateService service;
     private final BankCardService cards;
     private final IFileService files;

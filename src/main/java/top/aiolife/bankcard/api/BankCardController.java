@@ -6,8 +6,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.bankcard.pojo.req.*;
+import top.aiolife.bankcard.pojo.vo.BankCardCoverTemplateVO;
 import top.aiolife.bankcard.pojo.vo.BankCardVO;
+import top.aiolife.bankcard.service.BankCardCoverTemplateService;
 import top.aiolife.bankcard.service.BankCardService;
+import top.aiolife.bankcard.service.BankCardOrderService;
+import top.aiolife.bankcard.pojo.vo.BankCardOrderVO;
 import top.aiolife.core.resq.ApiResponse;
 import java.util.List;
 
@@ -15,10 +19,15 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/bank-cards")
 public class BankCardController {
+    private final BankCardOrderService orderService;
+    @PutMapping("/order")
+    public ApiResponse<List<BankCardOrderVO>> move(@Valid @RequestBody BankCardMoveReq req) {
+        return ApiResponse.success(orderService.moveCard(StpUtil.getLoginIdAsLong(), req));
+    }
     private final BankCardService service;
-    private final top.aiolife.bankcard.service.BankCardCoverTemplateService covers;
+    private final BankCardCoverTemplateService covers;
     @GetMapping("/cover-templates")
-    public ApiResponse<List<top.aiolife.bankcard.pojo.vo.BankCardCoverTemplateVO.Option>> covers(@RequestParam long bankId, @RequestParam String cardType) {
+    public ApiResponse<List<BankCardCoverTemplateVO.Option>> covers(@RequestParam long bankId, @RequestParam String cardType) {
         return ApiResponse.success(covers.options(bankId,cardType));
     }
     @GetMapping public ApiResponse<List<BankCardVO>> list() { return ApiResponse.success(service.list(StpUtil.getLoginIdAsLong())); }
