@@ -19,20 +19,27 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WechatAuthController {
     public static final String[] PUBLIC_PATHS = {"/auth/wechat/mini/capabilities",
-            "/auth/wechat/mini/login", "/auth/wechat/mini/phone-login"};
+            "/auth/wechat/mini/login", "/auth/wechat/mini/register", "/auth/wechat/mini/phone-login"};
     private final WechatAuthService service;
     private final WechatMiniClient client;
 
     /** 登录页按服务端配置展示入口，不暴露 AppSecret。 */
     @GetMapping("/capabilities")
     public ApiResponse<Map<String, Boolean>> capabilities() {
-        return ApiResponse.success(Map.of("enabled", client.enabled()));
+        boolean enabled = client.enabled();
+        return ApiResponse.success(Map.of("enabled", enabled, "registrationEnabled", enabled));
     }
 
     /** 校验 loginCode，已绑定则登录，否则返回五分钟临时票据。 */
     @PostMapping("/login")
     public ApiResponse<WechatLoginVO> login(@Valid @RequestBody WechatAuthRequests.Login body, HttpServletRequest request) {
         return ApiResponse.success(service.login(body.loginCode(), request.getRemoteAddr()));
+    }
+
+    /** 用户明确选择注册后，仅使用已验证的微信身份创建账号，手机号可选。 */
+    @PostMapping("/register")
+    public ApiResponse<WechatLoginVO> register(@Valid @RequestBody WechatAuthRequests.Register body, HttpServletRequest request) {
+        return ApiResponse.success(service.register(body, request.getRemoteAddr()));
     }
 
     /** 用户主动授权手机号后注册；已占用号码进入原账号验证。 */

@@ -4,11 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.service.LoginSessionService;
 
-/** 微信身份识别、手机号注册与老账号绑定，不使用手机号自动合并账号。 */
+/** 微信身份识别、可选手机号注册与老账号绑定，不自动合并账号。 */
 @Service
 @RequiredArgsConstructor
 public class WechatAuthService {
@@ -25,6 +26,22 @@ public class WechatAuthService {
         if (user != null) return authenticated(user, false, ip);
         return WechatLoginVO.pending("PHONE_REQUIRED", tickets.issue(
                 new WechatTicketStore.Ticket(identity.openid(), identity.unionid(), null, null)));
+    }
+
+    public WechatLoginVO register(WechatAuthRequests.Register request, String ip) {
+        client.requireEnabled();
+        tickets.rateLimit("register", ip, 10);
+        WechatTicketStore.Ticket ticket = tickets.consume(request.loginTicket());
+        if (ticket.phone() != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请验证原账号后绑定微信");
+        }
+        WechatAccountService.Registration registration;
+        try {
+            registration = accounts.register(ticket);
+        } catch (DuplicateKeyException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "账号绑定状态已变化，请重新微信登录");
+        }
+        return authenticated(registration.user(), registration.newUser(), ip);
     }
 
     public WechatLoginVO phoneLogin(WechatAuthRequests.PhoneLogin request, String ip) {
@@ -70,7 +87,7 @@ public class WechatAuthService {
 
     private WechatLoginVO authenticated(UserEntity user, boolean newUser, String ip) {
         WechatLoginVO result = WechatLoginVO.loggedIn(sessions.complete(user, ip, false), newUser, user.getUsername());
-        result.setHasPassword(org.springframework.util.StringUtils.hasText(user.getPassword()));
+        result.setHasPassword(StringUtils.hasText(user.getPassword()));
         return result;
     }
 }

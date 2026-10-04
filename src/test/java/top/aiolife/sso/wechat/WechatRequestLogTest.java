@@ -12,7 +12,7 @@ import static org.mockito.Mockito.*;
 class WechatRequestLogTest {
     @Test void 微信所有入口都不读取日志参数避免泄露凭证() throws Throwable {
         var target = mock(WechatAuthController.class);
-        for (String name : new String[]{"login", "phoneLogin", "bind", "initializePassword"}) {
+        for (String name : new String[]{"login", "register", "phoneLogin", "bind", "initializePassword"}) {
             var point = mock(ProceedingJoinPoint.class);
             var signature = mock(Signature.class);
             when(point.getSignature()).thenReturn(signature);

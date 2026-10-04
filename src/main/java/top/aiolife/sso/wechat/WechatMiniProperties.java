@@ -12,6 +12,9 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "aio.life.auth.wechat-mini")
 public class WechatMiniProperties {
     private boolean enabled;
+    // 确认页正式发布后再开启网页扫码入口。
+    private boolean webScanEnabled;
+    private String webScanEnvVersion = "release";
     private String appId = "";
     private String appSecret = "";
 }

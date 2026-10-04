@@ -156,6 +156,8 @@ aio:
         enabled: ${AIO_LIFE_WECHAT_MINI_ENABLED:false}
         app-id: ${AIO_LIFE_WECHAT_MINI_APP_ID:}
         app-secret: ${AIO_LIFE_WECHAT_MINI_APP_SECRET:}
+        web-scan-enabled: ${AIO_LIFE_WECHAT_WEB_SCAN_ENABLED:false}
+        web-scan-env-version: ${AIO_LIFE_WECHAT_WEB_SCAN_ENV_VERSION:release}
     scheduling:
       enabled: ${AIO_LIFE_SCHEDULING_ENABLED:true}
     # Neo4j 总开关：默认 false（关系图谱模块不加载）；需要时设 AIO_LIFE_NEO4J_ENABLED=true 启用 Neo4jConfig、PersonServiceImpl、RelationshipServiceImpl、RelationshipController

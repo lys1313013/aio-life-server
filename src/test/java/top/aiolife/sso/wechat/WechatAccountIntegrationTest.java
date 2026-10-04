@@ -6,6 +6,7 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -48,6 +49,22 @@ class WechatAccountIntegrationTest {
         assertEquals(existing.getWechatOpenid(), users.selectById(existing.getId()).getWechatOpenid());
     }
 
+    @Test void 无手机号的微信注册不伪造验证时间且重复注册返回原账号() {
+        var ticket = ticket(null, null);
+        var registered = service.register(ticket);
+        var user = users.selectById(registered.user().getId());
+        assertTrue(registered.newUser());
+        assertNull(user.getPhone());
+        assertNull(user.getPhoneCountryCode());
+        assertNull(user.getPhoneVerifiedAt());
+        assertNull(user.getPassword());
+        assertEquals(ticket.openid(), user.getWechatOpenid());
+        assertEquals("user", user.getRole());
+        var repeated = service.register(ticket);
+        assertFalse(repeated.newUser());
+        assertEquals(user.getId(), repeated.user().getId());
+    }
+
     @Test void 手机号唯一性包含国际区号() {
         var first = service.register(ticket("86", "7700900123")).user();
         var second = service.register(ticket("44", "7700900123")).user();
@@ -79,7 +96,7 @@ class WechatAccountIntegrationTest {
         assertThrows(DataIntegrityViolationException.class, () -> jdbc.update(
                 "INSERT INTO `user` (id,username,nickname,wechat_openid) VALUES (?,?,?,?)",
                 -91002L, "test_duplicate_wx", "test", user.getWechatOpenid()));
-        assertThrows(org.springframework.dao.DataAccessException.class, () -> jdbc.update(
+        assertThrows(DataAccessException.class, () -> jdbc.update(
                 "INSERT INTO `user` (id,username,nickname,phone) VALUES (?,?,?,?)",
                 -91003L, "test_half_phone", "test", "13800138006"));
     }

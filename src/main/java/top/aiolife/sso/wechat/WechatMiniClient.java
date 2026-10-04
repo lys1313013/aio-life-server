@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -14,8 +15,11 @@ import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.record.util.RedisUtil;
 
+import java.io.IOException;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /** 微信服务端凭证交换，不向调用方透传微信响应、session_key 或包含密钥的异常。 */
@@ -28,7 +32,7 @@ public class WechatMiniClient {
     private final DistributedLockExecutor locks;
     private final RestClient client;
 
-    @org.springframework.beans.factory.annotation.Autowired
+    @Autowired
     public WechatMiniClient(WechatMiniProperties properties, RedisUtil redis, DistributedLockExecutor locks) {
         this(properties, redis, locks, builder());
     }
@@ -105,6 +109,45 @@ public class WechatMiniClient {
         if (!country.matches("[1-9][0-9]{0,2}") || !number.matches("[0-9]{4,14}")
                 || country.length() + number.length() > 15) throw unavailable();
         return new Phone(country, number);
+    }
+
+    /** 微信返回图片或 JSON 错误；只接收 PNG/JPEG，绝不将上游错误正文返回前端。 */
+    public String webLoginQrCode(String scene) {
+        requireEnabled();
+        if (!scene.matches("[a-f0-9]{32}")
+                || !Set.of("release", "trial", "develop").contains(properties.getWebScanEnvVersion())) {
+            throw unavailable();
+        }
+        String token = accessToken();
+        byte[] bytes;
+        try {
+            bytes = client.post().uri(uri -> uri.path("/wxa/getwxacodeunlimit")
+                    .queryParam("access_token", token).build())
+                    .body(Map.of("scene", scene, "page", "pages/auth/web-login", "width", 280,
+                            "check_path", "release".equals(properties.getWebScanEnvVersion()), "env_version", properties.getWebScanEnvVersion()))
+                    .retrieve().body(byte[].class);
+        } catch (RestClientException e) {
+            log.warn("微信接口调用失败 operation=getwxacodeunlimit type={}", e.getClass().getSimpleName());
+            throw unavailable();
+        }
+        if (bytes == null || bytes.length < 8 || bytes.length > 1024 * 1024) throw unavailable();
+        String mime = null;
+        if (bytes[0] == (byte) 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4e && bytes[3] == 0x47
+                && bytes[4] == 13 && bytes[5] == 10 && bytes[6] == 26 && bytes[7] == 10) mime = "image/png";
+        else if (bytes[0] == (byte) 0xff && bytes[1] == (byte) 0xd8 && bytes[2] == (byte) 0xff) mime = "image/jpeg";
+        if (mime == null) {
+            try {
+                JsonNode error = JSON.readTree(bytes);
+                if (error != null && (error.path("errcode").asInt() == 40001 || error.path("errcode").asInt() == 42001)) {
+                    redis.unlock(tokenKey(), token);
+                }
+                check(error, "getwxacodeunlimit");
+            } catch (IOException e) {
+                log.warn("微信接口响应无法解析 operation=getwxacodeunlimit");
+            }
+            throw unavailable();
+        }
+        return "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(bytes);
     }
 
     private String tokenKey() { return "auth:wechat:token:" + properties.getAppId(); }

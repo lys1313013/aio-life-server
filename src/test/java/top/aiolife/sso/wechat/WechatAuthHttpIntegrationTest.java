@@ -77,6 +77,33 @@ class WechatAuthHttpIntegrationTest {
         verifyNoInteractions(client);
     }
 
+    @Test void 无手机号权限也可微信注册访问业务并再次登录同一账号() throws Exception {
+        String openid = "no_phone_" + UUID.randomUUID();
+        when(client.enabled()).thenReturn(true);
+        when(client.exchangeLogin("register-code")).thenReturn(new WechatMiniClient.Identity(openid, null));
+        mvc.perform(get("/auth/wechat/mini/capabilities"))
+                .andExpect(jsonPath("$.data.registrationEnabled").value(true));
+        JsonNode pending = postJson("/auth/wechat/mini/login", Map.of("loginCode", "register-code"), null);
+        String ticket = pending.path("loginTicket").asText();
+        JsonNode login = postJson("/auth/wechat/mini/register", Map.of("loginTicket", ticket), null);
+        assertEquals("LOGGED_IN", login.path("status").asText());
+        assertTrue(login.path("newUser").asBoolean());
+        assertTrue(login.path("id").isTextual());
+        mvc.perform(get("/user/info").header("Authorization", "Bearer " + login.path("accessToken").asText()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.wechatBound").value(true))
+                .andExpect(jsonPath("$.data.phoneMasked").isEmpty());
+        JsonNode repeated = postJson("/auth/wechat/mini/login", Map.of("loginCode", "register-code"), null);
+        assertEquals(login.path("id"), repeated.path("id"));
+        assertFalse(repeated.path("newUser").asBoolean());
+        mvc.perform(post("/auth/wechat/mini/register").contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsBytes(Map.of("loginTicket", ticket))))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/auth/wechat/mini/register").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"loginTicket\":\"\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.rscode").value("100400"));
+        verify(client, never()).exchangePhone(anyString());
+    }
+
     private JsonNode postJson(String path, Object body, String token) throws Exception {
         var request = post(path).contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(body));
         if (token != null) request.header("Authorization", "Bearer " + token);

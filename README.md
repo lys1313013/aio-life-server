@@ -304,3 +304,15 @@ mvn clean package -DskipTests
 ## 📮 联系方式
 
 如有问题或建议，请通过 GitHub Issues 反馈。
+
+### 已登录 App 扫码登录 Web
+
+Web 登录页的“App 扫码登录”入口为 `/auth/app-qrcode-login`。用户在已登录的 AIO Life App / 微信小程序中进入“我 → 扫码登录”，扫描二维码并核对四位数字后确认。该入口使用自有登录会话，与“微信扫一扫打开小程序”的微信登录入口独立，不要求微信开放平台配置。
+
+接口前缀 `/api/auth/qr-login`：`POST /` 创建，`GET /{id}/status` 查询，`POST /scan` 扫码，`POST /decision` 确认/拒绝，`POST /consume` 兑换，`POST /cancel` 撤销。查询凭证通过 `X-QR-Secret` 请求头传递；兑换和撤销使用请求体 `{id,browserSecret}`。App 仅提交 `{id,ticket}` / `{id,ticket,approve}`，身份来自 Bearer 登录会话，API Key 和仅 Cookie 鉴权不能授权扫码登录。
+
+二维码有效期 120 秒，浏览器凭证与扫码票据独立生成。Redis 原子状态转换防止并发接管和重复签发；兑换完成后保留 30 秒相同结果，供原浏览器在响应丢失时重取。签发过程中失败或进程退出时不重新开放该票据，需刷新二维码。兑换前校验授权会话及账号状态，新 Web Token 独立于 App Token，遵循现有二级锁策略。浏览器专属凭证不写 URL、二维码、日志或浏览器持久化存储；正式部署使用 HTTPS。
+
+不需要数据库迁移。发布时先更新后端，再更新 Web 和移动端；Redis 须可用。反向代理保留 `Authorization`、`X-QR-Secret` 请求头，对本组接口不缓存。App 需要重新打包以包含扫码原生模块，H5 不提供摄像头扫码入口。
+
+专项验证：`mvn -Dspring.profiles.active=test -Dtest=QrLoginHttpIntegrationTest test`（需要测试 MySQL / Redis，测试账号事务回滚）。

@@ -8,6 +8,10 @@ import cn.dev33.satoken.context.model.SaStorage;
 import cn.dev33.satoken.context.second.SaTokenSecondContext;
 import cn.dev33.satoken.interceptor.SaInterceptor;
 import cn.dev33.satoken.SaManager;
+import top.aiolife.record.api.PublicImageController;
+import top.aiolife.sso.api.QrLoginController;
+import top.aiolife.sso.api.WechatAuthController;
+import top.aiolife.sso.api.WechatWebLoginController;
 import top.aiolife.sso.util.RequestLoginContext;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +34,9 @@ public class SaTokenConfig implements WebMvcConfigurer {
             "/v3/api-docs", "/v3/api-docs/*", "/v3/api-docs.yaml", "/v3/api-docs.yaml/*",
             "/docs/catalog", "/docs/operations", "/docs/operations/*"
     };
+
+    // 仅内置品牌图片公开；图标清单及会员平台接口仍须登录。
+    private static final String PUBLIC_MEMBERSHIP_ICON_PATH = "/membership/provider-icons/*";
 
     private final ApiKeyInterceptor apiKeyInterceptor;
     private final SecondaryLockInterceptor secondaryLockInterceptor;
@@ -73,8 +80,11 @@ public class SaTokenConfig implements WebMvcConfigurer {
         registry.addInterceptor(apiKeyInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(PUBLIC_OPENAPI_PATHS)
-                .excludePathPatterns(top.aiolife.record.api.PublicImageController.PATH)
-                .excludePathPatterns(top.aiolife.sso.api.WechatAuthController.PUBLIC_PATHS)
+                .excludePathPatterns(PublicImageController.PATH)
+                .excludePathPatterns(PUBLIC_MEMBERSHIP_ICON_PATH)
+                .excludePathPatterns(WechatAuthController.PUBLIC_PATHS)
+                .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
+                .excludePathPatterns(WechatWebLoginController.PUBLIC_PATHS)
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
                         "/actuator/**");
@@ -93,8 +103,11 @@ public class SaTokenConfig implements WebMvcConfigurer {
             accountStatusGuard.requireActive(RequestLoginContext.requireUserId());
         })).addPathPatterns("/**")
                 .excludePathPatterns(PUBLIC_OPENAPI_PATHS)
-                .excludePathPatterns(top.aiolife.record.api.PublicImageController.PATH)
-                .excludePathPatterns(top.aiolife.sso.api.WechatAuthController.PUBLIC_PATHS)
+                .excludePathPatterns(PublicImageController.PATH)
+                .excludePathPatterns(PUBLIC_MEMBERSHIP_ICON_PATH)
+                .excludePathPatterns(WechatAuthController.PUBLIC_PATHS)
+                .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
+                .excludePathPatterns(WechatWebLoginController.PUBLIC_PATHS)
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
                         "/actuator/**",
@@ -105,8 +118,11 @@ public class SaTokenConfig implements WebMvcConfigurer {
         registry.addInterceptor(secondaryLockInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(PUBLIC_OPENAPI_PATHS)
-                .excludePathPatterns(top.aiolife.record.api.PublicImageController.PATH)
-                .excludePathPatterns(top.aiolife.sso.api.WechatAuthController.PUBLIC_PATHS)
+                .excludePathPatterns(PublicImageController.PATH)
+                .excludePathPatterns(PUBLIC_MEMBERSHIP_ICON_PATH)
+                .excludePathPatterns(WechatAuthController.PUBLIC_PATHS)
+                .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
+                .excludePathPatterns(WechatWebLoginController.PUBLIC_PATHS)
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
                         "/auth/secondary-verify", "/auth/secondary-password/status", "/auth/secondary-password",
@@ -120,8 +136,11 @@ public class SaTokenConfig implements WebMvcConfigurer {
         registry.addInterceptor(userLastActiveInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(PUBLIC_OPENAPI_PATHS)
-                .excludePathPatterns(top.aiolife.record.api.PublicImageController.PATH)
-                .excludePathPatterns(top.aiolife.sso.api.WechatAuthController.PUBLIC_PATHS)
+                .excludePathPatterns(PublicImageController.PATH)
+                .excludePathPatterns(PUBLIC_MEMBERSHIP_ICON_PATH)
+                .excludePathPatterns(WechatAuthController.PUBLIC_PATHS)
+                .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
+                .excludePathPatterns(WechatWebLoginController.PUBLIC_PATHS)
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
                         "/actuator/**",

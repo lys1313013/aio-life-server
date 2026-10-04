@@ -1,5 +1,6 @@
 package top.aiolife.sso.wechat;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
@@ -11,6 +12,7 @@ import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.record.util.RedisUtil;
 
 import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -37,7 +39,7 @@ class WechatMiniClientTest {
     }
 
     @Test void 登录只提取身份且允许没有unionid() {
-        server.expect(requestTo(org.hamcrest.Matchers.containsString("/sns/jscode2session?")))
+        server.expect(requestTo(Matchers.containsString("/sns/jscode2session?")))
                 .andExpect(queryParam("js_code", "login-code"))
                 .andRespond(withSuccess("{\"openid\":\"Case_Sensitive-id\",\"session_key\":\"never-return\"}", MediaType.APPLICATION_JSON));
         assertEquals(new WechatMiniClient.Identity("Case_Sensitive-id", null), client.exchangeLogin("login-code"));
@@ -120,13 +122,34 @@ class WechatMiniClientTest {
                 .andRespond(withSuccess("{\"access_token\":\"app-token\",\"expires_in\":7200}", MediaType.APPLICATION_JSON));
         phoneResponse("wx_test", "86", "13800138000", 0);
         client.exchangePhone("phone-code");
-        verify(redis).set("auth:wechat:token:wx_test", "app-token", 7140, java.util.concurrent.TimeUnit.SECONDS);
+        verify(redis).set("auth:wechat:token:wx_test", "app-token", 7140, TimeUnit.SECONDS);
         server.verify();
     }
 
     @Test void 应用token过期只清除当前缓存且不重放手机号code() {
         server.expect(anything()).andRespond(withSuccess("{\"errcode\":42001}", MediaType.APPLICATION_JSON));
         assertThrows(ResponseStatusException.class, () -> client.exchangePhone("phone-code"));
+        verify(redis).unlock("auth:wechat:token:wx_test", "app-token");
+        server.verify();
+    }
+
+    @Test void 小程序码携带固定页面和随机scene不包含浏览器密钥() {
+        byte[] image = {(byte) 0x89, 0x50, 0x4e, 0x47, 13, 10, 26, 10};
+        server.expect(requestTo("https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token=app-token"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(jsonPath("$.page").value("pages/auth/web-login"))
+                .andExpect(jsonPath("$.scene").value("a".repeat(32)))
+                .andExpect(jsonPath("$.env_version").value("release"))
+                .andExpect(jsonPath("$.browserSecret").doesNotExist())
+                .andRespond(withSuccess(image, MediaType.IMAGE_PNG));
+        assertTrue(client.webLoginQrCode("a".repeat(32)).startsWith("data:image/png;base64,"));
+        server.verify();
+    }
+
+    @Test void 取码错误不能当图片返回且失效token会清缓存() {
+        server.expect(anything()).andRespond(withSuccess("{\"errcode\":42001,\"errmsg\":\"secret-detail\"}", MediaType.TEXT_PLAIN));
+        var error = assertThrows(ResponseStatusException.class, () -> client.webLoginQrCode("b".repeat(32)));
+        assertFalse(error.getMessage().contains("secret-detail"));
         verify(redis).unlock("auth:wechat:token:wx_test", "app-token");
         server.verify();
     }

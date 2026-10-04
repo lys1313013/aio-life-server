@@ -2,6 +2,7 @@ package top.aiolife.sso.wechat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
@@ -67,7 +68,7 @@ class WechatAuthServiceTest {
     }
 
     @Test void 重复票据在调用微信手机号前被拒绝() {
-        when(tickets.consume("used")).thenThrow(new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST));
+        when(tickets.consume("used")).thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST));
         assertThrows(ResponseStatusException.class, () -> service.phoneLogin(new WechatAuthRequests.PhoneLogin("used", "phone"), "ip"));
         verify(client, never()).exchangePhone(anyString());
         verifyNoInteractions(accounts, sessions);
@@ -85,6 +86,39 @@ class WechatAuthServiceTest {
         when(accounts.register(any())).thenThrow(new DuplicateKeyException("private SQL"));
         var error = assertThrows(ResponseStatusException.class,
                 () -> service.phoneLogin(new WechatAuthRequests.PhoneLogin("ticket", "phone"), "ip"));
+        assertFalse(error.getMessage().contains("private SQL"));
+        verifyNoInteractions(sessions);
+    }
+
+    @Test void 微信注册仅消费身份票据且提交后签发会话() {
+        UserEntity user = user();
+        when(tickets.consume("ticket")).thenReturn(ticket);
+        when(accounts.register(ticket)).thenReturn(new WechatAccountService.Registration(user, true));
+        when(sessions.complete(user, "ip", false)).thenReturn(token());
+        var result = service.register(new WechatAuthRequests.Register("ticket"), "ip");
+        assertEquals("LOGGED_IN", result.getStatus());
+        assertTrue(result.isNewUser());
+        assertEquals("business-token", result.getAccessToken());
+        var order = inOrder(tickets, accounts, sessions);
+        order.verify(tickets).rateLimit("register", "ip", 10);
+        order.verify(tickets).consume("ticket");
+        order.verify(accounts).register(ticket);
+        order.verify(sessions).complete(user, "ip", false);
+        verify(client, never()).exchangePhone(anyString());
+    }
+
+    @Test void 微信注册拒绝已消费及原账号绑定票据() {
+        when(tickets.consume("used")).thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST));
+        when(tickets.consume("bind")).thenReturn(ticket.withPhone(new WechatMiniClient.Phone("86", "13800138000")));
+        assertThrows(ResponseStatusException.class, () -> service.register(new WechatAuthRequests.Register("used"), "ip"));
+        assertThrows(ResponseStatusException.class, () -> service.register(new WechatAuthRequests.Register("bind"), "ip"));
+        verifyNoInteractions(accounts, sessions);
+    }
+
+    @Test void 微信注册并发冲突不签发会话或泄漏SQL() {
+        when(tickets.consume("ticket")).thenReturn(ticket);
+        when(accounts.register(ticket)).thenThrow(new DuplicateKeyException("private SQL"));
+        var error = assertThrows(ResponseStatusException.class, () -> service.register(new WechatAuthRequests.Register("ticket"), "ip"));
         assertFalse(error.getMessage().contains("private SQL"));
         verifyNoInteractions(sessions);
     }

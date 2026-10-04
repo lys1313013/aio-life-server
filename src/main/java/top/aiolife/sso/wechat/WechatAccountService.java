@@ -35,7 +35,7 @@ public class WechatAccountService {
     @Transactional
     public Registration register(WechatTicketStore.Ticket ticket) {
         UserEntity identityOwner = findByOpenid(ticket.openid());
-        UserEntity phoneOwner = findByPhone(ticket.countryCode(), ticket.phone());
+        UserEntity phoneOwner = ticket.phone() == null ? null : findByPhone(ticket.countryCode(), ticket.phone());
         if (identityOwner != null) {
             if (phoneOwner != null && !phoneOwner.getId().equals(identityOwner.getId())) throw conflict();
             return new Registration(identityOwner, false);
@@ -52,7 +52,7 @@ public class WechatAccountService {
         user.setWechatUnionid(ticket.unionid());
         user.setPhoneCountryCode(ticket.countryCode());
         user.setPhone(ticket.phone());
-        user.setPhoneVerifiedAt(LocalDateTime.now());
+        if (ticket.phone() != null) user.setPhoneVerifiedAt(LocalDateTime.now());
         user.setCreateUser(user.getId());
         user.setUpdateUser(user.getId());
         users.insert(user);

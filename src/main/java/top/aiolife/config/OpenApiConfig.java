@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverter;
 import io.swagger.v3.core.converter.ModelConverters;
+import io.swagger.v3.core.util.Json;
+import io.swagger.v3.core.util.PathUtils;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
@@ -24,9 +26,14 @@ import org.springframework.core.ResolvableType;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
+import top.aiolife.sso.api.WechatAuthController;
+import top.aiolife.sso.api.WechatWebLoginController;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /** OpenAPI 描述与实际 Jackson、查询参数及认证契约保持一致。 */
@@ -96,10 +103,13 @@ public class OpenApiConfig {
             if (openApi.getPaths() == null) return;
             openApi.getPaths().forEach((path, item) -> item.readOperationsMap().forEach((method, operation) -> {
                 // 根据 HTTP 方法和路径生成，避免多个 Controller 的 query/save 方法相互冲突。
-                operation.setOperationId(method.name().toLowerCase(java.util.Locale.ROOT)
+                operation.setOperationId(method.name().toLowerCase(Locale.ROOT)
                         + path.replaceAll("[^a-zA-Z0-9]+", "_").replaceAll("_$", ""));
                 if (PUBLIC_AUTH_PATHS.contains(path)
-                        || java.util.Arrays.asList(top.aiolife.sso.api.WechatAuthController.PUBLIC_PATHS).contains(path)) {
+                        || Arrays.asList(WechatAuthController.PUBLIC_PATHS).contains(path)
+                        || Arrays.asList(top.aiolife.sso.api.QrLoginController.PUBLIC_PATHS).contains(path)
+                        || path.equals("/auth/qr-login/{id}/status")
+                        || Arrays.asList(WechatWebLoginController.PUBLIC_PATHS).contains(path)) {
                     operation.setSecurity(List.of());
                 } else if (path.startsWith("/file/preview/") || path.startsWith("/file/download/")) {
                     operation.setSecurity(List.of(new SecurityRequirement(), new SecurityRequirement().addList(BEARER_AUTH)));
@@ -122,7 +132,7 @@ public class OpenApiConfig {
                     var conditionType = ResolvableType.forMethodParameter(parameter).getGeneric(0).resolve();
                     if (conditionType == null || conditionType == Object.class) continue;
                     for (String path : mapping.getPatternValues()) {
-                        var item = openApi.getPaths().get(io.swagger.v3.core.util.PathUtils.parsePath(path, new java.util.LinkedHashMap<>()));
+                        var item = openApi.getPaths().get(PathUtils.parsePath(path, new LinkedHashMap<>()));
                         if (item == null) continue;
                         var resolved = ModelConverters.getInstance().resolveAsResolvedSchema(new AnnotatedType(conditionType));
                         Schema<?> conditionSchema = resolved.schema;
@@ -153,8 +163,8 @@ public class OpenApiConfig {
             var schema = chain.hasNext() ? chain.next().resolve(type, context, chain) : null;
             if (schema == null) return null;
             if (type.getType() != null && "string".equals(schema.getType())
-                    && io.swagger.v3.core.util.Json.mapper().constructType(type.getType()).hasRawClass(java.time.LocalDateTime.class)) {
-                schema = io.swagger.v3.core.util.Json.mapper().convertValue(schema, StringSchema.class);
+                    && Json.mapper().constructType(type.getType()).hasRawClass(LocalDateTime.class)) {
+                schema = Json.mapper().convertValue(schema, StringSchema.class);
                 schema.setFormat(null);
                 schema.addExtension("x-date-format", "ISO_LOCAL_DATE_TIME");
                 schema.setExample("2026-09-29T10:30:00");
@@ -165,7 +175,7 @@ public class OpenApiConfig {
                         && "string".equals(schema.getType())) {
                     // 非 RFC3339 的本地时间不能误标为 format: date-time。
                     // DateTimeSchema 会把非 RFC3339 示例转为 null，因此转换为普通字符串 Schema。
-                    schema = io.swagger.v3.core.util.Json.mapper().convertValue(schema, StringSchema.class);
+                    schema = Json.mapper().convertValue(schema, StringSchema.class);
                     schema.setFormat(null);
                     schema.addExtension("x-date-format", format.pattern());
                     if ("yyyy-MM-dd HH:mm:ss".equals(format.pattern())) schema.setExample("2026-09-29 10:30:00");

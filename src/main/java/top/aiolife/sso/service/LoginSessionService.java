@@ -2,6 +2,7 @@ package top.aiolife.sso.service;
 
 import cn.dev33.satoken.SaManager;
 import cn.dev33.satoken.context.SaHolder;
+import cn.dev33.satoken.stp.SaLoginModel;
 import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,13 +22,28 @@ public class LoginSessionService {
     private final LoginLogMapper loginLogMapper;
 
     public UserLoginVO complete(UserEntity user, String ip, boolean browserCookie) {
+        return complete(user, ip, browserCookie, false);
+    }
+
+    /** 扫码兑换先保存结果，再通过响应体交付；不能提前写 Cookie 或响应头。 */
+    public UserLoginVO completeQr(UserEntity user, String ip) {
+        return complete(user, ip, false, true);
+    }
+
+    private UserLoginVO complete(UserEntity user, String ip, boolean browserCookie, boolean issueOnly) {
         LoginLogEntity log = new LoginLogEntity();
         log.setUserId(user.getId());
         log.setUsername(user.getUsername());
         log.setIpAddress(ip);
         loginLogMapper.insert(log);
-        StpUtil.login(user.getId());
-        String token = StpUtil.getTokenValue();
+        String token;
+        if (issueOnly) {
+            token = StpUtil.getStpLogic().createLoginSession(user.getId(),
+                    new SaLoginModel().setDevice("web"));
+        } else {
+            StpUtil.login(user.getId());
+            token = StpUtil.getTokenValue();
+        }
         if (browserCookie) {
             String prefix = SaManager.getConfig().getTokenPrefix();
             String value = StringUtils.hasText(prefix) ? prefix + " " + token : token;
