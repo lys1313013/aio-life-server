@@ -31,9 +31,9 @@ class UserAvatarFileServiceTest {
         when(files.selectById(ID)).thenReturn(image());
         avatars.validateForBinding(42L, ID);
         ReflectionTestUtils.setField(minio, "serveBaseUrl", "https://example.test/api/");
-        assertEquals("https://example.test/api/file/preview/" + ID, avatars.publicUrl(42L, ID));
+        assertEquals("https://example.test/api/public/images/" + ID + ".png", avatars.publicUrl(42L, ID));
         ReflectionTestUtils.setField(minio, "serveBaseUrl", "https://new.example.test/api");
-        assertEquals("https://new.example.test/api/file/preview/" + ID, avatars.publicUrl(42L, ID));
+        assertEquals("https://new.example.test/api/public/images/" + ID + ".png", avatars.publicUrl(42L, ID));
     }
 
     @ParameterizedTest

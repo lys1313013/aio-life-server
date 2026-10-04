@@ -27,7 +27,8 @@ public class UserAvatarFileService {
 
     public String publicUrl(Long userId, String fileId) {
         if (fileId == null || !fileId.matches("[a-fA-F0-9]{32}")) return null;
-        return isAvatar(files.selectById(fileId), userId) ? minio.getFilePreviewUrl(fileId) : null;
+        var file = files.selectById(fileId);
+        return isAvatar(file, userId) ? minio.getPublicImageUrl(fileId, file.getFileType()) : null;
     }
 
     private boolean isAvatar(FileEntity file, Long userId) {
