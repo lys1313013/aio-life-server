@@ -1,11 +1,9 @@
 {
-  "version": 1,
   "baseline": {
     "revision": "64156465fe8eae58c79f21cd42153766358178f1",
     "schema": "sql/1_init_table/2026-08-18_init_all_tables.sql",
     "sha256": "0db3634cebb05d6dbaa32486208d74e117ddd564b120f00a6af1ee180234a44b"
   },
-  "target_schema": "sql/1_init_table/2026-08-18_init_all_tables.sql",
   "migrations": [
     {
       "path": "sql/1_init_table/2026-09-30_add_wechat_phone_login.sql",
@@ -50,14 +48,19 @@
     {
       "path": "sql/1_init_table/2026-10-04_menu_mobile_status.sql",
       "sha256": "0501fc22c096b9c8c0fdbb5791478aaf66303216fafec9ced22ca61f820bba2a"
-    },
-    {
-      "path": "sql/1_init_table/2026-10-05_membership_provider.sql",
-      "sha256": "0231e5ad77e30b7ae1850fbb0bcd8381c23d9c5f264634666cd32fb072449abb"
-    },
-    {
-      "path": "sql/2_ini_data/2026-10-05_membership_providers.sql",
-      "sha256": "596d7a94a5306fe46069bdb4280b2b427a372c2633a11c05e576982672a63905"
     }
+  ],
+  "mysql_version": "8.0.46",
+  "result": "passed",
+  "checks": [
+    "full schema parity",
+    "existing data retained",
+    "admin menus",
+    "mobile menu status copy and independence",
+    "phone/openid uniqueness",
+    "phone pair constraint",
+    "soft-delete reuse",
+    "optional card number",
+    "avatar file reference and legacy removal"
   ]
 }

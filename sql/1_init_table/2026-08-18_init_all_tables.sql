@@ -232,7 +232,8 @@ CREATE TABLE IF NOT EXISTS `sys_menu` (
     `meta` json DEFAULT NULL COMMENT '路由 meta（title/icon/order/keepAlive/hideInMenu/link等）',
     `roles` varchar(255) DEFAULT NULL COMMENT '可访问角色（逗号分隔，空表示所有）',
     `sort` int NOT NULL DEFAULT 0 COMMENT '排序',
-    `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态（1启用，0禁用）',
+    `status` tinyint NOT NULL DEFAULT 1 COMMENT 'Web端状态（1启用，0禁用）',
+    `mobile_status` tinyint NOT NULL DEFAULT 1 COMMENT '移动端状态（1启用，0禁用）',
     `create_user` bigint DEFAULT NULL COMMENT '创建人',
     `create_time` datetime DEFAULT NULL COMMENT '创建时间',
     `update_user` bigint DEFAULT NULL COMMENT '更新人',
@@ -507,12 +508,15 @@ CREATE TABLE IF NOT EXISTS `goal` (
     `end_date` datetime DEFAULT NULL COMMENT '结束时间',
     `completed_at` datetime DEFAULT NULL COMMENT '完成时间',
     `tags` varchar(1000) DEFAULT NULL COMMENT '目标标签（JSON格式存储）',
+    `is_pinned` tinyint NOT NULL DEFAULT 0 COMMENT '是否固定到首页：0-否，1-是',
+    `pinned_sort` int NOT NULL DEFAULT 0 COMMENT '首页固定排序，数值越小越靠前',
     `is_deleted` tinyint DEFAULT 0 COMMENT '是否删除：0=未删除，1=已删除',
     `create_time` datetime DEFAULT NULL COMMENT '创建时间',
     `update_time` datetime DEFAULT NULL COMMENT '更新时间',
     `create_user` bigint DEFAULT NULL COMMENT '创建人ID',
     `update_user` bigint DEFAULT NULL COMMENT '更新人ID',
     PRIMARY KEY (`id`),
+    KEY `idx_home_pinned` (`user_id`, `is_deleted`, `is_pinned`, `pinned_sort`, `id`),
     KEY `idx_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='目标管理表';
 
@@ -567,12 +571,15 @@ CREATE TABLE IF NOT EXISTS `anniversary_record` (
     `note` varchar(500) DEFAULT NULL COMMENT '备注',
     `color` varchar(50) DEFAULT NULL COMMENT '渐变色class',
     `icon` varchar(20) DEFAULT NULL COMMENT 'Emoji图标',
+    `is_pinned` tinyint NOT NULL DEFAULT 0 COMMENT '是否固定到首页：0-否，1-是',
+    `pinned_sort` int NOT NULL DEFAULT 0 COMMENT '首页固定排序，数值越小越靠前',
     `is_deleted` tinyint DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
     `create_time` datetime DEFAULT NULL COMMENT '创建时间',
     `update_time` datetime DEFAULT NULL COMMENT '更新时间',
     `create_user` bigint DEFAULT NULL COMMENT '创建人ID',
     `update_user` bigint DEFAULT NULL COMMENT '更新人ID',
     PRIMARY KEY (`id`),
+    KEY `idx_home_pinned` (`user_id`, `is_deleted`, `is_pinned`, `pinned_sort`, `id`),
     KEY `idx_user_id` (`user_id`),
     KEY `idx_target_date` (`target_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='纪念日记录表';
@@ -922,11 +929,31 @@ CREATE TABLE IF NOT EXISTS `device` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='设备表';
 
+CREATE TABLE IF NOT EXISTS `membership_provider` (
+    `id` bigint NOT NULL COMMENT '主键ID',
+    `name` varchar(100) NOT NULL COMMENT '平台名称',
+    `code` varchar(50) NOT NULL COMMENT '稳定编码',
+    `category` varchar(50) NOT NULL DEFAULT 'other' COMMENT '默认分类:video/music/shopping/cloud/study/game/other',
+    `icon_key` varchar(64) DEFAULT NULL COMMENT '内置图标标识，不支持上传',
+    `sort_order` int NOT NULL DEFAULT 0 COMMENT '展示顺序',
+    `is_enabled` tinyint NOT NULL DEFAULT 1 COMMENT '是否启用:1-启用 0-停用',
+    `create_user` bigint DEFAULT NULL COMMENT '创建人',
+    `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+    `update_user` bigint DEFAULT NULL COMMENT '更新人',
+    `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+    `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '是否删除',
+    `active_flag` tinyint GENERATED ALWAYS AS (CASE WHEN `is_deleted` = 0 THEN 1 ELSE NULL END) STORED COMMENT '仅有效平台参与编码唯一约束',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_membership_provider_code` (`code`, `active_flag`),
+    KEY `idx_membership_provider_enabled_sort` (`is_enabled`, `sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='会员平台表';
+
 CREATE TABLE IF NOT EXISTS `membership_record` (
     `id` bigint NOT NULL COMMENT '主键ID',
     `user_id` bigint NOT NULL COMMENT '用户ID',
     `name` varchar(100) NOT NULL COMMENT '会员名称',
     `category` varchar(50) NOT NULL DEFAULT 'other' COMMENT '分类:video/music/shopping/cloud/study/game/other',
+    `provider_id` bigint DEFAULT NULL COMMENT '会员平台ID，旧记录或自定义平台可为空',
     `provider` varchar(100) DEFAULT NULL COMMENT '平台/服务商',
     `icon` varchar(50) DEFAULT NULL COMMENT 'emoji图标',
     `color` varchar(50) DEFAULT NULL COMMENT '卡片背景色class',
@@ -944,7 +971,8 @@ CREATE TABLE IF NOT EXISTS `membership_record` (
     `is_deleted` tinyint DEFAULT 0 COMMENT '是否删除',
     PRIMARY KEY (`id`),
     KEY `idx_user_id` (`user_id`),
-    KEY `idx_expiry_date` (`expiry_date`)
+    KEY `idx_expiry_date` (`expiry_date`),
+    KEY `idx_membership_provider_id` (`provider_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='会员记录表';
 
 -- =====================================================
@@ -1262,3 +1290,19 @@ CREATE TABLE IF NOT EXISTS `image_import_task` (
     UNIQUE KEY `uk_image_import_version` (`video_id`, `cover_version`),
     KEY `idx_image_import_due` (`state`, `next_attempt_at`, `lease_until`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='视频封面持久化导入任务';
+
+-- Per-user presentation preferences. Reset uses physical DELETE; business records are untouched.
+CREATE TABLE IF NOT EXISTS `user_home_card_preference` (
+  `id` bigint NOT NULL,
+  `user_id` bigint NOT NULL,
+  `card_key` varchar(64) NOT NULL,
+  `enabled` tinyint NOT NULL DEFAULT 1,
+  `sort_order` int NOT NULL DEFAULT 0,
+  `create_user` bigint DEFAULT NULL,
+  `create_time` datetime DEFAULT NULL,
+  `update_user` bigint DEFAULT NULL,
+  `update_time` datetime DEFAULT NULL,
+  `is_deleted` int NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_home_card` (`user_id`, `card_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户首页卡片偏好';

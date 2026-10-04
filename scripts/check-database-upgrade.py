@@ -133,6 +133,9 @@ def verify(args, mysql):
         before = mysql.run("SELECT id,username,password,nickname FROM user WHERE id=-900001;"
                            "SELECT id,card_no_ciphertext,HEX(card_no_fingerprint),card_no_last4 FROM bank_card WHERE id=-900001", old)
         mysql.run("UPDATE user SET avatar='http://localhost:45678/old-avatar.png' WHERE id=-900001", old)
+        mysql.run("INSERT INTO sys_menu(id,parent_id,name,path,status,is_deleted) VALUES"
+                  "(-900011,0,'MigrationEnabled','/migration-enabled',1,0),"
+                  "(-900012,0,'MigrationDisabled','/migration-disabled',0,0)", old)
         for path, source in migrations:
             mysql.run(source, old)
             print(f'Applied {path}')
@@ -158,7 +161,17 @@ def verify(args, mysql):
                     'Upgrade unexpectedly bound an existing account')
         assert_true(mysql.run("SELECT COUNT(*) FROM sys_menu WHERE name IN ('StorageAdmin','BankCardCoverAdmin') AND roles='admin'", old) == '2',
                     'New administrator menu migrations are incomplete')
+        assert_true(mysql.run("SELECT COUNT(*) FROM sys_menu WHERE mobile_status <> status", old) == '0',
+                    'Mobile menu status did not copy existing status')
+        mysql.run("UPDATE sys_menu SET mobile_status=1 WHERE id=-900012", old)
+        assert_true(mysql.run("SELECT CONCAT(status, ':', mobile_status) FROM sys_menu WHERE id=-900012", old) == '0:1',
+                    'Menu status switches are not independent')
         mysql.run(target, fresh)
+        mysql.run(scoped_sql((ROOT / 'sql/2_ini_data/2_menu.sql').read_text()), fresh)
+        assert_true(mysql.run("SELECT COUNT(*) FROM sys_menu WHERE status=0 AND mobile_status=0", fresh) != '0',
+                    'Fresh menu seed did not retain disabled menus')
+        assert_true(mysql.run("SELECT COUNT(*) FROM sys_menu WHERE mobile_status <> status", fresh) == '0',
+                    'Fresh mobile menu statuses differ from their Web defaults')
         expected, actual = mysql.schema(fresh), mysql.schema(old)
         issues = differences(expected, actual)
         assert_true(not issues, 'Upgrade schema differs from fresh schema:\n' + '\n'.join(issues))
@@ -188,7 +201,7 @@ def verify(args, mysql):
         (args.report_dir / 'schema-contract.json').write_text(json.dumps(contract, ensure_ascii=False, indent=2) + '\n')
         report = {'baseline': plan['baseline'], 'migrations': plan['migrations'],
                   'mysql_version': mysql.run('SELECT VERSION()'), 'result': 'passed',
-                  'checks': ['full schema parity', 'existing data retained', 'admin menus',
+                  'checks': ['full schema parity', 'existing data retained', 'admin menus', 'mobile menu status copy and independence',
                              'phone/openid uniqueness', 'phone pair constraint', 'soft-delete reuse', 'optional card number', 'avatar file reference and legacy removal']}
         (args.report_dir / 'upgrade-report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
         print(f'Upgrade passed: {len(expected["tables"])} tables; reports: {args.report_dir}')
