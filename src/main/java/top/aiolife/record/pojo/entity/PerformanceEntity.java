@@ -24,6 +24,9 @@ import java.util.List;
 @TableName("performance")
 public class PerformanceEntity extends BaseEntity {
 
+    /** 所属用户，与创建人审计字段独立。 */
+    private Long userId;
+
     /**
      * 演出名称
      */

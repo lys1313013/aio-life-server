@@ -7,3 +7,11 @@ INSERT INTO `bank_card` (`id`,`user_id`,`custom_bank_name`,`card_type`,
   `card_no_ciphertext`,`card_no_fingerprint`,`card_no_last4`,`create_user`,`update_user`)
 VALUES (-900001,-900001,'迁移夹具银行','debit',
   'synthetic-ciphertext',UNHEX(REPEAT('AB',32)),'1234',-900001,-900001);
+
+-- 包含有效和软删除演出，验证归属回填不改变历史审计。
+INSERT INTO `performance` (`id`,`performance_name`,`performance_type`,`performance_date`,`city`,`venue`,`ticket_price`,
+  `create_user`,`create_time`,`update_user`,`update_time`,`is_deleted`)
+VALUES (-900001,'迁移有效演出','音乐会','2026-01-01','测试城市','测试场馆',100,
+  -900001,'2026-01-01 10:00:00',-900002,'2026-01-02 11:00:00',0),
+  (-900002,'迁移已删除演出','音乐会','2026-01-01','测试城市','测试场馆',100,
+  -900002,'2026-01-01 10:00:00',-900001,'2026-01-02 11:00:00',1);

@@ -51,6 +51,7 @@ public final class SecondaryLockPolicy {
             Map.entry("/config-management/sysDictType", List.of("/sysDictType")),
             Map.entry("/config-management/sysDictData", List.of("/sysDictData")),
             Map.entry("/mcp/tools", List.of("/mcp")),
+            Map.entry("/mcp/api-keys", List.of("/api-key")),
             Map.entry("/analytics", List.of("/dashboard")),
             Map.entry("/workspace", List.of("/dashboard")));
 

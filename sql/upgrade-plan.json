@@ -58,6 +58,14 @@
     {
       "path": "sql/2_ini_data/2026-10-05_membership_providers.sql",
       "sha256": "596d7a94a5306fe46069bdb4280b2b427a372c2633a11c05e576982672a63905"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-05_performance_user_id.sql",
+      "sha256": "34fca771d8c56922c469e6ea7677bfc1614d83b5023c0c06961958b8bd2ab211"
+    },
+    {
+      "path": "sql/2_ini_data/2026-10-05_ai_api_key_menu.sql",
+      "sha256": "70774308a15604fa17e7efa15647050f749493868d561ab395b1c87a68cc09fc"
     }
   ]
 }

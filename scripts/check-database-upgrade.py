@@ -136,12 +136,26 @@ def verify(args, mysql):
         mysql.run("INSERT INTO sys_menu(id,parent_id,name,path,status,is_deleted) VALUES"
                   "(-900011,0,'MigrationEnabled','/migration-enabled',1,0),"
                   "(-900012,0,'MigrationDisabled','/migration-disabled',0,0)", old)
+        performance_before = mysql.run("SELECT id,create_user,create_time,update_user,update_time,is_deleted FROM performance ORDER BY id", old)
         for path, source in migrations:
             mysql.run(source, old)
             print(f'Applied {path}')
         after = mysql.run("SELECT id,username,password,nickname FROM user WHERE id=-900001;"
                           "SELECT id,card_no_ciphertext,HEX(card_no_fingerprint),card_no_last4 FROM bank_card WHERE id=-900001", old)
         assert_true(before == after, 'Upgrade changed existing account or card data')
+        assert_true(performance_before == mysql.run(
+            "SELECT id,create_user,create_time,update_user,update_time,is_deleted FROM performance ORDER BY id", old),
+            'Performance migration changed audit fields or deletion state')
+        assert_true(mysql.run("SELECT COUNT(*) FROM performance WHERE user_id=create_user", old) == '2',
+                    'Performance ownership was not backfilled for active and deleted records')
+        try:
+            mysql.run("INSERT INTO performance(id,user_id,performance_name,performance_type,performance_date,city,venue,ticket_price) "
+                      "VALUES(-900003,NULL,'invalid','test','2026-01-01','test','test',0)", old)
+        except RuntimeError as error:
+            assert_true('ERROR 1048 ' in str(error), f'Unexpected performance owner constraint error: {error}')
+        else:
+            raise RuntimeError('Performance accepted a NULL owner')
+
         assert_true(mysql.run("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='user' AND column_name='avatar'", old) == '0',
                     'Legacy avatar column was not removed')
         assert_true(mysql.run("SELECT COUNT(*) FROM user WHERE id=-900001 AND avatar_file_id IS NULL", old) == '1',
@@ -202,7 +216,7 @@ def verify(args, mysql):
         report = {'baseline': plan['baseline'], 'migrations': plan['migrations'],
                   'mysql_version': mysql.run('SELECT VERSION()'), 'result': 'passed',
                   'checks': ['full schema parity', 'existing data retained', 'admin menus', 'mobile menu status copy and independence',
-                             'phone/openid uniqueness', 'phone pair constraint', 'soft-delete reuse', 'optional card number', 'avatar file reference and legacy removal']}
+                             'phone/openid uniqueness', 'phone pair constraint', 'soft-delete reuse', 'optional card number', 'avatar file reference and legacy removal', 'performance owner backfill and audit preservation']}
         (args.report_dir / 'upgrade-report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
         print(f'Upgrade passed: {len(expected["tables"])} tables; reports: {args.report_dir}')
     finally:

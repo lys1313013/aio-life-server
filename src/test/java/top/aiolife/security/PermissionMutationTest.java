@@ -178,7 +178,8 @@ class PermissionMutationTest {
                     new PerformanceController(performanceMapper, files).updatePerformance(ApiRequestFixtures.request(performance, PerformanceUpdateReq.class)));
             var performanceUpdate = ArgumentCaptor.forClass(PerformanceEntity.class);
             verify(performanceMapper).update(performanceUpdate.capture(), any(Wrapper.class));
-            assertEquals(11L, performanceUpdate.getValue().getCreateUser());
+            assertNull(performanceUpdate.getValue().getCreateUser());
+            assertNull(performanceUpdate.getValue().getUserId());
             var honor = new HonorRecordEntity(); honor.setId(99L); honor.setFileIds(List.of("dummy-file"));
             assertThrows(IllegalArgumentException.class, () ->
                     new HonorRecordController(mock(IHonorRecordMapper.class), mock(IHonorRecordService.class), files)

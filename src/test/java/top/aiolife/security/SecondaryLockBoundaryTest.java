@@ -58,6 +58,9 @@ class SecondaryLockBoundaryTest {
     @Test
     void homepageRoutes_preserveTheirBusinessSecondaryLocks() throws Exception {
         var routes = Map.of(
+                "/api-key/list", "/mcp/api-keys",
+                "/api-key/generate", "/mcp/api-keys",
+                "/api-key/9223372036854775807", "/mcp/api-keys",
                 "/goals/17/pin", "/task/goal",
                 "/goals/pinned-order", "/task/goal",
                 "/anniversaryRecords/17/pin", "/record/anniversary",

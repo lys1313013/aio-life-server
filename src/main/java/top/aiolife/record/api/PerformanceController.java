@@ -56,7 +56,7 @@ public class PerformanceController {
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "10") long pageSize) {
         LambdaQueryWrapper<PerformanceEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(PerformanceEntity::getCreateUser, StpUtil.getLoginIdAsLong());
+        lambdaQueryWrapper.eq(PerformanceEntity::getUserId, StpUtil.getLoginIdAsLong());
 
         Page<PerformanceEntity> pageParam = new Page<>(page, pageSize);
         IPage<PerformanceEntity> iPage = getBaseMapper().selectPage(pageParam, lambdaQueryWrapper);
@@ -78,6 +78,7 @@ public class PerformanceController {
         PerformanceEntity entity = RecordApiConvertor.INSTANCE.fromPerformanceCreateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
         entity.setId(null);
+        entity.setUserId(userId);
         entity.fillCreateCommonField(userId);
         getBaseMapper().insert(entity);
         syncFiles(entity, userId);
@@ -92,12 +93,13 @@ public class PerformanceController {
     public ApiResponse<PerformanceVO> updatePerformance(@Valid @RequestBody PerformanceUpdateReq entityReq) {
         PerformanceEntity entity = RecordApiConvertor.INSTANCE.fromPerformanceUpdateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
-        entity.setCreateUser(userId);
+        entity.setUserId(null);
+        entity.setCreateUser(null);
         entity.setCreateTime(null);
         entity.fillUpdateCommonField(userId);
         LambdaQueryWrapper<PerformanceEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PerformanceEntity::getId, entity.getId());
-        wrapper.eq(PerformanceEntity::getCreateUser, userId);
+        wrapper.eq(PerformanceEntity::getUserId, userId);
         if (getBaseMapper().update(entity, wrapper) == 0) {
             throw new IllegalArgumentException("演出记录不存在或无权操作");
         }
@@ -134,7 +136,7 @@ public class PerformanceController {
     public ApiResponse<Boolean> deletePerformance(@PathVariable Long id) {
         LambdaQueryWrapper<PerformanceEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PerformanceEntity::getId, id);
-        wrapper.eq(PerformanceEntity::getCreateUser, StpUtil.getLoginIdAsLong());
+        wrapper.eq(PerformanceEntity::getUserId, StpUtil.getLoginIdAsLong());
         boolean b = getBaseMapper().delete(wrapper) > 0;
         return ApiResponse.success(b);
     }

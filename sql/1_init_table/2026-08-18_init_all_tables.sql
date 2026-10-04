@@ -886,6 +886,7 @@ CREATE TABLE IF NOT EXISTS `b_video` (
 
 CREATE TABLE IF NOT EXISTS `performance` (
     `id` bigint NOT NULL AUTO_INCREMENT COMMENT '唯一标识',
+    `user_id` bigint NOT NULL COMMENT '所属用户ID',
     `performance_name` varchar(100) NOT NULL COMMENT '演出名称',
     `performer` varchar(50) DEFAULT NULL,
     `performance_type` varchar(50) NOT NULL COMMENT '演出类型(演唱会/话剧/音乐会等)',
@@ -904,7 +905,8 @@ CREATE TABLE IF NOT EXISTS `performance` (
     `update_user` bigint DEFAULT NULL COMMENT '更新人ID',
     `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `is_deleted` tinyint DEFAULT 0 COMMENT '是否删除：0-未删除，1-已删除',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY `idx_performance_user_deleted` (`user_id`, `is_deleted`, `id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='演出表';
 
 CREATE TABLE IF NOT EXISTS `device` (
