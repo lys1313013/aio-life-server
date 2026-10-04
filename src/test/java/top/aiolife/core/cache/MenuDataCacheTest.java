@@ -2,6 +2,7 @@ package top.aiolife.core.cache;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
 import top.aiolife.sso.pojo.entity.UserSecondaryLockMenuEntity;
@@ -33,11 +34,11 @@ class MenuDataCacheTest {
         when(locks.selectForAccessControl(anyLong())).thenReturn(List.of(row));
         var old = new SysMenuEntity(); old.setId(7L); old.setPath("/old");
         var changed = new SysMenuEntity(); changed.setId(7L); changed.setPath("/new");
-        when(menus.selectEnabledForAccessControl()).thenReturn(List.of(old), List.of(changed))
+        when(menus.selectAllForAccessControl()).thenReturn(List.of(old), List.of(changed))
                 .thenThrow(new IllegalStateException("database unavailable"));
         var guard = new SecondaryLockMenuCache(new MenuDataCache(locks, menus));
-        assertEquals(java.util.Set.of("/old"), guard.getLockedPaths(1));
-        assertEquals(java.util.Set.of("/new"), guard.getLockedPaths(1));
+        assertEquals(Set.of("/old"), guard.getLockedPaths(1));
+        assertEquals(Set.of("/new"), guard.getLockedPaths(1));
         assertThrows(IllegalStateException.class, () -> guard.getLockedPaths(1));
     }
 }

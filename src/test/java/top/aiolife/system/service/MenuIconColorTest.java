@@ -31,7 +31,7 @@ class MenuIconColorTest {
                 CREATE TABLE sys_menu (
                     id BIGINT PRIMARY KEY, parent_id BIGINT, name VARCHAR(64), path VARCHAR(255),
                     component VARCHAR(255), redirect VARCHAR(255), icon_color VARCHAR(7), meta VARCHAR(2000),
-                    roles VARCHAR(255), sort INT, status INT, is_deleted INT,
+                    roles VARCHAR(255), sort INT, mobile_status INT DEFAULT 1, status INT, is_deleted INT,
                     create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP
                 )
                 """);
@@ -43,7 +43,7 @@ class MenuIconColorTest {
         try (var session = factory.getObject().openSession(true)) {
             var mapper = session.getMapper(ISysMenuMapper.class);
             var cache = mock(MenuDataCache.class);
-            when(cache.getEnabledMenus()).thenAnswer(call -> mapper.selectList(null));
+            when(cache.getEnabledMenus(MenuClient.WEB)).thenAnswer(call -> mapper.selectList(null));
             var objectMapper = new ObjectMapper();
             var menus = new MenuServiceImpl(mapper, objectMapper, cache);
             var req = new MenuSaveReq();

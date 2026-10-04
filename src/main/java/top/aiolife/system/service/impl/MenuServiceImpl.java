@@ -1,6 +1,7 @@
 package top.aiolife.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import top.aiolife.system.pojo.req.MenuSaveReq;
 import top.aiolife.system.pojo.vo.MenuAdminVO;
 import top.aiolife.system.pojo.vo.MenuRouteVO;
 import top.aiolife.system.service.IMenuService;
+import top.aiolife.system.service.MenuClient;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -43,40 +45,40 @@ public class MenuServiceImpl implements IMenuService {
     private final MenuDataCache menuDataCache;
 
     @Override
-    public List<MenuRouteVO> getAccessibleMenuTree(List<String> roles) {
-        List<SysMenuEntity> list = listEnabledMenus();
-        List<String> roleList = roles == null ? List.of() : roles;
-        List<SysMenuEntity> filtered = list.stream()
-                .filter(m -> isRoleAllowed(m.getRoles(), roleList))
-                .toList();
-        return buildTree(filtered);
+    public List<MenuRouteVO> getAccessibleMenuTree(List<String> roles, MenuClient client) {
+        return buildTree(accessibleMenus(roles, client));
     }
 
     @Override
-    public Set<Long> getAccessibleMenuIds(List<String> roles) {
-        List<SysMenuEntity> list = listEnabledMenus();
-        List<String> roleList = roles == null ? List.of() : roles;
-        return list.stream()
-                .filter(m -> isRoleAllowed(m.getRoles(), roleList))
-                .map(SysMenuEntity::getId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(HashSet::new));
+    public Set<Long> getAccessibleMenuIds(List<String> roles, MenuClient client) {
+        return accessibleMenus(roles, client).stream().map(SysMenuEntity::getId).collect(Collectors.toSet());
     }
 
     @Override
-    public List<Map<String, Object>> listAccessibleLeaves(List<String> roles) {
-        List<SysMenuEntity> all = listEnabledMenus();
-        List<String> roleList = roles == null ? List.of() : roles;
-        List<SysMenuEntity> accessible = all.stream()
-                .filter(m -> isRoleAllowed(m.getRoles(), roleList))
-                .toList();
+    public List<Map<String, Object>> listAccessibleLeaves(List<String> roles, MenuClient client) {
+        List<SysMenuEntity> accessible = accessibleMenus(roles, client);
         Map<Long, SysMenuEntity> byId = accessible.stream()
-                .filter(m -> m.getId() != null)
-                .collect(Collectors.toMap(SysMenuEntity::getId, e -> e, (a, b) -> a));
-        return accessible.stream()
-                .filter(this::isLeaf)
-                .map(m -> toLeafMap(m, byId))
-                .toList();
+                .collect(Collectors.toMap(SysMenuEntity::getId, e -> e));
+        return accessible.stream().filter(this::isLeaf).map(m -> toLeafMap(m, byId)).toList();
+    }
+
+    private List<SysMenuEntity> accessibleMenus(List<String> roles, MenuClient client) {
+        List<String> roleList = roles == null ? List.of() : roles;
+        List<SysMenuEntity> enabled = menuDataCache.getEnabledMenus(client).stream()
+                .filter(m -> isRoleAllowed(m.getRoles(), roleList)).toList();
+        Map<Long, SysMenuEntity> byId = enabled.stream()
+                .collect(Collectors.toMap(SysMenuEntity::getId, m -> m));
+        // 父级停用或无权限时，所有入口都应过滤后代；循环和孤立节点也不暴露。
+        return enabled.stream().filter(menu -> {
+            Set<Long> visited = new HashSet<>();
+            SysMenuEntity cursor = menu;
+            while (cursor != null && visited.add(cursor.getId())) {
+                Long parent = cursor.getParentId();
+                if (parent == null || parent == 0L) return true;
+                cursor = byId.get(parent);
+            }
+            return false;
+        }).toList();
     }
 
     private boolean isLeaf(SysMenuEntity m) {
@@ -160,10 +162,28 @@ public class MenuServiceImpl implements IMenuService {
         if (exist == null || !Objects.equals(exist.getIsDeleted(), 0)) {
             throw new IllegalArgumentException("菜单不存在");
         }
-        exist.setStatus(status);
-        exist.fillUpdateCommonField(userId);
-        sysMenuMapper.updateById(exist);
-        return toAdminVo(exist);
+        // 只更新目标字段，避免两个端的并发切换相互覆盖。
+        SysMenuEntity patch = new SysMenuEntity();
+        patch.fillUpdateCommonField(userId);
+        sysMenuMapper.update(null, new LambdaUpdateWrapper<SysMenuEntity>()
+                .eq(SysMenuEntity::getId, id).set(SysMenuEntity::getStatus, status)
+                .set(SysMenuEntity::getUpdateUser, patch.getUpdateUser())
+                .set(SysMenuEntity::getUpdateTime, patch.getUpdateTime()));
+        return toAdminVo(sysMenuMapper.selectById(id));
+    }
+
+    @Override
+    public MenuAdminVO updateMobileStatus(long id, int status, long userId) throws Exception {
+        if (status != 0 && status != 1) throw new IllegalArgumentException("status 只能为 0 或 1");
+        SysMenuEntity exist = sysMenuMapper.selectById(id);
+        if (exist == null || !Objects.equals(exist.getIsDeleted(), 0)) throw new IllegalArgumentException("菜单不存在");
+        SysMenuEntity patch = new SysMenuEntity();
+        patch.fillUpdateCommonField(userId);
+        sysMenuMapper.update(null, new LambdaUpdateWrapper<SysMenuEntity>()
+                .eq(SysMenuEntity::getId, id).set(SysMenuEntity::getMobileStatus, status)
+                .set(SysMenuEntity::getUpdateUser, patch.getUpdateUser())
+                .set(SysMenuEntity::getUpdateTime, patch.getUpdateTime()));
+        return toAdminVo(sysMenuMapper.selectById(id));
     }
 
     @Override
@@ -205,10 +225,6 @@ public class MenuServiceImpl implements IMenuService {
         sysMenuMapper.deleteById(id);
     }
 
-    private List<SysMenuEntity> listEnabledMenus() {
-        return menuDataCache.getEnabledMenus();
-    }
-
     private List<SysMenuEntity> listAllMenus() {
         LambdaQueryWrapper<SysMenuEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(SysMenuEntity::getIsDeleted, 0);
@@ -230,10 +246,16 @@ public class MenuServiceImpl implements IMenuService {
         return sysMenuMapper.selectCount(wrapper) > 0;
     }
 
+    private void validateStatus(Integer status) {
+        if (status != null && status != 0 && status != 1) throw new IllegalArgumentException("启用状态只能为 0 或 1");
+    }
+
     private void validateReq(MenuSaveReq req, boolean isUpdate) {
         if (req == null) {
             throw new IllegalArgumentException("请求体不能为空");
         }
+        validateStatus(req.getStatus());
+        validateStatus(req.getMobileStatus());
         if (!isUpdate) {
             if (!StringUtils.hasText(req.getPath())) {
                 throw new IllegalArgumentException("path 不能为空");
@@ -284,7 +306,13 @@ public class MenuServiceImpl implements IMenuService {
         entity.setRedirect(StringUtils.hasText(req.getRedirect()) ? req.getRedirect().trim() : null);
         entity.setRoles(StringUtils.hasText(req.getRoles()) ? req.getRoles().trim() : null);
         entity.setSort(req.getSort() == null ? 0 : req.getSort());
-        entity.setStatus(req.getStatus() == null ? 1 : req.getStatus());
+        if (req.getStatus() != null || entity.getStatus() == null) {
+            entity.setStatus(req.getStatus() == null ? 1 : req.getStatus());
+        }
+        // 旧客户端更新时缺省字段不覆盖；新增时未指定则从 Web 状态初始化。
+        if (req.getMobileStatus() != null || entity.getMobileStatus() == null) {
+            entity.setMobileStatus(req.getMobileStatus() == null ? entity.getStatus() : req.getMobileStatus());
+        }
         entity.setMeta(req.getMeta() == null ? null : objectMapper.writeValueAsString(req.getMeta()));
     }
 
@@ -372,18 +400,17 @@ public class MenuServiceImpl implements IMenuService {
         vo.setRoles(entity.getRoles());
         vo.setSort(entity.getSort());
         vo.setStatus(entity.getStatus());
+        vo.setMobileStatus(entity.getMobileStatus());
         return vo;
     }
 
     private Map<String, Object> readMeta(String metaJson) {
-        if (!StringUtils.hasText(metaJson)) {
-            return null;
-        }
+        if (!StringUtils.hasText(metaJson)) return new HashMap<>();
         try {
-            return objectMapper.readValue(metaJson, new TypeReference<Map<String, Object>>() {
-            });
+            Map<String, Object> meta = objectMapper.readValue(metaJson, new TypeReference<Map<String, Object>>() {});
+            return meta == null ? new HashMap<>() : meta;
         } catch (Exception e) {
-            return null;
+            return new HashMap<>();
         }
     }
 

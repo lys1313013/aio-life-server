@@ -44,7 +44,7 @@ public class SecondaryLockMenuCache {
     private Map<String, Set<String>> loadLockedPaths(long userId) {
         List<Long> locks = menuDataCache.getLockedMenuIds(userId);
         if (locks.isEmpty()) return Map.of();
-        List<SysMenuEntity> menus = menuDataCache.getEnabledMenus();
+        List<SysMenuEntity> menus = menuDataCache.getMenusForLocks();
         Map<Long, SysMenuEntity> byId = menus.stream().collect(Collectors.toMap(SysMenuEntity::getId, m -> m));
         Map<String, Set<String>> result = new HashMap<>();
         for (Long menuId : locks) {

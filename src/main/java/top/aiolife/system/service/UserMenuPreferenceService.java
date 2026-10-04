@@ -27,7 +27,11 @@ public class UserMenuPreferenceService {
     private final UserMenuHiddenMapper hiddenMapper;
 
     public UserMenuPreferenceVO get(long userId) {
-        List<Menu> menus = configurableMenus(userId);
+        return get(userId, MenuClient.WEB);
+    }
+
+    public UserMenuPreferenceVO get(long userId, MenuClient client) {
+        List<Menu> menus = configurableMenus(userId, client);
         Set<Long> allowed = leafIds(menus);
         List<String> hidden = hiddenMapper.selectHiddenMenuIds(userId).stream()
                 .filter(allowed::contains).map(String::valueOf).toList();
@@ -36,8 +40,13 @@ public class UserMenuPreferenceService {
 
     @Transactional(rollbackFor = Exception.class)
     public UserMenuPreferenceVO save(long userId, List<Long> menuIds) {
+        return save(userId, menuIds, MenuClient.WEB);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public UserMenuPreferenceVO save(long userId, List<Long> menuIds, MenuClient client) {
         lockUser(userId);
-        List<Menu> menus = configurableMenus(userId);
+        List<Menu> menus = configurableMenus(userId, client);
         if (menuIds == null || menuIds.size() > 2000 || menuIds.stream().anyMatch(id -> id == null || id <= 0)) {
             throw new IllegalArgumentException("菜单 ID 不合法");
         }
@@ -46,9 +55,12 @@ public class UserMenuPreferenceService {
             throw new IllegalArgumentException("包含无权配置、已停用或不可隐藏的菜单，请刷新后重试");
         }
         Set<Long> current = new HashSet<>(hiddenMapper.selectHiddenMenuIds(userId));
-        if (!current.equals(desired)) {
+        Set<Long> persisted = new HashSet<>(current);
+        persisted.removeAll(leafIds(menus));
+        persisted.addAll(desired);
+        if (!current.equals(persisted)) {
             hiddenMapper.physicalDeleteByUserId(userId);
-            for (Long menuId : desired.stream().sorted().toList()) {
+            for (Long menuId : persisted.stream().sorted().toList()) {
                 UserMenuHiddenEntity entity = new UserMenuHiddenEntity();
                 entity.setUserId(userId);
                 entity.setMenuId(menuId);
@@ -61,9 +73,12 @@ public class UserMenuPreferenceService {
 
     @Transactional(rollbackFor = Exception.class)
     public UserMenuPreferenceVO reset(long userId) {
-        lockUser(userId);
-        hiddenMapper.physicalDeleteByUserId(userId);
-        return new UserMenuPreferenceVO(configurableMenus(userId), List.of());
+        return reset(userId, MenuClient.WEB);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public UserMenuPreferenceVO reset(long userId, MenuClient client) {
+        return save(userId, List.of(), client);
     }
 
     private void lockUser(long userId) {
@@ -72,7 +87,7 @@ public class UserMenuPreferenceService {
         }
     }
 
-    private List<Menu> configurableMenus(long userId) {
+    private List<Menu> configurableMenus(long userId, MenuClient client) {
         UserEntity user = userMapper.selectById(userId);
         if (user == null) {
             throw new IllegalArgumentException("用户不存在");
@@ -81,7 +96,7 @@ public class UserMenuPreferenceService {
                 ? List.of(user.getRole().split(",")).stream().map(String::trim)
                     .filter(StringUtils::hasText).toList()
                 : List.of("user");
-        return toPreferences(menuService.getAccessibleMenuTree(roles));
+        return toPreferences(menuService.getAccessibleMenuTree(roles, client));
     }
 
     private List<Menu> toPreferences(List<MenuRouteVO> routes) {

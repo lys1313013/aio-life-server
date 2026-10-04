@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,6 +13,7 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.system.pojo.req.UserMenuHiddenSaveReq;
 import top.aiolife.system.pojo.vo.UserMenuPreferenceVO;
 import top.aiolife.system.service.UserMenuPreferenceService;
+import top.aiolife.system.service.MenuClient;
 
 /** 当前用户个人菜单显示设置；用户身份只能来自登录态。 */
 @RestController
@@ -21,17 +23,20 @@ public class UserMenuPreferenceController {
     private final UserMenuPreferenceService service;
 
     @GetMapping
-    public ApiResponse<UserMenuPreferenceVO> get() {
-        return ApiResponse.success(service.get(StpUtil.getLoginIdAsLong()));
+    public ApiResponse<UserMenuPreferenceVO> get(@RequestParam(defaultValue = "web") String client) {
+        return ApiResponse.success(service.get(StpUtil.getLoginIdAsLong(), MenuClient.parse(client)));
     }
 
     @PutMapping
-    public ApiResponse<UserMenuPreferenceVO> save(@RequestBody UserMenuHiddenSaveReq req) {
-        return ApiResponse.success(service.save(StpUtil.getLoginIdAsLong(), req.getMenuIds()));
+    public ApiResponse<UserMenuPreferenceVO> save(@RequestBody UserMenuHiddenSaveReq req, @RequestParam(defaultValue = "web") String client) {
+        return ApiResponse.success(service.save(StpUtil.getLoginIdAsLong(), req.getMenuIds(), MenuClient.parse(client)));
     }
 
     @DeleteMapping
-    public ApiResponse<UserMenuPreferenceVO> reset() {
-        return ApiResponse.success(service.reset(StpUtil.getLoginIdAsLong()));
+    public ApiResponse<UserMenuPreferenceVO> reset(@RequestParam(defaultValue = "web") String client) {
+        return ApiResponse.success(service.reset(StpUtil.getLoginIdAsLong(), MenuClient.parse(client)));
     }
+    public ApiResponse<UserMenuPreferenceVO> get() { return get("web"); }
+    public ApiResponse<UserMenuPreferenceVO> save(@RequestBody UserMenuHiddenSaveReq req) { return save(req, "web"); }
+    public ApiResponse<UserMenuPreferenceVO> reset() { return reset("web"); }
 }

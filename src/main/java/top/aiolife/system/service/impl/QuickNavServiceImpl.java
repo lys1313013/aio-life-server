@@ -16,6 +16,7 @@ import top.aiolife.system.pojo.vo.QuickNavCandidateVO;
 import top.aiolife.system.pojo.vo.QuickNavItemVO;
 import top.aiolife.system.service.IMenuService;
 import top.aiolife.system.service.IQuickNavService;
+import top.aiolife.system.service.MenuClient;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -61,9 +62,15 @@ public class QuickNavServiceImpl implements IQuickNavService {
     }
 
     @Override
-    public List<QuickNavCandidateVO> listCandidates(List<String> roles) {
+    public List<QuickNavItemVO> listMy(long userId, List<String> roles, MenuClient client) {
+        Set<Long> allowed = menuService.getAccessibleMenuIds(roles, client);
+        return listMy(userId).stream().filter(item -> allowed.contains(item.getMenuId())).toList();
+    }
+
+    @Override
+    public List<QuickNavCandidateVO> listCandidates(List<String> roles, MenuClient client) {
         List<QuickNavCandidateVO> leaves = new ArrayList<>();
-        for (Map<String, Object> leaf : menuService.listAccessibleLeaves(roles)) {
+        for (Map<String, Object> leaf : menuService.listAccessibleLeaves(roles, client)) {
             QuickNavCandidateVO vo = new QuickNavCandidateVO();
             vo.setMenuId(asLong(leaf.get("menuId")));
             vo.setTitle((String) leaf.get("title"));
@@ -80,19 +87,38 @@ public class QuickNavServiceImpl implements IQuickNavService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<QuickNavItemVO> saveMy(long userId, List<String> roles, QuickNavSaveReq req) {
+        return saveMy(userId, roles, req, MenuClient.WEB);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<QuickNavItemVO> saveMy(long userId, List<String> roles, QuickNavSaveReq req, MenuClient client) {
         List<QuickNavSaveReq.Item> items = req == null || req.getItems() == null
                 ? List.of()
                 : req.getItems();
 
-        validateSavePayload(userId, roles, items);
+        validateSavePayload(userId, roles, items, client);
+        // 两端共用布局，只替换当前端可配置部分，保留另一端独有的快捷项。
+        Set<Long> accessible = menuService.getAccessibleMenuIds(roles, client);
+        List<QuickNavSaveReq.Item> merged = new ArrayList<>(items);
+        int nextOrder = items.stream().mapToInt(QuickNavSaveReq.Item::getSortOrder).max().orElse(-1) + 1;
+        for (UserQuickNavEntity row : listByUserId(userId)) {
+            if (accessible.contains(row.getMenuId())) continue;
+            QuickNavSaveReq.Item retained = new QuickNavSaveReq.Item();
+            retained.setMenuId(row.getMenuId());
+            retained.setEnabled(row.getEnabled());
+            retained.setSortOrder(nextOrder++);
+            merged.add(retained);
+        }
+        if (merged.size() > MAX_ITEMS) throw new IllegalArgumentException("快捷导航两端合计最多 " + MAX_ITEMS + " 项");
 
         // 先逻辑删除旧布局；请求内 menuId 去重校验保证新布局不存在重复有效记录。
         userQuickNavMapper.delete(new LambdaQueryWrapper<UserQuickNavEntity>()
                 .eq(UserQuickNavEntity::getUserId, userId));
 
         // 批量插入新记录
-        if (!items.isEmpty()) {
-            for (QuickNavSaveReq.Item item : items) {
+        if (!merged.isEmpty()) {
+            for (QuickNavSaveReq.Item item : merged) {
                 UserQuickNavEntity entity = new UserQuickNavEntity();
                 entity.setUserId(userId);
                 entity.setMenuId(item.getMenuId());
@@ -103,7 +129,7 @@ public class QuickNavServiceImpl implements IQuickNavService {
             }
         }
 
-        return listMy(userId);
+        return listMy(userId, roles, client);
     }
 
     // ----------------- 私有辅助 -----------------
@@ -146,7 +172,7 @@ public class QuickNavServiceImpl implements IQuickNavService {
         return vo;
     }
 
-    private void validateSavePayload(long userId, List<String> roles, List<QuickNavSaveReq.Item> items) {
+    private void validateSavePayload(long userId, List<String> roles, List<QuickNavSaveReq.Item> items, MenuClient client) {
         if (items.size() > MAX_ITEMS) {
             throw new IllegalArgumentException("快捷导航最多 " + MAX_ITEMS + " 项");
         }
@@ -170,7 +196,7 @@ public class QuickNavServiceImpl implements IQuickNavService {
             }
         }
         // 校验每个 menuId 都属于当前用户可访问集合
-        Set<Long> accessible = menuService.getAccessibleMenuIds(roles);
+        Set<Long> accessible = menuService.getAccessibleMenuIds(roles, client);
         for (Long menuId : seenMenu) {
             if (!accessible.contains(menuId)) {
                 throw new IllegalArgumentException("菜单 " + menuId + " 无访问权限");

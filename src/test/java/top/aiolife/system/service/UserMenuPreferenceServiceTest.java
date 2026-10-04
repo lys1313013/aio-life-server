@@ -32,7 +32,7 @@ class UserMenuPreferenceServiceTest {
         when(users.selectById(7L)).thenReturn(user);
         when(hidden.lockUser(7L)).thenReturn(7L);
         when(hidden.selectHiddenMenuIds(7L)).thenReturn(List.of());
-        when(menuService.getAccessibleMenuTree(List.of("user"))).thenReturn(List.of(
+        when(menuService.getAccessibleMenuTree(List.of("user"), MenuClient.WEB)).thenReturn(List.of(
                 route(10, "/group", "BasicLayout", Map.of(),
                         route(11, "/one", "one/index", Map.of()),
                         route(12, "/two", "two/index", Map.of())),
@@ -87,10 +87,13 @@ class UserMenuPreferenceServiceTest {
     }
 
     @Test
-    void reset_仅删除当前用户包括已失效菜单的记录() {
+    void reset_恢复当前端菜单并保留另一端偏好() {
+        when(hidden.selectHiddenMenuIds(7L)).thenReturn(List.of(11L, 99L));
         assertTrue(service.reset(7L).hiddenMenuIds().isEmpty());
         verify(hidden).physicalDeleteByUserId(7L);
-        verify(hidden, never()).insert(any(UserMenuHiddenEntity.class));
+        var entity = ArgumentCaptor.forClass(UserMenuHiddenEntity.class);
+        verify(hidden).insert(entity.capture());
+        assertEquals(99L, entity.getValue().getMenuId());
     }
 
     @Test
@@ -103,7 +106,7 @@ class UserMenuPreferenceServiceTest {
     @Test
     void get_雪花ID不丢精度且单入口分组不暴露隐藏子路由() {
         long id = 9007199254740993L;
-        when(menuService.getAccessibleMenuTree(List.of("user"))).thenReturn(List.of(
+        when(menuService.getAccessibleMenuTree(List.of("user"), MenuClient.WEB)).thenReturn(List.of(
                 route(id, "/single", "BasicLayout", Map.of("hideChildrenInMenu", true),
                         route(51, "/single/detail", "detail/index", Map.of()))));
         when(hidden.selectHiddenMenuIds(7L)).thenReturn(List.of(id));

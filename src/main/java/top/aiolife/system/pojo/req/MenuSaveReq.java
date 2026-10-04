@@ -31,6 +31,10 @@ public class MenuSaveReq {
 
     private Integer sort;
 
+    /** Web 端启用状态。 */
     private Integer status;
+
+    /** 移动端启用状态。 */
+    private Integer mobileStatus;
 }
 

@@ -35,7 +35,11 @@ public class MenuAdminVO {
 
     private Integer sort;
 
+    /** Web 端启用状态。 */
     private Integer status;
+
+    /** 移动端启用状态。 */
+    private Integer mobileStatus;
 
     private List<MenuAdminVO> children;
 }

@@ -24,18 +24,23 @@ public interface IQuickNavService {
      */
     List<QuickNavItemVO> listMy(long userId);
 
+    List<QuickNavItemVO> listMy(long userId, List<String> roles, MenuClient client);
+
     /**
      * 获取当前用户可访问、且适合作为快捷入口的菜单叶子列表。
      *
      * @param roles 当前用户角色列表
      * @return 候选池
      */
-    List<QuickNavCandidateVO> listCandidates(List<String> roles);
+    default List<QuickNavCandidateVO> listCandidates(List<String> roles) {
+        return listCandidates(roles, MenuClient.WEB);
+    }
+    List<QuickNavCandidateVO> listCandidates(List<String> roles, MenuClient client);
 
     /**
-     * 整块覆盖保存用户的快捷导航布局。
+     * 覆盖保存当前端可用的快捷导航布局，保留另一端独有配置。
      *
-     * <p>items 可为空数组（= 清空全部）；超过 8 项、菜单无权限、sortOrder 重复均拒绝。</p>
+     * <p>items 可为空数组（= 清空当前端）；两端合计超过 12 项、菜单无权限、sortOrder 重复均拒绝。</p>
      *
      * @param userId 当前用户 ID
      * @param roles  当前用户角色列表（用于权限校验）
@@ -43,4 +48,5 @@ public interface IQuickNavService {
      * @return 保存后的布局
      */
     List<QuickNavItemVO> saveMy(long userId, List<String> roles, QuickNavSaveReq req);
+    List<QuickNavItemVO> saveMy(long userId, List<String> roles, QuickNavSaveReq req, MenuClient client);
 }

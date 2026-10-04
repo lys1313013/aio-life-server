@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import top.aiolife.core.resq.ApiResponse;
@@ -11,6 +12,7 @@ import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.system.pojo.vo.MenuRouteVO;
 import top.aiolife.system.service.IMenuService;
+import top.aiolife.system.service.MenuClient;
 
 import java.util.List;
 
@@ -39,12 +41,14 @@ public class MenuController {
      * @return 统一返回结构，data 为 RouteRecordStringComponent 结构的数组
      */
     @GetMapping("/all")
-    public ApiResponse<List<MenuRouteVO>> all() {
+    public ApiResponse<List<MenuRouteVO>> all(@RequestParam(defaultValue = "web") String client) {
         long userId = StpUtil.getLoginIdAsLong();
         UserEntity user = userMapper.selectById(userId);
         List<String> roles = parseRoles(user == null ? null : user.getRole());
-        return ApiResponse.success(menuService.getAccessibleMenuTree(roles));
+        return ApiResponse.success(menuService.getAccessibleMenuTree(roles, MenuClient.parse(client)));
     }
+
+    public ApiResponse<List<MenuRouteVO>> all() { return all("web"); }
 
     private List<String> parseRoles(String roleStr) {
         if (!StringUtils.hasText(roleStr)) {

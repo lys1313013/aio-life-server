@@ -22,7 +22,11 @@ public interface IMenuService {
      * @param roles 当前用户角色列表
      * @return 菜单路由树
      */
-    List<MenuRouteVO> getAccessibleMenuTree(List<String> roles);
+    default List<MenuRouteVO> getAccessibleMenuTree(List<String> roles) {
+        return getAccessibleMenuTree(roles, MenuClient.WEB);
+    }
+
+    List<MenuRouteVO> getAccessibleMenuTree(List<String> roles, MenuClient client);
 
     /**
      * 获取当前用户可访问的菜单 ID 集合（用于权限校验）。
@@ -30,7 +34,11 @@ public interface IMenuService {
      * @param roles 当前用户角色列表
      * @return 菜单 ID 集合
      */
-    Set<Long> getAccessibleMenuIds(List<String> roles);
+    default Set<Long> getAccessibleMenuIds(List<String> roles) {
+        return getAccessibleMenuIds(roles, MenuClient.WEB);
+    }
+
+    Set<Long> getAccessibleMenuIds(List<String> roles, MenuClient client);
 
     /**
      * 获取当前用户可访问的"叶子菜单"扁平列表。
@@ -41,7 +49,11 @@ public interface IMenuService {
      * @param roles 当前用户角色列表
      * @return 叶子菜单信息列表
      */
-    List<Map<String, Object>> listAccessibleLeaves(List<String> roles);
+    default List<Map<String, Object>> listAccessibleLeaves(List<String> roles) {
+        return listAccessibleLeaves(roles, MenuClient.WEB);
+    }
+
+    List<Map<String, Object>> listAccessibleLeaves(List<String> roles, MenuClient client);
 
     /**
      * 获取菜单树（管理端）。
@@ -81,6 +93,8 @@ public interface IMenuService {
      * @throws Exception 参数或持久化异常
      */
     MenuAdminVO updateStatus(long id, int status, long userId) throws Exception;
+
+    MenuAdminVO updateMobileStatus(long id, int status, long userId) throws Exception;
 
     MenuAdminVO updateSort(long id, int sort, long userId) throws Exception;
 
