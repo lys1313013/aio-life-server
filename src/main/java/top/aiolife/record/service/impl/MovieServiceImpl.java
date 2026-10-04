@@ -2,6 +2,8 @@ package top.aiolife.record.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -9,12 +11,15 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Service;
+import top.aiolife.record.enums.FileBizType;
 import top.aiolife.record.mapper.IMovieMapper;
 import top.aiolife.record.pojo.entity.MovieEntity;
 import top.aiolife.record.pojo.query.MovieQuery;
@@ -29,6 +34,8 @@ import top.aiolife.record.util.DoubanSubjectUrl;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -64,8 +71,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         if (StrUtil.isNotBlank(query.getDirector())) {
             wrapper.like(MovieEntity::getDirector, query.getDirector());
         }
-        wrapper.last("ORDER BY FIELD(status, 'not_started', 'in_progress', 'completed', 'on_hold'), "
-                + "finish_time DESC, create_time DESC");
+        IMovieMapper.applyPageOrder(wrapper, Boolean.TRUE.equals(query.getInProgressFirst()));
 
         Page<MovieEntity> page = new Page<>(query.getCurrent() == null ? 1 : query.getCurrent(), query.getSize() == null ? 10 : query.getSize());
         Page<MovieEntity> entityPage = this.page(page, wrapper);
@@ -162,7 +168,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
 
         try {
             // 提取豆瓣 ID
-            String doubanId = cn.hutool.core.util.ReUtil.get("subject/(\\d+)", url, 1);
+            String doubanId = ReUtil.get("subject/(\\d+)", url, 1);
             if (StrUtil.isNotBlank(doubanId)) {
                 // 优先尝试使用豆瓣 Rexxar API 获取结构化数据 (先当成电影请求)
                 boolean apiSuccess = parseFromRexxarApi(doubanId, "movie", res);
@@ -178,7 +184,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             }
 
             // API 失败则降级使用移动端 HTML 解析
-            String bid = cn.hutool.core.util.RandomUtil.randomString(11);
+            String bid = RandomUtil.randomString(11);
             String mobileUrl = url.replace("movie.douban.com", "m.douban.com/movie");
 
             Document doc = Jsoup.connect(mobileUrl)
@@ -267,7 +273,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
                     .execute()
                     .body();
 
-            com.fasterxml.jackson.databind.JsonNode root = new com.fasterxml.jackson.databind.ObjectMapper().readTree(jsonStr);
+            JsonNode root = new ObjectMapper().readTree(jsonStr);
             if (root.has("code") && root.get("code").asInt() == 404) {
                 return false;
             }
@@ -283,13 +289,13 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
     /**
      * 兼容豆瓣 Rexxar 不同版本的影视字段结构。
      */
-    void applyRexxarData(com.fasterxml.jackson.databind.JsonNode root, MovieReq res) {
+    void applyRexxarData(JsonNode root, MovieReq res) {
         if (root.hasNonNull("title")) {
             res.setTitle(root.get("title").asText());
         }
 
-        com.fasterxml.jackson.databind.JsonNode pic = root.path("pic");
-        com.fasterxml.jackson.databind.JsonNode cover = root.path("cover");
+        JsonNode pic = root.path("pic");
+        JsonNode cover = root.path("cover");
         String coverUrl = firstText(
                 pic.path("large"),
                 pic.path("normal"),
@@ -311,15 +317,15 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             res.setType(2); // 电视剧
         } else if (root.has("durations") && root.get("durations").isArray() && root.get("durations").size() > 0) {
             String durationStr = root.get("durations").get(0).asText();
-            java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+)").matcher(durationStr);
+            Matcher m = Pattern.compile("(\\d+)").matcher(durationStr);
             if (m.find()) {
                 res.setTotalProgress(Integer.parseInt(m.group(1)));
             }
         }
     }
 
-    private String firstText(com.fasterxml.jackson.databind.JsonNode... nodes) {
-        for (com.fasterxml.jackson.databind.JsonNode node : nodes) {
+    private String firstText(JsonNode... nodes) {
+        for (JsonNode node : nodes) {
             if (node != null && node.isTextual() && StrUtil.isNotBlank(node.asText())) {
                 return node.asText();
             }
@@ -332,7 +338,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             return;
         }
         try {
-            var fileVO = fileService.uploadFromUrl(res.getCoverImgUrl(), top.aiolife.record.enums.FileBizType.MOVIE);
+            var fileVO = fileService.uploadFromUrl(res.getCoverImgUrl(), FileBizType.MOVIE);
             res.setFileId(fileVO.getId());
             log.info("封面图已上传至 MinIO: fileId={}", fileVO.getId());
         } catch (IllegalArgumentException e) {
@@ -359,7 +365,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             return;
         }
         try {
-            com.fasterxml.jackson.databind.JsonNode rootNode = new com.fasterxml.jackson.databind.ObjectMapper().readTree(jsonLd.data());
+            JsonNode rootNode = new ObjectMapper().readTree(jsonLd.data());
             
             if (rootNode.has("name") && StrUtil.isBlank(res.getTitle())) {
                 res.setTitle(rootNode.get("name").asText());
@@ -369,7 +375,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
                 res.setCoverImgUrl(imgUrl.replace("s/public", "l/public").replace("s/pic", "l/pic"));
             }
             if (rootNode.has("director")) {
-                com.fasterxml.jackson.databind.JsonNode directors = rootNode.get("director");
+                JsonNode directors = rootNode.get("director");
                 if (directors.isArray() && !directors.isEmpty() && StrUtil.isBlank(res.getDirector())) {
                     res.setDirector(directors.get(0).get("name").asText());
                 }
@@ -449,12 +455,12 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
                     Element subMeta = doc.selectFirst(".sub-meta");
                     if (subMeta != null) {
                         String metaText = subMeta.text();
-                        java.util.regex.Matcher m = java.util.regex.Pattern.compile("片长(\\d+)分钟").matcher(metaText);
+                        Matcher m = Pattern.compile("片长(\\d+)分钟").matcher(metaText);
                         if (m.find()) {
                             res.setTotalProgress(Integer.parseInt(m.group(1)));
                         } else {
                             // 匹配集数
-                            m = java.util.regex.Pattern.compile("(\\d+)集").matcher(metaText);
+                            m = Pattern.compile("(\\d+)集").matcher(metaText);
                             if (m.find()) {
                                 res.setTotalProgress(Integer.parseInt(m.group(1)));
                             }

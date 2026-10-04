@@ -30,7 +30,7 @@ class GoalControllerIntegrationTest extends BaseIntegrationTest {
         Long goalId = System.currentTimeMillis() % 1000000 + 900000L;
         goalMapper.insert(createGoal(goalId));
 
-        var response = goalController.queryGoals(null, null, null);
+        var response = goalController.queryGoals(null, null, null, null);
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().size() >= 1);
@@ -41,7 +41,7 @@ class GoalControllerIntegrationTest extends BaseIntegrationTest {
         Long goalId = System.currentTimeMillis() % 1000000 + 900000L;
         goalMapper.insert(createGoal(goalId));
 
-        var response = goalController.queryGoals(1, null, null);
+        var response = goalController.queryGoals(1, null, null, null);
         assertSuccess(response);
         assertNotNull(response.getData());
     }

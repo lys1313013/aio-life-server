@@ -24,6 +24,12 @@ import java.time.LocalDateTime;
 @Data
 @TableName("goal")
 public class GoalEntity {
+    /** 是否固定到首页：0=否，1=是。 */
+    private Integer isPinned;
+
+    /** 首页固定顺序，越小越靠前。 */
+    private Integer pinnedSort;
+
 
     /**
      * 目标ID

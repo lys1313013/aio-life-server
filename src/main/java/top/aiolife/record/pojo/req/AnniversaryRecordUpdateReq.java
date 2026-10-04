@@ -2,6 +2,8 @@ package top.aiolife.record.pojo.req;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import lombok.Data;
@@ -10,6 +12,11 @@ import lombok.Data;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AnniversaryRecordUpdateReq {
+    /** 是否固定到首页：0=否，1=是。 */
+    @Min(0)
+    @Max(1)
+    private Integer isPinned;
+
 
     @NotNull
     private Long id;

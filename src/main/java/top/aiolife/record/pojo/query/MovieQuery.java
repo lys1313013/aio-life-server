@@ -13,6 +13,8 @@ public class MovieQuery {
     private ProgressStatusEnum status;
     private List<ProgressStatusEnum> statuses;
     private Boolean activeOnly;
+    /** 首页优先展示在看的作品。 */
+    private Boolean inProgressFirst;
     private Integer current;
     private Integer size;
 }

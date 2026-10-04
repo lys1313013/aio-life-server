@@ -11,6 +11,12 @@ import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GoalVO {
+    /** 是否固定到首页：0=否，1=是。 */
+    private Integer isPinned;
+
+    /** 首页固定顺序，越小越靠前。 */
+    private Integer pinnedSort;
+
 
     private Long id;
 

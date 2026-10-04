@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import top.aiolife.record.enums.FileBizType;
 import top.aiolife.record.mapper.ReadRecordMapper;
 import top.aiolife.record.pojo.entity.ReadRecordEntity;
 import top.aiolife.record.pojo.query.ReadRecordQuery;
@@ -59,11 +60,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
                     .or()
                     .like(ReadRecordEntity::getAuthor, query.getTitle()));
         }
-        String statusOrder = Boolean.TRUE.equals(query.getInProgressFirst())
-                ? "'in_progress', 'not_started', 'completed', 'on_hold'"
-                : "'not_started', 'in_progress', 'completed', 'on_hold'";
-        wrapper.last("ORDER BY FIELD(status, " + statusOrder + "), "
-                + "finish_time DESC, create_time DESC");
+        ReadRecordMapper.applyPageOrder(wrapper, Boolean.TRUE.equals(query.getInProgressFirst()));
 
         Page<ReadRecordEntity> page = new Page<>(query.getCurrent() == null ? 1 : query.getCurrent(), query.getSize() == null ? 10 : query.getSize());
         Page<ReadRecordEntity> entityPage = this.page(page, wrapper);
@@ -268,7 +265,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
             return;
         }
         try {
-            var fileVO = fileService.uploadFromUrl(res.getCoverImgUrl(), top.aiolife.record.enums.FileBizType.READ_RECORD);
+            var fileVO = fileService.uploadFromUrl(res.getCoverImgUrl(), FileBizType.READ_RECORD);
             res.setFileId(fileVO.getId());
             log.info("封面图已上传至 MinIO: fileId={}", fileVO.getId());
         } catch (IllegalArgumentException e) {
@@ -287,21 +284,21 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
     }
 
     @Override
-    public java.util.List<ReadRecordVO> listActive() {
-        Long userId = cn.dev33.satoken.stp.StpUtil.getLoginIdAsLong();
-        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<ReadRecordEntity> wrapper = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+    public List<ReadRecordVO> listActive() {
+        Long userId = StpUtil.getLoginIdAsLong();
+        LambdaQueryWrapper<ReadRecordEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ReadRecordEntity::getUserId, userId);
         wrapper.in(ReadRecordEntity::getStatus,
                 ProgressStatusEnum.NOT_STARTED, ProgressStatusEnum.IN_PROGRESS); // 想看, 在看
         wrapper.orderByDesc(ReadRecordEntity::getUpdateTime);
         
-        java.util.List<ReadRecordEntity> entities = this.list(wrapper);
+        List<ReadRecordEntity> entities = this.list(wrapper);
         return entities.stream().map(entity -> {
             ReadRecordVO vo = new ReadRecordVO();
-            cn.hutool.core.bean.BeanUtil.copyProperties(entity, vo);
+            BeanUtil.copyProperties(entity, vo);
             vo.setId(String.valueOf(entity.getId()));
             return vo;
-        }).collect(java.util.stream.Collectors.toList());
+        }).collect(Collectors.toList());
     }
 
     @Override

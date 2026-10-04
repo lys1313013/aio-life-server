@@ -1,5 +1,7 @@
 package top.aiolife.record.pojo.req;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
@@ -11,6 +13,11 @@ import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class GoalCreateReq {
+    /** 是否固定到首页：0=否，1=是。 */
+    @Min(0)
+    @Max(1)
+    private Integer isPinned;
+
 
     /**
      * 目标类型：1=年度目标，2=月度目标，3=日目标
