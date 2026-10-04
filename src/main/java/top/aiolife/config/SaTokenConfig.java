@@ -73,6 +73,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
         registry.addInterceptor(apiKeyInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(PUBLIC_OPENAPI_PATHS)
+                .excludePathPatterns(top.aiolife.record.api.PublicImageController.PATH)
                 .excludePathPatterns(top.aiolife.sso.api.WechatAuthController.PUBLIC_PATHS)
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
@@ -92,6 +93,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
             accountStatusGuard.requireActive(RequestLoginContext.requireUserId());
         })).addPathPatterns("/**")
                 .excludePathPatterns(PUBLIC_OPENAPI_PATHS)
+                .excludePathPatterns(top.aiolife.record.api.PublicImageController.PATH)
                 .excludePathPatterns(top.aiolife.sso.api.WechatAuthController.PUBLIC_PATHS)
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
@@ -103,6 +105,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
         registry.addInterceptor(secondaryLockInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(PUBLIC_OPENAPI_PATHS)
+                .excludePathPatterns(top.aiolife.record.api.PublicImageController.PATH)
                 .excludePathPatterns(top.aiolife.sso.api.WechatAuthController.PUBLIC_PATHS)
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
@@ -117,6 +120,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
         registry.addInterceptor(userLastActiveInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(PUBLIC_OPENAPI_PATHS)
+                .excludePathPatterns(top.aiolife.record.api.PublicImageController.PATH)
                 .excludePathPatterns(top.aiolife.sso.api.WechatAuthController.PUBLIC_PATHS)
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",

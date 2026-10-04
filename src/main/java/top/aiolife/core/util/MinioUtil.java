@@ -34,6 +34,21 @@ public class MinioUtil {
         return serveBaseUrl.replaceAll("/+$", "") + "/file/preview/" + fileId;
     }
 
+    /** 仅为业务已确认公开的图片生成地址；实际读取还会校验绑定与真实图片格式。 */
+    public String getPublicImageUrl(String fileId, String contentType) {
+        if (fileId == null || !fileId.matches("[a-fA-F0-9]{32}")) return null;
+        String extension = switch (contentType == null ? "" : contentType) {
+            case "image/png" -> "png";
+            case "image/jpeg" -> "jpg";
+            case "image/webp" -> "webp";
+            case "image/gif" -> "gif";
+            case "image/bmp" -> "bmp";
+            default -> null;
+        };
+        return extension == null ? null : serveBaseUrl.replaceAll("/+$", "")
+                + "/public/images/" + fileId + "." + extension;
+    }
+
     /**
      * 获取文件的预览 URL
      *
