@@ -10,6 +10,7 @@ import cn.dev33.satoken.interceptor.SaInterceptor;
 import cn.dev33.satoken.SaManager;
 import top.aiolife.record.api.PublicImageController;
 import top.aiolife.sso.api.QrLoginController;
+import top.aiolife.sso.query.QueryAccessController;
 import top.aiolife.sso.api.WechatAuthController;
 import top.aiolife.sso.api.WechatWebLoginController;
 import top.aiolife.sso.util.RequestLoginContext;
@@ -84,6 +85,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 .excludePathPatterns(PUBLIC_MEMBERSHIP_ICON_PATH)
                 .excludePathPatterns(WechatAuthController.PUBLIC_PATHS)
                 .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
+                .excludePathPatterns(QueryAccessController.INTERNAL_EVALUATE_PATH)
                 .excludePathPatterns(WechatWebLoginController.PUBLIC_PATHS)
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
@@ -107,6 +109,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 .excludePathPatterns(PUBLIC_MEMBERSHIP_ICON_PATH)
                 .excludePathPatterns(WechatAuthController.PUBLIC_PATHS)
                 .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
+                .excludePathPatterns(QueryAccessController.INTERNAL_EVALUATE_PATH)
                 .excludePathPatterns(WechatWebLoginController.PUBLIC_PATHS)
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
@@ -122,6 +125,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 .excludePathPatterns(PUBLIC_MEMBERSHIP_ICON_PATH)
                 .excludePathPatterns(WechatAuthController.PUBLIC_PATHS)
                 .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
+                .excludePathPatterns(QueryAccessController.INTERNAL_EVALUATE_PATH)
                 .excludePathPatterns(WechatWebLoginController.PUBLIC_PATHS)
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
@@ -140,6 +144,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 .excludePathPatterns(PUBLIC_MEMBERSHIP_ICON_PATH)
                 .excludePathPatterns(WechatAuthController.PUBLIC_PATHS)
                 .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
+                .excludePathPatterns(QueryAccessController.INTERNAL_EVALUATE_PATH)
                 .excludePathPatterns(WechatWebLoginController.PUBLIC_PATHS)
                 .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",

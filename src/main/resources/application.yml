@@ -151,6 +151,10 @@ mybatis-plus:
 
 aio:
   life:
+    query-access:
+      enabled: ${AIO_LIFE_QUERY_ACCESS_ENABLED:false}
+      service-key: ${AIO_LIFE_QUERY_ACCESS_SERVICE_KEY:}
+      allowed-apps: ${AIO_LIFE_QUERY_ACCESS_ALLOWED_APPS:aio-query}
     auth:
       wechat-mini:
         enabled: ${AIO_LIFE_WECHAT_MINI_ENABLED:false}
