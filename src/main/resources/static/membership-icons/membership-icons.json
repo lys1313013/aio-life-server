@@ -585,5 +585,25 @@
     "conversion": "Original SVG rasterized by Chromium to transparent 128x128 PNG; geometry and brand colors retained; currentColor rendered black or white for theme variants",
     "sha256": "f6bf9cc5ab693cc054c7d298b607a4c3e3d671823b6a0b222f479c18c7d6cbbf",
     "bytes": 1744
+  },
+  {
+    "key": "opencode_go",
+    "name": "OpenCode Go",
+    "file": "opencode_go.png",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/82e641b4fece9d1028a127149af9ded00df5ac0c/packages/static-svg/icons/opencode.svg",
+    "sourcePage": "https://opencode.ai/go",
+    "license": "MIT (LobeHub); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/opencode_go.original.svg",
+    "upstreamOriginalFile": "sources/opencode_go.original.svg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Original OpenCode SVG rasterized by Chromium to transparent 128x128 PNG; geometry retained; currentColor black for light theme and white for dark theme",
+    "darkFile": "opencode_go_dark.png",
+    "sha256": "0ba97b6726a302db6be78a05a52333c4f98c00bb00952ab309cf3e3a211268bf",
+    "bytes": 448,
+    "darkSha256": "a6d380d3c31d00136b440c94191264c3a8aece9b89bdcda21cfbf8cc76f32f2a",
+    "darkBytes": 452
   }
 ]

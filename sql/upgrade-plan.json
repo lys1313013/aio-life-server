@@ -74,6 +74,10 @@
     {
       "path": "sql/2_ini_data/2026-10-05_membership_ai_icons.sql",
       "sha256": "236c1a733136e3f460c88977140110793c75264304318573fa95e705c8c74fce"
+    },
+    {
+      "path": "sql/2_ini_data/2026-10-05_membership_opencode_go.sql",
+      "sha256": "855b7307f95b610140329f89e6274468c9f31aca5ae00c253fb793310f6fe8b4"
     }
   ]
 }
