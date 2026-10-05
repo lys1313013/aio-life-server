@@ -91,19 +91,21 @@
     "key": "netease_music",
     "name": "网易云音乐",
     "file": "netease_music.png",
-    "source": "https://github.com/simple-icons/simple-icons/blob/16.33.0/icons/neteasecloudmusic.svg",
-    "upstreamBrandSource": "https://y.music.163.com/m",
-    "license": "CC0-1.0 (Simple Icons); third-party trademarks remain owned by respective brands",
-    "sourceFile": "sources/netease_music.svg",
-    "color": "#D43C33",
-    "conversion": "SVG currentColor replaced with Simple Icons brand color; Chromium transparent 128x128 PNG rasterization; geometry unchanged",
-    "sha256": "0722abeb2cd634d357c29070d37064e1a3b3e2741fdbd8442c759b0044b6c621",
-    "bytes": 6237,
+    "source": "https://is2-ssl.mzstatic.com/image/thumb/Purple211/v4/31/fc/91/31fc91b8-c30b-e00f-2add-0aa3f12322b3/appIconNew-0-0-1x_U007epad-0-1-0-85-220.png/512x512bb.jpg",
+    "sourcePage": "https://apps.apple.com/cn/app/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90-%E6%95%B0%E4%BA%BF%E9%9F%B3%E4%B9%90%E7%95%85%E5%90%AC/id590338362?uo=4",
+    "license": "Official brand asset; no open redistribution license found; trademark and copyright belong to respective owner",
+    "sourceFile": "sources/netease_music.appstore.jpg",
     "dimensions": [
       128,
       128
     ],
-    "upstreamOriginalFile": "sources/netease_music.original.svg"
+    "conversion": "Official publisher JPEG 512px decoded to RGBA; deterministic 22%-radius rounded-square SVG alpha mask applied at original resolution; proportionally downscaled to 128px with Lanczos3. Original brand geometry, colors and red tile retained; only outside corners become transparent. No AI-generated artwork used.",
+    "notes": "Public application icon, verified matching name/bundle/publisher; no user or login-state media",
+    "sha256": "55dbc7d1138c34463d3be90035be085e79a486c155d91f3c33aeaf66a92ece42",
+    "bytes": 18283,
+    "previousSource": "https://github.com/simple-icons/simple-icons/blob/16.33.0/icons/neteasecloudmusic.svg",
+    "publisher": "Hangzhou Netease Cloud Music Technology Co., Ltd.",
+    "maskFile": "sources/netease_music.rounded-mask.svg"
   },
   {
     "key": "kugou",
