@@ -63,7 +63,7 @@ class QueryAccessHttpIntegrationTest {
 
     private JsonNode issue() throws Exception {
         String body = mvc.perform(post("/query/access-token").header("Authorization", "Bearer " + session)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"appId\":\"aio-query\"}"))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"appId\":\"aio-life-query\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.rscode").value("0"))
                 .andExpect(header().string("Cache-Control", "no-store")).andReturn().getResponse().getContentAsString();
         var data = json.readTree(body).path("data"); grants.add(data.path("grantId").asText()); return data;
@@ -108,7 +108,7 @@ class QueryAccessHttpIntegrationTest {
     @Test void ApiKey不能签发授权且未知应用不能自动授权() throws Exception {
         var key = apiKeys.generateApiKey(userId, "query-fixture", 1);
         mvc.perform(post("/query/access-token").header("Authorization", "Bearer " + key.getApiKey())
-                .contentType(MediaType.APPLICATION_JSON).content("{\"appId\":\"aio-query\"}"))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"appId\":\"aio-life-query\"}"))
                 .andExpect(status().isForbidden());
         mvc.perform(post("/query/access-token").header("Authorization", "Bearer " + session)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"appId\":\"unknown\"}"))
@@ -131,5 +131,54 @@ class QueryAccessHttpIntegrationTest {
         UserSecondaryLockMenuEntity lock = new UserSecondaryLockMenuEntity();
         lock.setUserId(userId); lock.setMenuId(menu.getId()); lock.fillCreateCommonField(userId); locks.insert(lock);
         assertEquals("2001", evaluate(grant, KEY).path("rscode").asText());
+        mvc.perform(post(QueryAccessController.INTERNAL_CHECK_TOKEN_PATH).header("Authorization", "Bearer " + session)
+                .header("X-AIO-Query-Service-Key", KEY).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"dataset\":\"time_record\"}")).andExpect(jsonPath("$.rscode").value("2001"));
+    }
+
+    @Test void 直接校验登录Token且退出立即失效() throws Exception {
+        var result = checkToken(session, KEY);
+        assertEquals("0", result.path("rscode").asText());
+        assertEquals(Long.toString(userId), result.at("/data/userId").textValue());
+        assertEquals("login", result.at("/data/credentialType").asText());
+        assertTrue(result.at("/data/credentialId").asText().matches("[a-f0-9]{32}"));
+        assertFalse(result.toString().contains(session));
+        assertNotEquals("0", checkToken(session, "invalid").path("rscode").asText());
+        StpUtil.logoutByTokenValue(session);
+        mvc.perform(post(QueryAccessController.INTERNAL_CHECK_TOKEN_PATH).header("Authorization", "Bearer " + session)
+                .header("X-AIO-Query-Service-Key", KEY).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"dataset\":\"time_record\"}")).andExpect(status().isUnauthorized());
+    }
+
+    @Test void 直接校验ApiKey且删除及过期立即失效() throws Exception {
+        var key = apiKeys.generateApiKey(userId, "query-direct-fixture", null);
+        assertEquals("api_key", checkToken(key.getApiKey(), KEY).at("/data/credentialType").asText());
+        apiKeys.removeById(key.getId());
+        mvc.perform(post(QueryAccessController.INTERNAL_CHECK_TOKEN_PATH).header("Authorization", "Bearer " + key.getApiKey())
+                .header("X-AIO-Query-Service-Key", KEY).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"dataset\":\"time_record\"}")).andExpect(status().isUnauthorized());
+        var expired = apiKeys.generateApiKey(userId, "expired", 1);
+        expired.setExpiredAt(java.time.LocalDateTime.now().minusSeconds(1)); apiKeys.updateById(expired);
+        mvc.perform(post(QueryAccessController.INTERNAL_CHECK_TOKEN_PATH).header("Authorization", "Bearer " + expired.getApiKey())
+                .header("X-AIO-Query-Service-Key", KEY).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"dataset\":\"time_record\"}")).andExpect(status().isUnauthorized());
+    }
+
+    @Test void 服务密钥不能代替用户凭据且删除账号不能查询() throws Exception {
+        mvc.perform(post(QueryAccessController.INTERNAL_CHECK_TOKEN_PATH).header("X-AIO-Query-Service-Key", KEY)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"dataset\":\"time_record\"}"))
+                .andExpect(status().isUnauthorized());
+        users.deleteById(userId);
+        mvc.perform(post(QueryAccessController.INTERNAL_CHECK_TOKEN_PATH).header("Authorization", "Bearer " + session)
+                .header("X-AIO-Query-Service-Key", KEY).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"dataset\":\"time_record\"}")).andExpect(status().isUnauthorized());
+    }
+
+    private JsonNode checkToken(String token, String key) throws Exception {
+        var response = mvc.perform(post(QueryAccessController.INTERNAL_CHECK_TOKEN_PATH)
+                .header("Authorization", "Bearer " + token).header("X-AIO-Query-Service-Key", key)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"dataset\":\"time_record\"}"))
+                .andExpect(header().string("Cache-Control", "no-store")).andReturn().getResponse();
+        return json.readTree(response.getContentAsString());
     }
 }

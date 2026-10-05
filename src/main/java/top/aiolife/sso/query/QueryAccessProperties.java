@@ -16,7 +16,7 @@ import java.util.Set;
 public class QueryAccessProperties implements InitializingBean {
     private boolean enabled;
     private String serviceKey = "";
-    private Set<String> allowedApps = Set.of("aio-query");
+    private Set<String> allowedApps = Set.of("aio-life-query");
 
     @Override
     public void afterPropertiesSet() {

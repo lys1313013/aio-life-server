@@ -44,22 +44,22 @@ class QueryHasuraEndToEndTest {
     @Autowired ObjectMapper json;
     @Autowired UserMapper users;
     @Autowired JdbcTemplate db;
-    @Autowired QueryGrantStore grants;
+    @Autowired top.aiolife.sso.service.IApiKeyService apiKeys;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
     private final List<Long> userIds = new ArrayList<>();
     private final List<String> sessions = new ArrayList<>();
-    private final List<String> grantIds = new ArrayList<>();
+    private final List<Long> apiKeyIds = new ArrayList<>();
     private Process gateway;
     private final String prefix = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
     private String sessionA;
     private String tokenA;
     private String tokenB;
-    private String grantA;
+
     private String gatewayUrl;
 
     @BeforeAll void start() throws Exception {
         Path jar = Path.of(System.getenv("AIO_QUERY_TEST_GATEWAY_JAR"));
-        assertTrue(Files.isRegularFile(jar), "先构建 aio-query jar");
+        assertTrue(Files.isRegularFile(jar), "先构建 aio-life-query jar");
         Path output = Path.of("target/query-e2e"); Files.createDirectories(output);
         int gatewayPort = Integer.parseInt(System.getenv().getOrDefault("AIO_QUERY_TEST_GATEWAY_PORT", "45680"));
         gatewayUrl = "http://127.0.0.1:" + gatewayPort;
@@ -67,7 +67,7 @@ class QueryHasuraEndToEndTest {
         var env = process.environment();
         env.put("AIO_QUERY_PORT", Integer.toString(gatewayPort));
         env.put("AIO_QUERY_MANAGEMENT_PORT", "0");
-        env.put("AIO_QUERY_ACCESS_URL", "http://127.0.0.1:" + port + "/api/internal/query/access/evaluate");
+        env.put("AIO_QUERY_ACCESS_URL", "http://127.0.0.1:" + port + "/api/internal/query/access/check-token");
         env.put("AIO_QUERY_HASURA_URL", System.getenv().getOrDefault("AIO_QUERY_TEST_HASURA_URL", "http://127.0.0.1:45682/graphql"));
         env.put("AIO_QUERY_REDIS_PORT", System.getenv().getOrDefault("AIO_LIFE_REDIS_PORT", "6379"));
         env.put("AIO_QUERY_SERVICE_KEY", "fixture-service-key-at-least-32-characters");
@@ -89,8 +89,7 @@ class QueryHasuraEndToEndTest {
             sessions.add(StpUtil.getStpLogic().createLoginSession(user.getId()));
         }
         sessionA = sessions.getFirst();
-        var a = issue(sessionA); var b = issue(sessions.get(1));
-        tokenA = a.path("accessToken").asText(); tokenB = b.path("accessToken").asText(); grantA = a.path("grantId").asText();
+        tokenA = sessionA; tokenB = sessions.get(1);
         row("a1", userIds.getFirst(), 30, 0); row("a2", userIds.getFirst(), 60, 0);
         row("deleted", userIds.getFirst(), 777, 1); row("b1", userIds.get(1), 999, 0);
     }
@@ -99,13 +98,8 @@ class QueryHasuraEndToEndTest {
         db.update("INSERT INTO time_record(id,user_id,category_id,date,start_time,end_time,duration,is_deleted,title) VALUES(?,?,?,'2026-09-15',0,?,?,?,?)",
                 prefix + id, user, 9007199254740993L, minutes, minutes, deleted, "不得暴露的标题");
     }
-    private JsonNode issue(String session) throws Exception {
-        var response = call("POST", "http://127.0.0.1:" + port + "/api/query/access-token", session, Map.of("appId", "aio-query"));
-        assertEquals(200, response.statusCode()); var body = json.readTree(response.body()); assertEquals("0", body.path("rscode").asText());
-        grantIds.add(body.path("data").path("grantId").asText()); return body.path("data");
-    }
     private HttpResponse<String> call(String method, String url, String token, Object body) throws Exception {
-        var request = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(20)).header("Content-Type", "application/json");
+        var request = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(20)).header("Content-Type", "application/json").header("Accept", "application/json, text/event-stream");
         if (token != null) request.header("Authorization", "Bearer " + token);
         request.method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofByteArray(json.writeValueAsBytes(body)));
         return http.send(request.build(), HttpResponse.BodyHandlers.ofString());
@@ -142,14 +136,58 @@ class QueryHasuraEndToEndTest {
         assertEquals("0", empty.path("count").textValue()); assertTrue(empty.path("durationMinutes").path("sum").isNull());
         assertEquals(400, query(tokenA, "query Q { timeRecords(" + where + ") { userId } }").statusCode());
         var directly = call("POST", System.getenv().getOrDefault("AIO_QUERY_TEST_HASURA_URL", "http://127.0.0.1:45682/graphql"), tokenA, Map.of("query", details));
-        assertTrue(directly.statusCode() != 200 || json.readTree(directly.body()).has("errors"), "专用凭据不能直接访问 Hasura");
-        assertEquals(200, call("DELETE", "http://127.0.0.1:" + port + "/api/query/grants/" + grantA, sessionA, null).statusCode());
-        assertEquals(403, query(tokenA, details).statusCode());
+        assertTrue(directly.statusCode() != 200 || json.readTree(directly.body()).has("errors"), "登录凭据不能直接访问 Hasura");
+        // MCP 与 REST 共用真实查询链；不使用测试模拟响应。
+        assertEquals(401, mcp(null, "tools/list", Map.of()).statusCode());
+        var initialized = rpc(tokenA, "initialize", Map.of("protocolVersion", "2025-06-18", "capabilities", Map.of(),
+                "clientInfo", Map.of("name", "integration", "version", "1")));
+        assertEquals("aio-life-query", initialized.at("/result/serverInfo/name").asText());
+        var listed = rpc(tokenA, "tools/list", Map.of()).at("/result/tools"); assertEquals(4, listed.size());
+        var described = tool(tokenA, "aio_query_describe_dataset", Map.of("name", "time_record"));
+        assertEquals("time-record-v1", described.at("/data/schemaVersion").asText());
+        var args = Map.<String, Object>of("domain", "time", "schemaVersion", "time-record-v1", "policyVersion", "time-record-v1",
+                "operationName", "Q", "query", details);
+        assertTrue(tool(tokenA, "aio_query_validate", args).at("/data/allowed").asBoolean());
+        assertEquals(2, tool(tokenA, "aio_query_execute", args).at("/data/result/timeRecords").size());
+        assertEquals(prefix + "b1", tool(tokenB, "aio_query_execute", args).at("/data/result/timeRecords/0/id").asText());
+        var statsArgs = new java.util.HashMap<>(args); statsArgs.put("query", "query Q { timeRecordStats(" + where + ") { count durationMinutes { sum } } }");
+        assertEquals("90", tool(tokenA, "aio_query_execute", statsArgs).at("/data/result/timeRecordStats/durationMinutes/sum").textValue());
+        var forged = new java.util.HashMap<>(args); forged.put("userId", userIds.get(1).toString());
+        var rejection = rpc(tokenA, "tools/call", Map.of("name", "aio_query_execute", "arguments", forged));
+        assertTrue(rejection.has("error") || rejection.at("/result/isError").asBoolean());
+        assertEquals(403, mcpWithHeader(tokenA, "X-Hasura-User-Id", userIds.get(1).toString()).statusCode());
+        assertEquals(403, mcpWithHeader(tokenA, "Origin", "https://untrusted.example").statusCode());
+        var apiKey = apiKeys.generateApiKey(userIds.get(1), "query-mcp-test", 1); apiKeyIds.add(apiKey.getId());
+        assertEquals(prefix + "b1", tool(apiKey.getApiKey(), "aio_query_execute", args).at("/data/result/timeRecords/0/id").asText());
+        apiKeys.removeById(apiKey.getId());
+        assertEquals(401, mcp(apiKey.getApiKey(), "tools/list", Map.of()).statusCode());
+        StpUtil.logoutByTokenValue(sessionA);
+        assertEquals(401, query(tokenA, details).statusCode());
+        assertEquals(401, mcp(tokenA, "tools/list", Map.of()).statusCode());
+    }
+
+    private HttpResponse<String> mcp(String token, String method, Object params) throws Exception {
+        return call("POST", gatewayUrl + "/mcp", token, Map.of("jsonrpc", "2.0", "id", 1, "method", method, "params", params));
+    }
+    private JsonNode rpc(String token, String method, Object params) throws Exception {
+        var response = mcp(token, method, params); assertEquals(200, response.statusCode(), response.body());
+        return json.readTree(response.body());
+    }
+    private JsonNode tool(String token, String name, Object args) throws Exception {
+        var response = rpc(token, "tools/call", Map.of("name", name, "arguments", args));
+        assertFalse(response.has("error"), response.toString()); assertFalse(response.at("/result/isError").asBoolean(), response.toString());
+        return response.at("/result/structuredContent");
+    }
+    private HttpResponse<String> mcpWithHeader(String token, String name, String value) throws Exception {
+        var request = HttpRequest.newBuilder(URI.create(gatewayUrl + "/mcp")).timeout(Duration.ofSeconds(20))
+                .header("Authorization", "Bearer " + token).header(name, value).header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{}}"));
+        return http.send(request.build(), HttpResponse.BodyHandlers.ofString());
     }
 
     @AfterAll void cleanup() throws Exception {
         if (gateway != null) { gateway.destroy(); if (!gateway.waitFor(10, TimeUnit.SECONDS)) gateway.destroyForcibly(); }
-        grantIds.forEach(grants::delete); sessions.forEach(StpUtil::logoutByTokenValue);
+        apiKeyIds.forEach(apiKeys::removeById); sessions.forEach(StpUtil::logoutByTokenValue);
         for (Long id : userIds) { db.update("DELETE FROM time_record WHERE user_id=?", id); db.update("DELETE FROM `user` WHERE id=?", id); }
     }
 }

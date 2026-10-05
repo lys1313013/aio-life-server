@@ -7,12 +7,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.sso.service.AccountStatusGuard;
 import top.aiolife.sso.service.SecondaryLockGuard;
+import top.aiolife.sso.service.IApiKeyService;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Set;
@@ -27,6 +29,29 @@ public class QueryAccessService {
     private final QueryGrantStore store;
     private final AccountStatusGuard accounts;
     private final SecondaryLockGuard locks;
+    private final IApiKeyService apiKeys;
+
+    /** 身份由常规 Sa-Token / API Key 拦截器验证，此处只做查询权限收敛。 */
+    public QueryAccessModels.TokenDecision checkToken(String serviceKey, long userId, String token, boolean apiKey) {
+        requireEnabled();
+        if (!equal(properties.getServiceKey(), serviceKey) || !properties.getAllowedApps().contains("aio-life-query")) throw denied();
+        checkUser(userId);
+        long expiresAt;
+        if (apiKey) {
+            var key = apiKeys.getByApiKey(token);
+            if (key == null || !Long.valueOf(userId).equals(key.getUserId())) throw denied();
+            expiresAt = key.getExpiredAt() == null ? Long.MAX_VALUE
+                    : key.getExpiredAt().atZone(ZoneId.systemDefault()).toEpochSecond();
+        } else {
+            requireSourceSession(Long.toString(userId), token);
+            long timeout = StpUtil.getStpLogic().getTokenTimeout(token);
+            if (timeout != -1 && timeout <= 0) throw denied();
+            expiresAt = timeout == -1 ? Long.MAX_VALUE : Instant.now().getEpochSecond() + timeout;
+        }
+        if (expiresAt <= Instant.now().getEpochSecond()) throw denied();
+        return new QueryAccessModels.TokenDecision(Long.toString(userId), "aio-life-query", hash(token).substring(0, 32),
+                apiKey ? "api_key" : "login", "ai_time_reader", Set.of("time.read"), expiresAt);
+    }
 
     public QueryAccessModels.Issued issue(long userId, String sessionToken, String appId) {
         requireEnabled();
@@ -39,7 +64,7 @@ public class QueryAccessService {
         String token = "aqt_" + id + "." + Base64.getUrlEncoder().withoutPadding().encodeToString(secret);
         long expiresAt = Instant.now().plusSeconds(300).getEpochSecond();
         store.create(id, new QueryAccessModels.Grant(hash(token), Long.toString(userId), appId, sessionToken, expiresAt));
-        return new QueryAccessModels.Issued(id, token, "Bearer", "aio-query", appId, Set.of("time.read"), expiresAt, 300);
+        return new QueryAccessModels.Issued(id, token, "Bearer", "aio-life-query", appId, Set.of("time.read"), expiresAt, 300);
     }
 
     public QueryAccessModels.Decision evaluate(String serviceKey, QueryAccessModels.EvaluateRequest request) {

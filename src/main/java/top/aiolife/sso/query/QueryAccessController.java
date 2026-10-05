@@ -17,11 +17,13 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.sso.util.RequestLoginContext;
 
 @RestController
 @RequiredArgsConstructor
 public class QueryAccessController {
     public static final String INTERNAL_EVALUATE_PATH = "/internal/query/access/evaluate";
+    public static final String INTERNAL_CHECK_TOKEN_PATH = "/internal/query/access/check-token";
     private final QueryAccessService service;
 
     @ModelAttribute
@@ -56,5 +58,21 @@ public class QueryAccessController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "请使用登录会话管理查询授权");
         }
         return StpUtil.getLoginIdAsLong();
+    }
+
+    // 不加入 SaTokenConfig 的排除列表：必须经过现有登录、API Key 和账号状态校验。
+    @Hidden
+    @PostMapping(INTERNAL_CHECK_TOKEN_PATH)
+    public ApiResponse<QueryAccessModels.TokenDecision> checkToken(
+            @RequestHeader(value = "X-AIO-Query-Service-Key", required = false) String serviceKey,
+            @Valid @RequestBody QueryAccessModels.CheckTokenRequest body, HttpServletRequest request) {
+        String authorization = request.getHeader("Authorization");
+        boolean apiKey = Boolean.TRUE.equals(SaHolder.getStorage().get("IS_API_KEY_AUTH"));
+        if (authorization == null || !authorization.startsWith("Bearer ") || authorization.length() <= 7
+                || (!apiKey && (StpUtil.isSwitch() || !authorization.substring(7).equals(StpUtil.getTokenValue())))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "需要显式 Bearer 凭据");
+        }
+        return ApiResponse.success(service.checkToken(serviceKey, RequestLoginContext.requireUserId(),
+                authorization.substring(7), apiKey));
     }
 }

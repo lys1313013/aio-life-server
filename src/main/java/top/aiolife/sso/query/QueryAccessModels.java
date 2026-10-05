@@ -16,6 +16,9 @@ public final class QueryAccessModels {
                          String appId, Set<String> scopes, long expiresAt, int expiresIn) {}
     public record Decision(String userId, String appId, String grantId, String role,
                            Set<String> scopes, long expiresAt) {}
+    public record CheckTokenRequest(@NotBlank @Pattern(regexp = "time_record") String dataset) {}
+    public record TokenDecision(String userId, String appId, String credentialId, String credentialType,
+                                String role, Set<String> scopes, long expiresAt) {}
     // authorizerToken 只保存在受保护 Redis 中，不向客户端或日志序列化。
     record Grant(String tokenHash, String userId, String appId, String authorizerToken, long expiresAt) {}
 }
