@@ -13,6 +13,8 @@ import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.system.pojo.vo.MenuRouteVO;
 import top.aiolife.system.service.IMenuService;
 import top.aiolife.system.service.MenuClient;
+import top.aiolife.system.service.MenuVisualService;
+import top.aiolife.system.pojo.vo.MenuVisualsVO;
 
 import java.util.List;
 
@@ -32,6 +34,7 @@ public class MenuController {
     private final IMenuService menuService;
 
     private final UserMapper userMapper;
+    private final MenuVisualService visuals;
 
     /**
      * 获取当前用户可访问菜单路由树。
@@ -46,6 +49,11 @@ public class MenuController {
         UserEntity user = userMapper.selectById(userId);
         List<String> roles = parseRoles(user == null ? null : user.getRole());
         return ApiResponse.success(menuService.getAccessibleMenuTree(roles, MenuClient.parse(client)));
+    }
+
+    @GetMapping("/visuals")
+    public ApiResponse<MenuVisualsVO> visuals(@RequestParam(defaultValue = "web") String client) {
+        return ApiResponse.success(visuals.get(StpUtil.getLoginIdAsLong(), MenuClient.parse(client)));
     }
 
     public ApiResponse<List<MenuRouteVO>> all() { return all("web"); }

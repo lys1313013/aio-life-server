@@ -43,11 +43,6 @@ public class LeetcodeCardProvider implements DashboardCardProvider {
     }
 
     @Override
-    public String getIcon() {
-        return "devicon:leetcode";
-    }
-
-    @Override
     public int getOrder() {
         return 2;
     }
@@ -70,7 +65,6 @@ public class LeetcodeCardProvider implements DashboardCardProvider {
 
         DashboardCardVO card = new DashboardCardVO();
         card.setType(getType());
-        card.setIcon(getIcon());
         card.setIconClickUrl("https://leetcode.cn/u/" + bind.getPlatformUsername());
         card.setTitle(getTitle());
         try {

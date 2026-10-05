@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import top.aiolife.system.service.MenuVisualService;
+import top.aiolife.system.service.MenuClient;
+import java.util.Locale;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -27,8 +30,10 @@ import java.util.stream.Collectors;
 public class DashboardController {
 
     private final Map<String, DashboardCardProvider> providerMap;
+    private final MenuVisualService visuals;
 
-    public DashboardController(List<DashboardCardProvider> providers) {
+    public DashboardController(List<DashboardCardProvider> providers, MenuVisualService visuals) {
+        this.visuals = visuals;
         this.providerMap = providers.stream()
                 .collect(Collectors.toMap(DashboardCardProvider::getType, p -> p));
     }
@@ -41,6 +46,7 @@ public class DashboardController {
     @GetMapping("/tasks")
     public ApiResponse<List<DashboardCardVO>> getTasks() {
         long userId = StpUtil.getLoginIdAsLong();
+        var cardVisuals = visuals.get(userId, MenuClient.WEB).cards();
         List<DashboardCardVO> tasks = providerMap.values().stream()
                 .filter(provider -> provider.isVisible(userId))
                 .sorted(Comparator.comparingInt(DashboardCardProvider::getOrder))
@@ -49,8 +55,9 @@ public class DashboardController {
                     card.setType(provider.getType());
                     card.setTitle(provider.getTitle());
                     card.setTotalTitle(provider.getTotalTitle());
-                    card.setIcon(provider.getIcon());
-                    card.setIconColor(provider.getIconColor());
+                    var visual = cardVisuals.getOrDefault("overview." + provider.getType().toLowerCase(Locale.ROOT), MenuVisualService.DEFAULT);
+                    card.setIcon(visual.icon());
+                    card.setIconColor(visual.iconColor());
                     return card;
                 })
                 .collect(Collectors.toList());
@@ -69,8 +76,11 @@ public class DashboardController {
         }
         long userId = StpUtil.getLoginIdAsLong();
         DashboardCardVO card = provider.getCard(userId);
-        if (card != null && card.getIconColor() == null) {
-            card.setIconColor(provider.getIconColor());
+        if (card != null) {
+            var visual = visuals.get(userId, MenuClient.WEB).cards().getOrDefault(
+                "overview." + type.toLowerCase(Locale.ROOT), MenuVisualService.DEFAULT);
+            card.setIcon(visual.icon());
+            card.setIconColor(visual.iconColor());
         }
         return ApiResponse.success(card);
     }

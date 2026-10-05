@@ -16,6 +16,7 @@ import top.aiolife.system.pojo.vo.MenuAdminVO;
 import top.aiolife.system.pojo.vo.MenuRouteVO;
 import top.aiolife.system.service.IMenuService;
 import top.aiolife.system.service.MenuClient;
+import top.aiolife.system.service.MenuVisualService;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -101,8 +102,8 @@ public class MenuServiceImpl implements IMenuService {
         Map<String, Object> row = new HashMap<>();
         row.put("menuId", m.getId());
         row.put("title", meta.get("title"));
-        row.put("icon", meta.get("icon"));
-        row.put("color", m.getIconColor());
+        row.put("icon", MenuVisualService.normalizeIcon(meta.get("icon")));
+        row.put("color", MenuVisualService.normalizeColor(m.getIconColor()));
         row.put("path", m.getPath());
         row.put("target", meta.get("link") == null ? "self" : "blank");
         row.put("parentId", m.getParentId());
@@ -376,13 +377,14 @@ public class MenuServiceImpl implements IMenuService {
         vo.setPath(entity.getPath());
         vo.setName(entity.getName());
         vo.setComponent(entity.getComponent());
-        vo.setIconColor(entity.getIconColor());
+        vo.setIconColor(MenuVisualService.normalizeColor(entity.getIconColor()));
         vo.setRedirect(entity.getRedirect());
         Map<String, Object> meta = readMeta(entity.getMeta());
         if (meta == null) {
             meta = new HashMap<>();
         }
         meta.put("menuId", entity.getId());
+        meta.put("icon", MenuVisualService.normalizeIcon(meta.get("icon")));
         vo.setMeta(meta);
         return vo;
     }

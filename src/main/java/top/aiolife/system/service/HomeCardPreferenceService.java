@@ -20,14 +20,17 @@ import java.util.stream.IntStream;
 @RequiredArgsConstructor
 public class HomeCardPreferenceService {
     private final HomeCardPreferenceMapper mapper;
+    private final MenuVisualService visuals;
 
     public List<HomeCardPreferenceVO> get(long userId) {
         Map<String, HomeCardPreferenceEntity> saved = rows(userId);
+        var cardVisuals = visuals.get(userId, MenuClient.WEB).cards();
         return IntStream.range(0, HomeCardCatalog.ALL.size()).mapToObj(index -> {
             var definition = HomeCardCatalog.ALL.get(index);
             var row = saved.get(definition.cardKey());
+            var visual = cardVisuals.getOrDefault(definition.cardKey(), MenuVisualService.DEFAULT);
             return new HomeCardPreferenceVO(definition.cardKey(), definition.group(), definition.title(),
-                definition.icon(), row == null ? definition.defaultEnabled() : row.getEnabled(),
+                visual.icon(), visual.iconColor(), row == null ? definition.defaultEnabled() : row.getEnabled(),
                 row == null ? index : row.getSortOrder());
         }).sorted(Comparator.comparing(HomeCardPreferenceVO::group)
             .thenComparingInt(HomeCardPreferenceVO::sortOrder)).toList();

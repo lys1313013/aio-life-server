@@ -46,11 +46,6 @@ public class ShanbayCardProvider implements DashboardCardProvider {
     }
 
     @Override
-    public String getIcon() {
-        return "svg:shanbay";
-    }
-
-    @Override
     public int getOrder() {
         return 5;
     }
@@ -71,7 +66,6 @@ public class ShanbayCardProvider implements DashboardCardProvider {
         String username = bind.getPlatformUsername();
         DashboardCardVO card = new DashboardCardVO();
         card.setType(getType());
-        card.setIcon(getIcon());
         card.setIconClickUrl("https://web.shanbay.com/web/users/" + username + "/checkin");
         card.setTitle(getTitle());
         card.setTitleClickUrl("https://web.shanbay.com/web/users/" + username + "/checkin");

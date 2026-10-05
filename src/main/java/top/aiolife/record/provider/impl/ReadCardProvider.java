@@ -56,16 +56,6 @@ public class ReadCardProvider implements DashboardCardProvider {
     }
 
     @Override
-    public String getIcon() {
-        return "simple-icons:weread";
-    }
-
-    @Override
-    public String getIconColor() {
-        return "#37A7FF";
-    }
-
-    @Override
     public int getOrder() {
         return 6;
     }
@@ -85,8 +75,6 @@ public class ReadCardProvider implements DashboardCardProvider {
 
         DashboardCardVO card = new DashboardCardVO();
         card.setType(getType());
-        card.setIcon(getIcon());
-        card.setIconColor(getIconColor());
         card.setTitle(getTitle());
         card.setTitleClickUrl("https://weread.qq.com/");
         card.setTotalTitle(getTotalTitle());

@@ -62,11 +62,6 @@ public class GithubCardProvider implements DashboardCardProvider {
     }
 
     @Override
-    public String getIcon() {
-        return "mdi:github";
-    }
-
-    @Override
     public int getOrder() {
         return 3;
     }
@@ -110,7 +105,6 @@ public class GithubCardProvider implements DashboardCardProvider {
 
         DashboardCardVO card = new DashboardCardVO();
         card.setType(getType());
-        card.setIcon(getIcon());
         card.setIconClickUrl("https://github.com/" + bind.getPlatformUsername());
         card.setTitle(getTitle());
         card.setTotalTitle(getTotalTitle());

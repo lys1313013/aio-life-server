@@ -36,11 +36,6 @@ public class ExerciseCardProvider implements DashboardCardProvider {
     }
 
     @Override
-    public String getIcon() {
-        return "mdi:run";
-    }
-
-    @Override
     public int getOrder() {
         return 4;
     }
@@ -49,7 +44,6 @@ public class ExerciseCardProvider implements DashboardCardProvider {
     public DashboardCardVO getCard(long userId) {
         DashboardCardVO card = new DashboardCardVO();
         card.setType(getType());
-        card.setIcon(getIcon());
         card.setTitle(getTitle());
         card.setIconClickUrl("/record/exercise");
         card.setTitleClickUrl("action:open-exercise-modal");

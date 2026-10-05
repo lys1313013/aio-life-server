@@ -10,6 +10,8 @@ import top.aiolife.system.mapper.HomeCardPreferenceMapper;
 import top.aiolife.system.pojo.entity.HomeCardPreferenceEntity;
 import top.aiolife.system.service.HomeCardCatalog;
 import top.aiolife.system.service.HomeCardPreferenceService;
+import top.aiolife.system.service.MenuVisualService;
+import top.aiolife.system.pojo.vo.MenuVisualsVO;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,7 +33,9 @@ class HomeCardPreferenceServiceTest {
     @SuppressWarnings("unchecked")
     void setup() {
         mapper = mock(HomeCardPreferenceMapper.class);
-        service = new HomeCardPreferenceService(mapper);
+        var visuals = mock(MenuVisualService.class);
+        when(visuals.get(anyLong(), any())).thenReturn(new MenuVisualsVO(List.of(), Map.of()));
+        service = new HomeCardPreferenceService(mapper, visuals);
         rows = new HashMap<>(); nextId = 1;
         TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), HomeCardPreferenceEntity.class);
         when(mapper.lockUser(anyLong())).thenAnswer(call -> call.getArgument(0));
@@ -50,7 +54,7 @@ class HomeCardPreferenceServiceTest {
 
     @Test void defaults_读取不写库且两类卡片独立注册() {
         var cards = service.get(7);
-        assertEquals(16, cards.size());
+        assertEquals(17, cards.size());
         assertEquals(5, cards.stream().filter(card -> card.group().equals("overview")).count());
         assertTrue(cards.stream().allMatch(card -> card.enabled()));
         verify(mapper, never()).insert(any(HomeCardPreferenceEntity.class));

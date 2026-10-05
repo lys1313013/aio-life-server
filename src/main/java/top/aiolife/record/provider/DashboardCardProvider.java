@@ -25,18 +25,6 @@ public interface DashboardCardProvider {
     String getTotalTitle();
 
     /**
-     * 图标
-     */
-    String getIcon();
-
-    /**
-     * 图标颜色，默认使用前端主题颜色
-     */
-    default String getIconColor() {
-        return null;
-    }
-
-    /**
      * 获取卡片数据
      */
     DashboardCardVO getCard(long userId);
