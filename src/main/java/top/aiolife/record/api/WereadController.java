@@ -8,6 +8,7 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.pojo.req.WereadConnectionReq;
 import top.aiolife.record.pojo.vo.WereadConnectionVO;
 import top.aiolife.record.pojo.vo.WereadBookLinkVO;
+import top.aiolife.record.pojo.vo.WereadRecentVO;
 import top.aiolife.record.service.IWereadService;
 
 /** 微信读书独立入口，所有数据使用当前登录用户的连接。 */
@@ -17,6 +18,11 @@ import top.aiolife.record.service.IWereadService;
 @RequestMapping("/weread")
 public class WereadController {
     private final IWereadService service;
+
+    @GetMapping("/recent")
+    public ApiResponse<WereadRecentVO> recent() {
+        return ApiResponse.success(service.recent());
+    }
 
     @GetMapping("/connection")
     public ApiResponse<WereadConnectionVO> connection() {

@@ -3,6 +3,7 @@ package top.aiolife.record.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import top.aiolife.record.pojo.vo.WereadConnectionVO;
 import top.aiolife.record.pojo.vo.WereadBookLinkVO;
+import top.aiolife.record.pojo.vo.WereadRecentVO;
 
 public interface IWereadService {
     WereadConnectionVO connection();
@@ -15,4 +16,5 @@ public interface IWereadService {
     JsonNode notes(String bookId);
     JsonNode progress(String bookId);
     WereadBookLinkVO bookLink(String bookId);
+    WereadRecentVO recent();
 }

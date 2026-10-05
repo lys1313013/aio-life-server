@@ -19,6 +19,9 @@ import top.aiolife.record.pojo.vo.WereadConnectionVO;
 import top.aiolife.record.pojo.vo.WereadBookLinkVO;
 import top.aiolife.record.service.IWereadService;
 import top.aiolife.record.weread.WereadClient;
+import top.aiolife.record.weread.WereadReadCache;
+import top.aiolife.record.pojo.vo.WereadRecentVO;
+import cn.hutool.crypto.digest.DigestUtil;
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -28,6 +31,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 /** 用户隔离的只读同步。不合并现有阅读记录，不写入微信读书。 */
 @Service
@@ -36,6 +42,54 @@ public class WereadServiceImpl implements IWereadService {
     private static final Set<String> MODES = Set.of("weekly", "monthly", "annually", "overall");
     private final UserBindMapper mapper;
     private final WereadClient client;
+    private final WereadReadCache readCache;
+
+    private String cacheScope(UserBindEntity connection) {
+        return connection.getUserId() + ":" + DigestUtil.sha256Hex(
+                connection.getId() + ":" + metadata(connection).getString("connectionVersion") + ":" + credential(connection));
+    }
+
+    private JsonNode cachedCall(UserBindEntity connection, String endpoint, Map<String, Object> params) {
+        return readCache.read(cacheScope(connection), endpoint, params, () -> {
+            JsonNode result = client.call(credential(connection), endpoint, params);
+            if ("/book/info".equals(endpoint) && (result == null || safeBookLink(result.path("deepLink").asText()) == null)) {
+                throw new IllegalStateException("该书暂未提供可用的微信读书链接，请稍后重试");
+            }
+            if ("/shelf/sync".equals(endpoint) && (result == null || !result.path("books").isArray())) {
+                throw new IllegalStateException("微信读书书架数据异常，请重试");
+            }
+            return result;
+        });
+    }
+
+    @Override
+    public WereadRecentVO recent() {
+        var connection = find(StpUtil.getLoginIdAsLong());
+        if (!view(connection).connected()) return new WereadRecentVO(false, List.of());
+        JsonNode shelf = cachedCall(connection, "/shelf/sync", Map.of());
+        if (!shelf.path("books").isArray()) throw new IllegalStateException("微信读书书架数据异常，请重试");
+        List<JsonNode> books = new ArrayList<>();
+        Set<String> ids = new HashSet<>();
+        for (JsonNode book : shelf.path("books")) {
+            String id = book.path("bookId").asText();
+            if (id.matches("[A-Za-z0-9_-]{1,128}") && book.path("readUpdateTime").asLong() > 0 && ids.add(id)) books.add(book);
+        }
+        books.sort(Comparator.comparingLong((JsonNode book) -> book.path("readUpdateTime").asLong()).reversed());
+        List<WereadRecentVO.Book> result = new ArrayList<>();
+        for (JsonNode book : books.stream().limit(3).toList()) {
+            String id = book.path("bookId").asText();
+            JsonNode progress = cachedCall(connection, "/book/getprogress", Map.of("bookId", id)).path("book").path("progress");
+            Integer percent = progress.isIntegralNumber() && progress.canConvertToInt() && progress.asInt() >= 0 && progress.asInt() <= 100 ? progress.asInt() : null;
+            result.add(new WereadRecentVO.Book(id, book.path("title").asText(), book.path("author").asText(),
+                    book.path("cover").asText(), book.path("readUpdateTime").asLong(), percent,
+                    safeBookLink(book.path("deepLink").asText())));
+        }
+        var latest = find(StpUtil.getLoginIdAsLong());
+        if (latest == null || !view(latest).connected() || !cacheScope(connection).equals(cacheScope(latest))) {
+            throw new IllegalStateException("连接已变更，请重新加载");
+        }
+        return new WereadRecentVO(true, List.copyOf(result));
+    }
 
     private UserBindEntity find(long userId) {
         return mapper.selectOne(new LambdaQueryWrapper<UserBindEntity>()
@@ -158,7 +212,7 @@ public class WereadServiceImpl implements IWereadService {
         var connection = requireConnection(userId);
         String key = credential(connection);
         ObjectNode result = JsonNodeFactory.instance.objectNode();
-        result.set("shelf", client.call(key, "/shelf/sync", Map.of()));
+        result.set("shelf", cachedCall(connection, "/shelf/sync", Map.of()));
         result.set("notebooks", notebooks(key));
         result.set("stats", client.call(key, "/readdata/detail", Map.of("mode", mode, "baseTime", "overall".equals(mode) ? 0L : baseTime)));
         LocalDateTime now = LocalDateTime.now();
@@ -182,8 +236,8 @@ public class WereadServiceImpl implements IWereadService {
         if (baseTime < 0 || baseTime > Instant.now().getEpochSecond()) {
             throw new IllegalArgumentException("统计日期不能晚于今天");
         }
-        String key = credential(requireConnection(StpUtil.getLoginIdAsLong()));
-        return client.call(key, "/readdata/detail", Map.of("mode", mode, "baseTime", "overall".equals(mode) ? 0L : baseTime));
+        var connection = requireConnection(StpUtil.getLoginIdAsLong());
+        return cachedCall(connection, "/readdata/detail", Map.of("mode", mode, "baseTime", "overall".equals(mode) ? 0L : baseTime));
     }
 
     private JsonNode notebooks(String key) {
@@ -245,8 +299,13 @@ public class WereadServiceImpl implements IWereadService {
     @Override
     public WereadBookLinkVO bookLink(String bookId) {
         validateBookId(bookId);
-        String key = credential(requireConnection(StpUtil.getLoginIdAsLong()));
-        String link = client.call(key, "/book/info", Map.of("bookId", bookId)).path("deepLink").asText("");
+        var connection = requireConnection(StpUtil.getLoginIdAsLong());
+        String link = safeBookLink(cachedCall(connection, "/book/info", Map.of("bookId", bookId)).path("deepLink").asText(""));
+        if (link == null) throw new IllegalStateException("该书暂未提供可用的微信读书链接，请稍后重试");
+        return new WereadBookLinkVO(link);
+    }
+
+    private String safeBookLink(String link) {
         try {
             URI uri = URI.create(link);
             String host = uri.getHost();
@@ -256,15 +315,15 @@ public class WereadServiceImpl implements IWereadService {
                 throw new IllegalArgumentException();
             }
         } catch (IllegalArgumentException e) {
-            throw new IllegalStateException("该书暂未提供可用的微信读书链接，请稍后重试");
+            return null;
         }
-        return new WereadBookLinkVO(link);
+        return link;
     }
 
     @Override
     public JsonNode progress(String bookId) {
         validateBookId(bookId);
-        String key = credential(requireConnection(StpUtil.getLoginIdAsLong()));
-        return client.call(key, "/book/getprogress", Map.of("bookId", bookId));
+        var connection = requireConnection(StpUtil.getLoginIdAsLong());
+        return cachedCall(connection, "/book/getprogress", Map.of("bookId", bookId));
     }
 }

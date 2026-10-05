@@ -18,6 +18,8 @@ import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.req.WereadConnectionReq;
 import top.aiolife.record.service.impl.WereadServiceImpl;
 import java.time.LocalDateTime;
+import java.util.concurrent.atomic.AtomicLong;
+import java.time.Duration;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -28,13 +30,15 @@ class WereadServiceTest {
     private UserBindMapper mapper;
     private WereadClient client;
     private WereadServiceImpl service;
+    private AtomicLong nanos;
 
     @BeforeEach
     void setup() {
         TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "test"), UserBindEntity.class);
         mapper = mock(UserBindMapper.class);
         client = mock(WereadClient.class);
-        service = new WereadServiceImpl(mapper, client);
+        nanos = new AtomicLong();
+        service = new WereadServiceImpl(mapper, client, new WereadReadCache(nanos::get));
     }
 
     private UserBindEntity connection() {
@@ -50,6 +54,7 @@ class WereadServiceTest {
     @Test
     void stats_历史周期只请求一次且透传秒级时间戳() {
         when(mapper.selectOne(any())).thenReturn(connection());
+        when(client.call(anyString(), eq("/readdata/detail"), anyMap())).thenReturn(json.createObjectNode());
         try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             for (String mode : new String[]{"weekly", "monthly", "annually"}) {
@@ -257,12 +262,85 @@ class WereadServiceTest {
                 when(client.call(anyString(), eq("/book/info"), anyMap()))
                         .thenReturn(json.createObjectNode().put("deepLink", link));
                 assertThrows(IllegalStateException.class, () -> service.bookLink("book-1"));
+                nanos.addAndGet(Duration.ofSeconds(31).toNanos());
             }
             when(client.call(anyString(), eq("/book/info"), anyMap()))
                     .thenThrow(new IllegalStateException("微信读书暂时不可用，请稍后重试"))
                     .thenReturn(json.createObjectNode().put("deepLink", "https://weread.qq.com/web/reader/retry"));
             assertThrows(IllegalStateException.class, () -> service.bookLink("book-1"));
+            assertThrows(IllegalStateException.class, () -> service.bookLink("book-1"));
+            nanos.addAndGet(Duration.ofSeconds(31).toNanos());
             assertEquals("https://weread.qq.com/web/reader/retry", service.bookLink("book-1").deepLink());
+        }
+    }
+
+    @Test
+    void recent_按阅读时间排序去重只查询三本并复用缓存() throws Exception {
+        when(mapper.selectOne(any())).thenReturn(connection());
+        when(client.call(anyString(), eq("/shelf/sync"), anyMap())).thenReturn(json.readTree("""
+                {"books":[{"bookId":"0","title":"未读","readUpdateTime":0},
+                {"bookId":"1","title":"书1","readUpdateTime":100},
+                {"bookId":"2","title":"书2","readUpdateTime":200},
+                {"bookId":"3","title":"书3","readUpdateTime":300},
+                {"bookId":"3","title":"重复","readUpdateTime":300},
+                {"bookId":"4","title":"书4","readUpdateTime":400,"deepLink":"https://evil.example"}]}
+                """));
+        when(client.call(anyString(), eq("/book/getprogress"), anyMap())).thenReturn(json.readTree("{\"book\":{\"progress\":1}}"));
+        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
+            var result = service.recent();
+            assertEquals(java.util.List.of("4", "3", "2"), result.books().stream().map(book -> book.bookId()).toList());
+            assertEquals(1, result.books().getFirst().progress());
+            assertNull(result.books().getFirst().deepLink());
+            service.recent(); service.progress("4");
+            verify(client, times(1)).call(anyString(), eq("/shelf/sync"), anyMap());
+            verify(client, times(3)).call(anyString(), eq("/book/getprogress"), anyMap());
+            nanos.addAndGet(Duration.ofMinutes(5).plusSeconds(1).toNanos());
+            service.recent();
+            verify(client, times(2)).call(anyString(), eq("/shelf/sync"), anyMap());
+            verify(client, times(6)).call(anyString(), eq("/book/getprogress"), anyMap());
+        }
+    }
+
+    @Test
+    void recent_未绑定及空书架不查询进度() throws Exception {
+        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
+            assertFalse(service.recent().connected());
+            verifyNoInteractions(client);
+            when(mapper.selectOne(any())).thenReturn(connection());
+            when(client.call(anyString(), eq("/shelf/sync"), anyMap())).thenReturn(json.readTree("{\"books\":[]}"));
+            assertTrue(service.recent().connected());
+            assertTrue(service.recent().books().isEmpty());
+            verify(client, never()).call(anyString(), eq("/book/getprogress"), anyMap());
+        }
+    }
+
+    @Test
+    void recent_绑定变化和账号切换不能复用旧缓存() throws Exception {
+        var first = connection();
+        when(mapper.selectOne(any())).thenReturn(first);
+        when(client.call(anyString(), eq("/shelf/sync"), anyMap())).thenReturn(json.readTree("{\"books\":[]}"));
+        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
+            service.recent();
+            var next = connection(); next.setMetaFields("{\"connectionVersion\":\"new-version\"}");
+            when(mapper.selectOne(any())).thenReturn(next);
+            service.recent();
+            next.setUserId(43L);
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(43L);
+            service.recent();
+            verify(client, times(3)).call(anyString(), eq("/shelf/sync"), anyMap());
+        }
+    }
+
+    @Test
+    void recent_读取期间解绑不返回旧连接数据() throws Exception {
+        when(mapper.selectOne(any())).thenReturn(connection(), null);
+        when(client.call(anyString(), eq("/shelf/sync"), anyMap())).thenReturn(json.readTree("{\"books\":[]}"));
+        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
+            assertThrows(IllegalStateException.class, service::recent);
         }
     }
 
