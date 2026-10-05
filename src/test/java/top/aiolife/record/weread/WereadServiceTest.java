@@ -275,7 +275,7 @@ class WereadServiceTest {
     }
 
     @Test
-    void recent_按阅读时间排序去重只查询三本并复用缓存() throws Exception {
+    void recent_按阅读时间排序去重并复用缓存() throws Exception {
         when(mapper.selectOne(any())).thenReturn(connection());
         when(client.call(anyString(), eq("/shelf/sync"), anyMap())).thenReturn(json.readTree("""
                 {"books":[{"bookId":"0","title":"未读","readUpdateTime":0},
@@ -289,17 +289,61 @@ class WereadServiceTest {
         try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             var result = service.recent();
-            assertEquals(java.util.List.of("4", "3", "2"), result.books().stream().map(book -> book.bookId()).toList());
+            assertEquals(java.util.List.of("4", "3", "2", "1"), result.books().stream().map(book -> book.bookId()).toList());
+            assertNull(result.nextCursor());
             assertEquals(1, result.books().getFirst().progress());
             assertNull(result.books().getFirst().deepLink());
             service.recent(); service.progress("4");
             verify(client, times(1)).call(anyString(), eq("/shelf/sync"), anyMap());
-            verify(client, times(3)).call(anyString(), eq("/book/getprogress"), anyMap());
+            verify(client, times(4)).call(anyString(), eq("/book/getprogress"), anyMap());
             nanos.addAndGet(Duration.ofMinutes(5).plusSeconds(1).toNanos());
             service.recent();
             verify(client, times(2)).call(anyString(), eq("/shelf/sync"), anyMap());
-            verify(client, times(6)).call(anyString(), eq("/book/getprogress"), anyMap());
+            verify(client, times(8)).call(anyString(), eq("/book/getprogress"), anyMap());
         }
+    }
+
+    @Test
+    void recent_每批六本同秒大整数ID完整翻页且只查询当前批次进度() {
+        when(mapper.selectOne(any())).thenReturn(connection());
+        var shelf = json.createObjectNode();
+        var books = shelf.putArray("books");
+        for (int i = 12; i >= 0; i--) {
+            books.addObject().put("bookId", "90071992547409" + (100 + i)).put("readUpdateTime", 200);
+        }
+        books.add(books.get(0).deepCopy());
+        books.addObject().put("bookId", "unread").put("readUpdateTime", 0);
+        when(client.call(anyString(), eq("/shelf/sync"), anyMap())).thenReturn(shelf);
+        when(client.call(anyString(), eq("/book/getprogress"), anyMap())).thenReturn(
+                json.createObjectNode().set("book", json.createObjectNode().put("progress", 42)));
+        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
+            var first = service.recent();
+            assertEquals(6, first.books().size());
+            assertEquals("200:90071992547409105", first.nextCursor());
+            verify(client, times(6)).call(anyString(), eq("/book/getprogress"), anyMap());
+            var second = service.recent(first.nextCursor(), 6);
+            assertEquals(6, second.books().size());
+            assertEquals("90071992547409106", second.books().getFirst().bookId());
+            assertEquals(second, service.recent(first.nextCursor(), 6));
+            verify(client, times(12)).call(anyString(), eq("/book/getprogress"), anyMap());
+            var last = service.recent(second.nextCursor(), 6);
+            assertEquals(1, last.books().size());
+            assertNull(last.nextCursor());
+            verify(client, times(13)).call(anyString(), eq("/book/getprogress"), anyMap());
+            verify(client, times(1)).call(anyString(), eq("/shelf/sync"), anyMap());
+            assertTrue(service.recent("200:90071992547409112", 6).books().isEmpty());
+        }
+    }
+
+    @Test
+    void recent_无效游标和单批超限不调用外部接口() {
+        for (String cursor : new String[]{"bad", "-1:book", "0:book", "9999999999999999999:book", "1:bad/id"}) {
+            assertThrows(IllegalArgumentException.class, () -> service.recent(cursor, 6));
+        }
+        assertThrows(IllegalArgumentException.class, () -> service.recent(null, 0));
+        assertThrows(IllegalArgumentException.class, () -> service.recent(null, 21));
+        verifyNoInteractions(client, mapper);
     }
 
     @Test

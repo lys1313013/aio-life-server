@@ -20,8 +20,9 @@ public class WereadController {
     private final IWereadService service;
 
     @GetMapping("/recent")
-    public ApiResponse<WereadRecentVO> recent() {
-        return ApiResponse.success(service.recent());
+    public ApiResponse<WereadRecentVO> recent(@RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "6") int size) {
+        return ApiResponse.success(service.recent(cursor, size));
     }
 
     @GetMapping("/connection")

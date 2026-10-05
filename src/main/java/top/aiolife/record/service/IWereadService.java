@@ -16,5 +16,6 @@ public interface IWereadService {
     JsonNode notes(String bookId);
     JsonNode progress(String bookId);
     WereadBookLinkVO bookLink(String bookId);
-    WereadRecentVO recent();
+    default WereadRecentVO recent() { return recent(null, 6); }
+    WereadRecentVO recent(String cursor, int size);
 }

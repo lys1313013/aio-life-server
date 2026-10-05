@@ -63,20 +63,40 @@ public class WereadServiceImpl implements IWereadService {
     }
 
     @Override
-    public WereadRecentVO recent() {
+    public WereadRecentVO recent(String cursor, int size) {
+        if (size < 1 || size > 20) throw new IllegalArgumentException("每批图书数量须在 1 到 20 之间");
+        long beforeTime = Long.MAX_VALUE;
+        String beforeId = "";
+        if (StringUtils.hasText(cursor)) {
+            if (!cursor.matches("[0-9]{1,19}:[A-Za-z0-9_-]{1,128}")) {
+                throw new IllegalArgumentException("图书分页游标无效");
+            }
+            try {
+                beforeTime = Long.parseLong(cursor.substring(0, cursor.indexOf(':')));
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("图书分页游标无效");
+            }
+            if (beforeTime <= 0) throw new IllegalArgumentException("图书分页游标无效");
+            beforeId = cursor.substring(cursor.indexOf(':') + 1);
+        }
         var connection = find(StpUtil.getLoginIdAsLong());
-        if (!view(connection).connected()) return new WereadRecentVO(false, List.of());
+        if (!view(connection).connected()) return new WereadRecentVO(false, List.of(), null);
         JsonNode shelf = cachedCall(connection, "/shelf/sync", Map.of());
         if (!shelf.path("books").isArray()) throw new IllegalStateException("微信读书书架数据异常，请重试");
         List<JsonNode> books = new ArrayList<>();
         Set<String> ids = new HashSet<>();
         for (JsonNode book : shelf.path("books")) {
             String id = book.path("bookId").asText();
-            if (id.matches("[A-Za-z0-9_-]{1,128}") && book.path("readUpdateTime").asLong() > 0 && ids.add(id)) books.add(book);
+            long time = book.path("readUpdateTime").asLong();
+            if (id.matches("[A-Za-z0-9_-]{1,128}") && time > 0
+                    && (time < beforeTime || time == beforeTime && id.compareTo(beforeId) > 0)
+                    && ids.add(id)) books.add(book);
         }
-        books.sort(Comparator.comparingLong((JsonNode book) -> book.path("readUpdateTime").asLong()).reversed());
+        // 同一阅读时间按字符串 ID 排序，避免翻页遗漏同秒阅读的书，也不转换大整数 ID。
+        books.sort(Comparator.comparingLong((JsonNode book) -> book.path("readUpdateTime").asLong()).reversed()
+                .thenComparing(book -> book.path("bookId").asText()));
         List<WereadRecentVO.Book> result = new ArrayList<>();
-        for (JsonNode book : books.stream().limit(3).toList()) {
+        for (JsonNode book : books.stream().limit(size).toList()) {
             String id = book.path("bookId").asText();
             JsonNode progress = cachedCall(connection, "/book/getprogress", Map.of("bookId", id)).path("book").path("progress");
             Integer percent = progress.isIntegralNumber() && progress.canConvertToInt() && progress.asInt() >= 0 && progress.asInt() <= 100 ? progress.asInt() : null;
@@ -88,7 +108,9 @@ public class WereadServiceImpl implements IWereadService {
         if (latest == null || !view(latest).connected() || !cacheScope(connection).equals(cacheScope(latest))) {
             throw new IllegalStateException("连接已变更，请重新加载");
         }
-        return new WereadRecentVO(true, List.copyOf(result));
+        String nextCursor = books.size() > size
+                ? result.getLast().readUpdateTime() + ":" + result.getLast().bookId() : null;
+        return new WereadRecentVO(true, List.copyOf(result), nextCursor);
     }
 
     private UserBindEntity find(long userId) {
