@@ -23,7 +23,7 @@ public class MembershipRecordEntity extends BaseEntity {
     private String name;
 
     /**
-     * video/music/shopping/cloud/study/game/other
+     * video/music/shopping/cloud/study/game/AI/other
      */
     private String category;
 

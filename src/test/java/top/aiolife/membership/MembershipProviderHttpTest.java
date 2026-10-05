@@ -91,6 +91,10 @@ class MembershipProviderHttpTest {
                     .andExpect(content().bytes(icons.resource(icon.key()).getContentAsByteArray()))
                     .andExpect(header().string("Cache-Control", "max-age=86400, public"))
                     .andExpect(header().string("X-Content-Type-Options", "nosniff"));
+            mvc.perform(get("/membership/provider-icons/" + icon.key()).param("dark", "true"))
+                    .andExpect(status().isOk()).andExpect(content().contentType("image/png"))
+                    .andExpect(content().bytes(icons.resource(icon.key(), true).getContentAsByteArray()))
+                    .andExpect(header().string("Cache-Control", "max-age=86400, public"));
         }
         verifyNoInteractions(keys, locks, activity, accounts, service);
     }
@@ -128,5 +132,10 @@ class MembershipProviderHttpTest {
                         .content("{\"name\":\"平台\",\"code\":\"../bad\",\"category\":\"invalid\",\"isEnabled\":2}"))
                 .andExpect(jsonPath("$.rscode").value(not("0")));
         verifyNoInteractions(service);
+        mvc.perform(post("/system/membership-providers").header("Authorization", "Bearer " + admin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"阿里云百炼\",\"code\":\"aliyun_bailian\",\"category\":\"AI\"}"))
+                .andExpect(jsonPath("$.rscode").value("0"));
+        verify(service).save(eq(1L), isNull(), argThat(req -> "AI".equals(req.getCategory())));
     }
 }

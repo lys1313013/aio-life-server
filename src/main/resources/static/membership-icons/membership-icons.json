@@ -293,13 +293,16 @@
     "sourceFile": "sources/chatgpt.svg",
     "color": "#000000",
     "conversion": "OpenAI Blossom mark rendered in black, geometry unchanged; Chromium transparent 128x128 PNG rasterization",
-    "sha256": "13917768feb36b8e7922e338ef6e12e18c8d587d9393f24c1bcc67de5c149652",
-    "bytes": 5725,
+    "sha256": "8099ddacf9845896b7ca1ec1086a3ab5a7eac79ec2ffb128b25342814762aeec",
+    "bytes": 2777,
     "dimensions": [
       128,
       128
     ],
-    "upstreamOriginalFile": "sources/chatgpt.original.svg"
+    "upstreamOriginalFile": "sources/chatgpt.original.svg",
+    "darkFile": "chatgpt_dark.png",
+    "darkSha256": "a8eb82b63b1831c3130bc3d56de04c2756c9ce8a3e059bf54fece6b3922d4e87",
+    "darkBytes": 2743
   },
   {
     "key": "netflix",
@@ -353,5 +356,234 @@
     "notes": "",
     "sha256": "3bf7ef07a68f850f8fdd44ec0abb61141b956f54cf5038b52918b15b0262bdd5",
     "bytes": 21013
+  },
+  {
+    "key": "claude",
+    "name": "Claude",
+    "file": "claude.png",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/82e641b4fece9d1028a127149af9ded00df5ac0c/packages/static-svg/icons/claude-color.svg",
+    "license": "MIT (LobeHub); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/claude.original.svg",
+    "upstreamOriginalFile": "sources/claude.original.svg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Original SVG rasterized by Chromium to transparent 128x128 PNG; geometry and brand colors retained; currentColor rendered black or white for theme variants",
+    "sha256": "9b9bac74314a9c8c0fa23aa6ffde422e9ac17755c8bf1d479981e144134a75f7",
+    "bytes": 2693
+  },
+  {
+    "key": "gemini",
+    "name": "Gemini / Google AI",
+    "file": "gemini.png",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/82e641b4fece9d1028a127149af9ded00df5ac0c/packages/static-svg/icons/gemini-color.svg",
+    "license": "MIT (LobeHub); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/gemini.original.svg",
+    "upstreamOriginalFile": "sources/gemini.original.svg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Original SVG rasterized by Chromium to transparent 128x128 PNG; geometry and brand colors retained; currentColor rendered black or white for theme variants",
+    "sha256": "92f85e7c5611e7dfe7b709cefe803d0feafdb7bf7b6d042e0b018e52be0633b2",
+    "bytes": 5590
+  },
+  {
+    "key": "grok",
+    "name": "Grok",
+    "file": "grok.png",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/82e641b4fece9d1028a127149af9ded00df5ac0c/packages/static-svg/icons/grok.svg",
+    "license": "MIT (LobeHub); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/grok.original.svg",
+    "upstreamOriginalFile": "sources/grok.original.svg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Original SVG rasterized by Chromium to transparent 128x128 PNG; geometry and brand colors retained; currentColor rendered black or white for theme variants",
+    "darkFile": "grok_dark.png",
+    "sha256": "7be2e69fcbfdcecfb2b7be991fc0522dc700bbd712d5828d3967f3d7b9f3ab18",
+    "bytes": 1947,
+    "darkSha256": "7c1bf57f6e4ecc2c154e5c8f227f7963c61d32e6495d75cb4fe56205aecab58e",
+    "darkBytes": 1950
+  },
+  {
+    "key": "poe",
+    "name": "Poe",
+    "file": "poe.png",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/82e641b4fece9d1028a127149af9ded00df5ac0c/packages/static-svg/icons/poe-color.svg",
+    "license": "MIT (LobeHub); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/poe.original.svg",
+    "upstreamOriginalFile": "sources/poe.original.svg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Original SVG rasterized by Chromium to transparent 128x128 PNG; geometry and brand colors retained; currentColor rendered black or white for theme variants",
+    "darkFile": "poe_dark.png",
+    "sha256": "c07f6e518e9ed5a38d55a5fa193dfb3ea2b55f884682e99df0414917848bf2d4",
+    "bytes": 3697,
+    "darkSha256": "76a3b02fdb88122098cb096807a5a92759fe8fcff8f625013250fdcdf11bf6d5",
+    "darkBytes": 3687
+  },
+  {
+    "key": "kimi",
+    "name": "Kimi",
+    "file": "kimi.png",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/82e641b4fece9d1028a127149af9ded00df5ac0c/packages/static-svg/icons/kimi-color.svg",
+    "license": "MIT (LobeHub); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/kimi.original.svg",
+    "upstreamOriginalFile": "sources/kimi.original.svg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Original SVG rasterized by Chromium to transparent 128x128 PNG; geometry and brand colors retained; currentColor rendered black or white for theme variants; white K stroke rendered black in light theme and original white in dark theme",
+    "darkFile": "kimi_dark.png",
+    "sha256": "219821009f5014688a57d0aeb87dbfb3b16348ddabeaca519e2e80d12fe37864",
+    "bytes": 1173,
+    "darkSha256": "f4fdb79a16749c01704e0b0a0d869cb6f3e4a7be20dd88ea8d8039c4ec5ff68b",
+    "darkBytes": 1118
+  },
+  {
+    "key": "cursor",
+    "name": "Cursor",
+    "file": "cursor.png",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/82e641b4fece9d1028a127149af9ded00df5ac0c/packages/static-svg/icons/cursor.svg",
+    "license": "MIT (LobeHub); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/cursor.original.svg",
+    "upstreamOriginalFile": "sources/cursor.original.svg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Original SVG rasterized by Chromium to transparent 128x128 PNG; geometry and brand colors retained; currentColor rendered black or white for theme variants",
+    "darkFile": "cursor_dark.png",
+    "sha256": "76aefbf742fad9f1cf319d891e729f06643663eb9b59407893dd88b48e5ea8f5",
+    "bytes": 1575,
+    "darkSha256": "568e0f45947db00e5ba78790e37c28fe1eb0259d6e3bd73062d0c9a34d14f63b",
+    "darkBytes": 1523
+  },
+  {
+    "key": "github_copilot",
+    "name": "GitHub Copilot",
+    "file": "github_copilot.png",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/82e641b4fece9d1028a127149af9ded00df5ac0c/packages/static-svg/icons/githubcopilot.svg",
+    "license": "MIT (LobeHub); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/github_copilot.original.svg",
+    "upstreamOriginalFile": "sources/github_copilot.original.svg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Original SVG rasterized by Chromium to transparent 128x128 PNG; geometry and brand colors retained; currentColor rendered black or white for theme variants",
+    "sha256": "d2c83483e779b120e5268dff184a6c2eeb75cfed6cafe34722b95ef293be7872",
+    "bytes": 1913,
+    "darkFile": "github_copilot_dark.png",
+    "darkSha256": "12785357d56919ff9598155c7ff5803048e123253c72ca659be74381e01174a5",
+    "darkBytes": 1891
+  },
+  {
+    "key": "glm_coding_plan",
+    "name": "智谱 GLM Coding Plan",
+    "file": "glm_coding_plan.png",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/82e641b4fece9d1028a127149af9ded00df5ac0c/packages/static-svg/icons/zhipu-color.svg",
+    "license": "MIT (LobeHub); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/glm_coding_plan.original.svg",
+    "upstreamOriginalFile": "sources/glm_coding_plan.original.svg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Original SVG rasterized by Chromium to transparent 128x128 PNG; geometry and brand colors retained; currentColor rendered black or white for theme variants",
+    "sha256": "fb32b03112ef5c2e66a0f6fa17582cb30cfbfcc97ac3d423d6ac2d3ac3fcd247",
+    "bytes": 2190
+  },
+  {
+    "key": "midjourney",
+    "name": "Midjourney",
+    "file": "midjourney.png",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/82e641b4fece9d1028a127149af9ded00df5ac0c/packages/static-svg/icons/midjourney.svg",
+    "license": "MIT (LobeHub); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/midjourney.original.svg",
+    "upstreamOriginalFile": "sources/midjourney.original.svg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Original SVG rasterized by Chromium to transparent 128x128 PNG; geometry and brand colors retained; currentColor rendered black or white for theme variants",
+    "darkFile": "midjourney_dark.png",
+    "sha256": "2c4fc87cacd8393eb86e400b1012ecba06db9c2177bf4342efbe55696000bd89",
+    "bytes": 2583,
+    "darkSha256": "cbae61692b3eca00e556135b614a72b3d840b8c52964970229eefc72b44a2666",
+    "darkBytes": 2389
+  },
+  {
+    "key": "jimeng",
+    "name": "即梦 AI",
+    "file": "jimeng.png",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/82e641b4fece9d1028a127149af9ded00df5ac0c/packages/static-svg/icons/jimeng-color.svg",
+    "license": "MIT (LobeHub); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/jimeng.original.svg",
+    "upstreamOriginalFile": "sources/jimeng.original.svg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Original SVG rasterized by Chromium to transparent 128x128 PNG; geometry and brand colors retained; currentColor rendered black or white for theme variants",
+    "sha256": "91e7b63dd46ee6cf3c3d026fb614afd901df1134e3857b661cd8a0deee554437",
+    "bytes": 7419
+  },
+  {
+    "key": "suno",
+    "name": "Suno",
+    "file": "suno.png",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/82e641b4fece9d1028a127149af9ded00df5ac0c/packages/static-svg/icons/suno.svg",
+    "license": "MIT (LobeHub); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/suno.original.svg",
+    "upstreamOriginalFile": "sources/suno.original.svg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Original SVG rasterized by Chromium to transparent 128x128 PNG; geometry and brand colors retained; currentColor rendered black or white for theme variants",
+    "darkFile": "suno_dark.png",
+    "sha256": "47603759275ad1bad92bb52fa820feaa8e373eccdfee271ae358e9bf69af6c93",
+    "bytes": 1219,
+    "darkSha256": "a8b3c721f116e2eb6f22e537e3dbaaceb9b238fb28f97468cc17f07d88efc78b",
+    "darkBytes": 1202
+  },
+  {
+    "key": "aliyun_bailian",
+    "name": "阿里云百炼",
+    "file": "aliyun_bailian.png",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/82e641b4fece9d1028a127149af9ded00df5ac0c/packages/static-svg/icons/bailian-color.svg",
+    "license": "MIT (LobeHub); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/aliyun_bailian.original.svg",
+    "upstreamOriginalFile": "sources/aliyun_bailian.original.svg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Original SVG rasterized by Chromium to transparent 128x128 PNG; geometry and brand colors retained; currentColor rendered black or white for theme variants",
+    "sha256": "a62f3e1b646f995510298440dcb44fd7f167c55d4893506ad446140b6c17d017",
+    "bytes": 2148
+  },
+  {
+    "key": "volcengine_ark",
+    "name": "火山引擎·火山方舟",
+    "file": "volcengine_ark.png",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/82e641b4fece9d1028a127149af9ded00df5ac0c/packages/static-svg/icons/volcengine-color.svg",
+    "license": "MIT (LobeHub); third-party trademarks remain owned by respective brands",
+    "sourceFile": "sources/volcengine_ark.original.svg",
+    "upstreamOriginalFile": "sources/volcengine_ark.original.svg",
+    "dimensions": [
+      128,
+      128
+    ],
+    "conversion": "Original SVG rasterized by Chromium to transparent 128x128 PNG; geometry and brand colors retained; currentColor rendered black or white for theme variants",
+    "sha256": "f6bf9cc5ab693cc054c7d298b607a4c3e3d671823b6a0b222f479c18c7d6cbbf",
+    "bytes": 1744
   }
 ]

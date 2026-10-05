@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.membership.pojo.vo.MembershipProviderVO;
@@ -31,10 +32,10 @@ public class MembershipProviderController {
     public ApiResponse<List<MembershipIconCatalog.IconVO>> icons() { return ApiResponse.success(icons.list()); }
 
     @GetMapping("/provider-icons/{key}")
-    public ResponseEntity<Resource> icon(@PathVariable String key) {
+    public ResponseEntity<Resource> icon(@PathVariable String key, @RequestParam(defaultValue = "false") boolean dark) {
         String file;
         try {
-            file = icons.require(key).file();
+            file = icons.file(key, dark);
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).cacheControl(CacheControl.noStore()).build();
         }
@@ -44,6 +45,6 @@ public class MembershipProviderController {
                 .cacheControl(CacheControl.maxAge(1, TimeUnit.DAYS).cachePublic())
                 .header("X-Content-Type-Options", "nosniff")
                 .header("Content-Security-Policy", "default-src 'none'; sandbox")
-                .body(icons.resource(key));
+                .body(icons.resource(key, dark));
     }
 }

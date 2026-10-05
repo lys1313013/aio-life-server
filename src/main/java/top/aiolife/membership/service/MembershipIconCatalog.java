@@ -22,16 +22,18 @@ public class MembershipIconCatalog {
             for (Definition definition : definitions) {
                 if (definition.key() == null || !definition.key().matches("[a-z0-9_-]+")
                         || definition.file() == null || !definition.file().matches("[a-z0-9_-]+\\.(svg|png|webp|jpg|jpeg|ico)")
+                        || (definition.darkFile() != null && !definition.darkFile().matches("[a-z0-9_-]+\\.(svg|png|webp|jpg|jpeg|ico)"))
                         || icons.putIfAbsent(definition.key(), definition) != null) {
                     throw new IllegalStateException("会员图标清单存在非法或重复条目");
                 }
                 if (!resource(definition.key()).exists()) throw new IllegalStateException("会员图标资源不存在: " + definition.key());
+                if (!resource(definition.key(), true).exists()) throw new IllegalStateException("会员深色图标资源不存在: " + definition.key());
             }
         }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Definition(String key, String name, String file, String source, String license) {}
+    public record Definition(String key, String name, String file, String darkFile, String source, String license) {}
     public record IconVO(String key, String name, String url) {}
 
     public List<IconVO> list() {
@@ -52,6 +54,15 @@ public class MembershipIconCatalog {
     }
 
     public Resource resource(String key) {
-        return new ClassPathResource("static/membership-icons/" + require(key).file());
+        return resource(key, false);
+    }
+
+    public String file(String key, boolean dark) {
+        Definition icon = require(key);
+        return dark && icon.darkFile() != null ? icon.darkFile() : icon.file();
+    }
+
+    public Resource resource(String key, boolean dark) {
+        return new ClassPathResource("static/membership-icons/" + file(key, dark));
     }
 }

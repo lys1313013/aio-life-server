@@ -15,7 +15,7 @@ public class MembershipProviderReq {
     private String name;
     @NotBlank @Pattern(regexp = "[a-z][a-z0-9_]{0,49}")
     private String code;
-    @NotBlank @Pattern(regexp = "video|music|shopping|cloud|study|game|other")
+    @NotBlank @Pattern(regexp = "video|music|shopping|cloud|study|game|AI|other")
     private String category;
     @Size(max = 64)
     private String iconKey;

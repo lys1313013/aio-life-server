@@ -66,6 +66,14 @@
     {
       "path": "sql/2_ini_data/2026-10-05_ai_api_key_menu.sql",
       "sha256": "70774308a15604fa17e7efa15647050f749493868d561ab395b1c87a68cc09fc"
+    },
+    {
+      "path": "sql/2_ini_data/2026-10-05_membership_ai_providers.sql",
+      "sha256": "010ccfbe587c2c3f7360a91e6519cb4bcc5d894e08f1968dc2c840cc825539b1"
+    },
+    {
+      "path": "sql/2_ini_data/2026-10-05_membership_ai_icons.sql",
+      "sha256": "236c1a733136e3f460c88977140110793c75264304318573fa95e705c8c74fce"
     }
   ]
 }
