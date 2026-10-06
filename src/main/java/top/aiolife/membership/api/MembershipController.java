@@ -76,12 +76,15 @@ public class MembershipController {
         List<MembershipRecordEntity> entities = membershipService.list(queryWrapper);
 
         MembershipStatsVO vo = new MembershipStatsVO();
-        vo.setActiveCount(entities.stream().filter(e -> STATUS_ACTIVE.equals(calcStatus(e, today))).count());
-        vo.setExpiringCount(entities.stream().filter(e -> STATUS_EXPIRING.equals(calcStatus(e, today))).count());
-        vo.setExpiredCount(entities.stream().filter(e -> STATUS_EXPIRED.equals(calcStatus(e, today))).count());
-        vo.setExpiringThisMonthCount(entities.stream()
+        vo.setActiveCount(Math.toIntExact(entities.stream()
+                .filter(e -> STATUS_ACTIVE.equals(calcStatus(e, today))).count()));
+        vo.setExpiringCount(Math.toIntExact(entities.stream()
+                .filter(e -> STATUS_EXPIRING.equals(calcStatus(e, today))).count()));
+        vo.setExpiredCount(Math.toIntExact(entities.stream()
+                .filter(e -> STATUS_EXPIRED.equals(calcStatus(e, today))).count()));
+        vo.setExpiringThisMonthCount(Math.toIntExact(entities.stream()
                 .filter(e -> !e.getExpiryDate().isBefore(today) && !e.getExpiryDate().isAfter(monthEnd))
-                .count());
+                .count()));
         vo.setMonthlyAmount(entities.stream()
                 .filter(e -> !e.getExpiryDate().isBefore(today))
                 .filter(e -> e.getStartDate() == null || !e.getStartDate().isAfter(today))

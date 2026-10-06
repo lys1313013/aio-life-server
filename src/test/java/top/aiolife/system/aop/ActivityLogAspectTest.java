@@ -94,7 +94,7 @@ class ActivityLogAspectTest {
         var point = request("/users", "modify");
         try (var auth = mockStatic(RequestLoginContext.class)) {
             auth.when(RequestLoginContext::userIdOrNull).thenReturn(13L);
-            when(point.proceed()).thenReturn(ApiResponse.error("1", "失败"));
+            when(point.proceed()).thenReturn(ApiResponse.error(1, "失败"));
             aspect.around(point);
             assertFalse(recorded().getSuccess());
             assertEquals("修改", recorded().getFunctionItem());

@@ -40,7 +40,7 @@ public class MbtiController {
             return ApiResponse.success(result);
         } else {
             String message = String.valueOf(result.getOrDefault("message", "创建测试失败"));
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, message);
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, message);
         }
     }
 
@@ -88,7 +88,7 @@ public class MbtiController {
         long userId = StpUtil.getLoginIdAsLong();
         MbtiResultEntity result = mbtiResultService.getById(id);
         if (result == null || result.getUserId() == null || result.getUserId() != userId) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "记录不存在或无权限");
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "记录不存在或无权限");
         }
 
         var response = new MbtiResultDetailVO();
@@ -117,7 +117,7 @@ public class MbtiController {
         long userId = StpUtil.getLoginIdAsLong();
         boolean deleted = mbtiResultService.deleteResult(id, userId);
         if (!deleted) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "记录不存在或无权限");
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "记录不存在或无权限");
         }
         return ApiResponse.success();
     }

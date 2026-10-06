@@ -24,7 +24,7 @@ class HomeCardPreferenceHttpTest {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
             mvc.perform(put("/home/cards/section.goal").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"enabled\":false,\"userId\":8}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.rscode").value("0"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
             verify(service).toggle(7, "section.goal", false);
             mvc.perform(get("/home/cards")).andExpect(status().isOk());
             verify(service).get(7);

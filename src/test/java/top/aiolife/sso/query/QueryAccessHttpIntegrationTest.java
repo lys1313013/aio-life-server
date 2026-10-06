@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -64,7 +66,7 @@ class QueryAccessHttpIntegrationTest {
     private JsonNode issue() throws Exception {
         String body = mvc.perform(post("/query/access-token").header("Authorization", "Bearer " + session)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"appId\":\"aio-life-query\"}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.rscode").value("0"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
                 .andExpect(header().string("Cache-Control", "no-store")).andReturn().getResponse().getContentAsString();
         var data = json.readTree(body).path("data"); grants.add(data.path("grantId").asText()); return data;
     }
@@ -79,30 +81,30 @@ class QueryAccessHttpIntegrationTest {
         var grant = issue();
         assertEquals(300, grant.path("expiresIn").asInt());
         var result = evaluate(grant, KEY);
-        assertEquals("0", result.path("rscode").asText());
+        assertEquals(0, result.path("code").intValue());
         assertTrue(result.path("data").path("userId").isTextual());
         assertEquals(Long.toString(userId), result.path("data").path("userId").asText());
         assertEquals("ai_time_reader", result.path("data").path("role").asText());
         assertNotEquals(grant.path("accessToken").asText(), store.read(grant.path("grantId").asText()).tokenHash());
-        assertNotEquals("0", evaluate(grant, "forged").path("rscode").asText());
+        assertNotEquals(0, evaluate(grant, "forged").path("code").intValue());
     }
 
     @Test void 撤销及原会话失效立即拒绝() throws Exception {
         var revoked = issue();
         mvc.perform(delete("/query/grants/" + revoked.path("grantId").asText()).header("Authorization", "Bearer " + session))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.rscode").value("0"));
-        assertNotEquals("0", evaluate(revoked, KEY).path("rscode").asText());
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+        assertNotEquals(0, evaluate(revoked, KEY).path("code").intValue());
         var expiredSession = issue(); StpUtil.logoutByTokenValue(session);
-        assertNotEquals("0", evaluate(expiredSession, KEY).path("rscode").asText());
+        assertNotEquals(0, evaluate(expiredSession, KEY).path("code").intValue());
     }
 
     @Test void 账号删除和过期授权不能访问() throws Exception {
         var expired = issue(); var old = store.read(expired.path("grantId").asText());
         store.delete(expired.path("grantId").asText());
         store.create(expired.path("grantId").asText(), new QueryAccessModels.Grant(old.tokenHash(), old.userId(), old.appId(), old.authorizerToken(), 1));
-        assertNotEquals("0", evaluate(expired, KEY).path("rscode").asText());
+        assertNotEquals(0, evaluate(expired, KEY).path("code").intValue());
         var deleted = issue(); users.deleteById(userId);
-        assertNotEquals("0", evaluate(deleted, KEY).path("rscode").asText());
+        assertNotEquals(0, evaluate(deleted, KEY).path("code").intValue());
     }
 
     @Test void ApiKey不能签发授权且未知应用不能自动授权() throws Exception {
@@ -120,7 +122,7 @@ class QueryAccessHttpIntegrationTest {
 
     @Test void 授权后重新锁定时迹仍然拒绝() throws Exception {
         var grant = issue();
-        assertEquals("0", evaluate(grant, KEY).path("rscode").asText());
+        assertEquals(0, evaluate(grant, KEY).path("code").intValue());
         // CI 已通过初始化脚本创建菜单；复用现有记录，空库才补充测试夹具。
         SysMenuEntity menu = menus.selectOne(new LambdaQueryWrapper<SysMenuEntity>()
                 .eq(SysMenuEntity::getPath, "/time/time-tracker"));
@@ -130,20 +132,20 @@ class QueryAccessHttpIntegrationTest {
         }
         UserSecondaryLockMenuEntity lock = new UserSecondaryLockMenuEntity();
         lock.setUserId(userId); lock.setMenuId(menu.getId()); lock.fillCreateCommonField(userId); locks.insert(lock);
-        assertEquals("2001", evaluate(grant, KEY).path("rscode").asText());
+        assertEquals(2001, evaluate(grant, KEY).path("code").intValue());
         mvc.perform(post(QueryAccessController.INTERNAL_CHECK_TOKEN_PATH).header("Authorization", "Bearer " + session)
                 .header("X-AIO-Query-Service-Key", KEY).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"dataset\":\"time_record\"}")).andExpect(jsonPath("$.rscode").value("2001"));
+                .content("{\"dataset\":\"time_record\"}")).andExpect(jsonPath("$.code").value(2001));
     }
 
     @Test void 直接校验登录Token且退出立即失效() throws Exception {
         var result = checkToken(session, KEY);
-        assertEquals("0", result.path("rscode").asText());
+        assertEquals(0, result.path("code").intValue());
         assertEquals(Long.toString(userId), result.at("/data/userId").textValue());
         assertEquals("login", result.at("/data/credentialType").asText());
         assertTrue(result.at("/data/credentialId").asText().matches("[a-f0-9]{32}"));
         assertFalse(result.toString().contains(session));
-        assertNotEquals("0", checkToken(session, "invalid").path("rscode").asText());
+        assertNotEquals(0, checkToken(session, "invalid").path("code").intValue());
         StpUtil.logoutByTokenValue(session);
         mvc.perform(post(QueryAccessController.INTERNAL_CHECK_TOKEN_PATH).header("Authorization", "Bearer " + session)
                 .header("X-AIO-Query-Service-Key", KEY).contentType(MediaType.APPLICATION_JSON)
@@ -174,10 +176,40 @@ class QueryAccessHttpIntegrationTest {
                 .content("{\"dataset\":\"time_record\"}")).andExpect(status().isUnauthorized());
     }
 
-    private JsonNode checkToken(String token, String key) throws Exception {
+    @ParameterizedTest
+    @CsvSource({"exercise_record,exercise,/record/exercise", "read_record,reading,/record/read",
+            "movie,movie,/record/movie", "b_video,video,/record/videoWatch", "performance,performance,/record/performance"})
+    void 新数据集使用独立范围且对应业务锁不能绕过(String dataset, String domain, String path) throws Exception {
+        var decision = checkToken(session, KEY, dataset);
+        assertEquals(0, decision.path("code").intValue());
+        assertEquals("ai_"+domain+"_reader", decision.at("/data/role").asText());
+        assertEquals(domain+".read", decision.at("/data/scopes/0").asText());
+        var apiKey = apiKeys.generateApiKey(userId, "query-dataset-fixture", 1);
+        assertEquals(0, checkToken(apiKey.getApiKey(), KEY, dataset).path("code").intValue());
+        SysMenuEntity menu = menus.selectOne(new LambdaQueryWrapper<SysMenuEntity>().eq(SysMenuEntity::getPath,path));
+        if (menu == null) {
+            menu = new SysMenuEntity(); menu.setPath(path); menu.setName("查询业务锁测试");
+            menu.setStatus(1); menu.setMobileStatus(1); menu.fillCreateCommonField(userId); menus.insert(menu);
+        }
+        var lock = new UserSecondaryLockMenuEntity(); lock.setUserId(userId); lock.setMenuId(menu.getId());
+        lock.fillCreateCommonField(userId); locks.insert(lock);
+        assertEquals(2001, checkToken(session, KEY, dataset).path("code").intValue());
+        assertEquals(2001, checkToken(apiKey.getApiKey(), KEY, dataset).path("code").intValue());
+        assertEquals(0, checkToken(session, KEY, "catalog").path("code").intValue());
+        assertEquals(0, checkToken(session, KEY, "time_record").path("code").intValue());
+    }
+
+    @Test void 未发布数据集不能获得查询角色() throws Exception {
+        assertNotEquals(0, checkToken(session, KEY, "user").path("code").intValue());
+        assertEquals("ai_query_catalog", checkToken(session, KEY, "catalog").at("/data/role").asText());
+    }
+
+    private JsonNode checkToken(String token, String key) throws Exception { return checkToken(token, key, "time_record"); }
+
+    private JsonNode checkToken(String token, String key, String dataset) throws Exception {
         var response = mvc.perform(post(QueryAccessController.INTERNAL_CHECK_TOKEN_PATH)
                 .header("Authorization", "Bearer " + token).header("X-AIO-Query-Service-Key", key)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"dataset\":\"time_record\"}"))
+                .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("dataset", dataset))))
                 .andExpect(header().string("Cache-Control", "no-store")).andReturn().getResponse();
         return json.readTree(response.getContentAsString());
     }

@@ -50,7 +50,7 @@ class TimeRecordControllerTest {
 
         var response = recommendNextAsUser(timeRecordService);
 
-        assertEquals("0", response.getRscode());
+        assertEquals(0, response.getCode());
         assertNull(response.getData().getRecommend());
         assertEquals(RecordApiConvertor.INSTANCE.toTimeRecordListVOList(records), response.getData().getRecords());
     }
@@ -78,7 +78,7 @@ class TimeRecordControllerTest {
 
         var response = recommendNextAsUser(timeRecordService);
 
-        assertEquals("0", response.getRscode());
+        assertEquals(0, response.getCode());
         assertEquals(RecordApiConvertor.INSTANCE.toTimeRecordListVO(recommend), response.getData().getRecommend());
         assertEquals(20L, recommend.getCategoryId());
     }

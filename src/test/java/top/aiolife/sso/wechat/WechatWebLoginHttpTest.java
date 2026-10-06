@@ -94,7 +94,7 @@ class WechatWebLoginHttpTest {
     @Test void 缺失浏览器密钥在业务处理前拒绝() throws Exception {
         mvc.perform(post("/auth/wechat/web/exchange").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"scene\":\"" + SCENE + "\"}"))
-                .andExpect(jsonPath("$.rscode").value("100400"));
+                .andExpect(jsonPath("$.code").value(100400));
         verifyNoInteractions(service);
     }
 

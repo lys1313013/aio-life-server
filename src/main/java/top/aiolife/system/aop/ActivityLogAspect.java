@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.HandlerMapping;
+import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.sso.pojo.req.LoginReq;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
@@ -59,7 +60,7 @@ public class ActivityLogAspect {
         row.setSuccess(false);
         try {
             Object result = point.proceed();
-            row.setSuccess(!(result instanceof ApiResponse<?> response) || "0".equals(response.getRscode()));
+            row.setSuccess(!(result instanceof ApiResponse<?> response) || ResponseCodeConst.SUCCESS == response.getCode());
             if (login && result instanceof ApiResponse<?> response && response.getData() instanceof UserLoginVO user) {
                 row.setUserId(user.getId());
                 row.setCreateUser(user.getId());

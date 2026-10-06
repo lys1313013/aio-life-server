@@ -79,7 +79,7 @@ class QrLoginHttpIntegrationTest {
         var request = post("/auth/qr-login" + suffix).with(r -> { r.setRemoteAddr(ip); return r; })
                 .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(data));
         if (token != null) request.header("Authorization", "Bearer " + token);
-        var response = mvc.perform(request).andExpect(status().isOk()).andExpect(jsonPath("$.rscode").value("0"))
+        var response = mvc.perform(request).andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
                 .andExpect(header().string("Cache-Control", "no-store")).andReturn().getResponse();
         // 扫码签发不提前写 Cookie，其他浏览器不能被被动登录。
         assertNull(response.getHeader("Set-Cookie"));

@@ -54,7 +54,7 @@ class MbtiControllerIntegrationTest extends BaseIntegrationTest {
         mbtiResultService.saveResult(entity);
 
         var response = mbtiController.deleteResult(entity.getId());
-        assertEquals(ResponseCodeConst.RSCODE_COMMON_FAIL, response.getRscode());
+        assertEquals(ResponseCodeConst.COMMON_FAIL, response.getCode());
         assertNotNull(mbtiResultService.getById(entity.getId()));
     }
 }

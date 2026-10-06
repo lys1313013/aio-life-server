@@ -94,7 +94,7 @@ public class PasswordVaultController {
         Long userId = StpUtil.getLoginIdAsLong();
         PasswordVaultEntity existing = passwordVaultMapper.selectById(id);
         if (existing == null || !userId.equals(existing.getUserId())) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "记录不存在或无权限操作");
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "记录不存在或无权限操作");
         }
         entity.setId(id);
         // 防止请求方篡改记录归属

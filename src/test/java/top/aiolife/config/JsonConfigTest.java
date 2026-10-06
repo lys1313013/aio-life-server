@@ -5,13 +5,48 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import top.aiolife.core.constant.ResponseCodeConst;
+import top.aiolife.core.resq.ApiResponse;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class JsonConfigTest {
+
+    @Test
+    void 统一响应使用整数业务码和新字段且不改变长ID() {
+        new ApplicationContextRunner()
+                .withConfiguration(AutoConfigurations.of(JacksonAutoConfiguration.class))
+                .withUserConfiguration(JsonConfig.class)
+                .run(context -> {
+                    ObjectMapper mapper = context.getBean(ObjectMapper.class);
+                    var success = mapper.readTree(mapper.writeValueAsString(
+                            ApiResponse.success(Map.of("id", 9007199254740993L))));
+                    assertEquals(Set.of("code", "message", "data"), mapper.convertValue(success, Map.class).keySet());
+                    assertTrue(success.path("code").isIntegralNumber());
+                    assertEquals(0, success.path("code").intValue());
+                    assertTrue(success.path("message").isNull());
+                    assertEquals("9007199254740993", success.at("/data/id").textValue());
+
+                    var empty = mapper.readTree(mapper.writeValueAsString(ApiResponse.success()));
+                    assertTrue(empty.path("data").isNull());
+
+                    var failure = mapper.readTree(mapper.writeValueAsString(ApiResponse.error("工具不存在")));
+                    assertTrue(failure.path("code").isIntegralNumber());
+                    assertEquals(ResponseCodeConst.COMMON_FAIL, failure.path("code").intValue());
+                    assertEquals("工具不存在", failure.path("message").textValue());
+                    assertTrue(failure.path("data").isNull());
+
+                    var lock = mapper.readTree(mapper.writeValueAsString(ApiResponse.error(
+                            ResponseCodeConst.SECONDARY_LOCK_REQUIRED, "需要二级密码验证", Map.of("menuPath", "/finance"))));
+                    assertEquals(2001, lock.path("code").intValue());
+                    assertEquals("/finance", lock.at("/data/menuPath").textValue());
+                });
+    }
 
     @Test
     void jackson自动配置_保留大整数ID和日期响应契约() {

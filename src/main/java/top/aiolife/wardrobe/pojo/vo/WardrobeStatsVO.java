@@ -14,17 +14,17 @@ public class WardrobeStatsVO {
     /**
      * 衣物总数量
      */
-    private Long totalCount;
+    private Integer totalCount;
 
     /**
      * 各分类数量
      */
-    private Map<String, Long> categoryCount;
+    private Map<String, Integer> categoryCount;
 
     /**
      * 季节分布
      */
-    private Map<String, Long> seasonCount;
+    private Map<String, Integer> seasonCount;
 
     /**
      * 总价值

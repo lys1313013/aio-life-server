@@ -153,10 +153,10 @@ class QueryHttpContractTest {
         var controller = new TimeRecordController(null, service, null, null, null);
         mvc(controller).perform(get("/timeRecord/query"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.result").value("date 不能为空"));
+                .andExpect(jsonPath("$.message").value("date 不能为空"));
         mvc(controller).perform(get("/timeRecord/query").param("date", ""))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.result").value("date 不能为空"));
+                .andExpect(jsonPath("$.message").value("date 不能为空"));
         mvc(controller).perform(get("/timeRecord/query").param("date", "invalid"))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(service);
@@ -215,7 +215,7 @@ class QueryHttpContractTest {
         mvc.perform(post("/auth/sendEmailCode").contentType(MediaType.APPLICATION_JSON)
                         .header("x-forwarded-for", "192.0.2.1")
                         .content("{\"email\":\"user@example.com\"}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.rscode").value("0"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
         verify(service).sendRegisterCode("user@example.com", "192.0.2.1");
         mvc.perform(post("/auth/sendResetPasswordCode").contentType(MediaType.APPLICATION_JSON)
                         .header("x-forwarded-for", "192.0.2.2")

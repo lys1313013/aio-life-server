@@ -1,11 +1,13 @@
 package top.aiolife.core.resq;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
 import java.util.function.Function;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import top.aiolife.core.json.CountSerializer;
 
 /**
  * 分页数据返回对象
@@ -25,8 +27,9 @@ public class PageResp<T> {
   private List<T> items;
 
   /**
-   * 总数量
+   * 总数量，以 JSON 数字返回；不影响 ID 等 Long 字段的字符串序列化。
    */
+  @JsonSerialize(using = CountSerializer.class)
   private Long total;
 
   public static <T> PageResp<T> of() {

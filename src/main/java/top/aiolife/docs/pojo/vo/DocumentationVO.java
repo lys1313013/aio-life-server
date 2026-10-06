@@ -1,8 +1,9 @@
 package top.aiolife.docs.pojo.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import java.util.List;
+import top.aiolife.core.json.CountSerializer;
 
 /** 渐进式文档响应；详情中的 definition 是仅含一个操作的完整 OpenAPI 文档。 */
 public final class DocumentationVO {
@@ -15,7 +16,8 @@ public final class DocumentationVO {
     public record OperationSummary(String operationId, String name, String method, String path,
                                    List<String> modules) {}
 
-    public record OperationPage(List<OperationSummary> items, long total, int page, int pageSize) {}
+    public record OperationPage(List<OperationSummary> items,
+                                @JsonSerialize(using = CountSerializer.class) long total, int page, int pageSize) {}
 
     public record OperationDetail(String operationId, String method, String path, List<String> modules,
                                   ObjectNode definition) {}

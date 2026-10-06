@@ -90,7 +90,7 @@ public class BVideoController {
         queryWrapper.eq(BVideoEntity::getUserId, userId);
         Long count = getBaseMapper().selectCount(queryWrapper);
         if (count > 0) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "该视频已存在，无法重复添加");
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "该视频已存在，无法重复添加");
         }
 
         entity.setUserId(userId);
@@ -118,7 +118,7 @@ public class BVideoController {
 
         BVideoEntity existEntity = bVideoMapper.lockOwned(id, userId);
         if (existEntity == null) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "无权限更新该数据或数据不存在");
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "无权限更新该数据或数据不存在");
         }
 
         if (entityReq.getCover() != null) videoCovers.enqueue(id, userId, entityReq.getCover(), false);
@@ -147,7 +147,7 @@ public class BVideoController {
 
         boolean b = getBaseMapper().delete(wrapper) > 0;
         if (!b) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "无权限删除该数据或数据不存在");
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "无权限删除该数据或数据不存在");
         }
         return ApiResponse.success(b);
     }
@@ -208,7 +208,7 @@ public class BVideoController {
         queryWrapper.eq(BVideoEntity::getBvid, entity.getBvid());
         queryWrapper.eq(BVideoEntity::getUserId, userId);
         if (getBaseMapper().selectCount(queryWrapper) > 0) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "该视频已存在，无法重复添加");
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "该视频已存在，无法重复添加");
         }
 
         entity.setCreateUser(userId);

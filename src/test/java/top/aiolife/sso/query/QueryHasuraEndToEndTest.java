@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +47,7 @@ class QueryHasuraEndToEndTest {
     @Autowired ObjectMapper json;
     @Autowired UserMapper users;
     @Autowired JdbcTemplate db;
+    @Autowired org.springframework.data.redis.core.StringRedisTemplate redis;
     @Autowired top.aiolife.sso.service.IApiKeyService apiKeys;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
     private final List<Long> userIds = new ArrayList<>();
@@ -92,6 +96,24 @@ class QueryHasuraEndToEndTest {
         tokenA = sessionA; tokenB = sessions.get(1);
         row("a1", userIds.getFirst(), 30, 0); row("a2", userIds.getFirst(), 60, 0);
         row("deleted", userIds.getFirst(), 777, 1); row("b1", userIds.get(1), 999, 0);
+        for (int index=0; index<4; index++) {
+            long user=index==3 ? userIds.get(1) : userIds.getFirst();
+            int deleted=index==2 ? 1 : 0;
+            long id=userIds.getFirst()+100+index;
+            String status=index==0 ? "not_started" : "completed";
+            db.update("INSERT INTO exercise_record(id,user_id,exercise_type_id,exercise_date,exercise_count,is_deleted,description) VALUES(?,?,9007199254740993,'2026-09-15',?,?,?)",id,user,(index+1)*10,deleted,"私有描述");
+            db.update("INSERT INTO read_record(id,user_id,title,type,status,current_progress,total_progress,start_time,finish_time,create_time,is_deleted,remark) VALUES(?,?,?,1,?,20,100,'2026-09-10','2026-09-20','2026-09-01',?,?)",id,user,"book-"+index,status,deleted,"私有备注");
+            db.update("INSERT INTO movie(id,user_id,title,type,status,current_progress,total_progress,rating,start_time,finish_time,create_time,is_deleted,remark) VALUES(?,?,?,1,?,1,2,5,'2026-09-10','2026-09-20','2026-09-01',?,?)",id,user,"movie-"+index,status,deleted,"私有短评");
+            db.update("INSERT INTO b_video(id,user_id,title,url,duration,watched_duration,status,last_watched,create_time,is_deleted,notes) VALUES(?,?,?,'https://example.invalid/video',120,60,?,'2026-09-20','2026-09-01',?,?)",id,user,"video-"+index,status,deleted,"私有笔记");
+            db.update("INSERT INTO performance(id,user_id,create_user,performance_name,performance_type,performance_date,city,venue,ticket_price,duration,rating,is_deleted,order_number) VALUES(?,?,?,?,'concert','2026-09-15 19:30:00','city','venue',?,60,5,?,?)",id,user,userIds.get(1),"show-"+index,index==0 ? "19.99" : "20.02",deleted,"私有订单号");
+        }
+    }
+
+    @BeforeEach void freshCredentialsAndRateWindow() {
+        for (Long id : userIds) redis.delete("aioQuery:rate:v1:"+id);
+        sessionA=StpUtil.getStpLogic().createLoginSession(userIds.getFirst()); tokenA=sessionA;
+        tokenB=StpUtil.getStpLogic().createLoginSession(userIds.get(1));
+        sessions.add(tokenA); sessions.add(tokenB);
     }
 
     private void row(String id, long user, int minutes, int deleted) {
@@ -166,6 +188,56 @@ class QueryHasuraEndToEndTest {
         assertEquals(401, mcp(tokenA, "tools/list", Map.of()).statusCode());
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "exercise_record,exercise,exercise-record-v1,exerciseRecords,exerciseRecordStats,exerciseDate,exerciseCount,30",
+        "read_record,reading,read-record-v1,readRecords,readRecordStats,createdAt,,",
+        "movie,movie,movie-v1,movies,movieStats,createdAt,,",
+        "b_video,video,b-video-v1,bVideos,bVideoStats,createdAt,watchedDurationSeconds,120",
+        "performance,performance,performance-v1,performances,performanceStats,performanceDate,ticketPrice,40.01"})
+    void 新数据集真实REST及MCP明细统计分页和隔离(String dataset,String domain,String version,String root,String statsRoot,String date,String numeric,String expectedSum) throws Exception {
+        var catalog=call("GET",gatewayUrl+"/api/v1/datasets/"+dataset,tokenA,null);
+        assertEquals(200,catalog.statusCode(),catalog.body());
+        assertEquals(version,json.readTree(catalog.body()).at("/data/schemaVersion").asText());
+        String where="where:{"+date+":{_gte:\"2026-09-01\",_lt:\"2026-10-01\"}}";
+        String fields=switch(dataset) {
+            case "exercise_record" -> "id exerciseDate exerciseTypeId exerciseCount";
+            case "read_record" -> "id title type author url status totalProgress currentProgress startTime finishTime createdAt";
+            case "movie" -> "id title type director url status totalProgress currentProgress startTime finishTime rating createdAt";
+            case "b_video" -> "id title url bvid ownerName durationSeconds watchedDurationSeconds episodes currentEpisode status lastWatched createdAt";
+            case "performance" -> "id performanceName performer performanceType performanceDate city venue ticketPrice durationMinutes rating";
+            default -> throw new IllegalArgumentException(dataset);
+        };
+        String details="query Q { "+root+"("+where+",orderBy:[{id:Asc}]){"+fields+"} }";
+        var args=new java.util.HashMap<String,Object>(); args.put("domain",domain);args.put("schemaVersion",version);
+        args.put("policyVersion",version);args.put("operationName","Q");args.put("query",details);
+        var response=call("POST",gatewayUrl+"/api/v1/queries/execute",tokenA,args);
+        assertEquals(200,response.statusCode(),response.body());
+        var a=json.readTree(response.body()).at("/data/result/"+root);assertEquals(2,a.size(),response.body());
+        assertEquals(Long.toString(userIds.getFirst()+100),a.get(0).path("id").textValue());
+        if(numeric==null) assertEquals("not_started",a.get(0).path("status").asText());
+        if(dataset.equals("performance")) assertEquals("19.99",a.get(0).path("ticketPrice").textValue());
+        assertEquals(1,tool(tokenB,"aio_query_execute",args).at("/data/result/"+root).size());
+        assertTrue(tool(tokenA,"aio_query_validate",args).at("/data/allowed").asBoolean());
+        assertEquals(2,tool(tokenA,"aio_query_execute",args).at("/data/result/"+root).size());
+        args.put("query","query Q { rows:"+root+"("+where+",orderBy:[{id:Asc}],limit:1,offset:1){recordId:id} }");
+        assertEquals(Long.toString(userIds.getFirst()+101),tool(tokenA,"aio_query_execute",args).at("/data/result/rows/0/recordId").textValue());
+        args.put("query","query Q { "+statsRoot+"("+where+"){count "+(numeric==null ? "" : numeric+"{sum}")+"} }");
+        var stats=tool(tokenA,"aio_query_execute",args).at("/data/result/"+statsRoot);
+        assertEquals("2",stats.path("count").textValue());
+        if(numeric!=null) assertEquals(expectedSum,stats.path(numeric).path("sum").textValue());
+        args.put("query","query Q { "+statsRoot+"("+where.replace("2026-09-01","2026-08-01").replace("2026-10-01","2026-09-01")+"){count "+(numeric==null ? "" : numeric+"{sum}")+"} }");
+        var empty=tool(tokenA,"aio_query_execute",args).at("/data/result/"+statsRoot);
+        assertEquals("0",empty.path("count").textValue());if(numeric!=null) assertTrue(empty.path(numeric).path("sum").isNull());
+        args.put("query","query Q { "+root+"("+where+"){id userId} }");
+        assertTrue(rpc(tokenA,"tools/call",Map.of("name","aio_query_execute","arguments",args)).at("/result/isError").asBoolean());
+        args.put("query",details);
+        var apiKey=apiKeys.generateApiKey(userIds.get(1),"life-query-e2e",1);apiKeyIds.add(apiKey.getId());
+        assertEquals(1,tool(apiKey.getApiKey(),"aio_query_execute",args).at("/data/result/"+root).size());
+        apiKeys.removeById(apiKey.getId());
+        assertEquals(401,mcp(apiKey.getApiKey(),"tools/list",Map.of()).statusCode());
+    }
+
     private HttpResponse<String> mcp(String token, String method, Object params) throws Exception {
         return call("POST", gatewayUrl + "/mcp", token, Map.of("jsonrpc", "2.0", "id", 1, "method", method, "params", params));
     }
@@ -188,6 +260,6 @@ class QueryHasuraEndToEndTest {
     @AfterAll void cleanup() throws Exception {
         if (gateway != null) { gateway.destroy(); if (!gateway.waitFor(10, TimeUnit.SECONDS)) gateway.destroyForcibly(); }
         apiKeyIds.forEach(apiKeys::removeById); sessions.forEach(StpUtil::logoutByTokenValue);
-        for (Long id : userIds) { db.update("DELETE FROM time_record WHERE user_id=?", id); db.update("DELETE FROM `user` WHERE id=?", id); }
+        for (Long id : userIds) { for(String table:List.of("time_record","exercise_record","read_record","movie","b_video","performance")) db.update("DELETE FROM "+table+" WHERE user_id=?",id); db.update("DELETE FROM `user` WHERE id=?", id); }
     }
 }

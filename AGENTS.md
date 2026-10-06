@@ -122,11 +122,13 @@ mvn test -Dtest=TimeTrackerCategoryControllerIntegrationTest#testList_获取分�
 ```java
 // 统一返回 ApiResponse<T>
 {
-  "rscode": "0",      // 成功码为 "0"
-  "result": null,     // 错误提示信息
+  "code": 0,      // 成功码为 0
+  "message": null,     // 错误提示信息
   "data": {...}       // 业务数据
 }
 ```
+
+业务实际数量响应（卡面使用数、会员/衣柜统计、消息未读数）使用 `Integer`，输出 JSON 数字；Java `long` 计数在响应边界用 `Math.toIntExact()` 转换，禁止静默截断。ID 继续使用 `Long` 并输出字符串；`PageResp.total` 保留 `Long + CountSerializer` 的数字分页契约。
 
 ### 认证
 

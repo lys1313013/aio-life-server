@@ -129,7 +129,7 @@ class VideoCoverServiceTest {
             var create=new BVideoCreateReq();
             create.setTitle("测试"); create.setUrl("https://www.bilibili.com/video/BVtest");
             create.setDuration(60); create.setCover(URL); create.setBvid("BVone");
-            assertEquals("0",controller.insert(create).getRscode());
+            assertEquals(0,controller.insert(create).getCode());
             var first=videos.selectList(null).getFirst();
             assertEquals("PENDING",first.getCoverState()); assertEquals(1,tasks.selectCount(null));
             var update=new BVideoUpdateReq(); update.setTitle("仅修改标题");

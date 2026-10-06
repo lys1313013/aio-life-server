@@ -13,13 +13,13 @@ import java.math.BigDecimal;
 @Data
 public class MembershipStatsVO {
 
-    private Long activeCount;
+    private Integer activeCount;
 
-    private Long expiringCount;
+    private Integer expiringCount;
 
-    private Long expiredCount;
+    private Integer expiredCount;
 
-    private Long expiringThisMonthCount;
+    private Integer expiringThisMonthCount;
 
     /**
      * 当前未过期会员的月均成本合计

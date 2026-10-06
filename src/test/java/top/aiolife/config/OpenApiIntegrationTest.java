@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 /** 真实 Controller + springdoc + 认证拦截器；仅模拟业务依赖，不连接数据库、Redis 等外部服务。 */
 @WebMvcTest(properties = "springdoc.api-docs.enabled=true")
@@ -146,8 +147,46 @@ class OpenApiIntegrationTest {
         if (response.isMissingNode()) response = resolve(document,
                 document.at("/paths/~1goals/get/responses/200/content/application~1json/schema"));
         assertEquals("#/components/schemas/GoalVO", response.at("/properties/data/items/$ref").asText());
-        assertTrue(response.at("/properties/rscode/description").asText().contains("2001"));
+        JsonNode pages = document.path("components").path("schemas");
+        int pageCount = 0;
+        for (JsonNode schema : pages) {
+            JsonNode properties = schema.path("properties");
+            if (properties.has("items") && properties.has("total")) {
+                assertEquals("integer", properties.at("/total/type").asText());
+                assertEquals("int64", properties.at("/total/format").asText());
+                assertTrue(properties.at("/total/nullable").asBoolean());
+                assertFalse(properties.path("total").has("pattern"));
+                pageCount++;
+            }
+        }
+        assertTrue(pageCount > 5, "必须覆盖多个业务泛型分页响应");
+        assertEquals("integer", response.at("/properties/code/type").asText());
+        assertEquals("int32", response.at("/properties/code/format").asText());
+        assertTrue(response.at("/properties/code/example").isIntegralNumber());
+        assertEquals(0, response.at("/properties/code/example").intValue());
+        assertTrue(response.at("/properties/message/description").asText().contains("提示信息"));
+        assertFalse(response.path("properties").has("rscode"));
+        assertFalse(response.path("properties").has("result"));
         assertEquals("binary", document.at("/paths/~1file~1download~1{id}/get/responses/200/content/*~1*/schema/format").asText());
+    }
+
+    @Test
+    void 业务数量字段和衣柜分类季节映射描述为整数() throws Exception {
+        JsonNode schemas = document("/v3/api-docs").path("components").path("schemas");
+        Map<String, List<String>> fields = Map.of(
+                "BankCardCoverTemplateVO", List.of("usageCount"),
+                "MembershipStatsVO", List.of("activeCount", "expiringCount", "expiredCount", "expiringThisMonthCount"),
+                "WardrobeStatsVO", List.of("totalCount"));
+        fields.forEach((name, counts) -> counts.forEach(count -> {
+            JsonNode schema = schemas.path(name).path("properties").path(count);
+            assertEquals("integer", schema.path("type").asText(), name + "." + count);
+            assertEquals("int32", schema.path("format").asText());
+        }));
+        for (String name : List.of("categoryCount", "seasonCount")) {
+            JsonNode values = schemas.path("WardrobeStatsVO").path("properties").path(name).path("additionalProperties");
+            assertEquals("integer", values.path("type").asText());
+            assertEquals("int32", values.path("format").asText());
+        }
     }
 
     @Test
@@ -204,7 +243,11 @@ class OpenApiIntegrationTest {
         login.verify(StpUtil::getLoginIdAsLong, never());
         for (String path : List.of("/goals", "/timeRecord/queryByDateRange",
                 "/v3/api-docs-private", "/v3/api-docs.yaml-private")) {
-            mvc.perform(get("/api" + path).contextPath("/api")).andExpect(status().isUnauthorized());
+            mvc.perform(get("/api" + path).contextPath("/api")).andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value(401))
+                    .andExpect(jsonPath("$.message").value("登录已过期，请重新登录"))
+                    .andExpect(jsonPath("$.rscode").doesNotExist())
+                    .andExpect(jsonPath("$.result").doesNotExist());
         }
     }
 
@@ -247,7 +290,7 @@ class OpenApiIntegrationTest {
     @Test
     void 搜索支持中文模块分页并校验边界() throws Exception {
         JsonNode goals = discovery("/docs/operations?keyword=目标&module=record&pageSize=100");
-        assertTrue(goals.path("total").isTextual(), "分页总数遵循现有 Long 字符串契约");
+        assertTrue(goals.path("total").isIntegralNumber(), "分页总数必须返回 JSON 整数");
         assertTrue(goals.path("items").toString().contains("get_goals"));
         assertEquals(1, discovery("/docs/operations?keyword=get_goals&pageSize=1").path("items").size());
         JsonNode first = discovery("/docs/operations?page=1&pageSize=2");
@@ -304,7 +347,7 @@ class OpenApiIntegrationTest {
 
     private JsonNode discovery(String path) throws Exception {
         JsonNode response = document(path);
-        assertEquals("0", response.path("rscode").asText(), response.toString());
+        assertEquals(0, response.path("code").intValue(), response.toString());
         return response.path("data");
     }
 

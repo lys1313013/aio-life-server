@@ -45,7 +45,7 @@ public class BaseIntegrationTest {
      */
     protected void assertSuccess(ApiResponse<?> response) {
         assertNotNull(response, "响应对象不能为空");
-        assertEquals(ResponseCodeConst.RSCODE_SUCCESS, response.getRscode(), "响应状态码应为成功");
+        assertEquals(ResponseCodeConst.SUCCESS, response.getCode(), "响应状态码应为成功");
     }
 
     /**

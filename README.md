@@ -269,11 +269,16 @@ mvn clean package -DskipTests
 
 ```json
 {
-  "rscode": "0",
-  "result": null,
+  "code": 0,
+  "message": null,
   "data": {...}
 }
 ```
+
+`code` 为整数，`0` 表示业务成功；`message` 为可空提示信息，`data` 保留接口原有的数据类型，无数据时为 `null`。HTTP 状态码行为保持不变。
+
+该格式替换旧的 `rscode / result / data` 协议，Web、移动端及其他 API 调用方须与后端同步升级，旧客户端不兼容新响应。
+
 
 ## 📝 功能模块
 

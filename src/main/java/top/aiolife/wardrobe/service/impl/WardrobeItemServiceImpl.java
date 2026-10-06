@@ -108,23 +108,23 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
                 .list();
 
         WardrobeStatsVO stats = new WardrobeStatsVO();
-        stats.setTotalCount((long) items.size());
+        stats.setTotalCount(items.size());
 
         // 分类统计
-        Map<String, Long> categoryCount = new HashMap<>();
+        Map<String, Integer> categoryCount = new HashMap<>();
         Map<Long, String> categoryNameMap = getCategoryNameMap(userId);
         for (WardrobeItemEntity item : items) {
             String name = categoryNameMap.getOrDefault(item.getCategoryId(), "未分类");
-            categoryCount.put(name, categoryCount.getOrDefault(name, 0L) + 1);
+            categoryCount.put(name, categoryCount.getOrDefault(name, 0) + 1);
         }
         stats.setCategoryCount(categoryCount);
 
         // 季节统计
-        Map<String, Long> seasonCount = new HashMap<>();
-        seasonCount.put("春", 0L);
-        seasonCount.put("夏", 0L);
-        seasonCount.put("秋", 0L);
-        seasonCount.put("冬", 0L);
+        Map<String, Integer> seasonCount = new HashMap<>();
+        seasonCount.put("春", 0);
+        seasonCount.put("夏", 0);
+        seasonCount.put("秋", 0);
+        seasonCount.put("冬", 0);
         for (WardrobeItemEntity item : items) {
             if (item.getSeason() != null) {
                 if (item.getSeason().contains("春")) seasonCount.put("春", seasonCount.get("春") + 1);

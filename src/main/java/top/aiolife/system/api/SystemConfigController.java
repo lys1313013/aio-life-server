@@ -43,7 +43,7 @@ public class SystemConfigController {
     public ApiResponse<SystemConfigVO> getByKey(@PathVariable String key) {
         SystemConfigVO vo = systemConfigService.getByKey(key);
         if (vo == null) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "配置项不存在");
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "配置项不存在");
         }
         return ApiResponse.success(vo);
     }

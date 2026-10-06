@@ -32,11 +32,11 @@ public class MessageController {
     }
 
     @GetMapping("/unread-count")
-    public ApiResponse<Map<String, Long>> unreadCount() {
+    public ApiResponse<Map<String, Integer>> unreadCount() {
         long userId = StpUtil.getLoginIdAsLong();
         long count = messageService.getUnreadCount(userId);
-        Map<String, Long> result = new HashMap<>();
-        result.put("count", count);
+        Map<String, Integer> result = new HashMap<>();
+        result.put("count", Math.toIntExact(count));
         return ApiResponse.success(result);
     }
 

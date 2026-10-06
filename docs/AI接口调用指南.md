@@ -12,13 +12,13 @@
 | 搜索 | `http://localhost:45678/api/docs/operations?keyword=目标&module=record&page=1&pageSize=20` | `items`：`operationId`、`name`、`method`、`path`、`modules`；分页 `total`、`page`、`pageSize` |
 | 详情 | `http://localhost:45678/api/docs/operations/get_goals` | `operationId`、`method`、`path`、`modules`、`definition` |
 
-所有响应沿用 `{ "rscode": "0", "result": null, "data": ... }`。搜索摘要不携带参数和 Schema；`definition` 是可独立解析的单接口 OpenAPI 文档，包含参数、请求体、响应、鉴权及递归引用的必要组件，循环引用保留 `$ref`。
+所有响应沿用 `{ "code": 0, "message": null, "data": ... }`。搜索摘要不携带参数和 Schema；`definition` 是可独立解析的单接口 OpenAPI 文档，包含参数、请求体、响应、鉴权及递归引用的必要组件，循环引用保留 `$ref`。
 
 查询约定：
 
 - `keyword` 可选，匹配接口名称、说明、路径、HTTP 方法、`operationId` 和标签；支持中文，英文忽略大小写，最多 200 字符。
 - `module` 可选，使用目录返回的模块 `id`；不传时搜索全部模块。
-- `page` 默认 1，正整数；`pageSize` 默认 20，范围 1–100。按 `operationId` 升序分页，无结果或超出末页时返回空 `items`。`total` 遵循项目 Long 序列化规则，是字符串。
+- `page` 默认 1，正整数；`pageSize` 默认 20，范围 1–100。按 `operationId` 升序分页，无结果或超出末页时返回空 `items`。`total` 是 JSON 整数。
 - 参数不合法或模块不存在返回 HTTP 400；接口标识不存在返回 HTTP 404，错误响应仍使用统一响应结构。
 - 详情的 `definition.servers[0].url` 为当前上下文相对地址，默认 `/api`；与实际服务域名和 `path` 拼接使用。
 
@@ -79,9 +79,9 @@ curl --fail-with-body --silent --show-error --get \
 1. 优先读取 `/docs/catalog`，通过 `/docs/operations` 搜索，再按返回的 `operationId` 读取详情中的 `definition`。需要批量导入工具时再读取完整或模块文档。按 `paths`、HTTP 方法、`operationId`、`parameters`、`requestBody` 和响应 Schema 构造请求。解析 `#/components/schemas/...` 引用，不猜测缺失的业务字段。
 2. 使用实际部署地址。文档的 `servers` 通常已包含 `/api`，`paths` 不含该前缀，拼接时不要重复添加。反向代理环境应核对实际外部地址。
 3. 文档本身公开可读，文档中的 `security` 描述的是业务接口的鉴权要求。业务调用凭据由运行环境提供，不写入提示词、导出的文档或代码库。登录、注册和验证码等匿名接口标记 `security: []`；其他接口通常继承 Bearer 鉴权。文件接口即使支持匿名，也只对公开资源有效。
-4. 普通 JSON 返回 `{ "rscode": "0", "result": null, "data": ... }`。只有 `rscode == "0"` 表示业务成功，HTTP 200 本身不足以判断。文件和流式接口按各自协议处理。
+4. 普通 JSON 返回 `{ "code": 0, "message": null, "data": ... }`。只有 `code == 0` 表示业务成功，HTTP 200 本身不足以判断。文件和流式接口按各自协议处理。
 5. `113000` 为通用业务失败，`100400` 为参数错误；`2001` 表示需要二级密码验证，`data.menuPath` 为锁定模块。向用户说明并等待完成验证，不循环重试。HTTP 401 的响应可能是纯文本。
-6. `Long/long`（ID、分页总数等）在 JSON 响应中为字符串。保留原字符串，不转换为可能丢失精度的 JavaScript Number。枚举传 Schema 中的真实值，如 `in_progress`。
+6. `Long/long` 默认在 JSON 响应中为字符串，ID 必须保留原字符串，不转换为可能丢失精度的 JavaScript Number；`PageResp.total` 使用字段级序列化器输出 JSON 整数（可空）。枚举传 Schema 中的真实值，如 `in_progress`。
 7. GET 查询不发送请求体。分页和条件平铺，例如 `?page=1&pageSize=50&startDate=2026-09-01&endDate=2026-09-29`，不使用 `condition.startDate` 或 `condition={...}`。数组用重复键，例如 `statuses=in_progress&statuses=on_hold`。
 8. 日期和时间按字段说明发送。带 `@JsonFormat` 的本地时间通常为 `yyyy-MM-dd HH:mm:ss`；未定制的 `LocalDateTime` 使用 ISO 本地时间，如 `2026-09-29T10:30:00`。不要自行补时区或改成时间戳。
 

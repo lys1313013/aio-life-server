@@ -20,16 +20,16 @@ import top.aiolife.core.resq.ApiResponse;
 public class StorageAdminExceptionHandler {
     @ExceptionHandler(NotRoleException.class)
     public ResponseEntity<ApiResponse<Void>> forbidden() {
-        return ResponseEntity.status(403).body(ApiResponse.error("403", "仅管理员可使用对象存储管理"));
+        return ResponseEntity.status(403).body(ApiResponse.error(403, "仅管理员可使用对象存储管理"));
     }
 
     @ExceptionHandler({MinioException.class, IOException.class, GeneralSecurityException.class})
     public ResponseEntity<ApiResponse<Void>> storageError(Exception exception) {
         if (exception instanceof ErrorResponseException error
                 && "NoSuchKey".equals(error.errorResponse().code())) {
-            return ResponseEntity.status(404).body(ApiResponse.error("404", "文件不存在或已被移除"));
+            return ResponseEntity.status(404).body(ApiResponse.error(404, "文件不存在或已被移除"));
         }
         log.warn("对象存储操作失败: {}", exception.getClass().getSimpleName());
-        return ResponseEntity.status(502).body(ApiResponse.error("502", "对象存储操作失败，请检查配置或稍后重试"));
+        return ResponseEntity.status(502).body(ApiResponse.error(502, "对象存储操作失败，请检查配置或稍后重试"));
     }
 }

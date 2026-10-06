@@ -85,7 +85,7 @@ public class CbtiAdminController {
 
             String code = normalizeCode(req.getCode());
             if (existsCode(code, null)) {
-                return ApiResponse.error(ResponseCodeConst.RECODE_PARAM_FAIL, "code 已存在");
+                return ApiResponse.error(ResponseCodeConst.PARAM_FAIL, "code 已存在");
             }
 
             long userId = StpUtil.getLoginIdAsLong();
@@ -95,7 +95,7 @@ public class CbtiAdminController {
             cbtiPersonalityMapper.insert(entity);
             return ApiResponse.success(toAdminVO(entity));
         } catch (Exception e) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "新增失败: " + e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "新增失败: " + e.getMessage());
         }
     }
 
@@ -110,19 +110,19 @@ public class CbtiAdminController {
     public ApiResponse<CbtiPersonalityAdminVO> update(@PathVariable Long id, @RequestBody CbtiPersonalitySaveReq req) {
         try {
             if (id == null) {
-                return ApiResponse.error(ResponseCodeConst.RECODE_PARAM_FAIL, "id 不能为空");
+                return ApiResponse.error(ResponseCodeConst.PARAM_FAIL, "id 不能为空");
             }
 
             validateSaveReq(req, true);
 
             CbtiPersonalityEntity exist = cbtiPersonalityMapper.selectById(id);
             if (exist == null || !Objects.equals(exist.getIsDeleted(), 0)) {
-                return ApiResponse.error(ResponseCodeConst.RECODE_PARAM_FAIL, "记录不存在");
+                return ApiResponse.error(ResponseCodeConst.PARAM_FAIL, "记录不存在");
             }
 
             String code = normalizeCode(req.getCode());
             if (StringUtils.hasText(code) && existsCode(code, id)) {
-                return ApiResponse.error(ResponseCodeConst.RECODE_PARAM_FAIL, "code 已存在");
+                return ApiResponse.error(ResponseCodeConst.PARAM_FAIL, "code 已存在");
             }
 
             long userId = StpUtil.getLoginIdAsLong();
@@ -131,7 +131,7 @@ public class CbtiAdminController {
             cbtiPersonalityMapper.updateById(exist);
             return ApiResponse.success(toAdminVO(exist));
         } catch (Exception e) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "更新失败: " + e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "更新失败: " + e.getMessage());
         }
     }
 
@@ -144,7 +144,7 @@ public class CbtiAdminController {
     @DeleteMapping("/personalities/{id}")
     public ApiResponse<Boolean> delete(@PathVariable Long id) {
         if (id == null) {
-            return ApiResponse.error(ResponseCodeConst.RECODE_PARAM_FAIL, "id 不能为空");
+            return ApiResponse.error(ResponseCodeConst.PARAM_FAIL, "id 不能为空");
         }
         CbtiPersonalityEntity exist = cbtiPersonalityMapper.selectById(id);
         if (exist == null || !Objects.equals(exist.getIsDeleted(), 0)) {
@@ -169,20 +169,20 @@ public class CbtiAdminController {
     @PostMapping("/personalities/{code}/image")
     public ApiResponse<Map<String, Object>> uploadImage(@PathVariable String code, @RequestParam("file") MultipartFile file) {
         if (!StringUtils.hasText(code)) {
-            return ApiResponse.error(ResponseCodeConst.RECODE_PARAM_FAIL, "code 不能为空");
+            return ApiResponse.error(ResponseCodeConst.PARAM_FAIL, "code 不能为空");
         }
         if (file == null || file.isEmpty()) {
-            return ApiResponse.error(ResponseCodeConst.RECODE_PARAM_FAIL, "文件不能为空");
+            return ApiResponse.error(ResponseCodeConst.PARAM_FAIL, "文件不能为空");
         }
         String contentType = file.getContentType();
         if (!StringUtils.hasText(contentType) || !contentType.startsWith("image/")) {
-            return ApiResponse.error(ResponseCodeConst.RECODE_PARAM_FAIL, "仅支持图片文件");
+            return ApiResponse.error(ResponseCodeConst.PARAM_FAIL, "仅支持图片文件");
         }
 
         String normalizedCode = normalizeCode(code);
         CbtiPersonalityEntity exist = getByCode(normalizedCode);
         if (exist == null) {
-            return ApiResponse.error(ResponseCodeConst.RECODE_PARAM_FAIL, "人格不存在");
+            return ApiResponse.error(ResponseCodeConst.PARAM_FAIL, "人格不存在");
         }
 
         String ext = detectExt(file.getOriginalFilename(), contentType);
@@ -203,7 +203,7 @@ public class CbtiAdminController {
             data.put("imageUrl", buildPreviewUrl(bucketName, objectName));
             return ApiResponse.success(data);
         } catch (Exception e) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "上传失败: " + e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "上传失败: " + e.getMessage());
         }
     }
 
@@ -218,7 +218,7 @@ public class CbtiAdminController {
             cbtiImageInitUtil.initImages();
             return ApiResponse.success(true);
         } catch (Exception e) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "初始化图片失败: " + e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "初始化图片失败: " + e.getMessage());
         }
     }
 

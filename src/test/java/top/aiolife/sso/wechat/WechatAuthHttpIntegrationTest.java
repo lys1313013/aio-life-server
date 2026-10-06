@@ -100,7 +100,7 @@ class WechatAuthHttpIntegrationTest {
                 .andExpect(status().isBadRequest());
         mvc.perform(post("/auth/wechat/mini/register").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"loginTicket\":\"\"}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.rscode").value("100400"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(100400));
         verify(client, never()).exchangePhone(anyString());
     }
 
@@ -109,7 +109,7 @@ class WechatAuthHttpIntegrationTest {
         if (token != null) request.header("Authorization", "Bearer " + token);
         JsonNode response = json.readTree(mvc.perform(request).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsByteArray());
-        assertEquals("0", response.path("rscode").asText(), response.toString());
+        assertEquals(0, response.path("code").intValue(), response.toString());
         return response.path("data");
     }
 }

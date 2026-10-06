@@ -149,7 +149,7 @@ public class ExpController {
                 List<String> duplicatedIds = existingList.stream()
                         .map(ExpenseEntity::getTransactionId)
                         .toList();
-                return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL,
+                return ApiResponse.error(ResponseCodeConst.COMMON_FAIL,
                         "交易号已存在: " + String.join(", ", duplicatedIds));
             }
         }

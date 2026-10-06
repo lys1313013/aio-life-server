@@ -85,8 +85,6 @@ public class UserController {
     public ApiResponse<Void> codes() {
         Map<String, Object> data = new HashMap<>();
         data.put("data", new String[]{"AC_100100", "AC_100110", "AC_100120", "AC_100010"});
-        Map<String, Object> map = new HashMap<>();
-        map.put("rscode", "0");
         return ApiResponse.success();
     }
 

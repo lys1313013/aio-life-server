@@ -29,13 +29,13 @@ public class ExceptionHandle {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponse<Object>> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
         return ResponseEntity.status(e.getStatusCode()).headers(e.getHeaders())
-                .body(ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "请求方法不支持"));
+                .body(ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "请求方法不支持"));
     }
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiResponse<Object>> handleResponseStatus(ResponseStatusException e) {
         return ResponseEntity.status(e.getStatusCode())
-                .body(ApiResponse.error(ResponseCodeConst.RECODE_PARAM_FAIL, e.getReason()));
+                .body(ApiResponse.error(ResponseCodeConst.PARAM_FAIL, e.getReason()));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
@@ -44,10 +44,10 @@ public class ExceptionHandle {
         log.warn("访问不存在的接口");
         // getResourcePath() 返回不带前导斜杠的路径，如 relationships/graph
         if (path != null && path.replaceFirst("^/", "").startsWith("relationships")) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL,
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL,
                     "关系图谱功能未启用，请确认后端已开启 Neo4j 配置（AIO_LIFE_NEO4J_ENABLED=true）后重试");
         }
-        return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "请求的接口不存在：" + path);
+        return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "请求的接口不存在：" + path);
     }
 
     @ExceptionHandler(SecondaryLockRequiredException.class)
@@ -59,7 +59,7 @@ public class ExceptionHandle {
     @ExceptionHandler(Exception.class)
     public ApiResponse<Object> handleException(Exception e) {
         log.error("接口调用异常", LogSafeException.withoutMessages(e));
-        return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
+        return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, e.getMessage());
     }
 
     /**
@@ -71,7 +71,7 @@ public class ExceptionHandle {
     @ExceptionHandler(DataAccessException.class)
     public ApiResponse<Object> handleDataAccessException(DataAccessException e) {
         log.error("数据库异常", LogSafeException.withoutMessages(e));
-        return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "系统异常，请稍后重试");
+        return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "系统异常，请稍后重试");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -79,7 +79,7 @@ public class ExceptionHandle {
         var fieldError = e.getBindingResult().getFieldError();
         String message = fieldError == null ? "参数校验失败" : fieldError.getDefaultMessage();
         log.warn("参数校验失败，错误数量={}", e.getBindingResult().getErrorCount());
-        return ApiResponse.error(ResponseCodeConst.RECODE_PARAM_FAIL, message);
+        return ApiResponse.error(ResponseCodeConst.PARAM_FAIL, message);
     }
 
 
@@ -91,8 +91,8 @@ public class ExceptionHandle {
      * @date 2025/3/13
      */
     @ExceptionHandler({NotLoginException.class})
-    public ResponseEntity<String> handleUnauthorizedException(Exception ex) {
+    public ResponseEntity<ApiResponse<Object>> handleUnauthorizedException(Exception ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body("未授权: " + ex.getMessage());
+                .body(ApiResponse.error(HttpStatus.UNAUTHORIZED.value(), "登录已过期，请重新登录"));
     }
 }

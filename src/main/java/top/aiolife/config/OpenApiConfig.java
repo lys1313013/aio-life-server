@@ -1,6 +1,7 @@
 package top.aiolife.config;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverter;
 import io.swagger.v3.core.converter.ModelConverters;
@@ -9,13 +10,15 @@ import io.swagger.v3.core.util.PathUtils;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springdoc.core.customizers.GlobalOpenApiCustomizer;
 import org.springdoc.core.customizers.GlobalOperationCustomizer;
+import org.springdoc.core.customizers.PropertyCustomizer;
 import org.springdoc.core.utils.SpringDocUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +27,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ResolvableType;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import top.aiolife.core.json.CountSerializer;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
 import top.aiolife.sso.api.WechatAuthController;
@@ -48,7 +52,7 @@ public class OpenApiConfig {
             "/auth/sendResetPasswordCode", "/auth/resetPassword");
 
     static {
-        // JsonConfig 将 Long/long 序列化为字符串，包括 ID、分页 total 等字段。
+        // Long/long 默认输出字符串；CountSerializer 标注的计数字段在属性定制器中覆盖。
         SpringDocUtils.getConfig()
                 .replaceWithSchema(Long.class, new StringSchema().pattern("^-?[0-9]+$"))
                 .replaceWithSchema(long.class, new StringSchema().pattern("^-?[0-9]+$"));
@@ -62,10 +66,11 @@ public class OpenApiConfig {
                         按 operationId 读取 /api/docs/operations/{operationId} 的 definition 后构造请求。
                         文档可匿名读取，无需登录或 API Key；业务接口仍按各自的 security 定义鉴权。
                         业务接口鉴权：Authorization: Bearer <登录 Token 或 ak- 开头的 API Key>。
-                        普通 JSON 响应为 {rscode,result,data}，只有 rscode=\"0\" 表示成功；HTTP 200 也可能是业务失败。
-                        rscode=2001 表示需要二级密码验证，data.menuPath 指明锁定模块；应提示用户完成验证后重试。
+                        普通 JSON 响应为 {code,message,data}，只有 code=0 表示成功；HTTP 200 也可能是业务失败。
+                        code=2001 表示需要二级密码验证，data.menuPath 指明锁定模块；应提示用户完成验证后重试。
                         HTTP 401 的响应可能是纯文本。下载、流式响应以具体接口的响应定义为准。
-                        Long/long（含 ID、分页总数）在 JSON 中是字符串，避免大整数精度丢失。
+                        Long/long 默认在 JSON 中是字符串，ID 始终保留字符串以避免大整数精度丢失。
+                        PageResp.total 是例外，以 JSON 整数返回；未提供总数时保留 null。
                         日期格式以字段说明和示例为准；@QueryParams 的筛选条件平铺到 URL，不发送 GET 请求体。
                         数组查询参数使用重复键，如 statuses=in_progress&statuses=on_hold。
                         文档只包含当前应用已启用的 Controller；泛型 Map/Object 的业务字段仍需参考接口说明。
@@ -154,6 +159,22 @@ public class OpenApiConfig {
                     }
                 }
             });
+        };
+    }
+
+    /** 字段定制器在全局 Long 类型替换之后运行，按实际序列化器描述数字计数。 */
+    @Bean
+    public PropertyCustomizer countOpenApiPropertyCustomizer() {
+        return (schema, type) -> {
+            if (schema == null || type.getCtxAnnotations() == null) return schema;
+            for (var annotation : type.getCtxAnnotations()) {
+                if (annotation instanceof JsonSerialize serializer && serializer.using() == CountSerializer.class) {
+                    return new IntegerSchema().format("int64")
+                            .nullable(!Json.mapper().constructType(type.getType()).isPrimitive())
+                            .description(schema.getDescription());
+                }
+            }
+            return schema;
         };
     }
 

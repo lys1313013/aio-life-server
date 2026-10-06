@@ -112,16 +112,16 @@ class MembershipProviderHttpTest {
             mvc.perform(get(path)).andExpect(status().isUnauthorized());
         }
         String user = StpUtil.getStpLogic().createLoginSession(2L);
-        mvc.perform(get("/membership/providers").header("Authorization", "Bearer " + user)).andExpect(jsonPath("$.rscode").value("0"));
+        mvc.perform(get("/membership/providers").header("Authorization", "Bearer " + user)).andExpect(jsonPath("$.code").value(0));
         mvc.perform(get("/membership/provider-icons").header("Authorization", "Bearer " + user)).andExpect(jsonPath("$.data[0].key").exists());
         clearInvocations(service);
         mvc.perform(get("/system/membership-providers").header("Authorization", "Bearer " + user))
-                .andExpect(jsonPath("$.rscode").value(not("0")));
+                .andExpect(jsonPath("$.code").value(not(0)));
         mvc.perform(delete("/system/membership-providers/10").header("Authorization", "Bearer " + user))
-                .andExpect(jsonPath("$.rscode").value(not("0")));
+                .andExpect(jsonPath("$.code").value(not(0)));
         verifyNoInteractions(service);
         String admin = StpUtil.getStpLogic().createLoginSession(1L);
-        mvc.perform(get("/system/membership-providers").header("Authorization", "Bearer " + admin)).andExpect(jsonPath("$.rscode").value("0"));
+        mvc.perform(get("/system/membership-providers").header("Authorization", "Bearer " + admin)).andExpect(jsonPath("$.code").value(0));
         verify(service).list(false);
     }
 
@@ -130,12 +130,12 @@ class MembershipProviderHttpTest {
         mvc.perform(post("/system/membership-providers").header("Authorization", "Bearer " + admin)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"平台\",\"code\":\"../bad\",\"category\":\"invalid\",\"isEnabled\":2}"))
-                .andExpect(jsonPath("$.rscode").value(not("0")));
+                .andExpect(jsonPath("$.code").value(not(0)));
         verifyNoInteractions(service);
         mvc.perform(post("/system/membership-providers").header("Authorization", "Bearer " + admin)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"阿里云百炼\",\"code\":\"aliyun_bailian\",\"category\":\"AI\"}"))
-                .andExpect(jsonPath("$.rscode").value("0"));
+                .andExpect(jsonPath("$.code").value(0));
         verify(service).save(eq(1L), isNull(), argThat(req -> "AI".equals(req.getCategory())));
     }
 }

@@ -159,7 +159,7 @@ class HonorAttachmentPersistenceTest {
         request.setId(100L);
         request.setTitle("更新后的荣誉");
         request.setFileIds(fileIds);
-        assertEquals("0", controller.updateHonorRecord(ApiRequestFixtures.request(request, HonorRecordUpdateReq.class)).getRscode());
+        assertEquals(0, controller.updateHonorRecord(ApiRequestFixtures.request(request, HonorRecordUpdateReq.class)).getCode());
     }
 
     private List<String> attachmentIds() {

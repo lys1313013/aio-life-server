@@ -33,7 +33,7 @@ public class LLMKeyController {
             return ApiResponse.success();
         } catch (Exception e) {
             log.error("Failed to save LLM key: {}", e.getMessage(), e);
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, e.getMessage());
         }
     }
 
@@ -47,7 +47,7 @@ public class LLMKeyController {
             return ApiResponse.success();
         } catch (Exception e) {
             log.error("Failed to update LLM key: {}", e.getMessage(), e);
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, e.getMessage());
         }
     }
 
@@ -59,7 +59,7 @@ public class LLMKeyController {
             return ApiResponse.success();
         } catch (Exception e) {
             log.error("Failed to delete LLM key: {}", e.getMessage(), e);
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, e.getMessage());
         }
     }
 
@@ -71,7 +71,7 @@ public class LLMKeyController {
             return ApiResponse.success(LlmApiConvertor.INSTANCE.toLLMKeyVOList(list));
         } catch (Exception e) {
             log.error("Failed to get LLM key list: {}", e.getMessage(), e);
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, e.getMessage());
         }
     }
 
@@ -83,7 +83,7 @@ public class LLMKeyController {
             return ApiResponse.success(LlmApiConvertor.INSTANCE.toLLMKeyVO(llmKeyEntity));
         } catch (Exception e) {
             log.error("Failed to get default LLM key: {}", e.getMessage(), e);
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, e.getMessage());
         }
     }
 
@@ -95,7 +95,7 @@ public class LLMKeyController {
             return ApiResponse.success();
         } catch (Exception e) {
             log.error("Failed to set default LLM key: {}", e.getMessage(), e);
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, e.getMessage());
         }
     }
 }

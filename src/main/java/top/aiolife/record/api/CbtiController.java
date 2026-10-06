@@ -55,7 +55,7 @@ public class CbtiController {
         try {
             return ApiResponse.success(cbtiService.getQuestions());
         } catch (Exception e) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "读取题库失败: " + e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "读取题库失败: " + e.getMessage());
         }
     }
 
@@ -85,7 +85,7 @@ public class CbtiController {
     public ApiResponse<Map<String, Object>> personality(@PathVariable String code) {
         CbtiPersonalityEntity entity = cbtiService.getPersonalityByCode(code);
         if (entity == null) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "人格不存在");
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "人格不存在");
         }
         return ApiResponse.success(toPersonalityView(entity));
     }
@@ -148,7 +148,7 @@ public class CbtiController {
         long userId = StpUtil.getLoginIdAsLong();
         Map<String, Object> detail = cbtiService.getHistoryDetail(id, userId);
         if (detail == null) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "记录不存在");
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "记录不存在");
         }
         detail.remove("userId");
         Object personality = detail.get("personality");
@@ -169,7 +169,7 @@ public class CbtiController {
         long userId = StpUtil.getLoginIdAsLong();
         boolean ok = cbtiService.deleteHistory(id, userId);
         if (!ok) {
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, "记录不存在");
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "记录不存在");
         }
         return ApiResponse.success(true);
     }

@@ -87,7 +87,7 @@ class BankCardCoverAuthorizationTest {
                 delete("/system/bank-card-covers/1"),
                 multipart("/system/bank-card-covers/upload").file("file",new byte[]{1}))) {
             mvc.perform(req.header("Authorization","Bearer "+token))
-                    .andExpect(jsonPath("$.rscode").value(Matchers.not("0")));
+                    .andExpect(jsonPath("$.code").value(Matchers.not(0)));
         }
         verifyNoInteractions(service,files,orderService);
     }
@@ -96,13 +96,13 @@ class BankCardCoverAuthorizationTest {
         String token = StpUtil.getStpLogic().createLoginSession(1L);
         mvc.perform(put("/system/bank-card-covers/order").header("Authorization", "Bearer " + token)
                 .contentType("application/json").content("{\"id\":\"9007199254740993\",\"targetId\":\"9007199254740994\",\"after\":false}"))
-                .andExpect(jsonPath("$.rscode").value("0"));
+                .andExpect(jsonPath("$.code").value(0));
         verify(orderService).moveCover(eq(1L), eq(new BankCardMoveReq(9007199254740993L, 9007199254740994L, false)));
         clearInvocations(orderService);
         for (String body : List.of("{}", "{\"id\":0,\"targetId\":2,\"after\":true}", "{\"id\":1,\"targetId\":2}")) {
             mvc.perform(put("/system/bank-card-covers/order").header("Authorization", "Bearer " + token)
                     .contentType("application/json").content(body))
-                    .andExpect(jsonPath("$.rscode").value(Matchers.not("0")));
+                    .andExpect(jsonPath("$.code").value(Matchers.not(0)));
         }
         verifyNoInteractions(orderService);
     }
@@ -112,7 +112,7 @@ class BankCardCoverAuthorizationTest {
         mvc.perform(get("/system/bank-card-covers")).andExpect(status().isUnauthorized());
         String token=StpUtil.getStpLogic().createLoginSession(1L);
         mvc.perform(get("/system/bank-card-covers").header("Authorization","Bearer "+token))
-                .andExpect(jsonPath("$.rscode").value("0"));
+                .andExpect(jsonPath("$.code").value(0));
         verify(service).list();
     }
 }

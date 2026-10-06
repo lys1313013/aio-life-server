@@ -40,7 +40,7 @@ class ThoughtEventsContractTest {
         asUser(() -> controller.update(2L,ApiRequestFixtures.request(new ThoughtEntity(), ThoughtUpdateReq.class))); verifyNoInteractions(events);
         when(thoughts.update(any(ThoughtEntity.class), any(Wrapper.class))).thenReturn(0);
         ThoughtEntity payload = new ThoughtEntity(); payload.setEvents(List.of());
-        asUser(() -> assertNotEquals("0", controller.update(2L,ApiRequestFixtures.request(payload, ThoughtUpdateReq.class)).getRscode())); verifyNoInteractions(events);
+        asUser(() -> assertNotEquals(0, controller.update(2L,ApiRequestFixtures.request(payload, ThoughtUpdateReq.class)).getCode())); verifyNoInteractions(events);
     }
     @Test void testUpdate_空事件列表只清空当前闪念() {
         IThoughtMapper thoughts = mock(IThoughtMapper.class); IRelaEventMapper events = mock(IRelaEventMapper.class);

@@ -211,7 +211,7 @@ class StorageUploadCoordinationTest {
         assertTrue(written.await(10, TimeUnit.SECONDS));
         var busy = assertThrows(ResponseStatusException.class, () -> admin.delete(key.get()));
         assertTrue(busy.getReason().contains("处理中"));
-        finish.countDown(); assertEquals("0", result.get(10, TimeUnit.SECONDS).getRscode());
+        finish.countDown(); assertEquals(0, result.get(10, TimeUnit.SECONDS).getCode());
         var referenced = assertThrows(ResponseStatusException.class, () -> admin.delete(key.get()));
         assertTrue(referenced.getReason().contains("CBTI"));
         verifyNoInteractions(deletes);

@@ -33,7 +33,7 @@ class QueryParamsValidationTest {
         MockMvc mvc = mvc(controller);
         mvc.perform(get("/required"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.result").value("date 不能为空"));
+                .andExpect(jsonPath("$.message").value("date 不能为空"));
         assertEquals(0, controller.calls);
         mvc.perform(get("/required").param("date", "2026-10-04"))
                 .andExpect(status().isOk())
@@ -56,7 +56,7 @@ class QueryParamsValidationTest {
         MockMvc mvc = mvc(controller);
         mvc.perform(get("/grouped"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.result").value("分组日期不能为空"));
+                .andExpect(jsonPath("$.message").value("分组日期不能为空"));
         assertEquals(0, controller.calls);
         mvc.perform(get("/grouped-default"))
                 .andExpect(status().isOk())

@@ -31,7 +31,7 @@ class MenuVisualHttpTest {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
             mvc.perform(get("/menu/visuals").param("client", "mobile").param("userId", "8"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.rscode").value("0"))
+                .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.cards['section.reading'].menuId").value("9007199254740993"))
                 .andExpect(jsonPath("$.data.cards['section.reading'].icon").value("lucide:library"))
                 .andExpect(jsonPath("$.data.cards['section.reading'].iconColor").value("#427B8F"));

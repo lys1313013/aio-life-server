@@ -47,7 +47,7 @@ public class LLMController {
             return ApiResponse.success(LlmApiConvertor.INSTANCE.toChatMessageVOList(history));
         } catch (Exception e) {
             log.error("Failed to get chat history: {}", e.getMessage(), e);
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, e.getMessage());
         }
     }
 
@@ -63,7 +63,7 @@ public class LLMController {
             return ApiResponse.success();
         } catch (Exception e) {
             log.error("Failed to clear chat history: {}", e.getMessage(), e);
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, e.getMessage());
         }
     }
 
@@ -74,7 +74,7 @@ public class LLMController {
             return ApiResponse.success(LlmApiConvertor.INSTANCE.toConversationVOList(chatSessionService.listByUserId(userId)));
         } catch (Exception e) {
             log.error("Failed to get chat sessions: {}", e.getMessage(), e);
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, e.getMessage());
         }
     }
 
@@ -86,7 +86,7 @@ public class LLMController {
             return ApiResponse.success(LlmApiConvertor.INSTANCE.toConversationVO(chatSessionService.createSession(userId, title)));
         } catch (Exception e) {
             log.error("Failed to create chat session: {}", e.getMessage(), e);
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, e.getMessage());
         }
     }
 
@@ -99,7 +99,7 @@ public class LLMController {
             return ApiResponse.success();
         } catch (Exception e) {
             log.error("Failed to update chat session: {}", e.getMessage(), e);
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, e.getMessage());
         }
     }
 
@@ -111,7 +111,7 @@ public class LLMController {
             return ApiResponse.success();
         } catch (Exception e) {
             log.error("Failed to delete chat session: {}", e.getMessage(), e);
-            return ApiResponse.error(ResponseCodeConst.RSCODE_COMMON_FAIL, e.getMessage());
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, e.getMessage());
         }
     }
 }

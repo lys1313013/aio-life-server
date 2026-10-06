@@ -92,7 +92,7 @@ class StorageAdminAuthorizationTest {
     void 管理员可访问但角色撤销后原Token无法继续访问() throws Exception {
         String token = StpUtil.getStpLogic().createLoginSession(1L);
         mvc.perform(get("/system/storage/objects").header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.rscode").value("0"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
                 .andExpect(header().string("Cache-Control", "no-store"));
         for (String endpoint : List.of("preview", "download")) {
             mvc.perform(get("/system/storage/" + endpoint).param("key", "中文 +#.jpg")
@@ -113,7 +113,7 @@ class StorageAdminAuthorizationTest {
         doThrow(new IOException("fixture connection failure")).when(service).read(anyString(), anyBoolean(), any());
         mvc.perform(get("/system/storage/preview").param("key", "private.jpg")
                 .header("Authorization", "Bearer " + token))
-                .andExpect(status().isBadGateway()).andExpect(jsonPath("$.rscode").value("502"));
+                .andExpect(status().isBadGateway()).andExpect(jsonPath("$.code").value(502));
     }
 
     @Test
@@ -127,13 +127,13 @@ class StorageAdminAuthorizationTest {
         String admin = StpUtil.getStpLogic().createLoginSession(1L);
         mvc.perform(delete("/system/storage/object").param("key", "中文 +#.jpg")
                         .header("Authorization", "Bearer " + admin))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.rscode").value("0"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
         verify(service).delete("中文 +#.jpg");
         doThrow(new ResponseStatusException(HttpStatus.CONFLICT,
                 "file 表存在关联记录")).when(service).delete("linked.jpg");
         mvc.perform(delete("/system/storage/object").param("key", "linked.jpg")
                         .header("Authorization", "Bearer " + admin))
-                .andExpect(status().isConflict()).andExpect(jsonPath("$.result").value("file 表存在关联记录"));
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.message").value("file 表存在关联记录"));
     }
 
     @Test
@@ -141,7 +141,7 @@ class StorageAdminAuthorizationTest {
         String token = StpUtil.getStpLogic().createLoginSession(1L);
         mvc.perform(get("/system/storage/objects").param("pageSize", "1000")
                         .header("Authorization", "Bearer " + token))
-                .andExpect(jsonPath("$.rscode").value("100400"));
+                .andExpect(jsonPath("$.code").value(100400));
         verifyNoInteractions(service);
     }
 }
