@@ -73,6 +73,6 @@ public class QueryAccessController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "需要显式 Bearer 凭据");
         }
         return ApiResponse.success(service.checkToken(serviceKey, RequestLoginContext.requireUserId(),
-                authorization.substring(7), apiKey));
+                authorization.substring(7), apiKey, body.dataset()));
     }
 }

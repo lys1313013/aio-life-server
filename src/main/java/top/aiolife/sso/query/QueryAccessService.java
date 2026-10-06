@@ -33,9 +33,15 @@ public class QueryAccessService {
 
     /** 身份由常规 Sa-Token / API Key 拦截器验证，此处只做查询权限收敛。 */
     public QueryAccessModels.TokenDecision checkToken(String serviceKey, long userId, String token, boolean apiKey) {
+        return checkToken(serviceKey, userId, token, apiKey, "time_record");
+    }
+
+    public QueryAccessModels.TokenDecision checkToken(String serviceKey, long userId, String token, boolean apiKey, String dataset) {
         requireEnabled();
         if (!equal(properties.getServiceKey(), serviceKey) || !properties.getAllowedApps().contains("aio-life-query")) throw denied();
-        checkUser(userId);
+        var policy = policy(dataset);
+        if (!accounts.isActive(userId)) throw denied();
+        locks.checkMenus(userId, policy.menus());
         long expiresAt;
         if (apiKey) {
             var key = apiKeys.getByApiKey(token);
@@ -50,7 +56,7 @@ public class QueryAccessService {
         }
         if (expiresAt <= Instant.now().getEpochSecond()) throw denied();
         return new QueryAccessModels.TokenDecision(Long.toString(userId), "aio-life-query", hash(token).substring(0, 32),
-                apiKey ? "api_key" : "login", "ai_time_reader", Set.of("time.read"), expiresAt);
+                apiKey ? "api_key" : "login", policy.role(), Set.of(policy.scope()), expiresAt);
     }
 
     public QueryAccessModels.Issued issue(long userId, String sessionToken, String appId) {
@@ -88,6 +94,21 @@ public class QueryAccessService {
         var grant = store.read(grantId);
         if (grant == null || !Long.toString(userId).equals(grant.userId())) throw denied();
         store.delete(grantId);
+    }
+
+    private record DatasetPolicy(String role, String scope, String... menus) {}
+
+    private DatasetPolicy policy(String dataset) {
+        return switch (dataset) {
+            case "catalog" -> new DatasetPolicy("ai_query_catalog", "query.catalog", "/mcp/tools");
+            case "time_record" -> new DatasetPolicy("ai_time_reader", "time.read", "/mcp/tools", "/time/time-tracker", "/time/dashboard");
+            case "exercise_record" -> new DatasetPolicy("ai_exercise_reader", "exercise.read", "/mcp/tools", "/record/exercise");
+            case "read_record" -> new DatasetPolicy("ai_reading_reader", "reading.read", "/mcp/tools", "/record/read");
+            case "movie" -> new DatasetPolicy("ai_movie_reader", "movie.read", "/mcp/tools", "/record/movie");
+            case "b_video" -> new DatasetPolicy("ai_video_reader", "video.read", "/mcp/tools", "/record/videoWatch");
+            case "performance" -> new DatasetPolicy("ai_performance_reader", "performance.read", "/mcp/tools", "/record/performance");
+            default -> throw denied();
+        };
     }
 
     private void checkUser(long userId) {
