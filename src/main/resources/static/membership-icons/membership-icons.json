@@ -607,5 +607,39 @@
     "bytes": 448,
     "darkSha256": "a6d380d3c31d00136b440c94191264c3a8aece9b89bdcda21cfbf8cc76f32f2a",
     "darkBytes": 452
+  },
+  {
+    "key": "icloud",
+    "name": "iCloud+",
+    "file": "icloud.png",
+    "source": "https://www.icloud.com/system/icloud.com/2636Build34/favicons/default-favicon-light-180x180.png",
+    "sourcePage": "https://www.icloud.com/",
+    "license": "Official brand asset; no open redistribution license found; trademark and copyright belong to respective owner",
+    "sourceFile": "sources/icloud.png",
+    "dimensions": [
+      180,
+      180
+    ],
+    "conversion": "Original official PNG preserved without modification",
+    "notes": "Official iCloud apple-touch-icon",
+    "sha256": "8b7dab8f2dbddf515b10289bc4605e98bd7761842e8ab256973a53e38fb06b24",
+    "bytes": 12943
+  },
+  {
+    "key": "xiaomi_cloud",
+    "name": "小米云服务",
+    "file": "xiaomi_cloud.png",
+    "source": "https://i.mi.com/guide/zh-CN/membership/overview",
+    "sourcePage": "https://i.mi.com/guide/zh-CN/membership/overview",
+    "license": "Official brand asset; no open redistribution license found; trademark and copyright belong to respective owner",
+    "sourceFile": "sources/xiaomi_cloud.png",
+    "dimensions": [
+      256,
+      256
+    ],
+    "conversion": "Original official PNG preserved without modification",
+    "notes": "Embedded PNG from official user guide header",
+    "sha256": "5ceba73d044c856c649be1d51260c309a5d2bffebc64c68f4454fd5c589a76d0",
+    "bytes": 5092
   }
 ]
