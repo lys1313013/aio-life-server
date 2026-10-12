@@ -11,11 +11,31 @@ import top.aiolife.system.pojo.req.QuickNavSaveReq;
 import top.aiolife.system.service.impl.QuickNavServiceImpl;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.IntStream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class QuickNavClientStatusTest {
+    @Test void 快捷导航最多保存十五项() {
+        var rows = mock(IUserQuickNavMapper.class);
+        var menus = mock(ISysMenuMapper.class);
+        var access = mock(IMenuService.class);
+        var service = new QuickNavServiceImpl(rows, menus, access, new ObjectMapper());
+        when(access.getAccessibleMenuIds(List.of("user"), MenuClient.MOBILE))
+                .thenReturn(IntStream.rangeClosed(1, 16).mapToObj(i -> (long) i).collect(java.util.stream.Collectors.toSet()));
+        var req = new QuickNavSaveReq();
+        req.setItems(IntStream.rangeClosed(1, 15).mapToObj(i -> {
+            var item = new QuickNavSaveReq.Item();
+            item.setMenuId((long) i); item.setSortOrder(i - 1); item.setEnabled(1);
+            return item;
+        }).toList());
+        assertDoesNotThrow(() -> service.saveMy(7L, List.of("user"), req, MenuClient.MOBILE));
+        verify(rows, times(15)).insert(any(UserQuickNavEntity.class));
+        var extra = new QuickNavSaveReq.Item(); extra.setMenuId(16L); extra.setSortOrder(15); extra.setEnabled(1);
+        req.setItems(java.util.stream.Stream.concat(req.getItems().stream(), java.util.stream.Stream.of(extra)).toList());
+        assertThrows(IllegalArgumentException.class, () -> service.saveMy(7L, List.of("user"), req, MenuClient.MOBILE));
+    }
     @Test void 读取按端过滤且移动端保存不丢Web独有配置() {
         var rows = mock(IUserQuickNavMapper.class);
         var menus = mock(ISysMenuMapper.class);

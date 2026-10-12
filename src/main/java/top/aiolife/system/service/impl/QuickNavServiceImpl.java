@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class QuickNavServiceImpl implements IQuickNavService {
 
-    private static final int MAX_ITEMS = 12;
+    private static final int MAX_ITEMS = 15;
 
     private final IUserQuickNavMapper userQuickNavMapper;
 

@@ -19,6 +19,15 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, MessageEntity
 
     @Override
     public List<MessageEntity> listByUserId(Long userId, Boolean isRead) {
+        return this.list(userMessageQuery(userId, isRead));
+    }
+
+    @Override
+    public IPage<MessageEntity> pageByUserId(Long userId, Boolean isRead, long current, long size) {
+        return this.page(new Page<>(current, size), userMessageQuery(userId, isRead));
+    }
+
+    private LambdaQueryWrapper<MessageEntity> userMessageQuery(Long userId, Boolean isRead) {
         LambdaQueryWrapper<MessageEntity> wrapper = new LambdaQueryWrapper<>();
         if (Boolean.FALSE.equals(isRead)) {
             // 通知场景：只查当前用户作为接收者的未读消息
@@ -32,8 +41,8 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, MessageEntity
                 wrapper.eq(MessageEntity::getIsRead, isRead);
             }
         }
-        wrapper.orderByDesc(MessageEntity::getCreateTime);
-        return this.list(wrapper);
+        return wrapper.orderByDesc(MessageEntity::getCreateTime)
+                .orderByDesc(MessageEntity::getId);
     }
 
     @Override

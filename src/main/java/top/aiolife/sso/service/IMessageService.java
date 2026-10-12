@@ -10,6 +10,8 @@ public interface IMessageService extends IService<MessageEntity> {
 
     List<MessageEntity> listByUserId(Long userId, Boolean isRead);
 
+    IPage<MessageEntity> pageByUserId(Long userId, Boolean isRead, long current, long size);
+
     void markAsRead(Long messageId, Long userId);
 
     void markAllAsRead(Long userId);

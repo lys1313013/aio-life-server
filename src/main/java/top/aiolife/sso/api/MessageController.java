@@ -3,10 +3,13 @@ package top.aiolife.sso.api;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
@@ -19,6 +22,7 @@ import top.aiolife.sso.service.IMessageService;
 @RestController
 @RequestMapping("/message")
 @RequiredArgsConstructor
+@Validated
 public class MessageController {
 
     private final IMessageService messageService;
@@ -29,6 +33,16 @@ public class MessageController {
         long userId = StpUtil.getLoginIdAsLong();
         List<MessageEntity> messages = messageService.listByUserId(userId, isRead);
         return ApiResponse.success(SsoApiConvertor.INSTANCE.toMessageVOList(messages));
+    }
+
+    @GetMapping("/page")
+    public ApiResponse<PageResp<MessageVO>> page(
+            @RequestParam(required = false) Boolean isRead,
+            @RequestParam(defaultValue = "1") @Min(1) Long current,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) Long size) {
+        long userId = StpUtil.getLoginIdAsLong();
+        return ApiResponse.success(SsoApiConvertor.INSTANCE.toMessageVOPage(
+                messageService.pageByUserId(userId, isRead, current, size)));
     }
 
     @GetMapping("/unread-count")
