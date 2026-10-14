@@ -58,11 +58,14 @@ public class GithubServiceImpl implements IGithubService {
             if (!response.isOk()) {
                 log.error("GitHub search commits failed: status={}, body={}",
                         response.getStatus(), response.body());
-                return Collections.emptyList();
+                throw new IllegalStateException("GitHub 最近提交查询失败，请稍后重试");
             }
             JSONObject body = JSON.parseObject(response.body());
+            if (body == null || !(body.get("items") instanceof JSONArray)) {
+                throw new IllegalStateException("GitHub 最近提交响应异常，请稍后重试");
+            }
             JSONArray items = body.getJSONArray("items");
-            if (items == null || items.isEmpty()) {
+            if (items.isEmpty()) {
                 return Collections.emptyList();
             }
 
@@ -86,9 +89,6 @@ public class GithubServiceImpl implements IGithubService {
                 result.add(vo);
             }
             return result;
-        } catch (Exception e) {
-            log.error("调用 GitHub 搜索提交接口异常", e);
-            return Collections.emptyList();
         }
     }
 }
