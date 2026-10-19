@@ -5,6 +5,8 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import top.aiolife.record.pojo.dto.ExerciseStatisticsDTO;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
+import top.aiolife.record.pojo.query.ExerciseStatisticsQuery;
+import top.aiolife.record.pojo.vo.ExerciseStatisticsPointVO;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -16,6 +18,24 @@ import java.util.List;
  * @date 2025-11-29 18:40
  */
 public interface IExerciseRecordMapper extends BaseMapper<ExerciseRecordEntity> {
+    /** 全历史按日期和类型聚合；无明细条数上限，筛选与列表一致。 */
+    @Select("""
+            <script>
+            SELECT exercise_type_id, exercise_date,
+                   COALESCE(SUM(exercise_count), 0) AS exercise_count, COUNT(*) AS record_count
+            FROM exercise_record
+            WHERE user_id = #{userId} AND is_deleted = 0
+            <if test="filters.exerciseTypeId != null">AND exercise_type_id = #{filters.exerciseTypeId}</if>
+            <if test="filters.startDate != null and filters.startDate != ''">AND exercise_date &gt;= #{filters.startDate}</if>
+            <if test="filters.endDate != null and filters.endDate != ''">AND exercise_date &lt;= #{filters.endDate}</if>
+            <if test="filters.description != null and filters.description != ''">AND description LIKE CONCAT('%', #{filters.description}, '%')</if>
+            GROUP BY exercise_type_id, exercise_date
+            ORDER BY exercise_date DESC, MAX(id) DESC
+            </script>
+            """)
+    List<ExerciseStatisticsPointVO> selectStatisticsSummary(@Param("userId") Long userId,
+                                                          @Param("filters") ExerciseStatisticsQuery filters);
+
     @Select("""
             SELECT exercise_date FROM exercise_record
             WHERE user_id = #{userId} AND is_deleted = 0 AND exercise_type_id IS NOT NULL

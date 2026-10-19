@@ -76,6 +76,7 @@ class QueryHttpContractTest {
                 Arguments.of(ExerciseRecordController.class, "/exerciseRecord/query"),
                 Arguments.of(ExerciseRecordController.class, "/exerciseRecord/statistics"),
                 Arguments.of(ExerciseRecordController.class, "/exerciseRecord/statistics/light"),
+                Arguments.of(ExerciseRecordController.class, "/exerciseRecord/statistics/summary"),
                 Arguments.of(MemoController.class, "/memo/query"),
                 Arguments.of(UserCenterController.class, "/user-center/list")
         );

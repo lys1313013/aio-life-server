@@ -27,6 +27,7 @@ import top.aiolife.record.pojo.req.ExerciseRecordCreateReq;
 import top.aiolife.record.pojo.req.ExerciseRecordUpdateReq;
 import top.aiolife.record.pojo.vo.ExerciseDashboardSummaryVO;
 import top.aiolife.record.pojo.vo.ExerciseRecordVO;
+import top.aiolife.record.pojo.vo.ExerciseStatisticsPointVO;
 import top.aiolife.record.service.IExerciseRecordService;
 
 @Slf4j
@@ -63,8 +64,10 @@ public class ExerciseRecordController {
         ExerciseRecordEntity condition = query.getCondition();
         lambdaQueryWrapper.eq(condition.getExerciseTypeId() != null, ExerciseRecordEntity::getExerciseTypeId,
                 condition.getExerciseTypeId());
-//        lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getExerciseDate()), ExerciseRecordEntity::getExerciseDate,
-//                condition.getExerciseDate());
+        ExerciseRecordQuery filters = requestQuery.getCondition();
+        lambdaQueryWrapper.ge(filters.getStartDate() != null, ExerciseRecordEntity::getExerciseDate, filters.getStartDate());
+        lambdaQueryWrapper.le(filters.getEndDate() != null, ExerciseRecordEntity::getExerciseDate, filters.getEndDate());
+        lambdaQueryWrapper.like(SysUtil.isNotEmpty(filters.getDescription()), ExerciseRecordEntity::getDescription, filters.getDescription());
         lambdaQueryWrapper.orderByDesc(ExerciseRecordEntity::getExerciseDate, ExerciseRecordEntity::getId);
         // 分页
         Page<ExerciseRecordEntity> page = new Page<>(query.getPage(), query.getPageSize());
@@ -124,6 +127,13 @@ public class ExerciseRecordController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toExerciseRecordVO(getBaseMapper().selectOne(lambdaQueryWrapper)));
     }
 
+    /** 完整运动统计：未指定日期时统计全部历史，同日同类型合并为一个运动次数。 */
+    @GetMapping("/statistics/summary")
+    public ApiResponse<List<ExerciseStatisticsPointVO>> getStatisticsSummary(@QueryParams ExerciseStatisticsQuery params) {
+        return ApiResponse.success(exerciseRecordMapper.selectStatisticsSummary(
+                StpUtil.getLoginIdAsLong(), params == null ? new ExerciseStatisticsQuery() : params));
+    }
+
     /**
      * 获取运动记录统计数据（限制时间范围和数据量），用于统计图表
      * 返回业务字段，不包含所属用户或审计字段
@@ -140,6 +150,7 @@ public class ExerciseRecordController {
             Long exerciseTypeId = params.getExerciseTypeId();
             lambdaQueryWrapper.eq(exerciseTypeId != null, ExerciseRecordEntity::getExerciseTypeId, exerciseTypeId);
 
+            lambdaQueryWrapper.like(SysUtil.isNotEmpty(params.getDescription()), ExerciseRecordEntity::getDescription, params.getDescription());
             // 日期区间
             String startDate = params.getStartDate();
             String endDate = params.getEndDate();
@@ -178,6 +189,7 @@ public class ExerciseRecordController {
             Long exerciseTypeId = params.getExerciseTypeId();
             lambdaQueryWrapper.eq(exerciseTypeId != null, ExerciseRecordEntity::getExerciseTypeId, exerciseTypeId);
 
+            lambdaQueryWrapper.like(SysUtil.isNotEmpty(params.getDescription()), ExerciseRecordEntity::getDescription, params.getDescription());
             // 日期区间
             String startDate = params.getStartDate();
             String endDate = params.getEndDate();

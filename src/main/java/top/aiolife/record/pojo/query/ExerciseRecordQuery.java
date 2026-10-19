@@ -13,4 +13,7 @@ public class ExerciseRecordQuery {
      * 运动类型ID(关联user_dict_data.id)
      */
     private Long exerciseTypeId;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private String description;
 }
