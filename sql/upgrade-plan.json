@@ -82,6 +82,10 @@
     {
       "path": "sql/2_ini_data/2026-10-11_membership_cloud_providers.sql",
       "sha256": "023d22fc57d408b971d6d2d975b931f51eab16d2e596c910a8cad8afa64aa36c"
+    },
+    {
+      "path": "sql/2_ini_data/2026-10-19_membership_lifestyle_providers.sql",
+      "sha256": "888f5993460c6a8a3e74a0922c74fc8b7477c300f4a106883a7776aa4ce2ac43"
     }
   ]
 }

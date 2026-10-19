@@ -641,5 +641,158 @@
     "notes": "Embedded PNG from official user guide header",
     "sha256": "5ceba73d044c856c649be1d51260c309a5d2bffebc64c68f4454fd5c589a76d0",
     "bytes": 5092
+  },
+  {
+    "key": "kfc",
+    "name": "肯德基",
+    "file": "kfc.png",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/2c/7f/ac/2c7fac05-a5ba-772c-7a61-e880f9e2c33c/AppIcon-0-0-1x_U007ephone-0-11-0-85-220.png/512x512bb.png",
+    "upstreamBrandSource": "https://apps.apple.com/cn/app/%E8%82%AF%E5%BE%B7%E5%9F%BAkfc-%E5%AE%98%E6%96%B9%E7%89%88/id587238847?uo=4",
+    "license": "Official application icon; third-party trademarks and artwork remain owned by their respective owners",
+    "sourceFile": "sources/kfc.png",
+    "publisherMetadata": "sources/kfc-app-store.json",
+    "conversion": "Original PNG preserved byte-for-byte",
+    "sha256": "0652d9cc163cff6ec052299f9a40dff4538dc0cf82f5d941333ae272b32dbf3c",
+    "bytes": 63891,
+    "dimensions": [
+      512,
+      512
+    ]
+  },
+  {
+    "key": "mcdonalds",
+    "name": "麦当劳",
+    "file": "mcdonalds.png",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/7e/3d/e5/7e3de5b1-8af9-3f04-5a20-7e75ca17fa1d/AppIcon-0-0-1x_U007emarketing-0-11-0-85-220.png/128x128bb.png",
+    "upstreamBrandSource": "https://apps.apple.com/cn/app/%E9%BA%A6%E5%BD%93%E5%8A%B3mcdonalds-%E5%88%B0%E5%BA%97%E5%8F%96%E9%A4%90-%E9%BA%A6%E5%92%96%E5%95%A1-%E9%BA%A6%E4%B9%90%E9%80%81/id1054598922?uo=4",
+    "license": "Official application icon; third-party trademarks and artwork remain owned by their respective owners",
+    "sourceFile": "sources/mcdonalds.png",
+    "publisherMetadata": "sources/mcdonalds-app-store.json",
+    "conversion": "Official Apple CDN 128px PNG preserved byte-for-byte",
+    "sha256": "3ef384694016e2e27caca1764aaa5da9d71fbc446c22e0d7b190d64b8fe49079",
+    "bytes": 8792,
+    "dimensions": [
+      128,
+      128
+    ]
+  },
+  {
+    "key": "pizza_hut",
+    "name": "必胜客",
+    "file": "pizza_hut.png",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/da/9a/1a/da9a1a57-8217-10df-eae8-b902e6281b79/AppIcon-0-0-1x_U007ephone-0-11-0-P3-85-220.png/128x128bb.png",
+    "upstreamBrandSource": "https://apps.apple.com/cn/app/%E5%BF%85%E8%83%9C%E5%AE%A2pizza-hut/id527572895?uo=4",
+    "license": "Official application icon; third-party trademarks and artwork remain owned by their respective owners",
+    "sourceFile": "sources/pizza_hut.png",
+    "publisherMetadata": "sources/pizza_hut-app-store.json",
+    "conversion": "Official Apple CDN 128px PNG preserved byte-for-byte",
+    "sha256": "56ae41592d2f6416c0cce655ddea057bc0e33032580d088963045ca8f5aaea87",
+    "bytes": 10161,
+    "dimensions": [
+      128,
+      128
+    ]
+  },
+  {
+    "key": "burger_king",
+    "name": "汉堡王",
+    "file": "burger_king.png",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/2f/32/14/2f321439-39ac-6bbc-13a4-d56765b1667b/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/128x128bb.png",
+    "upstreamBrandSource": "https://apps.apple.com/cn/app/%E6%B1%89%E5%A0%A1%E7%8E%8B%E4%B8%AD%E5%9B%BD/id6466981191?uo=4",
+    "license": "Official application icon; third-party trademarks and artwork remain owned by their respective owners",
+    "sourceFile": "sources/burger_king.png",
+    "publisherMetadata": "sources/burger_king-app-store.json",
+    "conversion": "Official Apple CDN 128px PNG preserved byte-for-byte",
+    "sha256": "fd1d9371bd36fa1ed0191163b98f5f80aa6d9226f3ff555f5de73e2046819b5d",
+    "bytes": 8207,
+    "dimensions": [
+      128,
+      128
+    ]
+  },
+  {
+    "key": "starbucks",
+    "name": "星巴克",
+    "file": "starbucks.png",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/04/70/9b/04709b77-ac88-6c6c-edee-0137b8c4c770/AppIcon-0-0-1x_U007emarketing-0-6-0-85-220.png/128x128bb.png",
+    "upstreamBrandSource": "https://apps.apple.com/cn/app/%E6%98%9F%E5%B7%B4%E5%85%8B%E4%B8%AD%E5%9B%BD/id499819758?uo=4",
+    "license": "Official application icon; third-party trademarks and artwork remain owned by their respective owners",
+    "sourceFile": "sources/starbucks.png",
+    "publisherMetadata": "sources/starbucks-app-store.json",
+    "conversion": "Official Apple CDN 128px PNG preserved byte-for-byte",
+    "sha256": "2645a03cd833c29e967a25460a5b9b5f6badb524def4c2d9ad9f63bd2b4a93f2",
+    "bytes": 16462,
+    "dimensions": [
+      128,
+      128
+    ]
+  },
+  {
+    "key": "luckin_coffee",
+    "name": "瑞幸咖啡",
+    "file": "luckin_coffee.png",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/23/de/db/23dedb45-aa83-7cc8-c0cf-e47000cba016/AppIcon-0-0-1x_U007emarketing-0-6-0-85-220.png/128x128bb.png",
+    "upstreamBrandSource": "https://apps.apple.com/cn/app/%E7%91%9E%E5%B9%B8%E5%92%96%E5%95%A1/id1296749505?uo=4",
+    "license": "Official application icon; third-party trademarks and artwork remain owned by their respective owners",
+    "sourceFile": "sources/luckin_coffee.png",
+    "publisherMetadata": "sources/luckin_coffee-app-store.json",
+    "conversion": "Official Apple CDN 128px PNG preserved byte-for-byte",
+    "sha256": "8284303cb85b341786e133a7ad50f268e2b9dbabd39e49ff5a2aaa61729ee6bb",
+    "bytes": 12134,
+    "dimensions": [
+      128,
+      128
+    ]
+  },
+  {
+    "key": "eleme",
+    "name": "淘宝闪购（原饿了么）",
+    "file": "eleme.png",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/bf/1a/8a/bf1a8ade-77a0-d667-d7d8-c590343de98a/AppIcon_new-0-1x_U007epad-0-1-0-85-220-0.png/128x128bb.png",
+    "upstreamBrandSource": "https://apps.apple.com/cn/app/%E6%B7%98%E5%AE%9D%E9%97%AA%E8%B4%AD-%E7%82%B9%E5%A4%96%E5%8D%96%E6%9B%B4%E4%BC%98%E6%83%A0/id507161324?uo=4",
+    "license": "Official application icon; third-party trademarks and artwork remain owned by their respective owners",
+    "sourceFile": "sources/eleme.png",
+    "publisherMetadata": "sources/eleme-app-store.json",
+    "conversion": "Official Apple CDN 128px PNG preserved byte-for-byte",
+    "sha256": "58db8c88809276bfd237d01e1501d36411932ee3b86ab6e583446ee1af2eb6f3",
+    "bytes": 14110,
+    "dimensions": [
+      128,
+      128
+    ]
+  },
+  {
+    "key": "sams_club",
+    "name": "山姆会员商店",
+    "file": "sams_club.png",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/61/2f/a2/612fa211-ab32-ee5c-9b8e-7215ef9f3651/AppIcon-1x_U007emarketing-0-5-0-85-220-0.png/128x128bb.png",
+    "upstreamBrandSource": "https://apps.apple.com/cn/app/%E5%B1%B1%E5%A7%86%E4%BC%9A%E5%91%98%E5%95%86%E5%BA%97/id818237113?uo=4",
+    "license": "Official application icon; third-party trademarks and artwork remain owned by their respective owners",
+    "sourceFile": "sources/sams_club.png",
+    "publisherMetadata": "sources/sams_club-app-store.json",
+    "conversion": "Official Apple CDN 128px PNG preserved byte-for-byte",
+    "sha256": "78423eb0da4b0c9494906ed5f7a993025e6c7ceb275ed8b61bf6a700263365be",
+    "bytes": 8338,
+    "dimensions": [
+      128,
+      128
+    ]
+  },
+  {
+    "key": "costco",
+    "name": "Costco 开市客",
+    "file": "costco.png",
+    "source": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/79/3b/fd/793bfd37-e45a-f9b1-e753-4b978125e4ca/AppIcon-0-0-1x_U007emarketing-0-6-0-85-220.png/128x128bb.png",
+    "upstreamBrandSource": "https://apps.apple.com/cn/app/%E5%BC%80%E5%B8%82%E5%AE%A2/id1457942022?uo=4",
+    "license": "Official application icon; third-party trademarks and artwork remain owned by their respective owners",
+    "sourceFile": "sources/costco.png",
+    "publisherMetadata": "sources/costco-app-store.json",
+    "conversion": "Official Apple CDN 128px PNG preserved byte-for-byte",
+    "sha256": "5df7756c53c1b3ad844bbd9550ece0f4eea9b0b967b3c7a2b7f323a6b3114100",
+    "bytes": 8411,
+    "dimensions": [
+      128,
+      128
+    ]
   }
 ]
