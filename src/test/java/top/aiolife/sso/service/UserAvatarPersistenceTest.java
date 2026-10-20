@@ -9,7 +9,6 @@ import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionTemplate;
 import top.aiolife.core.cache.SecondaryLockMenuCache;
 import top.aiolife.core.util.MinioUtil;
@@ -53,7 +52,7 @@ class UserAvatarPersistenceTest {
         config.addMapper(UserMapper.class); config.addMapper(IFileMapper.class);
         var factory = new MybatisSqlSessionFactoryBean(); factory.setDataSource(source); factory.setConfiguration(config);
         var session = new SqlSessionTemplate(factory.getObject());
-        var minio = new MinioUtil(); ReflectionTestUtils.setField(minio,"serveBaseUrl","https://example.test/api");
+        var minio = new MinioUtil(null,"https://example.test/api");
         users = new UserServiceImpl(session.getMapper(UserMapper.class), mock(ApiKeyMapper.class), mock(LoginSessionService.class),
             mock(LoginLogMapper.class), mock(IMailService.class), mock(RedisUtil.class), mock(UserSecondaryLockMenuMapper.class),
             mock(SecondaryLockMenuCache.class), new UserAvatarFileService(session.getMapper(IFileMapper.class), minio));
