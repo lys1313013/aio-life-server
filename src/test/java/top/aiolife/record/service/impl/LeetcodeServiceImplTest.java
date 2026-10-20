@@ -25,7 +25,7 @@ class LeetcodeServiceImplTest {
     private final IUserBindService binds = mock(IUserBindService.class);
     private final AbstractNotificationSender email = mock(AbstractNotificationSender.class);
     private final AbstractNotificationSender station = mock(AbstractNotificationSender.class);
-    private final FeishuNotificationService feishu = mock(FeishuNotificationService.class);
+    private final NotificationDispatcher feishu = mock(NotificationDispatcher.class);
     private final RedisUtil redis = mock(RedisUtil.class);
     private final DistributedLockExecutor locks = mock(DistributedLockExecutor.class);
     private final NotificationSendGuard guard = mock(NotificationSendGuard.class);

@@ -232,10 +232,13 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
                 .map(type -> {
                     boolean visible = !type.isRequiresLeetCode() || hasLeetCode;
                     List<NotificationPreferenceVO.ChannelState> channels = NotificationChannel.ALL.stream()
+                            .filter(ch -> !NotificationChannel.WECHAT_MINI.equals(ch)
+                                    || type == NotificationBizType.LEETCODE_REMINDER)
                             .map(ch -> {
                                 String key = type.name() + ":" + ch;
-                                boolean enabled = !saved.containsKey(key)
-                                        || Integer.valueOf(1).equals(saved.get(key).getEnabled());
+                                boolean enabled = saved.containsKey(key)
+                                        ? Integer.valueOf(1).equals(saved.get(key).getEnabled())
+                                        : !NotificationChannel.WECHAT_MINI.equals(ch);
                                 return NotificationPreferenceVO.ChannelState.builder()
                                         .channel(ch)
                                         .enabled(enabled)
@@ -262,6 +265,10 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
             NotificationBizType.fromName(item.getBizType());
             if (item.getChannel() == null || !NotificationChannel.ALL.contains(item.getChannel())) {
                 throw new IllegalArgumentException("不支持的通知渠道：" + item.getChannel());
+            }
+            if (NotificationChannel.WECHAT_MINI.equals(item.getChannel())
+                    && !NotificationBizType.LEETCODE_REMINDER.name().equals(item.getBizType())) {
+                throw new IllegalArgumentException("微信订阅消息目前仅支持力扣未打卡提醒");
             }
             NotificationPreferenceEntity existing = findPreference(userId, item.getBizType(), item.getChannel());
             if (existing == null) {
@@ -304,7 +311,8 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
             }
         }
         NotificationPreferenceEntity preference = findPreference(userId, bizType, channel);
-        return preference == null || Integer.valueOf(1).equals(preference.getEnabled());
+        return preference == null ? !NotificationChannel.WECHAT_MINI.equals(channel)
+                : Integer.valueOf(1).equals(preference.getEnabled());
     }
 
     private void doSendIfEnabled(NotificationRequest request) {

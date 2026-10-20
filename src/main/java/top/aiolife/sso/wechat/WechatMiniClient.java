@@ -152,6 +152,39 @@ public class WechatMiniClient {
 
     private String tokenKey() { return "auth:wechat:token:" + properties.getAppId(); }
 
+    /** 发送可能消耗一次订阅机会。网络异常、非 JSON 或缺少明确错误码均视为结果未知，不自动重放。 */
+    public SubscriptionResult sendSubscription(String openid, String templateId, String environment,
+                                               Map<String, Map<String, String>> data) {
+        requireEnabled();
+        String token;
+        try {
+            token = accessToken();
+        } catch (ResponseStatusException e) {
+            // 尚未触达发送接口，不会消耗订阅机会。
+            return new SubscriptionResult("TOKEN_UNAVAILABLE", false, true);
+        }
+        try {
+            JsonNode body = readJson(client.post().uri(uri -> uri.path("/cgi-bin/message/subscribe/send")
+                            .queryParam("access_token", token).build())
+                    .body(Map.of("touser", openid, "template_id", templateId,
+                            "miniprogram_state", environment, "page", "pages/coding/leetcode", "data", data))
+                    .retrieve(), "subscribeMessage.send");
+            if (body == null || !body.isObject() || !body.path("errcode").isIntegralNumber()) {
+                return new SubscriptionResult("UNKNOWN", false, false);
+            }
+            int code = body.path("errcode").asInt();
+            if (code == 40001 || code == 40014 || code == 42001) redis.unlock(tokenKey(), token);
+            // 仅对明确未受理的 Token 失效、系统繁忙和限流退避重试。
+            boolean retryable = Set.of(-1, 40001, 40014, 42001, 45009).contains(code);
+            return new SubscriptionResult(Integer.toString(code), code == 0, retryable);
+        } catch (RestClientException | ResponseStatusException e) {
+            log.warn("微信订阅消息发送结果未知 type={}", e.getClass().getSimpleName());
+            return new SubscriptionResult("UNKNOWN", false, false);
+        }
+    }
+
+    public record SubscriptionResult(String code, boolean success, boolean retryable) {}
+
     private String accessToken() {
         String cached = redis.get(tokenKey());
         if (StringUtils.hasText(cached)) return cached;

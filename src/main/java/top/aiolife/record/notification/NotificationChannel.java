@@ -8,6 +8,7 @@ public final class NotificationChannel {
     public static final String STATION = "STATION";
     public static final String EMAIL = "EMAIL";
     public static final String FEISHU = "FEISHU";
+    public static final String WECHAT_MINI = "WECHAT_MINI";
 
-    public static final List<String> ALL = List.of(STATION, EMAIL, FEISHU);
+    public static final List<String> ALL = List.of(STATION, EMAIL, FEISHU, WECHAT_MINI);
 }

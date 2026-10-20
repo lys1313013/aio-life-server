@@ -194,7 +194,7 @@ aio:
         bucket-name: ${AIO_LIFE_MINIO_BUCKET_NAME:aiolife}
         image-prefix: ${AIO_LIFE_MINIO_IMAGE_PREFIX:images/}
       mbti:
-        api-key: ${AIO_LIFE_MBTI_API_KEY:ee1aee-d3178c-1f49b8-652d40}
+        api-key: ${AIO_LIFE_MBTI_API_KEY:}
         base-url: ${AIO_LIFE_MBTI_BASE_URL:https://api.devil.ai}
       cbti:
         enabled: ${AIO_LIFE_CBTI_ENABLED:true}
@@ -202,5 +202,13 @@ aio:
         object-prefix: ${AIO_LIFE_CBTI_OBJECT_PREFIX:images/cbti/characters/}
         characters-dir: ${AIO_LIFE_CBTI_CHARACTERS_DIR:src/main/resources/cbti/characters}
       notification:
+        wechat-mini:
+          enabled: ${AIO_LIFE_WECHAT_SUBSCRIBE_ENABLED:false}
+          template-id: ${AIO_LIFE_WECHAT_SUBSCRIBE_TEMPLATE_ID:}
+          # 对照选用模板的实际字段填写；不需要的字段设为空字符串。
+          title-field: ${AIO_LIFE_WECHAT_SUBSCRIBE_TITLE_FIELD:thing1}
+          content-field: ${AIO_LIFE_WECHAT_SUBSCRIBE_CONTENT_FIELD:thing2}
+          time-field: ${AIO_LIFE_WECHAT_SUBSCRIBE_TIME_FIELD:time3}
+          environment: ${AIO_LIFE_WECHAT_SUBSCRIBE_ENVIRONMENT:formal}
         # 用于加密用户的飞书 App Secret 与通知重试载荷，长度不少于 16 位
         credential-encryption-key: ${AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY:aiolifeaiolifeaiolife}

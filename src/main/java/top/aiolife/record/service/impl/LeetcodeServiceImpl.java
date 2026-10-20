@@ -19,6 +19,7 @@ import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.core.util.DateUtil;
 import top.aiolife.record.client.LeetcodeClient;
 import top.aiolife.record.notification.AbstractNotificationSender;
+import top.aiolife.record.notification.NotificationDispatcher;
 import top.aiolife.record.notification.NotificationRequest;
 import top.aiolife.record.notification.NotificationSendGuard;
 import top.aiolife.record.pojo.entity.UserBindEntity;
@@ -28,7 +29,6 @@ import top.aiolife.record.pojo.leetcode.TodayRecordResponse;
 import top.aiolife.record.pojo.leetcode.UserCalendarResponse;
 import top.aiolife.record.pojo.vo.DashboardCardVO;
 import top.aiolife.record.service.ILeetcodeService;
-import top.aiolife.record.service.FeishuNotificationService;
 import top.aiolife.record.service.IUserBindService;
 import top.aiolife.record.util.RedisUtil;
 import top.aiolife.sso.mapper.UserMapper;
@@ -64,7 +64,7 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
 
     private final List<AbstractNotificationSender> notificationSenders;
 
-    private final FeishuNotificationService feishuNotificationService;
+    private final NotificationDispatcher notificationDispatcher;
 
     private final RedisUtil redisUtil;
 
@@ -315,14 +315,14 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
     private void sendNotification(UserEntity user, NotificationRequest request, String htmlContent) {
         for (AbstractNotificationSender sender : notificationSenders) {
             try {
-                if (feishuNotificationService.isChannelEnabled(user.getId(), request.bizType(), sender.getChannel())) {
+                if (notificationDispatcher.isChannelEnabled(user.getId(), request.bizType(), sender.getChannel())) {
                     sendGuard.sendOnce(sender, user, request, htmlContent);
                 }
             } catch (Exception e) {
                 log.error("通知渠道处理失败，userId={}, channel={}", user.getId(), sender.getChannel(), e);
             }
         }
-        feishuNotificationService.sendIfEnabled(request);
+        notificationDispatcher.sendIfEnabled(request);
     }
 
     public QuestionDataResponse getTodayQuestion() {

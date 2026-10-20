@@ -299,6 +299,10 @@ mvn clean package -DskipTests
 - **健康检查**：`http://localhost:45679/actuator/health`
 - **链路追踪**：日志中包含 `traceId` 和 `spanId`
 
+## 微信小程序订阅消息
+
+一期支持力扣未打卡提醒，渠道默认关闭。复用小程序身份、Token 缓存和通知投递表；配置模板 ID 和实际字段名后，可在小程序「我 → 通知设置」订阅一次并发送测试。环境变量、API、投递状态和验收流程见 [微信小程序订阅消息接入](../docs/微信小程序订阅消息接入.md)。独立 checkout 可查看 [主仓库文档](https://github.com/lys1313013/aio-life/blob/main/docs/微信小程序订阅消息接入.md)。
+
 ## 🤝 贡献指南
 
 欢迎提交 Issue 和 Pull Request！

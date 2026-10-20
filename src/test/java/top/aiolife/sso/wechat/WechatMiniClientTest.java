@@ -12,6 +12,7 @@ import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.record.util.RedisUtil;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -161,5 +162,51 @@ class WechatMiniClientTest {
                     {"errcode":0,"phone_info":{"countryCode":"%s","purePhoneNumber":"%s",
                     "watermark":{"appid":"%s","timestamp":%d}}}
                     """.formatted(country, number, appid, Instant.now().getEpochSecond() + seconds), MediaType.APPLICATION_JSON));
+    }
+
+    @Test void 订阅消息携带模板字段与固定业务页并以微信错误码判断成功() {
+        server.expect(requestTo("https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=app-token"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(jsonPath("$.touser").value("fixture-openid"))
+                .andExpect(jsonPath("$.template_id").value("fixture-template"))
+                .andExpect(jsonPath("$.page").value("pages/coding/leetcode"))
+                .andExpect(jsonPath("$.miniprogram_state").value("trial"))
+                .andExpect(jsonPath("$.data.thing1.value").value("提醒"))
+                .andRespond(withSuccess("{\"errcode\":0,\"errmsg\":\"ok\"}", MediaType.TEXT_PLAIN));
+        assertTrue(subscription().success());
+        server.verify();
+    }
+
+    @Test void HTTP成功但无订阅权限不能当作发送成功或自动重试() {
+        server.expect(anything()).andRespond(withSuccess("{\"errcode\":43101,\"errmsg\":\"private-detail\"}", MediaType.APPLICATION_JSON));
+        var result = subscription();
+        assertEquals("43101", result.code());
+        assertFalse(result.success());
+        assertFalse(result.retryable());
+    }
+
+    @Test void 订阅消息超时与缺少错误码均为未知且不得重放() {
+        server.expect(anything()).andRespond(withException(new java.net.SocketTimeoutException("private-detail")));
+        var result = subscription();
+        assertEquals("UNKNOWN", result.code());
+        assertFalse(result.retryable());
+        server.verify();
+    }
+
+    @Test void 非标准JSON不能默认当作errcode零成功() {
+        server.expect(anything()).andRespond(withSuccess("{\"errmsg\":\"ok\"}", MediaType.APPLICATION_JSON));
+        assertEquals("UNKNOWN", subscription().code());
+    }
+
+    @Test void 订阅消息Token失效清理旧缓存但不在客户端立即重放() {
+        server.expect(anything()).andRespond(withSuccess("{\"errcode\":42001}", MediaType.APPLICATION_JSON));
+        var result = subscription();
+        assertTrue(result.retryable());
+        verify(redis).unlock("auth:wechat:token:wx_test", "app-token");
+        server.verify();
+    }
+
+    private WechatMiniClient.SubscriptionResult subscription() {
+        return client.sendSubscription("fixture-openid", "fixture-template", "trial", Map.of("thing1", Map.of("value", "提醒")));
     }
 }
