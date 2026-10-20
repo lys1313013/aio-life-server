@@ -46,7 +46,8 @@ class SecondaryLockBoundaryTest {
         assertTrue(SecondaryLockPolicy.requestMenus("/dashboard/card/READ").contains("/record/weread"));
         assertFalse(SecondaryLockPolicy.requestMenus("/tasks-other").contains("/task/todo"));
         assertFalse(SecondaryLockPolicy.requestMenus("/timeTrackerCategory/admin/1").contains("/time/my-categories"));
-        for (String tool : List.of("task_list", "task_detail_save", "goal_query", "goal_progress_update",
+        assertEquals(Set.of("/task/todo", "/mcp/tools"), SecondaryLockPolicy.toolMenus("task_detail_update"));
+        for (String tool : List.of("task_list", "task_detail_save", "task_detail_update", "goal_query", "goal_progress_update",
                 "time_record_save", "time_record_queryByDateRange", "time_tracker_category_list", "thought_save",
                 "b_video_query", "b_video_statistics", "movie_query", "read_record_query", "anniversary_query",
                 "dashboard_cards", "douban_wishlist_add")) {

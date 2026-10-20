@@ -172,6 +172,8 @@ class RecordMcpToolsTest {
                 detail.setId(1L);
                 detail.setContent("Detail1");
                 detail.setIsCompleted(0);
+                detail.setPriority(10);
+                detail.setIsStarred(1);
                 return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVOList(Collections.singletonList(detail)));
             }
 
@@ -255,6 +257,8 @@ class RecordMcpToolsTest {
         assertEquals("Task1", result.get(0).getContent());
         assertEquals(1, result.get(0).getDetails().size());
         assertEquals("Detail1", result.get(0).getDetails().get(0).getContent());
+        assertEquals(10, result.get(0).getDetails().get(0).getPriority());
+        assertEquals(1, result.get(0).getDetails().get(0).getIsStarred());
     }
 
     @Test

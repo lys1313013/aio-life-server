@@ -108,6 +108,8 @@ public class BankCardService {
         if (req.getBankId() != null) validateBank(req.getBankId(), existing);
         if ("debit".equals(req.getCardType()) && (req.getCreditLimit()!=null || req.getStatementDay()!=null || req.getRepaymentDay()!=null))
             throw new IllegalArgumentException("储蓄卡不能填写信用额度、账单日和还款日");
+        if ("credit".equals(req.getCardType()) && req.getBalance()!=null)
+            throw new IllegalArgumentException("信用卡不能填写储蓄卡余额");
         if (req.getOpenedDate()!=null && req.getExpiryMonth()!=null && req.getExpiryMonth().withDayOfMonth(req.getExpiryMonth().lengthOfMonth()).isBefore(req.getOpenedDate()))
             throw new IllegalArgumentException("有效期不能早于开卡日期");
         if (req.getCoverSourceUrl()!=null && !req.getCoverSourceUrl().isBlank()) {

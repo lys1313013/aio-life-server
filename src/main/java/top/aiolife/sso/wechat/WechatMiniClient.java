@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -48,11 +49,12 @@ public class WechatMiniClient {
         this.client = builder.baseUrl("https://api.weixin.qq.com").build();
     }
 
-    private static RestClient.Builder builder() {
+    static RestClient.Builder builder() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(3000);
         factory.setReadTimeout(5000);
-        return RestClient.builder().requestFactory(factory);
+        // 微信网关拒绝 chunked 请求；先缓冲小型 JSON 请求以发送准确的 Content-Length。
+        return RestClient.builder().requestFactory(new BufferingClientHttpRequestFactory(factory));
     }
 
     private WechatMiniProperties settings() {

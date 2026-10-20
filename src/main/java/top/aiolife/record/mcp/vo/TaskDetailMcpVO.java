@@ -20,4 +20,10 @@ public class TaskDetailMcpVO {
      * 是否完成: 0-未完成, 1-已完成
      */
     private Integer isCompleted;
+
+    /** 优先级：1-高、10-中、20-低。 */
+    private Integer priority;
+
+    /** 是否星标/置顶：0-未置顶、1-已置顶。 */
+    private Integer isStarred;
 }

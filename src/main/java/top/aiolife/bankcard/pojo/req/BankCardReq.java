@@ -23,6 +23,8 @@ public class BankCardReq {
     private LocalDate expiryMonth;
     @DecimalMin(value = "0", message = "信用额度不能为负数")
     @Digits(integer = 16, fraction = 2, message = "信用额度最多保留两位小数") private BigDecimal creditLimit;
+    @DecimalMin(value = "0", message = "余额不能为负数")
+    @Digits(integer = 16, fraction = 2, message = "余额最多16位整数和两位小数") private BigDecimal balance;
     @Min(1) @Max(31) private Integer statementDay;
     @Min(1) @Max(31) private Integer repaymentDay;
     private Long coverTemplateId;

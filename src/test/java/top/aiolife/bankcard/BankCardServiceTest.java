@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import jakarta.validation.Validation;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
@@ -66,6 +67,8 @@ class BankCardServiceTest {
         String templateDdl=Files.readString(Path.of("sql/1_init_table/2026-10-02_bank_card_cover_template.sql")).split("-- 兼容")[0]
                 .replace("USE `aio_life`;", "").replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", "");
         for(String statement:templateDdl.split(";")) if(!statement.isBlank()) jdbc.execute(statement);
+        jdbc.execute(Files.readString(Path.of("sql/1_init_table/2026-10-20_bank_card_balance.sql"))
+                .replaceAll("(?m)^--.*$", "").replace("USE `aio_life`;", ""));
         crypto = new BankCardCrypto(Base64.getEncoder().encodeToString(new byte[32]));
         var config = new MybatisConfiguration();
         config.addMappers("top.aiolife.bankcard.mapper");
@@ -93,6 +96,58 @@ class BankCardServiceTest {
     }
     BankCardVO create(long userId,BankCardReq req) { return tx.execute(s->service.save(userId,null,req)); }
     void file(String id,long userId) { jdbc.update("INSERT INTO file(id,biz_type,create_user) VALUES(?,?,?)",id,"bank_card_cover",userId); }
+    @Test void testBalance_保存修改清空及字符串金额契约() throws Exception {
+        var req = request();
+        assertNull(create(2, req).getBalance());
+        req.setBalance(new BigDecimal("9999999999999999.99"));
+        var created = create(1, req);
+        long id = Long.parseLong(created.getId());
+        assertEquals(req.getBalance(), created.getBalance());
+        assertTrue(new ObjectMapper().writeValueAsString(created).contains("\"balance\":\"9999999999999999.99\""));
+        assertThrows(IllegalArgumentException.class, () -> service.detail(2, id));
+        req.setBalance(BigDecimal.ZERO);
+        var zero = tx.execute(status -> service.save(1, id, req));
+        assertEquals(0, zero.getBalance().signum());
+        assertNull(zero.getCreditLimit());
+        req.setBalance(null);
+        assertNull(tx.execute(status -> service.save(1, id, req)).getBalance());
+        assertNull(jdbc.queryForObject("SELECT balance FROM bank_card WHERE id=?", BigDecimal.class, id));
+    }
+    @Test void testBalance_类型切换不混用余额和额度() {
+        var req = request();
+        req.setBalance(new BigDecimal("123.45"));
+        long id = Long.parseLong(create(1, req).getId());
+        req.setCardType("credit");
+        assertThrows(IllegalArgumentException.class, () -> tx.execute(status -> service.save(1, id, req)));
+        req.setBalance(null);
+        req.setCreditLimit(new BigDecimal("50000.00"));
+        var credit = tx.execute(status -> service.save(1, id, req));
+        assertNull(credit.getBalance());
+        assertEquals(req.getCreditLimit(), credit.getCreditLimit());
+        req.setCardType("debit");
+        assertThrows(IllegalArgumentException.class, () -> tx.execute(status -> service.save(1, id, req)));
+        req.setCreditLimit(null);
+        req.setBalance(BigDecimal.ZERO);
+        var debit = tx.execute(status -> service.save(1, id, req));
+        assertNull(debit.getCreditLimit());
+        assertEquals(0, debit.getBalance().signum());
+    }
+    @Test void testBalance_校验负数小数位及整数范围() {
+        try (var factory = Validation.buildDefaultValidatorFactory()) {
+            var validator = factory.getValidator();
+            var req = request();
+            for (String value : List.of("-0.01", "1.001", "10000000000000000.00")) {
+                req.setBalance(new BigDecimal(value));
+                assertFalse(validator.validateProperty(req, "balance").isEmpty());
+            }
+            for (String value : List.of("0", "0.01", "9999999999999999.99")) {
+                req.setBalance(new BigDecimal(value));
+                assertTrue(validator.validateProperty(req, "balance").isEmpty());
+            }
+            req.setBalance(null);
+            assertTrue(validator.validateProperty(req, "balance").isEmpty());
+        }
+    }
     @Test void cardNumberIsEncryptedScopedAndNeverReturnedByList() throws Exception {
         var card=create(1,request());long id=Long.parseLong(card.getId());
         String encrypted=jdbc.queryForObject("SELECT card_no_ciphertext FROM bank_card WHERE id=?",String.class,id);

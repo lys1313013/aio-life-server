@@ -131,7 +131,7 @@ def verify(args, mysql):
         mysql.run(baseline, old)
         mysql.run((ROOT / 'sql/upgrade-tests/baseline-data.sql').read_text(), old)
         before = mysql.run("SELECT id,username,password,nickname FROM user WHERE id=-900001;"
-                           "SELECT id,card_no_ciphertext,HEX(card_no_fingerprint),card_no_last4 FROM bank_card WHERE id=-900001", old)
+                           "SELECT id,card_no_ciphertext,HEX(card_no_fingerprint),card_no_last4,credit_limit FROM bank_card WHERE id=-900001", old)
         mysql.run("UPDATE user SET avatar='http://localhost:45678/old-avatar.png' WHERE id=-900001", old)
         mysql.run("INSERT INTO sys_menu(id,parent_id,name,path,status,is_deleted) VALUES"
                   "(-900011,0,'MigrationEnabled','/migration-enabled',1,0),"
@@ -141,8 +141,10 @@ def verify(args, mysql):
             mysql.run(source, old)
             print(f'Applied {path}')
         after = mysql.run("SELECT id,username,password,nickname FROM user WHERE id=-900001;"
-                          "SELECT id,card_no_ciphertext,HEX(card_no_fingerprint),card_no_last4 FROM bank_card WHERE id=-900001", old)
+                          "SELECT id,card_no_ciphertext,HEX(card_no_fingerprint),card_no_last4,credit_limit FROM bank_card WHERE id=-900001", old)
         assert_true(before == after, 'Upgrade changed existing account or card data')
+        assert_true(mysql.run("SELECT COUNT(*) FROM bank_card WHERE balance IS NOT NULL", old) == '0',
+                    'Balance migration must leave historical card balances unrecorded')
         assert_true(performance_before == mysql.run(
             "SELECT id,create_user,create_time,update_user,update_time,is_deleted FROM performance ORDER BY id", old),
             'Performance migration changed audit fields or deletion state')

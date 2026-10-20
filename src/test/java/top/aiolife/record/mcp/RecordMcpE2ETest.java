@@ -26,6 +26,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
@@ -44,6 +46,7 @@ import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.req.TimeRecordSaveReq;
+import top.aiolife.record.pojo.req.TaskDetailUpdateReq;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
 import top.aiolife.record.service.IAnniversaryRecordService;
 import top.aiolife.record.service.IGoalService;
@@ -65,6 +68,9 @@ public class RecordMcpE2ETest {
 
     @LocalServerPort
     private int port;
+
+    @Autowired
+    private TaskDetailController taskDetailController;
 
     private McpSyncClient mcpClient;
     private StpLogic originalStpLogic;
@@ -187,7 +193,7 @@ public class RecordMcpE2ETest {
         @Bean @Primary public ThoughtController thoughtController() { return new ThoughtController(null, null, null); }
         @Bean @Primary public TimeTrackerCategoryController timeTrackerCategoryController() { return new TimeTrackerCategoryController(null); }
         @Bean @Primary public TaskController taskController() { return new TaskController(null, null, null); }
-        @Bean @Primary public TaskDetailController taskDetailController() { return new TaskDetailController(null, null); }
+        @Bean @Primary public TaskDetailController taskDetailController() { return Mockito.mock(TaskDetailController.class); }
         @Bean @Primary public MovieController movieController() { return new MovieController(null, null); }
         @Bean @Primary public ReadRecordController readRecordController() { return new ReadRecordController(null); }
         @Bean @Primary public ITaskService taskService() {
@@ -226,6 +232,7 @@ public class RecordMcpE2ETest {
 
     @BeforeEach
     void setUp() {
+        Mockito.reset(taskDetailController);
         originalStpLogic = StpUtil.getStpLogic();
         StpLogic mockLogic = new StpLogic("login") {
             @Override
@@ -269,6 +276,40 @@ public class RecordMcpE2ETest {
         McpSchema.ListToolsResult toolsResult = mcpClient.listTools();
         assertNotNull(toolsResult);
         assertTrue(toolsResult.tools().size() > 0, "MCP Server 应该注册了工具");
+        McpSchema.Tool updateTool = toolsResult.tools().stream()
+                .filter(tool -> tool.name().equals("task_detail_update"))
+                .findFirst().orElseThrow();
+        Map<?, ?> idSchema = (Map<?, ?>) updateTool.inputSchema().properties().get("id");
+        assertEquals("string", idSchema.get("type"), "明细ID必须使用字符串传输");
+    }
+
+    @Test
+    void testTaskDetailUpdate_协议调用保留大整数和零值() {
+        Mockito.when(taskDetailController.update(Mockito.any())).thenReturn(ApiResponse.success(true));
+        mcpClient.initialize();
+        McpSchema.CallToolResult result = mcpClient.callTool(new McpSchema.CallToolRequest(
+                "task_detail_update",
+                Map.of("id", "2112457917496135682", "isStarred", 0, "isCompleted", 0, "priority", 20)));
+
+        assertFalse(result.isError());
+        assertEquals("true", ((McpSchema.TextContent) result.content().get(0)).text());
+        ArgumentCaptor<TaskDetailUpdateReq> captured = ArgumentCaptor.forClass(TaskDetailUpdateReq.class);
+        Mockito.verify(taskDetailController).update(captured.capture());
+        assertEquals(2112457917496135682L, captured.getValue().getId());
+        assertEquals(0, captured.getValue().getIsStarred());
+        assertEquals(0, captured.getValue().getIsCompleted());
+        assertEquals(20, captured.getValue().getPriority());
+    }
+
+    @Test
+    void testTaskDetailUpdate_更新失败返回协议错误() {
+        Mockito.when(taskDetailController.update(Mockito.any())).thenReturn(ApiResponse.success(false));
+        mcpClient.initialize();
+        McpSchema.CallToolResult result = mcpClient.callTool(new McpSchema.CallToolRequest(
+                "task_detail_update", Map.of("id", "2112457917496135682", "isStarred", 1)));
+
+        assertTrue(result.isError());
+        assertTrue(((McpSchema.TextContent) result.content().get(0)).text().contains("无权限"));
     }
 
     @Test

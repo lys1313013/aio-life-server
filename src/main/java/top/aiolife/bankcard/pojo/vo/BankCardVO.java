@@ -28,6 +28,8 @@ public class BankCardVO {
     private LocalDate expiryMonth;
     @JsonSerialize(using = ToStringSerializer.class)
     private BigDecimal creditLimit;
+    @JsonSerialize(using = ToStringSerializer.class)
+    private BigDecimal balance;
     private Integer statementDay;
     private Integer repaymentDay;
     private String coverTemplateId;

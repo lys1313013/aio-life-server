@@ -41,6 +41,8 @@ public class BankCardEntity extends BaseEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal creditLimit;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private BigDecimal balance;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Integer statementDay;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Integer repaymentDay;

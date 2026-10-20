@@ -724,6 +724,7 @@ CREATE TABLE IF NOT EXISTS `bank_card` (
   `status` VARCHAR(20) NOT NULL DEFAULT 'normal' COMMENT 'normal frozen lost closed',
   `opened_date` DATE DEFAULT NULL COMMENT '开卡日期',
   `expiry_month` DATE DEFAULT NULL COMMENT '有效期月份，存当月第一天',
+  `balance` DECIMAL(18,2) DEFAULT NULL COMMENT '储蓄卡余额，人民币元；NULL未记录',
   `credit_limit` DECIMAL(18,2) DEFAULT NULL COMMENT '信用额度，人民币元；NULL未记录',
   `statement_day` TINYINT UNSIGNED DEFAULT NULL COMMENT '每月账单日1至31',
   `repayment_day` TINYINT UNSIGNED DEFAULT NULL COMMENT '每月固定还款日1至31',

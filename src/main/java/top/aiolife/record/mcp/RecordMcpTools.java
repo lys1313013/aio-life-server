@@ -7,6 +7,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import top.aiolife.core.constant.ResponseCodeConst;
+import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.mcp.annotation.McpToolProvider;
 import top.aiolife.record.api.TaskController;
 import top.aiolife.record.api.TaskDetailController;
@@ -15,6 +17,7 @@ import top.aiolife.record.api.TimeRecordController;
 import top.aiolife.record.api.TimeTrackerCategoryController;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mcp.req.TaskDetailSaveMcpReq;
+import top.aiolife.record.mcp.req.TaskDetailUpdateMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordSaveMcpReq;
 import top.aiolife.record.mcp.vo.TaskDetailMcpVO;
@@ -24,6 +27,7 @@ import top.aiolife.record.pojo.entity.TaskDetailEntity;
 import top.aiolife.record.pojo.entity.TaskEntity;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.req.TaskDetailCreateReq;
+import top.aiolife.record.pojo.req.TaskDetailUpdateReq;
 import top.aiolife.record.pojo.req.ThoughtSaveReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.vo.TaskDetailVO;
@@ -128,7 +132,8 @@ public class RecordMcpTools {
                 .map(t -> {
                     List<TaskDetailVO> detailEntities = taskDetailController.list(t.getId()).getData();
                     List<TaskDetailMcpVO> details = detailEntities == null ? List.of() : detailEntities.stream()
-                            .map(d -> new TaskDetailMcpVO(d.getId(), d.getContent(), d.getIsCompleted()))
+                            .map(d -> new TaskDetailMcpVO(d.getId(), d.getContent(), d.getIsCompleted(),
+                                    d.getPriority(), d.getIsStarred()))
                             .toList();
                     return new TaskMcpVO(t.getId(), t.getContent(), details);
                 })
@@ -157,6 +162,45 @@ public class RecordMcpTools {
         entity.setPriority(req.getPriority() != null ? req.getPriority() : 10);
         entity.setSort(0);
         taskDetailController.create(entity);
+        return true;
+    }
+
+    @Tool("修改已有任务明细的完成状态、星标置顶或优先级；id 必填（通过 task_list 获取），其他字段至少传一个。仅更新非 null 字段，0 也会写入；只能修改当前用户的明细，失败会报错，不会新增待办")
+    public boolean task_detail_update(TaskDetailUpdateMcpReq req) {
+        if (req == null || req.getId() == null || !req.getId().matches("[1-9][0-9]*")) {
+            throw new IllegalArgumentException("任务明细ID必须为正整数字符串");
+        }
+        Long id;
+        try {
+            id = Long.valueOf(req.getId());
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("任务明细ID超出有效范围");
+        }
+        if (req.getPriority() == null && req.getIsStarred() == null && req.getIsCompleted() == null) {
+            throw new IllegalArgumentException("priority、isStarred 与 isCompleted 至少传一个");
+        }
+        if (req.getPriority() != null && !List.of(1, 10, 20).contains(req.getPriority())) {
+            throw new IllegalArgumentException("priority 仅支持 1（高）、10（中）、20（低）");
+        }
+        if (req.getIsStarred() != null && req.getIsStarred() != 0 && req.getIsStarred() != 1) {
+            throw new IllegalArgumentException("isStarred 仅支持 0 或 1");
+        }
+        if (req.getIsCompleted() != null && req.getIsCompleted() != 0 && req.getIsCompleted() != 1) {
+            throw new IllegalArgumentException("isCompleted 仅支持 0 或 1");
+        }
+
+        TaskDetailUpdateReq update = new TaskDetailUpdateReq();
+        update.setId(id);
+        update.setPriority(req.getPriority());
+        update.setIsStarred(req.getIsStarred());
+        update.setIsCompleted(req.getIsCompleted());
+        ApiResponse<Boolean> response = taskDetailController.update(update);
+        if (response.getCode() != ResponseCodeConst.SUCCESS) {
+            throw new IllegalStateException(response.getMessage() != null ? response.getMessage() : "任务明细更新失败");
+        }
+        if (!Boolean.TRUE.equals(response.getData())) {
+            throw new IllegalArgumentException("任务明细不存在、已删除或无权限修改");
+        }
         return true;
     }
 }

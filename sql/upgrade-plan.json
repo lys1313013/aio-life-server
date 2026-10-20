@@ -86,6 +86,10 @@
     {
       "path": "sql/2_ini_data/2026-10-19_membership_lifestyle_providers.sql",
       "sha256": "888f5993460c6a8a3e74a0922c74fc8b7477c300f4a106883a7776aa4ce2ac43"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-20_bank_card_balance.sql",
+      "sha256": "400ce1e0dcd57f3e15a43d1bdd234a058e3cb6ee0b461b1f5b446c52443a3323"
     }
   ]
 }

@@ -23,6 +23,8 @@ public class TaskDetailUpdateReq {
 
     private Integer priority;
 
+    private Integer isStarred;
+
     /**
      * 开始时间
      */
