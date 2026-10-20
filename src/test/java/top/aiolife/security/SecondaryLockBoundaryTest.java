@@ -41,6 +41,8 @@ class SecondaryLockBoundaryTest {
 
     @Test
     void menuMapping_coversRestAliasesAndAllRegisteredTools() {
+        assertEquals(Set.of("/record/body-profile"), SecondaryLockPolicy.requestMenus("/body-profile"));
+        assertFalse(SecondaryLockPolicy.requestMenus("/body-profile-other").contains("/record/body-profile"));
         assertTrue(SecondaryLockPolicy.requestMenus("/tasks").contains("/task/todo"));
         assertTrue(SecondaryLockPolicy.requestMenus("/password/list").contains("/record/password"));
         assertTrue(SecondaryLockPolicy.requestMenus("/dashboard/card/READ").contains("/record/weread"));

@@ -91,6 +91,6 @@ public class BodyProfileService {
     }
 
     private ResponseStatusException conflict() {
-        return new ResponseStatusException(HttpStatus.CONFLICT, "身体档案已在其他位置更新，请重新读取后再保存");
+        return new ResponseStatusException(HttpStatus.CONFLICT, "身体数据已在其他位置更新，请重新读取后再保存");
     }
 }

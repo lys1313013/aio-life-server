@@ -82,6 +82,10 @@
     {
       "path": "sql/2_ini_data/2026-10-20_membership_provider_legacy.sql",
       "sha256": "3b40b65515954b67769306f0a4bcb17123c51dc20135e19d7e44874acd860467"
+    },
+    {
+      "path": "sql/2_ini_data/2026-10-20_body_profile_menu.sql",
+      "sha256": "6dc3a56f4a5d09e0b4b7838fed251761f2292a0886dcc65f99efd41e799482a7"
     }
   ]
 }
