@@ -215,7 +215,7 @@ class OpenApiIntegrationTest {
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertTrue(groupYaml.contains("/goals:"));
         assertFalse(groupYaml.contains("/auth/login:"));
-        for (String group : List.of("system", "wardrobe", "membership", "bankcard", "feedback", "relationship", "llm", "mcp")) {
+        for (String group : List.of("system", "wardrobe", "membership", "bankcard", "feedback", "relationship", "mcp")) {
             JsonNode groupDocument = document("/v3/api-docs/" + group);
             assertTrue(groupDocument.has("openapi"));
             assertFalse(groupDocument.path("paths").has("/goals"));
@@ -229,7 +229,7 @@ class OpenApiIntegrationTest {
         for (String path : List.of("/v3/api-docs", "/v3/api-docs.yaml")) {
             mvc.perform(get("/api" + path).contextPath("/api")).andExpect(status().isOk());
             for (String group : List.of("record", "sso", "system", "wardrobe", "membership", "bankcard",
-                    "feedback", "relationship", "llm", "mcp")) {
+                    "feedback", "relationship", "mcp")) {
                 mvc.perform(get("/api" + path + "/" + group).contextPath("/api"))
                         .andExpect(status().isOk());
             }
@@ -261,7 +261,7 @@ class OpenApiIntegrationTest {
         login.when(StpUtil::getLoginIdAsLong).thenThrow(new NotLoginException("未登录", "test", null));
         JsonNode catalog = discovery("/docs/catalog");
         assertTrue(catalog.path("operationCount").asInt() > 200);
-        assertEquals(10, catalog.path("modules").size());
+        assertEquals(9, catalog.path("modules").size());
         for (JsonNode module : catalog.path("modules")) {
             JsonNode page = discovery("/docs/operations?module=" + module.path("id").asText());
             assertEquals(module.path("operationCount").asInt(), page.path("total").asInt());

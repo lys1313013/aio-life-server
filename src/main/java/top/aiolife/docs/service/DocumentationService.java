@@ -41,7 +41,6 @@ public class DocumentationService {
             Map.entry("bankcard", List.of("银行卡", "银行卡管理")),
             Map.entry("feedback", List.of("反馈", "用户反馈、评论与处理")),
             Map.entry("relationship", List.of("人际关系", "人物与关系图谱")),
-            Map.entry("llm", List.of("AI", "大模型与 AI 功能")),
             Map.entry("mcp", List.of("MCP", "工具发现与调用")));
 
     private final ObjectProvider<OpenApiWebMvcResource> openApiResource;
