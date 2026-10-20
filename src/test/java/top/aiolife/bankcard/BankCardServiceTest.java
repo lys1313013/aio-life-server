@@ -15,6 +15,7 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionTemplate;
 import top.aiolife.bankcard.mapper.*;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
@@ -83,7 +84,8 @@ class BankCardServiceTest {
         var files = session.getMapper(BankCardFileMapper.class);
         fileMapper = files;
         guard = new BankCardDictionaryGuard(dictionaries, cards, covers);
-        var minio = new MinioUtil(null, "https://example.test/api");
+        var minio = new MinioUtil();
+        ReflectionTestUtils.setField(minio, "serveBaseUrl", "https://example.test/api");
         templateService = new BankCardCoverTemplateService(covers, guard, dictionaries, cards, files, minio);
         service = new BankCardService(cards, crypto, guard, dictionaries,
                 session.getMapper(BankCardTagMapper.class), session.getMapper(BankCardTagRelMapper.class),

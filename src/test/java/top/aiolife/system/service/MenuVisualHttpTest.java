@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import top.aiolife.sso.mapper.UserMapper;
+import top.aiolife.sso.service.IUserService;
 import top.aiolife.system.api.MenuController;
 import top.aiolife.system.pojo.vo.MenuRouteVO;
 
@@ -26,7 +27,7 @@ class MenuVisualHttpTest {
         reading.setIconColor("#427B8F");
         when(menus.getAccessibleMenuTree(List.of("user"), MenuClient.MOBILE)).thenReturn(List.of(reading));
         var service = new MenuVisualService(menus, users);
-        var mvc = MockMvcBuilders.standaloneSetup(new MenuController(menus, users, service)).build();
+        var mvc = MockMvcBuilders.standaloneSetup(new MenuController(menus, mock(IUserService.class), service)).build();
         try (MockedStatic<StpUtil> login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
             mvc.perform(get("/menu/visuals").param("client", "mobile").param("userId", "8"))

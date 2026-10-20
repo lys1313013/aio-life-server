@@ -7,14 +7,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import top.aiolife.core.ApiRequestFixtures;
-import top.aiolife.core.util.RedisUtil;
-import top.aiolife.record.client.DoubanAccountClient;
 import top.aiolife.record.api.UserBindController;
+import top.aiolife.record.client.DoubanAccountClient;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.req.UserBindCreateReq;
 import top.aiolife.record.pojo.req.UserBindUpdateReq;
 import top.aiolife.record.service.IUserBindService;
 import top.aiolife.record.service.IWereadService;
+import top.aiolife.record.util.RedisUtil;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.test.util.ReflectionTestUtils;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.record.mapper.IFileMapper;
 import top.aiolife.record.pojo.entity.FileEntity;
@@ -16,7 +17,7 @@ import static org.mockito.Mockito.*;
 class UserAvatarFileServiceTest {
     static final String ID = "0123456789abcdef0123456789abcdef";
     private final IFileMapper files = mock(IFileMapper.class);
-    private final MinioUtil minio = new MinioUtil(null, "https://example.test/api/");
+    private final MinioUtil minio = new MinioUtil();
     private final UserAvatarFileService avatars = new UserAvatarFileService(files, minio);
 
     private FileEntity image() {
@@ -29,11 +30,10 @@ class UserAvatarFileServiceTest {
         when(files.selectForAvatarBinding(ID)).thenReturn(image());
         when(files.selectById(ID)).thenReturn(image());
         avatars.validateForBinding(42L, ID);
+        ReflectionTestUtils.setField(minio, "serveBaseUrl", "https://example.test/api/");
         assertEquals("https://example.test/api/public/images/" + ID + ".png", avatars.publicUrl(42L, ID));
-        var reconfiguredAvatars = new UserAvatarFileService(files,
-                new MinioUtil(null, "https://new.example.test/api"));
-        assertEquals("https://new.example.test/api/public/images/" + ID + ".png",
-                reconfiguredAvatars.publicUrl(42L, ID));
+        ReflectionTestUtils.setField(minio, "serveBaseUrl", "https://new.example.test/api");
+        assertEquals("https://new.example.test/api/public/images/" + ID + ".png", avatars.publicUrl(42L, ID));
     }
 
     @ParameterizedTest
