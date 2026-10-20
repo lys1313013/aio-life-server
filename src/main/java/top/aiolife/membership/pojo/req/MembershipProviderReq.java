@@ -1,5 +1,6 @@
 package top.aiolife.membership.pojo.req;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -10,12 +11,11 @@ import lombok.Data;
 
 /** 平台管理完整保存请求。 */
 @Data
+@JsonIgnoreProperties("code") // 兼容旧客户端，编码只由服务端维护。
 public class MembershipProviderReq {
     @NotBlank @Size(max = 100)
     private String name;
-    @NotBlank @Pattern(regexp = "[a-z][a-z0-9_]{0,49}")
-    private String code;
-    @NotBlank @Pattern(regexp = "video|music|shopping|lifestyle|cloud|study|game|AI|other")
+    @NotBlank @Pattern(regexp = "video|music|shopping|lifestyle|cloud|reading|study|game|AI|other")
     private String category;
     @Size(max = 64)
     private String iconKey;

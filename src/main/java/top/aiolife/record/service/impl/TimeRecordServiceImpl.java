@@ -34,8 +34,11 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -226,36 +229,88 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         if (!this.updateById(entity)) throw new IllegalStateException("更新时间记录失败");
         updateRelateStatusIfNecessary(entity, userId);
 
-        checkExistingExercises(userId, List.of(entity.getId()));
-        // 删除旧的运动记录
-        exerciseRecordService.remove(new LambdaQueryWrapper<ExerciseRecordEntity>()
-                .eq(ExerciseRecordEntity::getTimeId, entity.getId())
-                .eq(ExerciseRecordEntity::getUserId, userId));
+        syncExercises(userId, entity.getId(),
+                entity.getDate() == null ? existing.getDate() : entity.getDate(), exerciseRecordReqs);
+        invalidateDayCache(userId, existing.getDate(), entity.getDate());
+    }
 
-        // 添加新的运动记录
-        if (exerciseRecordReqs != null && !exerciseRecordReqs.isEmpty()) {
+    /** 按完整明细列表同步：已有 ID 原位更新，无 ID 新增，未提交的旧明细逻辑删除。 */
+    private void syncExercises(long userId, String timeId, LocalDate date, List<ExerciseRecordReq> requests) {
+        Map<Long, ExerciseRecordEntity> remaining = exerciseRecordService.list(
+                        new LambdaQueryWrapper<ExerciseRecordEntity>()
+                                .eq(ExerciseRecordEntity::getTimeId, timeId)
+                                .eq(ExerciseRecordEntity::getUserId, userId))
+                .stream().collect(Collectors.toMap(ExerciseRecordEntity::getId, exercise -> exercise));
+        List<ExerciseRecordReq> exercises = requests == null ? List.of() : requests;
+        if (!remaining.isEmpty() || !exercises.isEmpty()) {
             secondaryLockGuard.checkMenus(userId, "/record/exercise");
-            List<ExerciseRecordEntity> validExercises = new ArrayList<>();
-            for (ExerciseRecordReq exerciseReq : exerciseRecordReqs) {
-                if (exerciseReq.getExerciseTypeId() == null) {
-                    continue;
-                }
-                ExerciseRecordEntity exercise = new ExerciseRecordEntity();
-                exercise.setUserId(userId);
-                exercise.setTimeId(entity.getId());
-                exercise.fillCreateCommonField(userId);
-                exercise.setId(null);
-                exercise.setExerciseDate(entity.getDate());
-                exercise.setExerciseTypeId(exerciseReq.getExerciseTypeId());
-                exercise.setExerciseCount(exerciseReq.getExerciseCount());
-                exercise.setDescription(exerciseReq.getDescription());
-                validExercises.add(exercise);
+        }
+
+        Set<Long> submittedIds = new HashSet<>();
+        for (ExerciseRecordReq request : exercises) {
+            if (request.getId() == null) continue;
+            Long id = parseExerciseId(request.getId());
+            if (!remaining.containsKey(id)) {
+                throw new IllegalArgumentException("运动记录不存在或不属于当前时迹");
             }
-            if (!validExercises.isEmpty()) {
-                exerciseRecordService.saveBatch(validExercises);
+            if (!submittedIds.add(id)) {
+                throw new IllegalArgumentException("运动记录ID不能重复");
             }
         }
-        invalidateDayCache(userId, existing.getDate(), entity.getDate());
+
+        List<ExerciseRecordEntity> additions = new ArrayList<>();
+        for (ExerciseRecordReq request : exercises) {
+            if (request.getExerciseTypeId() == null) continue;
+            if (request.getId() == null) {
+                ExerciseRecordEntity exercise = new ExerciseRecordEntity();
+                exercise.setUserId(userId);
+                exercise.setTimeId(timeId);
+                exercise.fillCreateCommonField(userId);
+                exercise.setExerciseDate(date);
+                exercise.setExerciseTypeId(request.getExerciseTypeId());
+                exercise.setExerciseCount(request.getExerciseCount());
+                exercise.setDescription(request.getDescription());
+                additions.add(exercise);
+                continue;
+            }
+
+            ExerciseRecordEntity existing = remaining.remove(parseExerciseId(request.getId()));
+            if (Objects.equals(existing.getExerciseDate(), date)
+                    && Objects.equals(existing.getExerciseTypeId(), request.getExerciseTypeId())
+                    && Objects.equals(existing.getExerciseCount(), request.getExerciseCount())
+                    && Objects.equals(existing.getDescription(), request.getDescription())) {
+                continue;
+            }
+            // 显式 set 保留次数、描述清空为 null 的语义，不覆盖创建审计信息。
+            boolean updated = exerciseRecordService.update(new LambdaUpdateWrapper<ExerciseRecordEntity>()
+                    .eq(ExerciseRecordEntity::getId, existing.getId())
+                    .eq(ExerciseRecordEntity::getTimeId, timeId)
+                    .eq(ExerciseRecordEntity::getUserId, userId)
+                    .set(ExerciseRecordEntity::getExerciseDate, date)
+                    .set(ExerciseRecordEntity::getExerciseTypeId, request.getExerciseTypeId())
+                    .set(ExerciseRecordEntity::getExerciseCount, request.getExerciseCount())
+                    .set(ExerciseRecordEntity::getDescription, request.getDescription())
+                    .set(ExerciseRecordEntity::getUpdateUser, userId)
+                    .set(ExerciseRecordEntity::getUpdateTime, LocalDateTime.now()));
+            if (!updated) throw new IllegalStateException("更新运动记录失败");
+        }
+        if (!remaining.isEmpty() && !exerciseRecordService.remove(new LambdaQueryWrapper<ExerciseRecordEntity>()
+                .eq(ExerciseRecordEntity::getTimeId, timeId)
+                .eq(ExerciseRecordEntity::getUserId, userId)
+                .in(ExerciseRecordEntity::getId, remaining.keySet()))) {
+            throw new IllegalStateException("删除运动记录失败");
+        }
+        if (!additions.isEmpty() && !exerciseRecordService.saveBatch(additions)) {
+            throw new IllegalStateException("新增运动记录失败");
+        }
+    }
+
+    private Long parseExerciseId(String id) {
+        try {
+            return Long.valueOf(id);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("运动记录ID格式不正确");
+        }
     }
 
     @Override

@@ -9,6 +9,8 @@ import lombok.Data;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TimeRecordExerciseReq {
+    /** 已有运动记录 ID；新增明细不传。 */
+    private String id;
     private Long exerciseTypeId;
     private Integer exerciseCount;
     private String description;

@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -52,18 +53,14 @@ public class MembershipProviderService {
 
     @Transactional
     public MembershipProviderVO save(long userId, Long id, MembershipProviderReq req) {
-        if (id != null) requireLocked(id);
+        MembershipProviderEntity previous = id == null ? null : requireLocked(id);
         String iconKey = icons.normalizeKey(req.getIconKey());
         String name = req.getName().trim();
         if (name.isEmpty()) throw new IllegalArgumentException("平台名称不能为空");
-        if (mapper.selectCount(new LambdaQueryWrapper<MembershipProviderEntity>()
-                .eq(MembershipProviderEntity::getCode, req.getCode())
-                .ne(id != null, MembershipProviderEntity::getId, id)) > 0) {
-            throw new IllegalArgumentException("平台编码已存在");
-        }
         MembershipProviderEntity entity = new MembershipProviderEntity();
         BeanUtil.copyProperties(req, entity);
         entity.setName(name);
+        entity.setCode(previous == null ? "custom_" + UUID.randomUUID().toString().replace("-", "") : previous.getCode());
         entity.setIconKey(iconKey);
         entity.setId(id);
         if (id == null) {

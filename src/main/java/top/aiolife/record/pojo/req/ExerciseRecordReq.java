@@ -18,7 +18,7 @@ public class ExerciseRecordReq {
     /**
      * 主键ID
      */
-    @Description("主键ID，更新时必传")
+    @Description("已有运动记录ID，新增明细不传")
     private String id;
 
     /**
