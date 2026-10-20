@@ -127,7 +127,7 @@ class MembershipProviderServiceTest {
         var created = tx.execute(status -> records.create(1, req(10L)));
         assertThrows(IllegalArgumentException.class, () -> tx.executeWithoutResult(status -> providers.delete(9, 10L)));
         MembershipProviderReq request = new MembershipProviderReq();
-        request.setName("平台A"); request.setCode("a"); request.setCategory("video");
+        request.setName("平台A"); request.setCategory("video");
         tx.execute(status -> providers.save(9, 10L, request));
         assertNull(platformMapper.selectById(10L).getIconKey());
         request.setIconKey("../../application.yml");
@@ -135,6 +135,32 @@ class MembershipProviderServiceTest {
         mapper.deleteById(created.getId());
         tx.executeWithoutResult(status -> providers.delete(9, 10L));
         assertNull(platformMapper.selectById(10L));
+    }
+
+    @Test void 新增自动生成唯一编码且保存后再次编辑保持编码() {
+        var request = new MembershipProviderReq();
+        request.setName(" 新平台 "); request.setCategory("other");
+        var first = tx.execute(status -> providers.save(9, null, request));
+        var second = tx.execute(status -> providers.save(9, null, request));
+        assertEquals("新平台", first.getName());
+        assertTrue(first.getCode().matches("custom_[a-f0-9]{32}"));
+        assertNotEquals(first.getCode(), second.getCode());
+        assertEquals(first.getCode(), platformMapper.selectById(first.getId()).getCode());
+        request.setName("改名"); request.setIsEnabled(0);
+        var edited = tx.execute(status -> providers.save(9, first.getId(), request));
+        assertEquals(first.getCode(), edited.getCode());
+        assertEquals(first.getCode(), platformMapper.selectById(first.getId()).getCode());
+    }
+
+    @Test void 旧客户端传入编码被忽略且编辑内置平台保持原编码() throws Exception {
+        var request = json.readValue("{\"name\":\"改名\",\"category\":\"music\",\"code\":\"b\",\"isEnabled\":0}", MembershipProviderReq.class);
+        var edited = tx.execute(status -> providers.save(9, 10L, request));
+        assertEquals("a", edited.getCode());
+        assertEquals("a", platformMapper.selectById(10L).getCode());
+        assertEquals("music", edited.getCategory());
+        assertEquals(0, edited.getIsEnabled());
+        var created = tx.execute(status -> providers.save(9, null, request));
+        assertTrue(created.getCode().matches("custom_[a-f0-9]{32}"));
     }
 
     @Test void 新增引用先持锁时删除等待提交并拒绝删除() throws Exception {

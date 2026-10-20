@@ -134,8 +134,18 @@ class MembershipProviderHttpTest {
         verifyNoInteractions(service);
         mvc.perform(post("/system/membership-providers").header("Authorization", "Bearer " + admin)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"阿里云百炼\",\"code\":\"aliyun_bailian\",\"category\":\"AI\"}"))
+                        .content("{\"name\":\"阿里云百炼\",\"category\":\"AI\"}"))
                 .andExpect(jsonPath("$.code").value(0));
         verify(service).save(eq(1L), isNull(), argThat(req -> "AI".equals(req.getCategory())));
+        mvc.perform(put("/system/membership-providers/10").header("Authorization", "Bearer " + admin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"改名\",\"category\":\"video\"}"))
+                .andExpect(jsonPath("$.code").value(0));
+        verify(service).save(eq(1L), eq(10L), argThat(req -> "改名".equals(req.getName())));
+        mvc.perform(put("/system/membership-providers/10").header("Authorization", "Bearer " + admin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"旧客户端\",\"code\":\"../ignored\",\"category\":\"video\"}"))
+                .andExpect(jsonPath("$.code").value(0));
+        verify(service).save(eq(1L), eq(10L), argThat(req -> "旧客户端".equals(req.getName())));
     }
 }
