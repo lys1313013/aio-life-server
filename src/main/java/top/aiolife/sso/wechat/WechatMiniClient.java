@@ -14,6 +14,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.record.util.RedisUtil;
+import top.aiolife.system.service.WechatSystemConfigService;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -28,6 +29,8 @@ import java.util.concurrent.TimeUnit;
 public class WechatMiniClient {
     private static final ObjectMapper JSON = new ObjectMapper();
     private final WechatMiniProperties properties;
+    @Autowired(required = false)
+    private WechatSystemConfigService configuration;
     private final RedisUtil redis;
     private final DistributedLockExecutor locks;
     private final RestClient client;
@@ -52,17 +55,25 @@ public class WechatMiniClient {
         return RestClient.builder().requestFactory(factory);
     }
 
+    private WechatMiniProperties settings() {
+        return configuration == null ? properties : configuration.snapshot().mini();
+    }
+
     public boolean enabled() {
+        WechatMiniProperties properties = settings();
         return properties.isEnabled() && StringUtils.hasText(properties.getAppId())
                 && StringUtils.hasText(properties.getAppSecret());
     }
 
-    public void requireEnabled() {
-        if (!enabled()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "微信登录暂未开通，请使用账号密码登录");
+    public void requireEnabled() { requireEnabled(settings()); }
+
+    private void requireEnabled(WechatMiniProperties properties) {
+        if (!(properties.isEnabled() && StringUtils.hasText(properties.getAppId()) && StringUtils.hasText(properties.getAppSecret()))) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "微信登录暂未开通，请使用账号密码登录");
     }
 
     public Identity exchangeLogin(String code) {
-        requireEnabled();
+        WechatMiniProperties properties = settings();
+        requireEnabled(properties);
         JsonNode body;
         try {
             body = readJson(client.get().uri(uri -> uri.path("/sns/jscode2session")
@@ -82,8 +93,9 @@ public class WechatMiniClient {
     }
 
     public Phone exchangePhone(String code) {
-        requireEnabled();
-        String token = accessToken();
+        WechatMiniProperties properties = settings();
+        requireEnabled(properties);
+        String token = accessToken(properties);
         JsonNode body;
         try {
             body = readJson(client.post().uri(uri -> uri.path("/wxa/business/getuserphonenumber")
@@ -95,7 +107,7 @@ public class WechatMiniClient {
             throw unavailable();
         }
         if (body != null && (body.path("errcode").asInt() == 40001 || body.path("errcode").asInt() == 42001)) {
-            redis.unlock(tokenKey(), token); // 只移除本次使用的旧缓存，不能删掉并发刷新的 Token。
+            redis.unlock(tokenKey(properties), token); // 只移除本次使用的旧缓存，不能删掉并发刷新的 Token。
         }
         check(body, "getuserphonenumber");
         JsonNode info = body.path("phone_info");
@@ -113,12 +125,13 @@ public class WechatMiniClient {
 
     /** 微信返回图片或 JSON 错误；只接收 PNG/JPEG，绝不将上游错误正文返回前端。 */
     public String webLoginQrCode(String scene) {
-        requireEnabled();
+        WechatMiniProperties properties = settings();
+        requireEnabled(properties);
         if (!scene.matches("[a-f0-9]{32}")
                 || !Set.of("release", "trial", "develop").contains(properties.getWebScanEnvVersion())) {
             throw unavailable();
         }
-        String token = accessToken();
+        String token = accessToken(properties);
         byte[] bytes;
         try {
             bytes = client.post().uri(uri -> uri.path("/wxa/getwxacodeunlimit")
@@ -139,7 +152,7 @@ public class WechatMiniClient {
             try {
                 JsonNode error = JSON.readTree(bytes);
                 if (error != null && (error.path("errcode").asInt() == 40001 || error.path("errcode").asInt() == 42001)) {
-                    redis.unlock(tokenKey(), token);
+                    redis.unlock(tokenKey(properties), token);
                 }
                 check(error, "getwxacodeunlimit");
             } catch (IOException e) {
@@ -150,15 +163,16 @@ public class WechatMiniClient {
         return "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(bytes);
     }
 
-    private String tokenKey() { return "auth:wechat:token:" + properties.getAppId(); }
+    private String tokenKey(WechatMiniProperties properties) { return "auth:wechat:token:" + properties.getAppId(); }
 
     /** 发送可能消耗一次订阅机会。网络异常、非 JSON 或缺少明确错误码均视为结果未知，不自动重放。 */
     public SubscriptionResult sendSubscription(String openid, String templateId, String environment,
                                                Map<String, Map<String, String>> data) {
-        requireEnabled();
+        WechatMiniProperties properties = settings();
+        requireEnabled(properties);
         String token;
         try {
-            token = accessToken();
+            token = accessToken(properties);
         } catch (ResponseStatusException e) {
             // 尚未触达发送接口，不会消耗订阅机会。
             return new SubscriptionResult("TOKEN_UNAVAILABLE", false, true);
@@ -173,7 +187,7 @@ public class WechatMiniClient {
                 return new SubscriptionResult("UNKNOWN", false, false);
             }
             int code = body.path("errcode").asInt();
-            if (code == 40001 || code == 40014 || code == 42001) redis.unlock(tokenKey(), token);
+            if (code == 40001 || code == 40014 || code == 42001) redis.unlock(tokenKey(properties), token);
             // 仅对明确未受理的 Token 失效、系统繁忙和限流退避重试。
             boolean retryable = Set.of(-1, 40001, 40014, 42001, 45009).contains(code);
             return new SubscriptionResult(Integer.toString(code), code == 0, retryable);
@@ -185,12 +199,12 @@ public class WechatMiniClient {
 
     public record SubscriptionResult(String code, boolean success, boolean retryable) {}
 
-    private String accessToken() {
-        String cached = redis.get(tokenKey());
+    private String accessToken(WechatMiniProperties properties) {
+        String cached = redis.get(tokenKey(properties));
         if (StringUtils.hasText(cached)) return cached;
         String[] result = new String[1];
-        boolean acquired = locks.tryRun(tokenKey() + ":lock", () -> {
-            result[0] = redis.get(tokenKey());
+        boolean acquired = locks.tryRun(tokenKey(properties) + ":lock", () -> {
+            result[0] = redis.get(tokenKey(properties));
             if (StringUtils.hasText(result[0])) return;
             JsonNode body;
             try {
@@ -206,7 +220,7 @@ public class WechatMiniClient {
             String token = body.path("access_token").asText("");
             long seconds = body.path("expires_in").asLong(0);
             if (!StringUtils.hasText(token) || seconds <= 60) throw unavailable();
-            redis.set(tokenKey(), token, seconds - 60, TimeUnit.SECONDS);
+            redis.set(tokenKey(properties), token, seconds - 60, TimeUnit.SECONDS);
             result[0] = token;
         });
         if (!acquired) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "微信服务正在准备，请稍后重新尝试");

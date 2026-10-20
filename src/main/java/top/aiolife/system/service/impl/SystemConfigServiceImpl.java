@@ -11,6 +11,7 @@ import top.aiolife.system.pojo.entity.SystemConfigEntity;
 import top.aiolife.system.pojo.req.SystemConfigUpdateReq;
 import top.aiolife.system.pojo.vo.SystemConfigVO;
 import top.aiolife.system.service.ISystemConfigService;
+import top.aiolife.system.service.WechatSystemConfigService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -31,6 +32,7 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final ISystemConfigMapper systemConfigMapper;
+    private final WechatSystemConfigService wechatConfig;
 
     @Override
     public List<SystemConfigVO> list(String keyPrefix) {
@@ -40,11 +42,18 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
         }
         wrapper.orderByAsc(SystemConfigEntity::getConfigKey);
         List<SystemConfigEntity> entities = systemConfigMapper.selectList(wrapper);
-        return entities.stream().map(this::toVO).collect(Collectors.toList());
+        List<SystemConfigVO> result = entities.stream()
+                .filter(e -> !WechatSystemConfigService.KEY.equals(e.getConfigKey()))
+                .map(this::toVO).collect(Collectors.toList());
+        if (!StringUtils.hasText(keyPrefix) || WechatSystemConfigService.KEY.startsWith(keyPrefix)) {
+            result.add(wechatConfig.getAdminConfig());
+        }
+        return result;
     }
 
     @Override
     public SystemConfigVO getByKey(String key) {
+        if (WechatSystemConfigService.KEY.equals(key)) return wechatConfig.getAdminConfig();
         SystemConfigEntity entity = loadByKey(key);
         return entity == null ? null : toVO(entity);
     }
@@ -57,6 +66,7 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
 
     @Override
     public SystemConfigVO update(String key, SystemConfigUpdateReq req, long operatorId) {
+        if (WechatSystemConfigService.KEY.equals(key)) return wechatConfig.save(req.getConfigValue(), operatorId);
         SystemConfigEntity entity = loadByKey(key);
         if (entity == null) {
             throw new IllegalArgumentException("配置项不存在：" + key);

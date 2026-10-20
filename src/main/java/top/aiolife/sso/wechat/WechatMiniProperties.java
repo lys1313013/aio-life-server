@@ -5,7 +5,7 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-/** 单个微信小程序配置，凭据仅由服务端环境变量注入。 */
+/** 微信环境变量默认值；保存系统配置后由 WechatSystemConfigService 提供运行时配置。 */
 @Getter
 @Setter
 @Component

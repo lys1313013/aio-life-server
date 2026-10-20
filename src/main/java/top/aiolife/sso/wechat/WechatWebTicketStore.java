@@ -2,11 +2,13 @@ package top.aiolife.sso.wechat;
 
 import cn.hutool.crypto.SecureUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
+import top.aiolife.system.service.WechatSystemConfigService;
 
 import java.security.SecureRandom;
 import java.util.HexFormat;
@@ -20,6 +22,12 @@ public class WechatWebTicketStore {
     private static final SecureRandom RANDOM = new SecureRandom();
     private final StringRedisTemplate redis;
     private final WechatMiniProperties properties;
+    @Autowired(required = false)
+    private WechatSystemConfigService configuration;
+
+    private WechatMiniProperties settings() {
+        return configuration == null ? properties : configuration.snapshot().mini();
+    }
     private static final DefaultRedisScript<Long> CREATE = new DefaultRedisScript<>("""
             if redis.call('exists', KEYS[1]) == 1 then return 0 end
             redis.call('hset', KEYS[1], 'secret', ARGV[1], 'state', 'WAITING')
@@ -87,7 +95,7 @@ public class WechatWebTicketStore {
 
     private String key(String scene) {
         if (scene == null || !scene.matches("[a-f0-9]{32}")) throw denied();
-        return "auth:wechat:web:" + properties.getAppId() + ":" + scene;
+        return "auth:wechat:web:" + settings().getAppId() + ":" + scene;
     }
 
     private ResponseStatusException denied() {

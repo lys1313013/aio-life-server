@@ -4,11 +4,13 @@ import cn.hutool.crypto.SecureUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
+import top.aiolife.system.service.WechatSystemConfigService;
 
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -25,6 +27,12 @@ public class WechatTicketStore {
     private final StringRedisTemplate redis;
     private final ObjectMapper mapper;
     private final WechatMiniProperties properties;
+    @Autowired(required = false)
+    private WechatSystemConfigService configuration;
+
+    private WechatMiniProperties settings() {
+        return configuration == null ? properties : configuration.snapshot().mini();
+    }
 
     public String issue(Ticket ticket) {
         byte[] bytes = new byte[32];
@@ -58,7 +66,7 @@ public class WechatTicketStore {
     }
 
     private String key(String value) {
-        return "auth:wechat:ticket:" + properties.getAppId() + ":" + SecureUtil.sha256(value);
+        return "auth:wechat:ticket:" + settings().getAppId() + ":" + SecureUtil.sha256(value);
     }
 
     private ResponseStatusException expired() {

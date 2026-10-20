@@ -156,6 +156,7 @@ aio:
       service-key: ${AIO_LIFE_QUERY_ACCESS_SERVICE_KEY:}
       allowed-apps: ${AIO_LIFE_QUERY_ACCESS_ALLOWED_APPS:aio-life-query}
     auth:
+      # 首次保存 system_config 的 wechat.mini 之前使用以下环境变量，保存后以数据库为准。
       wechat-mini:
         enabled: ${AIO_LIFE_WECHAT_MINI_ENABLED:false}
         app-id: ${AIO_LIFE_WECHAT_MINI_APP_ID:}
@@ -202,6 +203,7 @@ aio:
         object-prefix: ${AIO_LIFE_CBTI_OBJECT_PREFIX:images/cbti/characters/}
         characters-dir: ${AIO_LIFE_CBTI_CHARACTERS_DIR:src/main/resources/cbti/characters}
       notification:
+        # 与微信登录一起在管理员系统配置中维护；此处仅兼容首次保存前的部署。
         wechat-mini:
           enabled: ${AIO_LIFE_WECHAT_SUBSCRIBE_ENABLED:false}
           template-id: ${AIO_LIFE_WECHAT_SUBSCRIBE_TEMPLATE_ID:}
@@ -210,5 +212,5 @@ aio:
           content-field: ${AIO_LIFE_WECHAT_SUBSCRIBE_CONTENT_FIELD:thing2}
           time-field: ${AIO_LIFE_WECHAT_SUBSCRIBE_TIME_FIELD:time3}
           environment: ${AIO_LIFE_WECHAT_SUBSCRIBE_ENVIRONMENT:formal}
-        # 用于加密用户的飞书 App Secret 与通知重试载荷，长度不少于 16 位
+        # 加密微信 AppSecret、用户飞书凭据和通知载荷；长度不少于 16 位，保存数据后不可直接更换
         credential-encryption-key: ${AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY:aiolifeaiolifeaiolife}

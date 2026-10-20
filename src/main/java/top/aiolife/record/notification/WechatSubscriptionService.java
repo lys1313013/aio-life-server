@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
@@ -20,6 +21,7 @@ import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.wechat.WechatMiniClient;
 import top.aiolife.sso.wechat.WechatMiniProperties;
+import top.aiolife.system.service.WechatSystemConfigService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -45,6 +47,12 @@ public class WechatSubscriptionService {
     private final ObjectMapper json;
     private final DistributedLockExecutor locks;
     private final TransactionTemplate transaction;
+    @Autowired(required = false)
+    private WechatSystemConfigService configuration;
+
+    private WechatSystemConfigService.Snapshot settings() {
+        return configuration == null ? new WechatSystemConfigService.Snapshot(miniProperties, properties) : configuration.snapshot();
+    }
 
     public WechatSubscriptionService(WechatSubscriptionProperties properties, WechatMiniProperties miniProperties,
             WechatMiniClient client, UserMapper users, NotificationPreferenceMapper preferences,
@@ -65,6 +73,7 @@ public class WechatSubscriptionService {
     }
 
     public Config getConfig(long userId) {
+        WechatSubscriptionProperties properties = settings().subscription();
         boolean enabled = properties.configured() && client.enabled();
         return new Config(enabled, isBound(users.selectById(userId)), BIZ_TYPE,
                 enabled ? properties.getTemplateId() : null);
@@ -107,6 +116,9 @@ public class WechatSubscriptionService {
         NotificationDeliveryEntity[] result = new NotificationDeliveryEntity[1];
         locks.tryRun("notification:wechat-mini:enqueue:" + request.receiverUserId() + ":" + request.dedupKey(), () ->
                 transaction.executeWithoutResult(status -> {
+                    var settings = settings();
+                    WechatSubscriptionProperties properties = settings.subscription();
+                    WechatMiniProperties miniProperties = settings.mini();
                     UserEntity user = users.selectById(request.receiverUserId());
                     if (!properties.configured() || !client.enabled() || !isBound(user)
                             || (!test && !enabled(request.receiverUserId()))) return;
@@ -116,7 +128,7 @@ public class WechatSubscriptionService {
                             .eq(NotificationDeliveryEntity::getDedupKey, request.dedupKey()));
                     if (existing > 0) return;
                     Payload payload = new Payload(miniProperties.getAppId(), user.getWechatOpenid(),
-                            properties.getTemplateId(), properties.getEnvironment(), data(request), test);
+                            properties.getTemplateId(), properties.getEnvironment(), data(request, properties), test);
                     NotificationDeliveryEntity delivery = new NotificationDeliveryEntity();
                     delivery.setUserId(request.receiverUserId());
                     delivery.setBizType(BIZ_TYPE);
@@ -171,6 +183,9 @@ public class WechatSubscriptionService {
                 update(delivery, "FAILED", "PAYLOAD_ERROR", null);
                 return;
             }
+            var settings = settings();
+            WechatSubscriptionProperties properties = settings.subscription();
+            WechatMiniProperties miniProperties = settings.mini();
             UserEntity user = users.selectById(delivery.getUserId());
             if (!properties.configured() || !client.enabled() || !isBound(user)
                     || !miniProperties.getAppId().equals(payload.appId())
@@ -231,7 +246,7 @@ public class WechatSubscriptionService {
         return user != null && !Integer.valueOf(1).equals(user.getIsDeleted()) && StringUtils.hasText(user.getWechatOpenid());
     }
 
-    private Map<String, Map<String, String>> data(NotificationRequest request) {
+    private Map<String, Map<String, String>> data(NotificationRequest request, WechatSubscriptionProperties properties) {
         Map<String, Map<String, String>> data = new LinkedHashMap<>();
         if (StringUtils.hasText(properties.getTitleField())) data.put(properties.getTitleField(), Map.of("value", thing(request.title())));
         if (StringUtils.hasText(properties.getContentField())) data.put(properties.getContentField(), Map.of("value", thing(request.textContent())));

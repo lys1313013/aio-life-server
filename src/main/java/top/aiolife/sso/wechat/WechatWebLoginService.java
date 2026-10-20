@@ -1,6 +1,7 @@
 package top.aiolife.sso.wechat;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -8,18 +9,25 @@ import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
 import top.aiolife.sso.service.LoginSessionService;
+import top.aiolife.system.service.WechatSystemConfigService;
 
 @Service
 @RequiredArgsConstructor
 public class WechatWebLoginService {
     private final WechatMiniClient client;
     private final WechatMiniProperties properties;
+    @Autowired(required = false)
+    private WechatSystemConfigService configuration;
+
+    private WechatMiniProperties settings() {
+        return configuration == null ? properties : configuration.snapshot().mini();
+    }
     private final WechatTicketStore rate;
     private final WechatWebTicketStore tickets;
     private final UserMapper users;
     private final LoginSessionService sessions;
 
-    public boolean enabled() { return client.enabled() && properties.isWebScanEnabled(); }
+    public boolean enabled() { return client.enabled() && settings().isWebScanEnabled(); }
 
     private void requireEnabled() {
         if (!enabled()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "网页微信扫码登录暂未开放");
