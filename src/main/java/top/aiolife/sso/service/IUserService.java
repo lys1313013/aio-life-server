@@ -77,6 +77,15 @@ public interface IUserService {
      */
     UserBasicInfoVO getUserBasicInfo(long userId);
 
+    /** 获取用户角色字符串；用户不存在时返回 null。 */
+    String getRole(long userId);
+
+    /** 获取反馈通知配置可选的管理员用户。 */
+    List<UserEntity> listAdminUsers();
+
+    /** 获取系统中已使用的角色选项。 */
+    List<String> listRoleOptions();
+
     void updateUser(UserEntity userEntity);
 
     void updateUser(UserEntity userEntity, boolean avatarFileIdSpecified);

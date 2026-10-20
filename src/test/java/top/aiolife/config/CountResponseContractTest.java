@@ -13,7 +13,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import top.aiolife.bankcard.pojo.vo.BankCardCoverTemplateVO;
 import top.aiolife.membership.api.MembershipController;
 import top.aiolife.membership.pojo.entity.MembershipRecordEntity;
-import top.aiolife.membership.service.IMembershipService;
+import top.aiolife.membership.mapper.IMembershipMapper;
 import top.aiolife.membership.service.MembershipProviderService;
 import top.aiolife.membership.service.MembershipRecordWriteService;
 import top.aiolife.sso.api.MessageController;
@@ -45,13 +45,13 @@ class CountResponseContractTest {
 
     @Test
     void 会员统计计算不变且零和正数均输出数字() {
-        var service = mock(IMembershipService.class);
-        var controller = new MembershipController(mock(MembershipRecordWriteService.class),
-                mock(MembershipProviderService.class), service);
+        var membershipMapper = mock(IMembershipMapper.class);
+        var recordService = new MembershipRecordWriteService(membershipMapper, mock(MembershipProviderService.class));
+        var controller = new MembershipController(recordService, mock(MembershipProviderService.class));
         var active = membership(LocalDate.now().plusDays(40));
         var expiring = membership(LocalDate.now());
         var expired = membership(LocalDate.now().minusDays(1));
-        when(service.list(any(Wrapper.class))).thenReturn(List.of(active, expiring, expired));
+        when(membershipMapper.selectList(any(Wrapper.class))).thenReturn(List.of(active, expiring, expired));
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
             JsonNode json = mapper.valueToTree(controller.stats().getData());
@@ -59,7 +59,7 @@ class CountResponseContractTest {
                 assertNumber(json.path(name), 1);
             }
             assertEquals(0, new BigDecimal("20").compareTo(json.path("monthlyAmount").decimalValue()));
-            when(service.list(any(Wrapper.class))).thenReturn(List.of());
+            when(membershipMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
             json = mapper.valueToTree(controller.stats().getData());
             for (String name : List.of("activeCount", "expiringCount", "expiredCount", "expiringThisMonthCount")) {
                 assertNumber(json.path(name), 0);

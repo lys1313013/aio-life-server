@@ -8,8 +8,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.sso.mapper.UserMapper;
-import top.aiolife.sso.pojo.entity.UserEntity;
+import top.aiolife.sso.service.IUserService;
 import top.aiolife.system.pojo.vo.MenuRouteVO;
 import top.aiolife.system.service.IMenuService;
 import top.aiolife.system.service.MenuClient;
@@ -33,7 +32,7 @@ public class MenuController {
 
     private final IMenuService menuService;
 
-    private final UserMapper userMapper;
+    private final IUserService userService;
     private final MenuVisualService visuals;
 
     /**
@@ -46,8 +45,7 @@ public class MenuController {
     @GetMapping("/all")
     public ApiResponse<List<MenuRouteVO>> all(@RequestParam(defaultValue = "web") String client) {
         long userId = StpUtil.getLoginIdAsLong();
-        UserEntity user = userMapper.selectById(userId);
-        List<String> roles = parseRoles(user == null ? null : user.getRole());
+        List<String> roles = parseRoles(userService.getRole(userId));
         return ApiResponse.success(menuService.getAccessibleMenuTree(roles, MenuClient.parse(client)));
     }
 

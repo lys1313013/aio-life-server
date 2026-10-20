@@ -6,8 +6,9 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import org.springframework.test.util.ReflectionTestUtils;
 import top.aiolife.core.ApiRequestFixtures;
+import top.aiolife.core.util.RedisUtil;
+import top.aiolife.record.client.DoubanAccountClient;
 import top.aiolife.record.api.UserBindController;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.req.UserBindCreateReq;
@@ -26,11 +27,9 @@ class WereadUserBindTest {
 
     @BeforeEach
     void setup() {
-        controller = new UserBindController();
         binds = mock(IUserBindService.class);
         weread = mock(IWereadService.class);
-        ReflectionTestUtils.setField(controller, "userBindService", binds);
-        ReflectionTestUtils.setField(controller, "wereadService", weread);
+        controller = new UserBindController(binds, weread, mock(RedisUtil.class), mock(DoubanAccountClient.class));
     }
 
     private UserBindEntity binding() {

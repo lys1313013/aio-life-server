@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -158,6 +159,38 @@ public class UserServiceImpl implements IUserService {
         vo.setAvatarFileId(userEntity.getAvatarFileId());
         vo.setAvatarUrl(avatarFiles.publicUrl(userEntity.getId(), userEntity.getAvatarFileId()));
         return vo;
+    }
+
+    @Override
+    public String getRole(long userId) {
+        UserEntity user = userMapper.selectById(userId);
+        return user == null ? null : user.getRole();
+    }
+
+    @Override
+    public List<UserEntity> listAdminUsers() {
+        return userMapper.selectList(new LambdaQueryWrapper<UserEntity>()
+                .like(UserEntity::getRole, "admin")
+                .eq(UserEntity::getIsDeleted, 0)
+                .orderByAsc(UserEntity::getId));
+    }
+
+    @Override
+    public List<String> listRoleOptions() {
+        List<UserEntity> users = userMapper.selectList(new LambdaQueryWrapper<UserEntity>()
+                .select(UserEntity::getRole)
+                .eq(UserEntity::getIsDeleted, 0));
+        Set<String> roles = new TreeSet<>();
+        roles.add("admin");
+        roles.add("user");
+        for (UserEntity user : users) {
+            if (user == null || !StringUtils.hasText(user.getRole())) continue;
+            for (String role : user.getRole().split(",")) {
+                String normalized = role.trim();
+                if (!normalized.isEmpty()) roles.add(normalized);
+            }
+        }
+        return List.copyOf(roles);
     }
 
     @Override

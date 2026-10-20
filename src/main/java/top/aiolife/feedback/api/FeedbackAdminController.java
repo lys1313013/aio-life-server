@@ -1,10 +1,8 @@
 package top.aiolife.feedback.api;
 
-import java.util.ArrayList;
 import java.util.List;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.query.CommonQuery;
@@ -19,8 +17,7 @@ import top.aiolife.feedback.pojo.vo.FeedbackCommentVO;
 import top.aiolife.feedback.pojo.vo.FeedbackDetailVO;
 import top.aiolife.feedback.pojo.vo.FeedbackVO;
 import top.aiolife.feedback.service.IFeedbackService;
-import top.aiolife.sso.mapper.UserMapper;
-import top.aiolife.sso.pojo.entity.UserEntity;
+import top.aiolife.sso.service.IUserService;
 
 /**
  * 反馈管理控制器（管理员）
@@ -36,7 +33,7 @@ public class FeedbackAdminController {
 
     private final IFeedbackService feedbackService;
 
-    private final UserMapper userMapper;
+    private final IUserService userService;
 
     /**
      * 全部反馈列表（分页 + 筛选）
@@ -89,19 +86,13 @@ public class FeedbackAdminController {
      */
     @GetMapping("/admin-users")
     public ApiResponse<List<AdminUserVO>> adminUsers() {
-        LambdaQueryWrapper<UserEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.like(UserEntity::getRole, "admin")
-                .eq(UserEntity::getIsDeleted, 0)
-                .orderByAsc(UserEntity::getId);
-        List<UserEntity> users = userMapper.selectList(wrapper);
-        List<AdminUserVO> result = new ArrayList<>();
-        for (UserEntity u : users) {
+        List<AdminUserVO> result = userService.listAdminUsers().stream().map(u -> {
             AdminUserVO vo = new AdminUserVO();
             vo.setId(String.valueOf(u.getId()));
             vo.setUsername(u.getUsername());
             vo.setNickname(u.getNickname());
-            result.add(vo);
-        }
+            return vo;
+        }).toList();
         return ApiResponse.success(result);
     }
 }

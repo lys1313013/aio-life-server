@@ -2,7 +2,6 @@ package top.aiolife.membership;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
@@ -20,7 +19,6 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import top.aiolife.membership.api.MembershipController;
 import top.aiolife.membership.convertor.MembershipApiConvertor;
-import top.aiolife.membership.service.IMembershipService;
 import top.aiolife.membership.mapper.IMembershipMapper;
 import top.aiolife.membership.mapper.MembershipProviderMapper;
 import top.aiolife.membership.pojo.req.MembershipCreateReq;
@@ -74,10 +72,8 @@ class MembershipProviderServiceTest {
     }
 
     @Test void 全部旧记录未关联平台仍能正常查询列表() {
-        var oldRecord = tx.execute(status -> records.create(1, req(null)));
-        var legacyService = mock(IMembershipService.class);
-        when(legacyService.list(any(LambdaQueryWrapper.class))).thenReturn(List.of(oldRecord));
-        var controller = new MembershipController(records, providers, legacyService);
+        tx.execute(status -> records.create(1, req(null)));
+        var controller = new MembershipController(records, providers);
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
             var result = controller.list().getData();

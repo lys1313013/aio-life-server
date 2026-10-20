@@ -3,7 +3,7 @@ package top.aiolife.record.api;
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.client.DoubanAccountClient;
@@ -21,20 +21,17 @@ import top.aiolife.record.util.RedisUtil;
  * 用户第三方账号绑定接口
  */
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/userbinds")
 public class UserBindController {
 
-    @Autowired
-    private IUserBindService userBindService;
+    private final IUserBindService userBindService;
 
-    @Autowired
-    private IWereadService wereadService;
+    private final IWereadService wereadService;
 
-    @Autowired
-    private RedisUtil redisUtil;
+    private final RedisUtil redisUtil;
 
-    @Autowired
-    private DoubanAccountClient doubanAccountClient;
+    private final DoubanAccountClient doubanAccountClient;
 
     /**
      * github 绑定变更后失效 Redis 中缓存的「是否展示 GitHub 卡片」决策，使首页判断立即生效

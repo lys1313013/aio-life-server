@@ -175,7 +175,8 @@ class PermissionMutationTest {
             performance.setCreateUser(22L); performance.setFileIds(List.of("dummy-file"));
             var performanceMapper = mock(IPerformanceMapper.class);
             assertThrows(IllegalArgumentException.class, () ->
-                    new PerformanceController(performanceMapper, files).updatePerformance(ApiRequestFixtures.request(performance, PerformanceUpdateReq.class)));
+                    new PerformanceController(new PerformanceRecordService(performanceMapper, files))
+                            .updatePerformance(ApiRequestFixtures.request(performance, PerformanceUpdateReq.class)));
             var performanceUpdate = ArgumentCaptor.forClass(PerformanceEntity.class);
             verify(performanceMapper).update(performanceUpdate.capture(), any(Wrapper.class));
             assertNull(performanceUpdate.getValue().getCreateUser());
@@ -198,7 +199,8 @@ class PermissionMutationTest {
             var ownedFile = new FileEntity(); ownedFile.setId("31"); ownedFile.setCreateUser(11L);
             when(files.list(any(Wrapper.class))).thenReturn(List.of(ownedFile));
             var input = new PerformanceEntity(); input.setId(7L); input.setFileIds(List.of("31"));
-            new PerformanceController(mapper, files).updatePerformance(ApiRequestFixtures.request(input, PerformanceUpdateReq.class));
+            new PerformanceController(new PerformanceRecordService(mapper, files))
+                    .updatePerformance(ApiRequestFixtures.request(input, PerformanceUpdateReq.class));
             var query = ArgumentCaptor.forClass(Wrapper.class);
             verify(files).list(query.capture());
             assertTrue(query.getValue().getSqlSegment().contains("id IN"));
