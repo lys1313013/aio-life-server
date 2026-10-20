@@ -52,7 +52,7 @@ curl --fail-with-body --silent --show-error \
 | 指定模块，JSON | `/api/v3/api-docs/{group}` |
 | 指定模块，YAML | `/api/v3/api-docs.yaml/{group}` |
 
-`group` 可选：`record`（时迹、目标、阅读等记录）、`sso`（认证、用户、文件）、`system`（系统管理）、`wardrobe`、`membership`、`bankcard`、`feedback`、`relationship`、`llm`、`mcp`。关系图谱关闭时，该模块没有业务路由。
+`group` 可选：`record`（时迹、目标、阅读等记录）、`sso`（认证、用户、文件）、`system`（系统管理）、`wardrobe`、`membership`、`bankcard`、`feedback`、`relationship`、`mcp`。关系图谱关闭时，该模块没有业务路由。
 
 文档可直接通过浏览器或 HTTP 工具匿名读取，无需登录 Token 或 API Key。业务接口仍沿用现有鉴权：使用登录 Token 或 `ak-` 开头的 API Key，通过 `Authorization: Bearer ...` 传递，不使用独立的 `X-API-Key` 请求头；未登录调用受保护业务接口仍返回 HTTP 401。
 

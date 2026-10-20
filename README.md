@@ -68,7 +68,7 @@ Web 入口为「系统管理 → 对象存储」。读取 `AIO_LIFE_MINIO_BUCKET
 - **LangChain4j 1.12.2** — MCP 工具注解与 Schema 适配
 - **MCP 0.14.0** — Model Context Protocol 支持
 
-服务端不提供大模型聊天或流式生成接口。`llm` 模块仅保留历史会话、消息及模型密钥配置管理，已有数据库表和数据保留。
+服务端已移除 LLM 会话、消息和模型密钥 API 与业务代码。为保留历史数据，`llm_key`、`conversation`、`chat_message` 数据表及其实体 Mapper 映射仍保留；不再提供读写接口。
 
 ### 工具库
 
@@ -97,7 +97,7 @@ aio-life-server/
 │   ├── system/           # 系统管理：用户、菜单、字典
 │   ├── wardrobe/         # 衣柜管理
 │   ├── relationship/     # 人际关系图谱（Neo4j，可选）
-│   ├── llm/              # 历史会话、消息及模型密钥配置管理
+│   ├── llm/              # 仅保留历史数据表的实体与 Mapper 映射，不提供业务接口
 │   ├── mcp/              # MCP 协议支持
 │   ├── core/             # 公共组件：ApiResponse、异常处理、工具类
 │   └── config/           # 全局配置

@@ -63,10 +63,11 @@ mvn test -Dtest=TimeTrackerCategoryControllerIntegrationTest#testList_获取分�
 | `system` | 系统管理：用户、菜单、字典 |
 | `wardrobe` | 衣柜管理 |
 | `relationship` | 人际关系图谱（Neo4j），通过 `AIO_LIFE_NEO4J_ENABLED` 环境变量控制 |
-| `llm` | 历史会话、消息及模型密钥配置管理；不提供大模型调用 |
 | `mcp` | MCP 协议支持：自定义注解驱动的 Tool 注册，含认证层 |
 | `core` | 公共组件：ApiResponse、异常处理、工具类、常量 |
 | `config` | 全局配置：Cache、CORS、JSON、MinIO、MyBatis Plus、Neo4j、Redis、Sa-Token |
+
+LLM 会话、消息和模型密钥业务接口已移除。为保留历史数据并满足物理表实体映射检查，`llm_key`、`conversation`、`chat_message` 仅保留实体和基础 Mapper；不得恢复对应业务 API 或服务层。
 
 ### 模块内部分层
 

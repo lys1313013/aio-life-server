@@ -86,19 +86,13 @@ class OpenApiIntegrationTest {
     }
 
     @Test
-    void 大模型调用接口已移除且历史管理与MCP接口保留() throws Exception {
+    void LLM接口已移除且MCP接口保留() throws Exception {
         JsonNode document = document("/v3/api-docs");
         JsonNode paths = document.path("paths");
-        assertFalse(paths.has("/llm/chat"));
-        assertFalse(paths.has("/llm/chat/stream"));
-        assertFalse(document.path("components").path("schemas").has("ChatReq"));
-        assertTrue(paths.path("/llm/chat/history").has("get"));
-        assertTrue(paths.path("/llm/sessions").has("get"));
-        assertTrue(paths.path("/llm/key/list").has("get"));
+        paths.fieldNames().forEachRemaining(path -> assertFalse(path.startsWith("/llm/"), path));
         assertTrue(paths.path("/mcp/tools/call").has("post"));
         mappings.getHandlerMethods().keySet().forEach(mapping -> {
-            assertFalse(mapping.getPatternValues().contains("/llm/chat"));
-            assertFalse(mapping.getPatternValues().contains("/llm/chat/stream"));
+            mapping.getPatternValues().forEach(path -> assertFalse(path.startsWith("/llm/"), path));
         });
     }
 
@@ -378,7 +372,7 @@ class OpenApiIntegrationTest {
     @Configuration(proxyBeanMethods = false)
     @ComponentScan(basePackages = {"top.aiolife.record.api", "top.aiolife.sso.api", "top.aiolife.system.api",
             "top.aiolife.wardrobe.api", "top.aiolife.membership.api", "top.aiolife.bankcard.api",
-            "top.aiolife.feedback.api", "top.aiolife.relationship.api", "top.aiolife.llm.api", "top.aiolife.mcp.api"},
+            "top.aiolife.feedback.api", "top.aiolife.relationship.api", "top.aiolife.mcp.api"},
             useDefaultFilters = false, includeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = RestController.class))
     @Import({DocumentationController.class, DocumentationService.class, OpenApiConfig.class, JsonConfig.class, QueryParamsConfig.class, ExceptionHandle.class,
             SaTokenConfig.class, SaTokenContextRegister.class, ApiKeyInterceptor.class,

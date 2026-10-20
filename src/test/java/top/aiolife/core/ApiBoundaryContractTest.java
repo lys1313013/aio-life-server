@@ -28,8 +28,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import top.aiolife.config.CbtiConfig;
 import top.aiolife.config.JsonConfig;
-import top.aiolife.llm.convertor.LlmApiConvertor;
-import top.aiolife.llm.pojo.entity.LLMKeyEntity;
 import top.aiolife.record.api.CbtiController;
 import top.aiolife.record.api.MovieController;
 import top.aiolife.record.api.ReadRecordController;
@@ -175,14 +173,6 @@ class ApiBoundaryContractTest {
         assertFalse(result.has("isDeleted"));
     }
 
-    @Test
-    void 模型配置响应只返回密钥存在状态且不含审计信息() {
-        var entity = new LLMKeyEntity();
-        entity.setApiKey("fixture-secret"); entity.setUserId(11L); entity.setCreateTime(LocalDateTime.now());
-        JsonNode result = json.valueToTree(LlmApiConvertor.INSTANCE.toLLMKeyVO(entity));
-        assertTrue(result.path("hasApiKey").asBoolean());
-        assertFalse(result.has("apiKey")); assertFalse(result.has("userId")); assertFalse(result.has("createTime"));
-    }
     @Test
     void 前端正在展示的财务时间和事件时间继续返回() {
         LocalDateTime time = LocalDateTime.of(2026, 10, 1, 12, 30);

@@ -28,8 +28,6 @@ springdoc:
       packages-to-scan: top.aiolife.feedback.api
     - group: relationship
       packages-to-scan: top.aiolife.relationship.api
-    - group: llm
-      packages-to-scan: top.aiolife.llm.api
     - group: mcp
       packages-to-scan: top.aiolife.mcp.api
 
