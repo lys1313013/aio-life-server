@@ -177,8 +177,15 @@ def verify(args, mysql):
                     'Upgrade unexpectedly bound an existing account')
         assert_true(mysql.run("SELECT COUNT(*) FROM sys_menu WHERE name IN ('StorageAdmin','BankCardCoverAdmin') AND roles='admin'", old) == '2',
                     'New administrator menu migrations are incomplete')
-        assert_true(mysql.run("SELECT COUNT(*) FROM sys_menu WHERE mobile_status <> status", old) == '0',
+        # 操作日志仅在 Web 提供入口，其余菜单仍应复制原启用状态。
+        status_mismatch = ("SELECT COUNT(*) FROM sys_menu WHERE mobile_status <> status AND NOT "
+                           "(name='OperationLog' AND path='/system/operation-log' AND status=1 AND mobile_status=0)")
+        operation_menu = ("SELECT COUNT(*) FROM sys_menu WHERE name='OperationLog' "
+                          "AND path='/system/operation-log' AND roles='admin' AND status=1 AND mobile_status=0")
+        assert_true(mysql.run(status_mismatch, old) == '0',
                     'Mobile menu status did not copy existing status')
+        assert_true(mysql.run(operation_menu, old) == '1',
+                    'Upgraded operation log menu must remain Web-only')
         mysql.run("UPDATE sys_menu SET mobile_status=1 WHERE id=-900012", old)
         assert_true(mysql.run("SELECT CONCAT(status, ':', mobile_status) FROM sys_menu WHERE id=-900012", old) == '0:1',
                     'Menu status switches are not independent')
@@ -186,8 +193,10 @@ def verify(args, mysql):
         mysql.run(scoped_sql((ROOT / 'sql/2_ini_data/2_menu.sql').read_text()), fresh)
         assert_true(mysql.run("SELECT COUNT(*) FROM sys_menu WHERE status=0 AND mobile_status=0", fresh) != '0',
                     'Fresh menu seed did not retain disabled menus')
-        assert_true(mysql.run("SELECT COUNT(*) FROM sys_menu WHERE mobile_status <> status", fresh) == '0',
+        assert_true(mysql.run(status_mismatch, fresh) == '0',
                     'Fresh mobile menu statuses differ from their Web defaults')
+        assert_true(mysql.run(operation_menu, fresh) == '1',
+                    'Fresh operation log menu must remain Web-only')
         expected, actual = mysql.schema(fresh), mysql.schema(old)
         issues = differences(expected, actual)
         assert_true(not issues, 'Upgrade schema differs from fresh schema:\n' + '\n'.join(issues))
