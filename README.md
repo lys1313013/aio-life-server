@@ -326,3 +326,21 @@ Web 登录页的“App 扫码登录”入口为 `/auth/app-qrcode-login`。用�
 不需要数据库迁移。发布时先更新后端，再更新 Web 和移动端；Redis 须可用。反向代理保留 `Authorization`、`X-QR-Secret` 请求头，对本组接口不缓存。App 需要重新打包以包含扫码原生模块，H5 不提供摄像头扫码入口。
 
 专项验证：`mvn -Dspring.profiles.active=test -Dtest=QrLoginHttpIntegrationTest test`（需要测试 MySQL / Redis，测试账号事务回滚）。
+
+## 生活足迹
+
+入口 `/record/life-footprints`，记录长期生活的起止日期、具体地点、地址和备注。数据库使用 `DATE`，接口使用 `YYYY-MM-DD`；结束日期必填，`9999-12-31` 表示至今，不使用 `ongoing`。地图取得当前用户全量记录。API 前缀 `/api/life-footprints`，增改使用完整字段，不使用幂等键或版本字段，暂不使用乐观锁；同一账号多端编辑以最后一次成功保存为准。`update_time` 仅用于审计，修改和删除仍校验用户归属及逻辑删除状态。保存期间拦截重复点击；网络结果不确定时先重新读取确认，不承诺重复新增请求返回同一记录。
+
+部署前按 [数据库升级说明](docs/数据库升级验证.md#生活足迹2026-10-21) 完成建表及菜单迁移。地图配置由后端环境变量注入：
+
+| 环境变量 | 用途 |
+| --- | --- |
+| `AIO_LIFE_BAIDU_SERVICE_AK` | 百度服务端 AK，开通地点检索、地理编码和逆地理编码；只在后端使用 |
+| `AIO_LIFE_BAIDU_BROWSER_AK` | 百度浏览器 AK，下发 Web/H5，控制台限制实际部署及调试域名 Referer |
+| `AIO_LIFE_MAP_TIMEOUT_MS` | 上游请求超时，默认 5000ms，实际限制在 1000–15000ms |
+
+未配置服务端 AK 时关闭搜索和解析，地图选点仍可使用；未配置浏览器 AK 时 Web/H5 显示地图重试状态，已有记录仍可编辑文字和时间。服务端按用户限制地图查询频率及并发，不记录完整 AK 或地址请求 URL。仅地点搜索或地址解析时向地图服务发送地点信息，不发送起止时间和备注。
+
+存储坐标固定 `GCJ02`，百度查询显式要求 `ret_coordtype=gcj02ll`，Web/H5 使用 JSAPI 4.0 的 GCJ02 模式；不要把 BD09/WGS84 原值写入该字段。地址解析结果仍须用户确认。微信和 App 采用原生地图，App 地图 SDK 配置与真机验证见移动端 README。
+
+本地专项：`mvn -Dtest=LifeFootprintTest,FootprintMapClientTest test`。第三方响应使用模拟测试；真实百度服务需配置上述 AK 后联调。

@@ -15,6 +15,7 @@ public final class SecondaryLockPolicy {
             Map.entry("/time/category-admin", List.of("/timeTrackerCategory/admin")),
             Map.entry("/record/password", List.of("/password")),
             Map.entry("/record/body-profile", List.of("/body-profile")),
+            Map.entry("/record/life-footprints", List.of("/life-footprints")),
             Map.entry("/record/exercise", List.of("/exerciseRecord", "/dashboard/card/EXERCISE")),
             Map.entry("/my-hub/exercise/category-config", List.of("/userDictData", "/userDictType")),
             Map.entry("/record/videoWatch", List.of("/b-video")),
