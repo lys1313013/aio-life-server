@@ -30,6 +30,7 @@ public class CsdnServiceImpl implements ICsdnService {
         stats.setCommentCount(0);
         try {
             Document doc = Jsoup.connect(CSDN_BASE_URL + username)
+                    .timeout(10000)
                     .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
                     .get();
 
@@ -66,7 +67,8 @@ public class CsdnServiceImpl implements ICsdnService {
             }
 
         } catch (Exception e) {
-            log.error("Failed to fetch CSDN stats for user: {}", username, e);
+            log.warn("CSDN stats request failed: {}", e.getClass().getSimpleName());
+            throw new IllegalStateException("CSDN 统计请求失败，请稍后重试");
         }
         return stats;
     }
@@ -80,6 +82,7 @@ public class CsdnServiceImpl implements ICsdnService {
         
         try {
             Document doc = Jsoup.connect(CSDN_BASE_URL + username)
+                    .timeout(10000)
                     .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
                     .get();
 
@@ -163,7 +166,8 @@ public class CsdnServiceImpl implements ICsdnService {
             }
 
         } catch (Exception e) {
-            log.error("Failed to fetch CSDN articles for user: {}", username, e);
+            log.warn("CSDN articles request failed: {}", e.getClass().getSimpleName());
+            throw new IllegalStateException("CSDN 文章请求失败，请稍后重试");
         }
         return articles;
     }

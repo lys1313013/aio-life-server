@@ -2,6 +2,17 @@
 
 查询使用 GET，分页和筛选字段通过 URL 参数传递，不发送 GET 请求体。有副作用的操作使用 POST / PUT / DELETE。
 
+## 微信编程页面数据（2026-10-21）
+
+微信端仅请求 AIO API，由后端访问第三方，避免真机合法域名限制。以下接口要求登录并沿用 GitHub / LeetCode 菜单锁；平台账号和 Token 只从当前用户绑定读取，不接受客户端账号、Token、URL 或 GraphQL 文本：
+
+- `GET /github/calendar`：贡献日历，返回 GitHub GraphQL 包装结构，需要已绑定 GitHub Token。
+- `GET /github/repos?page=1`：本人仓库，每页 100 条；页码为 1–100，短页结束。
+- `GET /github/repository/{section}?name=repo-name`：本人仓库详情；section 仅支持 `info`、`contributors`，后者最多 100 人。
+- `GET /leetcode/data/{section}`：section 仅支持 `profile`、`contest`、`calendar`、`daily`、`recent`，返回对应 GraphQL 的 data 内容。
+
+响应保留 `{ code, message, data }`。第三方 ID 输出字符串，计数保留数字；上游失败返回业务错误供页面重试，不回传上游正文或凭证。CSDN 继续使用 `/csdn/stats`、`/csdn/articles`，抓取失败不再伪装成全零或空列表。先部署后端，再上传小程序；编译通过不能代替目标服务器外网连通性和微信真机验证。
+
 ## 本次接口调整（2026-09-12）
 
 以下接口由 POST 改为 GET，路径和响应结构保持不变。旧 POST 请求返回 HTTP 405。
