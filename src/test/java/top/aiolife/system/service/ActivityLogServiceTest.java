@@ -4,17 +4,16 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import java.io.StringWriter;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.LongStream;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import top.aiolife.system.mapper.ActivityLogMapper;
 import top.aiolife.system.pojo.entity.ActivityLogEntity;
 import top.aiolife.system.pojo.query.ActivityLogQuery;
-
-import java.io.StringWriter;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.stream.LongStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -66,15 +65,18 @@ class ActivityLogServiceTest {
     @SuppressWarnings("unchecked")
     void export_跨批次全部导出且防公式注入() throws Exception {
         var first = LongStream.rangeClosed(2, 1001).mapToObj(i -> row(1003 - i)).toList();
-        when(mapper.selectList(any())).thenReturn(List.of(row(1001)), first, List.of(row(1)), List.of());
+        when(mapper.operationMaxId(any())).thenReturn(1001L);
+        when(mapper.exportOperations(any(), eq(1001L), any())).thenReturn(first, List.of(row(1)), List.of());
         var writer = new StringWriter();
         service.export("OPERATION", new ActivityLogQuery(), writer);
         String csv = writer.toString();
-        assertTrue(csv.startsWith("\ufeff序号,用户账号"));
+        assertTrue(csv.startsWith("\ufeff序号,用户ID,用户名"));
         assertEquals(1002, csv.lines().count());
         assertTrue(csv.contains("\"'=SUM(1,2)\""));
         assertTrue(csv.contains("1001,"));
-        verify(mapper, times(4)).selectList(any());
+        verify(mapper, times(3)).exportOperations(any(), eq(1001L), any());
+        verify(mapper).exportOperations(any(), eq(1001L), eq(2L));
+        verify(mapper).exportOperations(any(), eq(1001L), eq(1L));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package top.aiolife.system.aop;
 
+import java.time.LocalDateTime;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.Signature;
 import org.junit.jupiter.api.AfterEach;
@@ -8,11 +9,14 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.HandlerMapping;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.sso.pojo.req.LoginReq;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
 import top.aiolife.sso.util.RequestLoginContext;
+import top.aiolife.system.filter.ActivityLogTimingFilter;
 import top.aiolife.system.pojo.entity.ActivityLogEntity;
+import top.aiolife.system.service.ActivityLogParameters;
 import top.aiolife.system.service.ActivityLogRecorder;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,7 +25,8 @@ import static org.mockito.Mockito.*;
 
 class ActivityLogAspectTest {
     private final ActivityLogRecorder recorder = mock(ActivityLogRecorder.class);
-    private final ActivityLogAspect aspect = new ActivityLogAspect(recorder);
+    private final ActivityLogParameters parameters = mock(ActivityLogParameters.class);
+    private final ActivityLogAspect aspect = new ActivityLogAspect(recorder, parameters);
 
     @AfterEach
     void cleanup() { RequestContextHolder.resetRequestAttributes(); }
@@ -121,4 +126,42 @@ class ActivityLogAspectTest {
             verify(point).proceed();
         }
     }
+    @Test
+    void operation_采集方法时间和实例地址且耗时不包含落库() throws Throwable {
+        var point = request("/tasks/13", "update");
+        var request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+        var time = LocalDateTime.of(2026, 10, 21, 12, 0, 0, 123000000);
+        request.setAttribute(ActivityLogTimingFilter.START_TIME, time);
+        request.setAttribute(ActivityLogTimingFilter.START_NANOS, System.nanoTime() - 10_000_000);
+        request.setAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, "/tasks/{id}");
+        when(parameters.serverIp()).thenReturn("2001:db8::1");
+        when(parameters.capture(any(), any(), any())).thenReturn("{\"path\":{\"id\":\"13\"}}");
+        try (var auth = mockStatic(RequestLoginContext.class)) {
+            auth.when(RequestLoginContext::userIdOrNull).thenReturn(13L);
+            when(point.proceed()).thenReturn(ApiResponse.success());
+            aspect.around(point);
+            var row = recorded();
+            assertEquals(time, row.getRequestTime());
+            assertEquals("POST", row.getRequestMethod());
+            assertEquals("/tasks/{id}", row.getRequestPath());
+            assertEquals("2001:db8::1", row.getServerIp());
+            assertTrue(row.getDurationMs() >= 10);
+            assertTrue(row.getRequestParams().contains("13"));
+        }
+    }
+
+    @Test
+    void operation_异常仍记录且参数采集故障不改变异常() throws Throwable {
+        var point = request("/tasks", "create");
+        when(parameters.serverIp()).thenThrow(new IllegalStateException("metadata unavailable"));
+        var failure = new IllegalArgumentException("business failure");
+        when(point.proceed()).thenThrow(failure);
+        try (var auth = mockStatic(RequestLoginContext.class)) {
+            auth.when(RequestLoginContext::userIdOrNull).thenReturn(13L);
+            assertSame(failure, assertThrows(IllegalArgumentException.class, () -> aspect.around(point)));
+            assertFalse(recorded().getSuccess());
+            assertNotNull(recorded().getDurationMs());
+        }
+    }
+
 }

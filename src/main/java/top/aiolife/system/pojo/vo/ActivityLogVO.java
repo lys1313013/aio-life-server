@@ -32,6 +32,19 @@ public class ActivityLogVO {
 
     private String requestPath;
 
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    private String requestMethod;
+
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss.SSS")
+    private LocalDateTime requestTime;
+
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    private Integer durationMs;
+
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    private String serverIp;
+
     private Boolean success;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

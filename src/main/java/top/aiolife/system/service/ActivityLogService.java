@@ -2,6 +2,10 @@ package top.aiolife.system.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import java.io.IOException;
+import java.io.Writer;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -10,17 +14,17 @@ import top.aiolife.system.mapper.ActivityLogMapper;
 import top.aiolife.system.pojo.entity.ActivityLogEntity;
 import top.aiolife.system.pojo.query.ActivityLogQuery;
 
-import java.io.IOException;
-import java.io.Writer;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class ActivityLogService {
     private final ActivityLogMapper mapper;
 
     public PageResp<ActivityLogEntity> list(String type, ActivityLogQuery query) {
+        query.validateRange();
+        if ("OPERATION".equals(type)) {
+            var operationPage = mapper.selectOperationPage(new Page<>(query.getPage(), query.getPageSize()), query);
+            return PageResp.of(operationPage.getRecords(), operationPage.getTotal());
+        }
         var page = mapper.selectPage(new Page<>(query.getPage(), query.getPageSize()),
                 filter(type, query).orderByDesc(ActivityLogEntity::getCreateTime, ActivityLogEntity::getId));
         return PageResp.of(page.getRecords(), page.getTotal());
@@ -28,6 +32,11 @@ public class ActivityLogService {
 
     /** 按游标分批导出当前筛选的全部数据，避免把全表载入内存。 */
     public void export(String type, ActivityLogQuery query, Writer writer) throws IOException {
+        query.validateRange();
+        if ("OPERATION".equals(type)) {
+            exportOperations(query, writer);
+            return;
+        }
         var wrapper = filter(type, query);
         // 以导出开始时的最大 ID 为界，排除导出过程中新增的记录。
         var newest = mapper.selectList(wrapper.orderByDesc(ActivityLogEntity::getId).last("LIMIT 1"));
@@ -54,6 +63,45 @@ public class ActivityLogService {
             }
             cursor = batch.getLast().getId();
         }
+    }
+
+    public ActivityLogEntity detail(Long id) {
+        if (id == null || id <= 0) throw new IllegalArgumentException("日志ID无效");
+        var row = mapper.selectOne(new LambdaQueryWrapper<ActivityLogEntity>()
+                .eq(ActivityLogEntity::getId, id).eq(ActivityLogEntity::getLogType, "OPERATION"));
+        if (row == null) throw new IllegalArgumentException("操作日志不存在");
+        return row;
+    }
+
+    private void exportOperations(ActivityLogQuery query, Writer writer) throws IOException {
+        Long maxId = mapper.operationMaxId(query);
+        writer.write('\ufeff');
+        writer.write("序号,用户ID,用户名,功能点,请求地址,请求方式,请求参数,请求时间,处理时间(ms),请求IP,服务器IP,结果\r\n");
+        if (maxId == null) return;
+        Long cursor = null;
+        long index = 0;
+        while (true) {
+            var batch = mapper.exportOperations(query, maxId, cursor);
+            if (batch.isEmpty()) break;
+            for (var row : batch) {
+                String time = row.getRequestTime() == null
+                        ? row.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "（历史记录时间）"
+                        : row.getRequestTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+                writer.write(++index + "," + csv(row.getUserId() == null ? "" : "'" + row.getUserId()) + ","
+                        + csv(row.getUsername()) + "," + csv(functionPoint(row)) + "," + csv(row.getRequestPath()) + ","
+                        + csv(row.getRequestMethod() == null ? "未采集" : row.getRequestMethod()) + "," + csv(row.getRequestParams() == null ? "未采集" :
+                        "{}".equals(row.getRequestParams().replaceAll("\\s", "")) ? "无参数" : row.getRequestParams()) + ","
+                        + csv(time) + "," + csv(row.getDurationMs() == null ? "未采集" : row.getDurationMs().toString()) + ","
+                        + csv(row.getIpAddress()) + "," + csv(row.getServerIp() == null ? "未采集" : row.getServerIp()) + ","
+                        + (Boolean.TRUE.equals(row.getSuccess()) ? "成功" : "失败") + "\r\n");
+            }
+            cursor = batch.getLast().getId();
+        }
+    }
+
+    private static String functionPoint(ActivityLogEntity row) {
+        return (row.getFunctionName() == null ? "接口操作" : row.getFunctionName())
+                + (row.getFunctionItem() == null ? "" : " · " + row.getFunctionItem());
     }
 
     private LambdaQueryWrapper<ActivityLogEntity> filter(String type, ActivityLogQuery query) {

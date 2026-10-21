@@ -10,6 +10,7 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.system.convertor.SystemApiConvertor;
 import top.aiolife.system.pojo.query.ActivityLogQuery;
+import top.aiolife.system.pojo.vo.ActivityLogDetailVO;
 import top.aiolife.system.pojo.vo.ActivityLogVO;
 import top.aiolife.system.service.ActivityLogService;
 
@@ -24,6 +25,11 @@ public class ActivityLogController {
     @GetMapping("/{type:operation|access}")
     public ApiResponse<PageResp<ActivityLogVO>> list(@PathVariable String type, ActivityLogQuery query) {
         return ApiResponse.success(SystemApiConvertor.INSTANCE.toActivityLogVOPage(service.list(type.toUpperCase(Locale.ROOT), query)));
+    }
+
+    @GetMapping("/operation/{id}")
+    public ApiResponse<ActivityLogDetailVO> detail(@PathVariable Long id) {
+        return ApiResponse.success(SystemApiConvertor.INSTANCE.toActivityLogDetailVO(service.detail(id)));
     }
 
     @GetMapping("/{type:operation|access}/export")

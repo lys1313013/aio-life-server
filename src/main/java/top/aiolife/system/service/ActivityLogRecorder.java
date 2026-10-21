@@ -3,6 +3,8 @@ package top.aiolife.system.service;
 import cn.hutool.http.useragent.UserAgentUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Comparator;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -13,9 +15,6 @@ import top.aiolife.system.mapper.ActivityLogMapper;
 import top.aiolife.system.mapper.ISysMenuMapper;
 import top.aiolife.system.pojo.entity.ActivityLogEntity;
 import top.aiolife.system.pojo.entity.SysMenuEntity;
-
-import java.util.Comparator;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +40,7 @@ public class ActivityLogRecorder {
         }
         row.setBrowser(userAgent == null || userAgent.isBlank() ? "未知" :
                 UserAgentUtil.parse(userAgent).getBrowser().getName());
-        if ("OPERATION".equals(row.getLogType())) row.setFunctionName(resolveTitle(pagePath, row.getFunctionName()));
+        if ("OPERATION".equals(row.getLogType()) && "接口操作".equals(row.getFunctionName())) row.setFunctionName(resolveTitle(pagePath, row.getFunctionName()));
         row.setUsername(limit(row.getUsername(), 100));
         row.setNickname(limit(row.getNickname(), 100));
         row.setIpAddress(limit(row.getIpAddress(), 64));

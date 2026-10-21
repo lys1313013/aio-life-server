@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="top.aiolife.system.mapper.ActivityLogMapper">
+    <sql id="operationFilter">
+        log_type = 'OPERATION' AND is_deleted = 0
+        <if test="query.usernameLike != null">AND username LIKE #{query.usernameLike}</if>
+        <if test="query.startDate != null">
+            AND ((request_time IS NOT NULL AND request_time &gt;= #{query.startDate})
+                OR (request_time IS NULL AND create_time &gt;= #{query.startDate}))
+        </if>
+        <if test="query.endDate != null">
+            AND ((request_time IS NOT NULL AND request_time &lt; #{query.endExclusive})
+                OR (request_time IS NULL AND create_time &lt; #{query.endExclusive}))
+        </if>
+    </sql>
+    <!-- 列表显式排除大字段 request_params。 -->
+    <select id="selectOperationPage" resultType="top.aiolife.system.pojo.entity.ActivityLogEntity">
+        SELECT id, log_type, user_id, username, nickname, ip_address, browser, function_name,
+               function_item, access_type, request_path, request_method, request_time, duration_ms,
+               server_ip, success, create_time
+        FROM sys_activity_log WHERE <include refid="operationFilter"/>
+        ORDER BY COALESCE(request_time, create_time) DESC, id DESC
+    </select>
+    <select id="operationMaxId" resultType="java.lang.Long">
+        SELECT MAX(id) FROM sys_activity_log WHERE <include refid="operationFilter"/>
+    </select>
+    <select id="exportOperations" resultType="top.aiolife.system.pojo.entity.ActivityLogEntity">
+        SELECT * FROM sys_activity_log WHERE <include refid="operationFilter"/>
+        AND id &lt;= #{maxId}
+        <if test="cursor != null">AND id &lt; #{cursor}</if>
+        ORDER BY id DESC LIMIT 1000
+    </select>
+</mapper>
