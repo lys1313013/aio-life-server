@@ -217,6 +217,8 @@ class MyControllerTest extends BaseIntegrationTest {
 
 ## 数据库初始化
 
+SQL 编写必须遵守 [SQL 脚本规范](docs/SQL脚本规范.md)：表和每个字段必须有中文 `COMMENT`（包括 ID、版本、审计及逻辑删除字段），索引和约束必须说明用途；新增脚本写明前置、影响、重跑和恢复方式。同步全量结构、增量迁移、结构文档及升级计划摘要，不能用 `CREATE TABLE IF NOT EXISTS` 代替已有表升级。
+
 SQL 脚本位于 `sql/` 目录：
 
 - `1_init_table/` — 建表脚本（按日期命名）

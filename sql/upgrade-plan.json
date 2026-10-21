@@ -86,6 +86,38 @@
     {
       "path": "sql/2_ini_data/2026-10-20_body_profile_menu.sql",
       "sha256": "6dc3a56f4a5d09e0b4b7838fed251761f2292a0886dcc65f99efd41e799482a7"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-21_life_footprint.sql",
+      "sha256": "a3b4cae2647d36438a1e35a3ecd4f655d54c29ac11d024ced637c590920216ab"
+    },
+    {
+      "path": "sql/2_ini_data/2026-10-21_life_footprint_menu.sql",
+      "sha256": "e3da7f4658c65e982e414f492590b9355c02944a846e276fc15be24cb1506c71"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-21_operation_log_request.sql",
+      "sha256": "7b141eef2897b0dbf2ec23ba062097e623f3e808bce442e75ad43c5f59a17efe"
+    },
+    {
+      "path": "sql/2_ini_data/2026-10-21_operation_log_menu.sql",
+      "sha256": "2cbb4867f700de73c9bc6a6e6bdc2095035f481cca5f8e9ce911c2333df41219"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-21_life_footprint_date.sql",
+      "sha256": "f48e6725c101a7e4ee7a83a04d7f2b1048c8d57fb598e4ea431fe533ac64050e"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-21_life_footprint_simplify.sql",
+      "sha256": "181dca8d3985543da6ab29a1a1eba54d54082c2b48689aec5ba6ffb2aaa7612d"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-21_life_footprint_comments.sql",
+      "sha256": "6b950617e9d8da56a49ce1fbbd26df0d58c1f9ffa61acfa1f55eb89a8ab38b67"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-21_life_footprint_drop_version.sql",
+      "sha256": "81b76be57db40f81b3ec4209c29efc7af2ab80fad9a52d64004d4ba83295b657"
     }
   ]
 }
