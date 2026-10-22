@@ -133,11 +133,15 @@ class ApiBoundaryContractTest {
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
-            JsonNode data = json.readTree(mvc.perform(post("/tasks").contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"content\":\"测试任务\",\"userId\":\"22\",\"id\":\"3\"}"))
-                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).path("data");
+            JsonNode response = json.readTree(mvc.perform(post("/tasks").contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"content\":\"测试任务\",\"columnId\":\"9007199254740995\",\"userId\":\"22\",\"id\":\"3\"}"))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+            assertEquals(0, response.path("code").intValue());
+            JsonNode data = response.path("data");
             assertEquals("9007199254740993", data.path("id").asText());
             assertTrue(data.path("id").isTextual());
+            assertEquals("9007199254740995", data.path("columnId").asText());
+            assertTrue(data.path("columnId").isTextual());
             for (String field : List.of("userId", "createUser", "updateUser", "createTime", "updateTime", "isDeleted")) {
                 assertFalse(data.has(field), field);
             }
