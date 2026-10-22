@@ -38,6 +38,7 @@ import top.aiolife.record.pojo.vo.ExpStaByYearVO;
 import top.aiolife.record.pojo.vo.ExpStaticByYearVO;
 import top.aiolife.record.pojo.vo.ExpenseVO;
 import top.aiolife.record.service.IExpenseService;
+import top.aiolife.record.service.DeviceExpenseService;
 import top.aiolife.record.service.UserDictDataService;
 
 /**
@@ -55,6 +56,8 @@ public class ExpController {
     private UserDictDataService userDictDataService;
 
     private IExpenseService expenseService;
+
+    private DeviceExpenseService deviceExpenseService;
 
     private IExpenseMapper expenseMapper;
 
@@ -85,7 +88,9 @@ public class ExpController {
         Page<ExpenseEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<ExpenseEntity> iPage = expenseMapper.selectPage(page, lambdaQueryWrapper);
         PageResp<ExpenseEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toExpenseVOPage(objectPageResp));
+        var result = RecordApiConvertor.INSTANCE.toExpenseVOPage(objectPageResp);
+        deviceExpenseService.enrich(userId, result.getItems());
+        return ApiResponse.success(result);
     }
 
     @PostMapping
@@ -167,21 +172,12 @@ public class ExpController {
 
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@PathVariable("id") Long id) {
-        LambdaQueryWrapper<ExpenseEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ExpenseEntity::getId, id);
-        wrapper.eq(ExpenseEntity::getUserId, StpUtil.getLoginIdAsLong());
-        boolean b = getBaseMapper().delete(wrapper) > 0;
-        return ApiResponse.success(b);
+        return ApiResponse.success(deviceExpenseService.deleteExpenses(StpUtil.getLoginIdAsLong(), List.of(id)));
     }
 
-    // 批量删除
     @PostMapping("/deleteBatch")
     public ApiResponse<Boolean> deleteBatch(@RequestBody CommonReq commonReq) {
-        LambdaQueryWrapper<ExpenseEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.in(ExpenseEntity::getId, commonReq.getIdList());
-        wrapper.eq(ExpenseEntity::getUserId, StpUtil.getLoginIdAsLong());
-        getBaseMapper().delete(wrapper);
-        return ApiResponse.success();
+        return ApiResponse.success(deviceExpenseService.deleteExpenses(StpUtil.getLoginIdAsLong(), commonReq.getIdList() == null ? List.of() : commonReq.getIdList().stream().map(Long::valueOf).toList()));
     }
 
     /**

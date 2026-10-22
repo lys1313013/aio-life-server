@@ -13,6 +13,10 @@ public class ExpenseVO {
 
     private Long id;
 
+    private Long deviceId;
+
+    private String deviceName;
+
     private BigDecimal transactionAmt;
 
     /**

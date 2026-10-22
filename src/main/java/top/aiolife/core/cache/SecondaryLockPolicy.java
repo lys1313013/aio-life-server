@@ -93,6 +93,7 @@ public final class SecondaryLockPolicy {
         if (path != null && (path.startsWith("/income/statistics") || path.startsWith("/expense/statistics"))) {
             result.add("/finance/dashboard");
         }
+        if (path != null && path.matches("/expense/[^/]+/device")) result.add("/my-hub/device");
         return result;
     }
 

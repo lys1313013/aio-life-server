@@ -19,6 +19,7 @@ import top.aiolife.record.pojo.query.DeviceQuery;
 import top.aiolife.record.pojo.req.DeviceCreateReq;
 import top.aiolife.record.pojo.req.DeviceUpdateReq;
 import top.aiolife.record.pojo.vo.DeviceVO;
+import top.aiolife.record.service.DeviceExpenseService;
 
 /**
  * 类功能描述
@@ -31,6 +32,7 @@ import top.aiolife.record.pojo.vo.DeviceVO;
 @RequestMapping("/device")
 public class DeviceController {
     private IDeviceMapper eleDeviceMapper;
+    private DeviceExpenseService deviceExpenseService;
 
     public IDeviceMapper getBaseMapper() {
         return eleDeviceMapper;
@@ -46,7 +48,9 @@ public class DeviceController {
         DeviceEntity condition = query.getCondition();
         lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getType()), DeviceEntity::getType,
                 condition.getType());
-        lambdaQueryWrapper.orderByDesc(DeviceEntity::getPurchaseDate);        // 分页
+        lambdaQueryWrapper.like(SysUtil.isNotEmpty(requestQuery.getCondition().getName()),
+                DeviceEntity::getName, requestQuery.getCondition().getName());
+        lambdaQueryWrapper.orderByDesc(DeviceEntity::getPurchaseDate).orderByDesc(DeviceEntity::getId);        // 分页
         Page<DeviceEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<DeviceEntity> iPage = getBaseMapper().selectPage(page, lambdaQueryWrapper);
         PageResp<DeviceEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
@@ -95,10 +99,7 @@ public class DeviceController {
      */
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@PathVariable("id") Long id) {
-        LambdaQueryWrapper<DeviceEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(DeviceEntity::getId, id);
-        wrapper.eq(DeviceEntity::getUserId, StpUtil.getLoginIdAsLong());
-        return ApiResponse.success(getBaseMapper().delete(wrapper) > 0);
+        return ApiResponse.success(deviceExpenseService.deleteDevice(StpUtil.getLoginIdAsLong(), id));
     }
 
     @GetMapping("/{id}")

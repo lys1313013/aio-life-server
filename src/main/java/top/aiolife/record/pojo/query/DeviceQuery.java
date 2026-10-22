@@ -14,4 +14,7 @@ public class DeviceQuery {
      * 设备类型
      */
     private String type;
+
+    /** 按设备名称搜索。 */
+    private String name;
 }

@@ -30,6 +30,13 @@ import static org.mockito.ArgumentMatchers.any;
 
 class SecondaryLockBoundaryTest {
     @Test
+    void expenseDevice_关联入口同时保护支出与设备() {
+        assertEquals(Set.of("/finance/expense", "/my-hub/device"),
+                SecondaryLockPolicy.requestMenus("/expense/9223372036854775806/device"));
+        assertEquals(Set.of("/finance/expense"), SecondaryLockPolicy.requestMenus("/expense/query"));
+    }
+
+    @Test
     void membershipPlatforms_共享目录不触发个人锁且平台管理保留独立锁() {
         assertEquals(Set.of("/membership"), SecondaryLockPolicy.requestMenus("/membership/list"));
         assertEquals(Set.of("/membership"), SecondaryLockPolicy.requestMenus("/membership/123"));

@@ -175,6 +175,8 @@ public interface RecordApiConvertor {
         return page == null ? null : page.map(this::toBVideoVO);
     }
 
+    @Mapping(target = "deviceId", ignore = true)
+    @Mapping(target = "deviceName", ignore = true)
     ExpenseVO toExpenseVO(ExpenseEntity entity);
     List<ExpenseVO> toExpenseVOList(List<ExpenseEntity> entities);
 
