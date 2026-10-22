@@ -3,8 +3,6 @@ package top.aiolife.sso.api;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.query.QueryParams;
+import top.aiolife.core.query.PaginationRequest;
+import top.aiolife.sso.pojo.query.MessagePageQuery;
+import top.aiolife.sso.pojo.query.MessageAdminPageQuery;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.sso.convertor.SsoApiConvertor;
 import top.aiolife.sso.pojo.entity.MessageEntity;
@@ -36,10 +38,13 @@ public class MessageController {
     }
 
     @GetMapping("/page")
-    public ApiResponse<PageResp<MessageVO>> page(
-            @RequestParam(required = false) Boolean isRead,
-            @RequestParam(defaultValue = "1") @Min(1) Long current,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(50) Long size) {
+    public ApiResponse<PageResp<MessageVO>> queryPage(@QueryParams MessagePageQuery query) {
+        query.validatePagination();
+        return page(query.getIsRead(), query.getPage().longValue(), query.getPageSize().longValue());
+    }
+
+    public ApiResponse<PageResp<MessageVO>> page(Boolean isRead, Long current, Long size) {
+        PaginationRequest.validate(current, size, 50);
         long userId = StpUtil.getLoginIdAsLong();
         return ApiResponse.success(SsoApiConvertor.INSTANCE.toMessageVOPage(
                 messageService.pageByUserId(userId, isRead, current, size)));
@@ -87,11 +92,13 @@ public class MessageController {
 
     @SaCheckRole("admin")
     @GetMapping("/admin/list")
-    public ApiResponse<PageResp<MessageVO>> adminList(
-            @RequestParam(required = false, defaultValue = "1") Long current,
-            @RequestParam(required = false, defaultValue = "10") Long size,
-            @RequestParam(required = false) Long userId
-    ) {
+    public ApiResponse<PageResp<MessageVO>> queryAdminPage(@QueryParams MessageAdminPageQuery query) {
+        query.validatePagination();
+        return adminList(query.getPage().longValue(), query.getPageSize().longValue(), query.getUserId());
+    }
+
+    public ApiResponse<PageResp<MessageVO>> adminList(Long current, Long size, Long userId) {
+        PaginationRequest.validate(current, size, PaginationRequest.MAX_PAGE_SIZE);
         return ApiResponse.success(SsoApiConvertor.INSTANCE.toMessageVOPage(messageService.adminList(current, size, userId)));
     }
 

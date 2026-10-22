@@ -199,6 +199,25 @@ class OpenApiIntegrationTest {
     }
 
     @Test
+    void 分页使用统一名称并明确标记兼容别名() throws Exception {
+        JsonNode document = document("/v3/api-docs");
+        for (String path : List.of("/movie/page", "/read-record/page", "/tasks", "/message/page",
+                "/message/admin/list", "/system/bank-card-covers/page", "/github/recent-commits")) {
+            Map<String, JsonNode> query = parameters(document.path("paths").path(path).path("get"));
+            assertTrue(query.containsKey("page"), path + " 缺少 page");
+            assertTrue(query.containsKey("pageSize"), path + " 缺少 pageSize");
+            for (String alias : List.of("current", "size", "get", "perPage")) {
+                if (query.containsKey(alias)) assertTrue(query.get(alias).path("deprecated").asBoolean(), path + ": " + alias);
+            }
+        }
+        Map<String, JsonNode> cursor = parameters(document.path("paths").path("/weread/recent").path("get"));
+        assertTrue(cursor.containsKey("cursor"));
+        assertTrue(cursor.containsKey("pageSize"));
+        assertTrue(cursor.get("size").path("deprecated").asBoolean());
+        assertFalse(cursor.containsKey("page"));
+    }
+
+    @Test
     void 分组文档及YAML可读取并保留认证要求() throws Exception {
         JsonNode record = document("/v3/api-docs/record");
         assertTrue(record.path("paths").has("/goals"));

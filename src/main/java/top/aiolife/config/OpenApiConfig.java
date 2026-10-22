@@ -1,6 +1,7 @@
 package top.aiolife.config;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.v3.core.converter.AnnotatedType;
 import io.swagger.v3.core.converter.ModelConverter;
@@ -95,6 +96,23 @@ public class OpenApiConfig {
                     }
                     if (parameter.getSchema() != null && "array".equals(parameter.getSchema().getType())) {
                         parameter.style(Parameter.StyleEnum.FORM).explode(true);
+                    }
+                }
+            }
+            // 新客户端只使用 page/pageSize；旧名称在文档中明确标为 deprecated。
+            for (var methodParameter : handlerMethod.getMethodParameters()) {
+                if (!methodParameter.hasParameterAnnotation(QueryParams.class)) continue;
+                for (var field : methodParameter.getParameterType().getDeclaredFields()) {
+                    JsonAlias aliases = field.getAnnotation(JsonAlias.class);
+                    if (aliases == null || operation.getParameters() == null) continue;
+                    Parameter canonical = operation.getParameters().stream()
+                            .filter(value -> field.getName().equals(value.getName())).findFirst().orElse(null);
+                    if (canonical == null) continue;
+                    for (String alias : aliases.value()) {
+                        operation.getParameters().removeIf(value -> alias.equals(value.getName()));
+                        operation.addParametersItem(new Parameter().in("query").name(alias).required(false)
+                                .deprecated(true).schema(canonical.getSchema())
+                                .description("兼容旧参数；请使用 " + field.getName() + "，同时传入时值须相同"));
                     }
                 }
             }

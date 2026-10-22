@@ -2,6 +2,7 @@ package top.aiolife.record.pojo.req;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 /** TaskDetailSortReq：仅包含接口允许写入的字段。 */
@@ -10,6 +11,7 @@ import lombok.Data;
 public class TaskDetailSortReq {
 
     @NotNull
+    @Positive(message = "ID必须为正数")
     private Long id;
 
     @NotNull

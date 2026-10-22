@@ -89,8 +89,9 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
                 .collect(Collectors.toList());
         result.addAll(privateCategories);
 
-        // 5. 按 sort 升序排列
-        result.sort(Comparator.comparing(UserDictDataEntity::getDictSort, Comparator.nullsLast(Integer::compareTo)));
+        // 5. 以 ID 打破相同 sort 的并列，确保内存分页在缓存返回顺序变化时仍稳定。
+        result.sort(Comparator.comparing(UserDictDataEntity::getDictSort, Comparator.nullsLast(Integer::compareTo))
+                .thenComparing(UserDictDataEntity::getId, Comparator.nullsLast(Long::compareTo)));
 
         return result;
     }

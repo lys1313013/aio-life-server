@@ -70,11 +70,11 @@ public class UserDictDataController {
         int current = query.getPage() != null ? query.getPage() : 1;
         int size = query.getPageSize() != null ? query.getPageSize() : 10;
         int total = dataList.size();
-        int fromIndex = (current - 1) * size;
-        int toIndex = Math.min(fromIndex + size, total);
-
+        long offset = ((long) current - 1) * size;
         List<UserDictDataEntity> pageList = new ArrayList<>();
-        if (fromIndex < total) {
+        if (offset < total) {
+            int fromIndex = Math.toIntExact(offset);
+            int toIndex = (int) Math.min(offset + size, total);
             pageList = dataList.subList(fromIndex, toIndex);
         }
 

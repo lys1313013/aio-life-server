@@ -5,9 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.query.QueryParams;
+import top.aiolife.core.query.PaginationRequest;
+import top.aiolife.record.pojo.query.GithubCommitQuery;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.vo.GithubCommitVO;
 import top.aiolife.record.service.IGithubService;
@@ -35,9 +37,13 @@ public class GitHubController {
      * 获取当前绑定 GitHub 账号的最近提交列表
      */
     @GetMapping("/recent-commits")
-    public ApiResponse<List<GithubCommitVO>> recentCommits(
-            @RequestParam(required = false, defaultValue = "1") Integer page,
-            @RequestParam(required = false, defaultValue = "20") Integer perPage) {
+    public ApiResponse<List<GithubCommitVO>> queryRecentCommits(@QueryParams GithubCommitQuery query) {
+        query.validatePagination();
+        return recentCommits(query.getPage(), query.getPageSize());
+    }
+
+    public ApiResponse<List<GithubCommitVO>> recentCommits(Integer page, Integer perPage) {
+        PaginationRequest.validate(page, perPage, 100);
         long userId = StpUtil.getLoginIdAsLong();
         UserBindEntity bind = userBindService.getBindByUserIdAndPlatform(userId, "github");
         if (bind == null || bind.getPlatformUsername() == null) {

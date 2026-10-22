@@ -5,12 +5,17 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.query.QueryParams;
+import top.aiolife.core.query.PaginationRequest;
+import top.aiolife.record.pojo.query.TaskPageQuery;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mapper.ITaskMapper;
@@ -45,9 +50,13 @@ public class TaskController {
     }
 
     @GetMapping()
-    public ApiResponse<PageResp<TaskVO>> query(@RequestParam(required = false) Long taskId,
-                                                    @RequestParam(defaultValue = "1") int get,
-                                                   @RequestParam(defaultValue = "100") int pageSize) {
+    public ApiResponse<PageResp<TaskVO>> queryPage(@QueryParams TaskPageQuery query) {
+        query.validatePagination();
+        return query(query.getTaskId(), query.getPage(), query.getPageSize());
+    }
+
+    public ApiResponse<PageResp<TaskVO>> query(Long taskId, int pageNumber, int pageSize) {
+        PaginationRequest.validate(pageNumber, pageSize, PaginationRequest.MAX_PAGE_SIZE);
         Long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<TaskEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(TaskEntity::getUserId, userId);
@@ -55,8 +64,8 @@ public class TaskController {
             lambdaQueryWrapper.eq(TaskEntity::getId, taskId);
         }
 
-        lambdaQueryWrapper.orderByAsc(TaskEntity::getSortOrder);        // 分页
-        Page<TaskEntity> page = new Page<>(get, pageSize);
+        lambdaQueryWrapper.orderByAsc(TaskEntity::getSortOrder, TaskEntity::getId);        // 分页
+        Page<TaskEntity> page = new Page<>(pageNumber, pageSize);
         IPage<TaskEntity> iPage = getBaseMapper().selectPage(page, lambdaQueryWrapper);
         List<TaskEntity> records = iPage.getRecords();
         // 获取未完成任务数
@@ -125,7 +134,7 @@ public class TaskController {
      * @param list 只传id、columnId和sortOrder
      */
     @PostMapping("/reSort")
-    public ApiResponse<Void> reSort(@Valid @RequestBody List<TaskSortReq> requests) {
+    public ApiResponse<Void> reSort(@NotEmpty @RequestBody List<@NotNull @Valid TaskSortReq> requests) {
         List<TaskEntity> list = requests.stream().map(RecordApiConvertor.INSTANCE::fromTaskSortReq).toList();
         Long userId = StpUtil.getLoginIdAsLong();
         for (TaskEntity entity : list) {

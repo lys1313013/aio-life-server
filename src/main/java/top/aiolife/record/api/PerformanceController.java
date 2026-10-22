@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.query.PaginationRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.pojo.entity.PerformanceEntity;
@@ -41,6 +44,11 @@ public class PerformanceController {
     public ApiResponse<PageResp<PerformanceVO>> queryPerformances(
             @RequestParam(defaultValue = "1") long page,
             @RequestParam(defaultValue = "10") long pageSize) {
+        try {
+            PaginationRequest.validate(page, pageSize, PaginationRequest.MAX_PAGE_SIZE);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exception.getMessage(), exception);
+        }
         PageResp<PerformanceEntity> objectPageResp = performanceRecords.list(StpUtil.getLoginIdAsLong(), page, pageSize);
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toPerformanceVOPage(objectPageResp));
     }

@@ -44,7 +44,7 @@ public interface BankCardCoverTemplateMapper extends BaseMapper<BankCardCoverTem
         """;
 
     @Select("<script>" + DETAIL_SELECT + PAGE_FILTER
-            + " ORDER BY t.sort_order,t.id LIMIT #{query.size} OFFSET #{offset}</script>")
+            + " ORDER BY t.sort_order,t.id LIMIT #{query.pageSize} OFFSET #{offset}</script>")
     List<BankCardCoverTemplateVO> selectPage(@Param("query") BankCardCoverQuery query, @Param("offset") long offset);
 
     @Select("<script>SELECT COUNT(*) FROM bank_card_cover_template t "

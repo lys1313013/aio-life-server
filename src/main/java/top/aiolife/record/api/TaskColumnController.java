@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +62,7 @@ public class TaskColumnController {
         lambdaQueryWrapper.eq(TaskColumnEntity::getUserId, userId);
         lambdaQueryWrapper.eq(TaskColumnEntity::getIsDeleted, StatusConst.NO_DELETE);
         TaskColumnEntity condition = query.getCondition();
-        lambdaQueryWrapper.orderByAsc(TaskColumnEntity::getSortOrder);        // 分页
+        lambdaQueryWrapper.orderByAsc(TaskColumnEntity::getSortOrder, TaskColumnEntity::getId);        // 分页
         Page<TaskColumnEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<TaskColumnEntity> iPage = getBaseMapper().selectPage(page, lambdaQueryWrapper);
         PageResp<TaskColumnEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
@@ -134,7 +136,7 @@ public class TaskColumnController {
      * @param list 只传id和sortOrder
      */
     @PostMapping("/reSort")
-    public ApiResponse<Void> reSort(@Valid @RequestBody List<TaskColumnSortReq> requests) {
+    public ApiResponse<Void> reSort(@NotEmpty @RequestBody List<@NotNull @Valid TaskColumnSortReq> requests) {
         List<TaskColumnEntity> list = requests.stream().map(RecordApiConvertor.INSTANCE::fromTaskColumnSortReq).toList();
         Long userId = StpUtil.getLoginIdAsLong();
         for (TaskColumnEntity entity : list) {

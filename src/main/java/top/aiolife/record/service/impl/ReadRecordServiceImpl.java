@@ -62,7 +62,8 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         }
         ReadRecordMapper.applyPageOrder(wrapper, Boolean.TRUE.equals(query.getInProgressFirst()));
 
-        Page<ReadRecordEntity> page = new Page<>(query.getCurrent() == null ? 1 : query.getCurrent(), query.getSize() == null ? 10 : query.getSize());
+        query.validatePagination();
+        Page<ReadRecordEntity> page = new Page<>(query.getPage(), query.getPageSize());
         Page<ReadRecordEntity> entityPage = this.page(page, wrapper);
 
         Page<ReadRecordVO> voPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());

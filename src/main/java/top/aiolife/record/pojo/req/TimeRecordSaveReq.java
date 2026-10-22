@@ -6,6 +6,7 @@ import dev.langchain4j.model.output.structured.Description;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.Data;
+import jakarta.validation.Valid;
 
 /**
  * 时间记录请求体类
@@ -66,5 +67,6 @@ public class TimeRecordSaveReq {
      * 关联的练习记录
      */
     @Description("关联的练习记录列表")
+    @Valid
     List<TimeRecordExerciseReq> exercises;
 }

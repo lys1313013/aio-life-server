@@ -263,13 +263,13 @@ public class TimeRecordController {
     }
 
     @PostMapping
-    public ApiResponse<String> save(@RequestBody TimeRecordSaveReq request) {
+    public ApiResponse<String> save(@Valid @RequestBody TimeRecordSaveReq request) {
         TimeRecordReq timeRecordReq = RecordApiConvertor.INSTANCE.fromTimeRecordSaveReq(request);
         return ApiResponse.success(timeRecordService.saveTimeRecord(timeRecordReq));
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<Boolean> update(@PathVariable("id") String id, @RequestBody TimeRecordSaveReq request) {
+    public ApiResponse<Boolean> update(@PathVariable("id") String id, @Valid @RequestBody TimeRecordSaveReq request) {
         TimeRecordReq timeRecordReq = RecordApiConvertor.INSTANCE.fromTimeRecordSaveReq(request);
         timeRecordReq.setId(id);
         timeRecordService.updateTimeRecord(timeRecordReq);

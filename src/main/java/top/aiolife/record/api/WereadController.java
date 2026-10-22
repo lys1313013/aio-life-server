@@ -3,6 +3,9 @@ package top.aiolife.record.api;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
+import top.aiolife.core.query.QueryParams;
+import top.aiolife.record.pojo.query.WereadRecentQuery;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.pojo.req.WereadConnectionReq;
@@ -20,9 +23,8 @@ public class WereadController {
     private final IWereadService service;
 
     @GetMapping("/recent")
-    public ApiResponse<WereadRecentVO> recent(@RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "6") int size) {
-        return ApiResponse.success(service.recent(cursor, size));
+    public ApiResponse<WereadRecentVO> recent(@Valid @QueryParams WereadRecentQuery query) {
+        return ApiResponse.success(service.recent(query.getCursor(), query.getPageSize()));
     }
 
     @GetMapping("/connection")

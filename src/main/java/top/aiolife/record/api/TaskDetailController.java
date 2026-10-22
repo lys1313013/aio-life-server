@@ -3,6 +3,8 @@ package top.aiolife.record.api;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -58,7 +60,7 @@ public class TaskDetailController {
      * @param list 只传id和sort
      */
     @PostMapping("/reSort")
-    public ApiResponse<Void> reSort(@Valid @RequestBody List<TaskDetailSortReq> requests) {
+    public ApiResponse<Void> reSort(@NotEmpty @RequestBody List<@NotNull @Valid TaskDetailSortReq> requests) {
         List<TaskDetailEntity> list = requests.stream().map(RecordApiConvertor.INSTANCE::fromTaskDetailSortReq).toList();
         Long userId = StpUtil.getLoginIdAsLong();
         for (TaskDetailEntity entity : list) {

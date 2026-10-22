@@ -57,7 +57,7 @@ public class SysDictDataController {
     public ApiResponse<PageResp<SysDictDataRecordVO>> query(
             @QueryParams CommonQuery<SysDictTypeQuery> query) {
         LambdaQueryWrapper<SysDictDataEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.orderByAsc(SysDictDataEntity::getDictId, SysDictDataEntity::getDictSort);
+        lambdaQueryWrapper.orderByAsc(SysDictDataEntity::getDictId, SysDictDataEntity::getDictSort, SysDictDataEntity::getDictCode);
 
         SysDictTypeQuery condition = query.getCondition();
         if (condition != null && SysUtil.isNotEmpty(condition.getDictLabel())) {
@@ -85,6 +85,10 @@ public class SysDictDataController {
         }
 
         List<SysDictDataEntity> records = iPage.getRecords();
+        if (records.isEmpty()) {
+            return ApiResponse.success(RecordApiConvertor.INSTANCE.toSysDictDataRecordVOPage(
+                    PageResp.of(records, iPage.getTotal())));
+        }
 
         // 补充dictName
         Collection<Long> dictIdList = records.stream().map(SysDictDataEntity::getDictId).distinct().toList();

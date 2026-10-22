@@ -84,6 +84,7 @@ public class SysDictTypeController {
                     SysDictTypeEntity::getDictName , condition.getDictName());
         }
 
+        lambdaQueryWrapper.orderByAsc(SysDictTypeEntity::getDictId);
         // 分页
         Page<SysDictTypeEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<SysDictTypeEntity> iPage = getBaseMapper().selectPage(page, lambdaQueryWrapper);

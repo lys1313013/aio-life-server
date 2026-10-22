@@ -1,6 +1,7 @@
 package top.aiolife.core.exception;
 
 import java.util.Map;
+import jakarta.validation.ConstraintViolationException;
 import cn.dev33.satoken.exception.NotLoginException;
 import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.resq.ApiResponse;
@@ -9,6 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -80,6 +85,22 @@ public class ExceptionHandle {
         String message = fieldError == null ? "参数校验失败" : fieldError.getDefaultMessage();
         log.warn("参数校验失败，错误数量={}", e.getBindingResult().getErrorCount());
         return ApiResponse.error(ResponseCodeConst.PARAM_FAIL, message);
+    }
+
+    /** 输入绑定错误不透传 Jackson 原文，避免泄露请求内容或内部类型。 */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ApiResponse<Object> handleUnreadableBody(HttpMessageNotReadableException e) {
+        return ApiResponse.error(ResponseCodeConst.PARAM_FAIL, "请求体格式错误，请检查字段类型和日期格式");
+    }
+
+    @ExceptionHandler({MissingServletRequestParameterException.class, MethodArgumentTypeMismatchException.class})
+    public ApiResponse<Object> handleRequestParameter(Exception e) {
+        return ApiResponse.error(ResponseCodeConst.PARAM_FAIL, "请求参数缺失或格式错误");
+    }
+
+    @ExceptionHandler({ConstraintViolationException.class, HandlerMethodValidationException.class})
+    public ApiResponse<Object> handleConstraintViolation(Exception e) {
+        return ApiResponse.error(ResponseCodeConst.PARAM_FAIL, "请求参数不符合约束");
     }
 
 

@@ -1,6 +1,7 @@
 package top.aiolife.record.pojo.req;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 /** TaskColumnUpdateReq：仅包含接口允许写入的字段。 */
@@ -11,6 +12,7 @@ public class TaskColumnUpdateReq {
     /**
      * 列标题
      */
+    @Pattern(regexp = "(?s).*\\S.*", message = "任务列标题不能是空白")
     private String title;
 
     /**

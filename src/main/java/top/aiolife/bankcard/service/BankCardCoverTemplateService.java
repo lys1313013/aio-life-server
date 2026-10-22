@@ -37,8 +37,9 @@ public class BankCardCoverTemplateService {
         return mapper.selectDetails().stream().map(this::withUrl).toList();
     }
     public PageResp<BankCardCoverTemplateVO> page(BankCardCoverQuery query) {
+        query.validatePagination();
         if (query.getKeyword() != null) query.setKeyword(query.getKeyword().strip());
-        return PageResp.of(mapper.selectPage(query, ((long) query.getPage() - 1) * query.getSize()).stream().map(this::withUrl).toList(), mapper.countPage(query));
+        return PageResp.of(mapper.selectPage(query, ((long) query.getPage() - 1) * query.getPageSize()).stream().map(this::withUrl).toList(), mapper.countPage(query));
     }
     public BankCardCoverTemplateVO detail(long id) {
         var detail = mapper.selectDetail(id);
