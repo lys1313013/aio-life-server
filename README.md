@@ -27,7 +27,7 @@
 
 ### 数据存储
 
-- **MySQL 8.x** — 关系型数据库
+- **MySQL** — 关系型数据库；117 库实际为 5.7.44（2026-10-22 核验），CI 使用 8.0
 - **Redis** — 分布式缓存、Session 存储
 - 菜单与二级锁配置直接通过 Mapper 读取数据库权威状态，避免数据库提交后 Redis 缓存失效失败留下旧授权配置；`/menu/all` 仍按当前角色过滤。代价是增加小配置读取，不缓存跨请求的授权配置。密码解锁状态仍使用 Redis，时长为 30 分钟。
 - **Caffeine** — 本地内存缓存（二级缓存）
@@ -117,7 +117,7 @@ aio-life-server/
 ### 环境要求
 
 - JDK 21+
-- MySQL 8.x
+- MySQL：117 现有库为 5.7.44；新库初始化与 CI 按 8.0.16+ 验证，现有库迁移须逐份核验版本兼容性，见 [SQL 脚本规范](docs/SQL脚本规范.md)
 - Redis
 - MinIO（可选，用于文件存储）
 - Maven 3.6+
@@ -331,16 +331,37 @@ Web 登录页的“App 扫码登录”入口为 `/auth/app-qrcode-login`。用�
 
 入口 `/record/life-footprints`，记录长期生活的起止日期、具体地点、地址和备注。数据库使用 `DATE`，接口使用 `YYYY-MM-DD`；结束日期必填，`9999-12-31` 表示至今，不使用 `ongoing`。地图取得当前用户全量记录。API 前缀 `/api/life-footprints`，增改使用完整字段，不使用幂等键或版本字段，暂不使用乐观锁；同一账号多端编辑以最后一次成功保存为准。`update_time` 仅用于审计，修改和删除仍校验用户归属及逻辑删除状态。保存期间拦截重复点击；网络结果不确定时先重新读取确认，不承诺重复新增请求返回同一记录。
 
-部署前按 [数据库升级说明](docs/数据库升级验证.md#生活足迹2026-10-21) 完成建表及菜单迁移。地图配置由后端环境变量注入：
+部署前按 [数据库升级说明](docs/数据库升级验证.md#生活足迹2026-10-21) 完成建表及菜单迁移。管理员在「系统管理 → 系统配置 → 生活足迹地图」维护地址解析与底图，保存至现有 `system_config` 表的 `footprints.baidu`（JSON）项，立即生效；该键沿用服务端百度地址解析配置命名。未保存时也会显示配置入口，首次保存自动建记录，无需新增表或手动执行 INSERT。
 
-| 环境变量 | 用途 |
+Web 主地图使用腾讯 JavaScript API GL 的白浅底图；新增和编辑继续使用 Leaflet 选点，移动端 H5 保持 Leaflet。后端仍使用百度地址检索/解析接口，不加载百度浏览器 SDK，也不代理底图。
+
+系统配置 `footprints.tencent` 维护 Web 展示 Key 与 `mapStyleId`。`browserKey` 仅写入，加密存为 `browserKeyCiphertext`；管理响应只返回 `browserKeyConfigured` 与样式编号。留空保留 Key，`clearBrowserKey: true` 显式清除。默认 `style1` 须在腾讯控制台绑定白浅模板。首次保存自动创建记录，无需额外 SQL。浏览器 Key 会随腾讯 SDK 请求公开，部署时应按控制台能力限制来源。加密主密钥与百度配置相同。
+
+| 配置字段 | 用途 |
 | --- | --- |
-| `AIO_LIFE_BAIDU_SERVICE_AK` | 百度服务端 AK，开通地点检索、地理编码和逆地理编码；只在后端使用 |
-| `AIO_LIFE_BAIDU_BROWSER_AK` | 百度浏览器 AK，下发 Web/H5，控制台限制实际部署及调试域名 Referer |
-| `AIO_LIFE_MAP_TIMEOUT_MS` | 上游请求超时，默认 5000ms，实际限制在 1000–15000ms |
+| 服务端 AK（`serviceAk`，仅写入请求） | 百度地点检索、地理编码和逆地理编码；加密存储且不回显 |
+| 底图地址（`tileUrl`） | HTTPS XYZ 模板，须含 `{z}`、`{x}`、`{y}`；也支持 `/maps/{z}/{x}/{y}.png` 等本站路径，可替换为自建服务 |
+| 底图坐标系（`tileCoordinateSystem`） | `WGS84` 或 `GCJ02`，必须与底图一致 |
+| 底图署名及链接（`tileAttribution` / `tileAttributionUrl`） | 地图右下角常驻署名；链接使用 HTTPS 或留空 |
 
-未配置服务端 AK 时关闭搜索和解析，地图选点仍可使用；未配置浏览器 AK 时 Web/H5 显示地图重试状态，已有记录仍可编辑文字和时间。服务端按用户限制地图查询频率及并发，不记录完整 AK 或地址请求 URL。仅地点搜索或地址解析时向地图服务发送地点信息，不发送起止时间和备注。
+底图设置默认折叠。默认使用 `https://tile.openstreetmap.org/{z}/{x}/{y}.png`（WGS84），保留 OpenStreetMap 署名；遵守其 [瓦片使用政策](https://operations.osmfoundation.org/policies/tiles/)，仅加载当前视野、不批量预取、不绕过浏览器缓存。公共瓦片服务无可用性承诺，部署时可更换为适用的供应商或自建底图。请求底图时不发送业务 Token、起止时间或备注。自动化测试使用模拟瓦片，不对公共底图进行遍历。
 
-存储坐标固定 `GCJ02`，百度查询显式要求 `ret_coordtype=gcj02ll`，Web/H5 使用 JSAPI 4.0 的 GCJ02 模式；不要把 BD09/WGS84 原值写入该字段。地址解析结果仍须用户确认。微信和 App 采用原生地图，App 地图 SDK 配置与真机验证见移动端 README。
+服务端 AK 留空保留原值，填写新值替换；勾选「清除服务端 AK」后关闭搜索和解析，地图展示和选点仍可使用。列表、单项和保存响应均不包含服务端 AK 或密文，仅返回 `serviceAkConfigured`。数据库保存底图设置和 `serviceAkCiphertext`，不要直接写明文服务端 AK。加密沿用 `AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY`（至少 16 位，部署侧提供并保持稳定）；超时仍使用 `AIO_LIFE_MAP_TIMEOUT_MS`，默认 5000ms，限制在 1000–15000ms。原两类 AK 环境变量不再读取；旧 JSON 中的 `browserAk` 不再使用，下一次保存时移除。
 
-本地专项：`mvn -Dtest=LifeFootprintTest,FootprintMapClientTest test`。第三方响应使用模拟测试；真实百度服务需配置上述 AK 后联调。
+AK 申请：登录 [百度地图控制台](https://lbsyun.baidu.com/apiconsole/key)，按要求完成开发者认证，在「应用管理 → 我的应用 → 创建应用」选择「服务端」，启用地点检索、地理编码、逆地理编码；选择 IP 校验，填后端的**公网出口 IP**。当前客户端不计算 SN，不选择 SN 校验。前端不再需要 Referer 白名单或百度浏览器应用。
+
+`GET /api/life-footprints/map/config` 返回 `searchEnabled`、业务坐标系 `coordinateSystem: "GCJ02"` 、`tiles: { url, attribution, attributionUrl, coordinateSystem }` 和 `tencent: { key, mapStyleId }`。登录后的配置接口下发腾讯展示 Key，不下发百度服务端 AK 或任何密文。配置保存后刷新页面即可获取新底图，无需重启后端；地址服务每次请求读取最新服务端 AK。服务端按用户限制查询频率及并发，不记录完整 AK 或地址请求 URL，只在主动搜索/解析时发送地点信息。
+
+记录仍固定保存 GCJ02，百度查询显式要求 `ret_coordtype=gcj02ll`。WGS84 底图上先将记录转为 WGS84 显示，选点转回 GCJ02 再提交；GCJ02 底图直接使用记录坐标。反向转换通过迭代求逆减少街区级近似误差；不要把 BD09/WGS84 原值写入历史字段。地址解析结果仍须用户确认。微信和 App 保留 GCJ02 原生地图，App SDK 配置与真机验证见移动端 README。
+
+本地专项：`mvn -Dtest=LifeFootprintTest,FootprintMapClientTest,FootprintMapConfigServiceTest,FootprintTencentConfigServiceTest test`。真实百度地址解析仍需服务端 AK 后联调；模拟接口结果不等于真实服务或定位精度验收。
+
+#### 省市区县乡镇目录
+
+生活足迹 Web / H5 / 微信共享 `system_region` 基础表，按需调用：
+
+- `GET /api/system/regions?parentCode=0`：根省份；传父编码加载其下级，返回 `{code,name,level,hasChildren}` 数组，`level` 为数字1至4、`code` 为字符串。
+- `GET /api/system/regions/{code}/path`：恢复从省到所选编码的完整路径。均需登录，无需地图AK。
+- 足迹请求/响应新增可空 `regionCode`，保存最深选中编码；可停在任一级或不选，旧记录NULL。变更地区后需重新确认具体地图位置。
+
+先按 `sql/upgrade-plan.json` 完成建表、足迹列迁移和目录种子数据。目录使用固定2023快照，共44703项，不含港澳台/海外，不保证区划实时性；手填地址与地图选点仍可使用。来源、许可、覆盖范围及再生成方式见 [地区数据](docs/data/china-regions.md)。

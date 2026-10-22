@@ -10,7 +10,7 @@ This file provides guidance to AI coding agents when working with code in this r
 
 - **Java 21** + **Spring Boot 3.5.16**
 - **MyBatis Plus 3.5.11** + **Druid 1.2.24** (ORM + 连接池)
-- **MySQL 8.x** (主数据库)
+- **MySQL**（117 主数据库为 5.7.44，2026-10-22 核验；CI 使用 8.0，版本兼容要求见 [SQL 脚本规范](docs/SQL脚本规范.md)）
 - **Redis** (分布式缓存、Session、Sa-Token 存储)
 - **Caffeine** (本地内存缓存，配合 Spring Cache 作为二级缓存)
 - **Sa-Token 1.40.0** (认证授权，JWT 模式)
