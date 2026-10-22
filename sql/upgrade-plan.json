@@ -118,6 +118,26 @@
     {
       "path": "sql/1_init_table/2026-10-21_life_footprint_drop_version.sql",
       "sha256": "81b76be57db40f81b3ec4209c29efc7af2ab80fad9a52d64004d4ba83295b657"
+    },
+    {
+      "path": "sql/2_ini_data/2026-10-22_access_log_menu.sql",
+      "sha256": "0172090fb3b3e2b2d05b9b630d4b49a803026c52b0b17663fe6ad0eb6375960f"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-22_system_region.sql",
+      "sha256": "31ae4e12c99cb7bac3d344d61b212ba36c8ba10deab90f22e78c0915e7cdde0e"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-22_life_footprint_region.sql",
+      "sha256": "4dcf8743efcc5096f299e5f28a8b5d0bd6a7718bda57b821a637de102cca88c0"
+    },
+    {
+      "path": "sql/2_ini_data/2026-10-22_system_regions.sql",
+      "sha256": "46479a2cb89f5a1111c450b6148dfcfd01cab54bb91658c272fdc0f15b98f532"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-22_device_expense.sql",
+      "sha256": "2db36a8f226f1d8d4e9d2b23ecbe4253cddecb37910165d20fb7965ee6296163"
     }
   ]
 }

@@ -182,6 +182,11 @@ def verify(args, mysql):
                            "(name='OperationLog' AND path='/system/operation-log' AND status=1 AND mobile_status=0)")
         operation_menu = ("SELECT COUNT(*) FROM sys_menu WHERE name='OperationLog' "
                           "AND path='/system/operation-log' AND roles='admin' AND status=1 AND mobile_status=0")
+        access_menu = ("SELECT COUNT(*) FROM sys_menu WHERE name='AccessLog' "
+                       "AND path='/system/access-log' AND component='system/access-log/index' "
+                       "AND roles='admin' AND status=1 AND mobile_status=1 AND is_deleted=0")
+        assert_true(mysql.run(access_menu, old) == '1',
+                    'Upgraded access log menu is missing or has incorrect permissions')
         assert_true(mysql.run(status_mismatch, old) == '0',
                     'Mobile menu status did not copy existing status')
         assert_true(mysql.run(operation_menu, old) == '1',
@@ -197,6 +202,19 @@ def verify(args, mysql):
                     'Fresh mobile menu statuses differ from their Web defaults')
         assert_true(mysql.run(operation_menu, fresh) == '1',
                     'Fresh operation log menu must remain Web-only')
+        assert_true(mysql.run(access_menu, fresh) == '1',
+                    'Fresh access log menu is missing or has incorrect permissions')
+        access_migration = next(source for path, source in migrations
+                                if path.endswith('2026-10-22_access_log_menu.sql'))
+        access_before = mysql.run("SELECT * FROM sys_menu WHERE name='AccessLog'", old)
+        mysql.run(access_migration, old)
+        assert_true(mysql.run("SELECT * FROM sys_menu WHERE name='AccessLog'", old) == access_before,
+                    'Repeated access log migration changed the existing menu')
+        mysql.run("UPDATE sys_menu SET roles='admin,fixture',status=0,mobile_status=0,is_deleted=1 WHERE name='AccessLog'", old)
+        access_custom = mysql.run("SELECT * FROM sys_menu WHERE name='AccessLog'", old)
+        mysql.run(access_migration, old)
+        assert_true(mysql.run("SELECT * FROM sys_menu WHERE name='AccessLog'", old) == access_custom,
+                    'Access log migration overwrote administrator settings or deletion state')
         expected, actual = mysql.schema(fresh), mysql.schema(old)
         issues = differences(expected, actual)
         assert_true(not issues, 'Upgrade schema differs from fresh schema:\n' + '\n'.join(issues))
