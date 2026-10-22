@@ -27,4 +27,6 @@ public interface IMovieService extends IService<MovieEntity> {
     List<MovieVO> listActive();
 
     MovieVO getVOById(Long id);
+    /** 仅解析元数据，不上传封面或创建业务记录。 */
+    MovieReq parseDoubanMetadata(String url);
 }

@@ -1,6 +1,8 @@
 package top.aiolife.record.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import top.aiolife.capture.service.DoubanSourceGuard;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,9 @@ public class DoubanMovieImportServiceImpl implements IDoubanMovieImportService {
     private final IMovieMapper movieMapper;
     private final IUserBindService userBindService;
 
+    @Autowired
+    private DoubanSourceGuard doubanSources;
+
     @Override
     public DoubanMovieImportPreviewVO preview(DoubanMovieImportReq request) {
         return inspect(request, StpUtil.getLoginIdAsLong()).preview();
@@ -61,8 +66,9 @@ public class DoubanMovieImportServiceImpl implements IDoubanMovieImportService {
         int updated = 0;
         int skipped = 0;
         // 正式写入前的 inspect 是第二次判重，不能复用前端预览结果。
-        for (NormalizedItem item : inspection.items()) {
-            MovieEntity existing = inspection.existingBySubjectId().get(item.subjectId());
+        for (NormalizedItem item : inspection.items().stream().sorted(java.util.Comparator.comparing(NormalizedItem::subjectId)).toList()) {
+            MovieEntity existing = (MovieEntity) doubanSources.lockExisting(userId,
+                    DoubanSubjectUrl.parse("https://movie.douban.com/subject/" + item.subjectId() + "/"));
             if (existing != null) {
                 if ("skip".equals(policy)) {
                     skipped++;

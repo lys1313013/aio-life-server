@@ -26,4 +26,6 @@ public interface IReadRecordService extends IService<ReadRecordEntity> {
     List<ReadRecordVO> listActive();
 
     ReadRecordVO getVOById(Long id);
+    /** 仅解析元数据，不上传封面或创建业务记录。 */
+    ReadRecordReq parseDoubanMetadata(String url);
 }

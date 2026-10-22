@@ -1,6 +1,10 @@
 package top.aiolife.record.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import top.aiolife.capture.service.DoubanSourceGuard;
+import top.aiolife.core.pojo.entity.BaseEntity;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.ReUtil;
@@ -44,6 +48,9 @@ import java.util.stream.Collectors;
 public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> implements IMovieService {
 
     private final IFileService fileService;
+
+    @Autowired
+    private DoubanSourceGuard doubanSources;
 
     @Override
     public Page<MovieVO> pageList(MovieQuery query) {
@@ -91,8 +98,15 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Long saveRecord(MovieReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
+        var source = DoubanSourceGuard.optionalSubject(req.getUrl());
+        if (source != null) {
+            BaseEntity existing = doubanSources.lockExisting(userId, source);
+            if (existing != null) return existing.getId();
+            req.setUrl(source.canonicalUrl());
+        }
         validateRating(req.getRating());
         ensureCoverUploaded(req, true);
         MovieEntity entity = new MovieEntity();
@@ -112,8 +126,17 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateRecord(MovieReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
+        var source = DoubanSourceGuard.optionalSubject(req.getUrl());
+        if (source != null) {
+            BaseEntity duplicate = doubanSources.lockExisting(userId, source);
+            if (duplicate != null && !duplicate.getId().equals(req.getId())) {
+                throw new IllegalArgumentException("该豆瓣条目已存在，不能重复关联");
+            }
+            req.setUrl(source.canonicalUrl());
+        }
         validateRating(req.getRating());
         ensureCoverUploaded(req, true);
         MovieEntity entity = this.getById(req.getId());
@@ -158,6 +181,15 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
 
     @Override
     public MovieReq parseDouban(String url) {
+        return parseDouban(url, true);
+    }
+
+    @Override
+    public MovieReq parseDoubanMetadata(String url) {
+        return parseDouban(url, false);
+    }
+
+    private MovieReq parseDouban(String url, boolean uploadCover) {
         DoubanSubjectUrl.Subject subject = DoubanSubjectUrl.parse(url);
         if (subject.mediaType() != DoubanSubjectUrl.MediaType.MOVIE) {
             throw new IllegalArgumentException("该地址不是豆瓣电影条目地址");
@@ -179,7 +211,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
                 }
                 if (apiSuccess && StrUtil.isNotBlank(res.getTitle())) {
                     log.info("Douban Rexxar API parse success: {}", res.getTitle());
-                    ensureCoverUploaded(res, false);
+                    if (uploadCover) ensureCoverUploaded(res, false);
                     return res;
                 }
             }
@@ -213,7 +245,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             }
 
             // 4. 下载封面图并上传到 MinIO，解决豆瓣 CDN 防盗链问题
-            ensureCoverUploaded(res, false);
+            if (uploadCover) ensureCoverUploaded(res, false);
 
         } catch (Exception e) {
             log.error("解析豆瓣链接失败: {}", url, e);
@@ -229,16 +261,8 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             throw new IllegalArgumentException("豆瓣 subjectId 格式不正确");
         }
         Long userId = StpUtil.getLoginIdAsLong();
-        return this.lambdaQuery()
-                .eq(MovieEntity::getUserId, userId)
-                .like(MovieEntity::getUrl, "/subject/" + subjectId)
-                .orderByAsc(MovieEntity::getId)
-                .list()
-                .stream()
-                .filter(entity -> DoubanSubjectUrl.matches(
-                        entity.getUrl(), DoubanSubjectUrl.MediaType.MOVIE, subjectId))
-                .findFirst()
-                .orElse(null);
+        return (MovieEntity) doubanSources.find(userId,
+                DoubanSubjectUrl.parse("https://movie.douban.com/subject/" + subjectId + "/"), false);
     }
 
     @Override

@@ -1,4 +1,8 @@
 package top.aiolife.record.mapper;
+import java.util.List;
+import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -15,4 +19,10 @@ public interface IMovieMapper extends BaseMapper<MovieEntity> {
                 : "'not_started', 'in_progress', 'completed', 'on_hold'";
         wrapper.last("ORDER BY FIELD(status, " + statusOrder + "), finish_time DESC, create_time DESC, id DESC");
     }
+    @Select("SELECT * FROM movie WHERE user_id=#{userId} AND id=#{id} AND is_deleted=0 FOR UPDATE")
+    @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
+    MovieEntity captureLockOwned(@Param("userId") long userId,@Param("id") long id);
+    @Select("SELECT * FROM movie WHERE user_id=#{userId} AND url LIKE CONCAT('%/subject/',#{subjectId},'%') AND is_deleted=0 FOR UPDATE")
+    @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
+    List<MovieEntity> captureLockSubjects(@Param("userId") long userId,@Param("subjectId") String subjectId);
 }

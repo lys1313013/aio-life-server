@@ -1,6 +1,8 @@
 package top.aiolife.record.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import org.springframework.test.util.ReflectionTestUtils;
+import top.aiolife.capture.service.DoubanSourceGuard;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -36,7 +38,7 @@ class DoubanMovieImportServiceImplTest {
 
     @Test
     void newRecordMapsMarkedDateAndLeavesBlankDateNull() {
-        DoubanMovieImportServiceImpl service = new DoubanMovieImportServiceImpl(movieMapper, userBindService);
+        DoubanMovieImportServiceImpl service = service();
         when(userBindService.getBindByUserIdAndPlatform(7L, "douban"))
                 .thenReturn(binding("doubanfilm"));
         when(movieMapper.selectList(any())).thenReturn(List.of());
@@ -68,7 +70,7 @@ class DoubanMovieImportServiceImplTest {
 
     @Test
     void duplicateAppearsInPreviewAndDefaultsToSkip() {
-        DoubanMovieImportServiceImpl service = new DoubanMovieImportServiceImpl(movieMapper, userBindService);
+        DoubanMovieImportServiceImpl service = service();
         when(userBindService.getBindByUserIdAndPlatform(7L, "douban"))
                 .thenReturn(binding("doubanfilm"));
         MovieEntity existing = existingMovie();
@@ -90,7 +92,7 @@ class DoubanMovieImportServiceImplTest {
 
     @Test
     void overwritePreservesBlankOptionalFieldsAndNonImportFields() {
-        DoubanMovieImportServiceImpl service = new DoubanMovieImportServiceImpl(movieMapper, userBindService);
+        DoubanMovieImportServiceImpl service = service();
         when(userBindService.getBindByUserIdAndPlatform(7L, "douban"))
                 .thenReturn(binding("doubanfilm"));
         MovieEntity existing = existingMovie();
@@ -112,6 +114,19 @@ class DoubanMovieImportServiceImplTest {
         assertEquals("cover-id", existing.getFileId());
         assertEquals(LocalDateTime.of(2020, 1, 1, 0, 0), existing.getStartTime());
         verify(movieMapper).updateById(existing);
+    }
+
+    private DoubanMovieImportServiceImpl service() {
+        var service = new DoubanMovieImportServiceImpl(movieMapper, userBindService);
+        var guard = mock(DoubanSourceGuard.class);
+        lenient().when(guard.lockExisting(anyLong(), any())).thenAnswer(inv -> {
+            var subject = (top.aiolife.record.util.DoubanSubjectUrl.Subject) inv.getArgument(1);
+            return movieMapper.selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<MovieEntity>()).stream()
+                    .filter(e -> e.getUrl() != null && e.getUrl().contains("/subject/" + subject.subjectId() + "/"))
+                    .findFirst().orElse(null);
+        });
+        ReflectionTestUtils.setField(service, "doubanSources", guard);
+        return service;
     }
 
     private static DoubanMovieImportReq request(DoubanMovieImportItemReq item) {
