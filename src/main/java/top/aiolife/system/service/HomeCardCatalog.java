@@ -14,7 +14,7 @@ public final class HomeCardCatalog {
         return new Definition("section." + key, "section", title, visualKey, true);
     }
     // Keep existing provider / Web section order for users without preferences.
-    // Future additions should explicitly default to disabled.
+    // New cards are visible by default; explicit user preferences still take precedence.
     public static final List<Definition> ALL = List.of(
         overview("leetcode", "每日一题", "leetcode"),
         overview("github", "GitHub", "github"),
@@ -32,7 +32,13 @@ public final class HomeCardCatalog {
         section("movie", "观影", "movie"),
         section("exercise", "运动", "exercise"),
         section("github", "GitHub 最近提交", "github"),
-        new Definition("section.weread", "section", "微信读书", "weread", true)
+        new Definition("section.weread", "section", "微信读书", "weread", true),
+        section("memo", "最近笔记", "memo"),
+        section("finance", "收支概览", "finance"),
+        section("income", "收入", "income"),
+        section("expense", "支出", "expense"),
+        section("video", "视频续看", "video"),
+        section("device", "我的设备", "device")
     );
     public static Definition require(String key) {
         return ALL.stream().filter(item -> item.cardKey().equals(key)).findFirst()

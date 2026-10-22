@@ -79,6 +79,15 @@ public class BVideoController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toBVideoVOPage(objectPageResp));
     }
 
+    /** 按本人 ID 获取完整编辑详情，复用视频业务的二级锁。 */
+    @GetMapping("/{id}")
+    public ApiResponse<BVideoVO> detail(@PathVariable Long id) {
+        var entity = bVideoMapper.selectOne(new LambdaQueryWrapper<BVideoEntity>()
+                .eq(BVideoEntity::getUserId, StpUtil.getLoginIdAsLong()).eq(BVideoEntity::getId, id));
+        if (entity == null) throw new IllegalArgumentException("视频不存在或无权访问");
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toBVideoVO(entity));
+    }
+
     @PostMapping
     @Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> insert(@Valid @RequestBody BVideoCreateReq entityReq) {

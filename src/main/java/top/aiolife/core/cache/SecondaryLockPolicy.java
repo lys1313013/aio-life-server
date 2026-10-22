@@ -54,8 +54,8 @@ public final class SecondaryLockPolicy {
             Map.entry("/config-management/sysDictData", List.of("/sysDictData")),
             Map.entry("/mcp/tools", List.of("/mcp")),
             Map.entry("/mcp/api-keys", List.of("/api-key")),
-            Map.entry("/analytics", List.of("/dashboard")),
-            Map.entry("/workspace", List.of("/dashboard")));
+            Map.entry("/analytics", List.of("/dashboard", "/home/sections")),
+            Map.entry("/workspace", List.of("/dashboard", "/home/sections")));
 
     public static String canonicalMenu(String path) {
         if (path == null) return "";

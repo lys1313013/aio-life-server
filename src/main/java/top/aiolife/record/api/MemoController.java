@@ -57,12 +57,21 @@ public class MemoController {
             lambdaQueryWrapper.like(MemoEntity::getContent, query.getCondition().getContent());
         }
 
-        lambdaQueryWrapper.orderByDesc(MemoEntity::getUpdateTime);
+        lambdaQueryWrapper.orderByDesc(MemoEntity::getUpdateTime, MemoEntity::getId);
 
         Page<MemoEntity> page = new Page<>(query.getPage(), query.getPageSize());
 
         Page<MemoEntity> resultPage = memoMapper.selectPage(page, lambdaQueryWrapper);
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toMemoVOPage(PageResp.of(resultPage.getRecords(), resultPage.getTotal())));
+    }
+
+    /** 完整编辑详情只按本人 ID 获取；首页摘要不包含正文。 */
+    @GetMapping("/{id}")
+    public ApiResponse<MemoVO> detail(@PathVariable Long id) {
+        MemoEntity entity = memoMapper.selectOne(new LambdaQueryWrapper<MemoEntity>()
+                .eq(MemoEntity::getUserId, StpUtil.getLoginIdAsLong()).eq(MemoEntity::getId, id));
+        if (entity == null) throw new IllegalArgumentException("笔记不存在或无权访问");
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toMemoVO(entity));
     }
 
     /**

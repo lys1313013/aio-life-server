@@ -32,6 +32,12 @@ public class MenuVisualService {
         Map.entry("github", List.of("/coding/github")),
         Map.entry("leetcode", List.of("/coding/leetcode")),
         Map.entry("weread", List.of("/record/weread", "/my-hub/weread")),
+        Map.entry("memo", List.of("/record/memo", "/my-hub/memo")),
+        Map.entry("income", List.of("/finance/income", "/finance-management/income")),
+        Map.entry("expense", List.of("/finance/expense", "/finance-management/expense")),
+        Map.entry("finance", List.of("/finance/dashboard", "/finance-management/dashboard")),
+        Map.entry("video", List.of("/record/videoWatch", "/my-hub/videoWatch")),
+        Map.entry("device", List.of("/my-hub/device")),
         Map.entry("shanbay", List.of("/record/shanbay", "/my-hub/shanbay"))
     );
     private static final Map<String, MenuVisualVO> PUBLIC_VISUALS = Map.of(

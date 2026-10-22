@@ -54,16 +54,19 @@ class HomeCardPreferenceServiceTest {
 
     @Test void defaults_读取不写库且两类卡片独立注册() {
         var cards = service.get(7);
-        assertEquals(17, cards.size());
+        assertEquals(23, cards.size());
+        assertEquals(0, cards.stream().filter(card -> !card.enabled()).count());
+        assertTrue(cards.stream().filter(card -> List.of("section.memo", "section.finance", "section.income", "section.expense", "section.video", "section.device")
+                .contains(card.cardKey())).allMatch(card -> card.enabled()));
         assertEquals(5, cards.stream().filter(card -> card.group().equals("overview")).count());
-        assertTrue(cards.stream().allMatch(card -> card.enabled()));
+        assertEquals(23, cards.stream().filter(card -> card.enabled()).count());
         verify(mapper, never()).insert(any(HomeCardPreferenceEntity.class));
     }
     @Test void toggle_用户隔离且不会连带隐藏同业务详情卡() {
         service.toggle(7, "overview.github", false);
         assertFalse(service.get(7).stream().filter(card -> card.cardKey().equals("overview.github")).findFirst().orElseThrow().enabled());
         assertTrue(service.get(7).stream().filter(card -> card.cardKey().equals("section.github")).findFirst().orElseThrow().enabled());
-        assertTrue(service.get(8).stream().allMatch(card -> card.enabled()));
+        assertEquals(23, service.get(8).stream().filter(card -> card.enabled()).count());
         var order = inOrder(mapper); order.verify(mapper).lockUser(7); order.verify(mapper).selectList(any()); order.verify(mapper).insert(any(HomeCardPreferenceEntity.class));
     }
     @Test void reorder_完整分组排序保留开关且不改另一组() {
@@ -91,6 +94,10 @@ class HomeCardPreferenceServiceTest {
         assertFalse(service.get(8).stream().filter(card -> card.cardKey().equals("section.goal")).findFirst().orElseThrow().enabled());
         assertTrue(service.get(7).stream().filter(card -> card.cardKey().equals("section.goal")).findFirst().orElseThrow().enabled());
         assertEquals(2, rows.size());
+        service.toggle(7, "section.memo", false);
+        assertFalse(service.get(7).stream().filter(card -> card.cardKey().equals("section.memo")).findFirst().orElseThrow().enabled());
+        assertTrue(service.get(7).stream().filter(card -> card.cardKey().equals("section.finance")).findFirst().orElseThrow().enabled());
+        assertTrue(service.reset(7).stream().allMatch(card -> card.enabled()));
     }
     @Test void deletedUser_不能修改配置() {
         when(mapper.lockUser(9)).thenReturn(null);

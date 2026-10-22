@@ -30,6 +30,14 @@ import static org.mockito.ArgumentMatchers.any;
 
 class SecondaryLockBoundaryTest {
     @Test
+    void homeSections_摘要接口不绕过首页二级锁() {
+        for (String section : List.of("memo", "finance", "income", "expense", "video", "device")) {
+            assertEquals(Set.of("/analytics", "/workspace"),
+                    SecondaryLockPolicy.requestMenus("/home/sections/" + section));
+        }
+    }
+
+    @Test
     void expenseDevice_关联入口同时保护支出与设备() {
         assertEquals(Set.of("/finance/expense", "/my-hub/device"),
                 SecondaryLockPolicy.requestMenus("/expense/9223372036854775806/device"));

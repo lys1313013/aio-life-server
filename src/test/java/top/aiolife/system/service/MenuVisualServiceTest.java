@@ -53,6 +53,18 @@ class MenuVisualServiceTest {
         assertEquals(MenuVisualService.DEFAULT, result.cards().get("section.movie"));
     }
 
+    @Test void 新摘要卡片引用各自业务菜单() {
+        var paths = Map.of("memo", "/record/memo", "finance", "/finance/dashboard",
+                "video", "/record/videoWatch", "device", "/my-hub/device",
+                "income", "/finance/income", "expense", "/finance/expense");
+        paths.forEach((key, path) -> {
+            var result = service.resolve(List.of(menu(42, path, "lucide:star", "#123456")));
+            assertEquals("42", result.cards().get("section." + key).menuId());
+            assertEquals("lucide:star", result.cards().get("section." + key).icon());
+            assertEquals("#123456", result.cards().get("section." + key).iconColor());
+        });
+    }
+
     @Test void 按用户角色与客户端读取授权树且非法颜色统一降级() {
         var user = new UserEntity();
         user.setRole("user, admin");
