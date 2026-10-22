@@ -23,6 +23,8 @@ public class LifeFootprintSaveReq {
     private String address;
     @Size(max = 100)
     private String city;
+    @Pattern(regexp = "[0-9]{2,12}")
+    private String regionCode;
     @NotNull @DecimalMin("-180") @DecimalMax("180")
     private BigDecimal longitude;
     @NotNull @DecimalMin("-90") @DecimalMax("90")

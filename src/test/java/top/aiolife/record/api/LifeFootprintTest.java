@@ -24,6 +24,7 @@ import top.aiolife.record.mapper.LifeFootprintMapper;
 import top.aiolife.record.pojo.req.LifeFootprintSaveReq;
 import top.aiolife.record.service.LifeFootprintDates;
 import top.aiolife.record.service.LifeFootprintService;
+import top.aiolife.system.service.SystemRegionService;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -40,16 +41,18 @@ class LifeFootprintTest {
         ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds);
         jdbc.execute(Files.readString(Path.of("sql/1_init_table/2026-10-21_life_footprint.sql"))
+                .replace("  `city`", "  `region_code` VARCHAR(12) DEFAULT NULL,\n  `city`")
                 .replaceAll("(?m)^--.*$", "")
                 .replace("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", ""));
         var config = new MybatisConfiguration(); config.addMapper(LifeFootprintMapper.class);
         var factory = new MybatisSqlSessionFactoryBean(); factory.setDataSource(ds); factory.setConfiguration(config);
-        service = new LifeFootprintService(new SqlSessionTemplate(factory.getObject()).getMapper(LifeFootprintMapper.class));
+        service = new LifeFootprintService(new SqlSessionTemplate(factory.getObject()).getMapper(LifeFootprintMapper.class), mock(SystemRegionService.class));
     }
 
     private LifeFootprintSaveReq request() {
         var req = new LifeFootprintSaveReq();
         req.setStartDate("2016-09-01"); req.setEndDate("2020-06-30");
+        req.setRegionCode("110101001");
         req.setPlaceName(" 示例住所 "); req.setAddress(" 示例地址 "); req.setNote(" 备注 ");
         req.setLongitude(new BigDecimal("120.127128")); req.setLatitude(new BigDecimal("30.273297"));
         req.setCoordinateSystem("GCJ02");
@@ -74,10 +77,13 @@ class LifeFootprintTest {
     @Test void testCrud_字段可清空无版本连续编辑及逻辑删除() {
         var req = request(); var first = service.create(1, req);
         assertEquals(LocalDate.of(2016, 9, 1), first.getStartDate()); assertEquals(LocalDate.of(2020, 6, 30), first.getEndDate());
+        assertEquals("110101001", first.getRegionCode());
         assertEquals("示例住所", first.getPlaceName()); assertEquals("备注", first.getNote());
+        req.setRegionCode(null);
         req.setNote(null); req.setAddress(null); req.setEndDate("9999-12-31");
         service.update(1, first.getId(), req);
         var persisted = service.get(1, first.getId());
+        assertNull(persisted.getRegionCode());
         assertNull(persisted.getNote()); assertNull(persisted.getAddress()); assertEquals(LifeFootprintDates.PRESENT, persisted.getEndDate());
         req.setNote("再次编辑");
         service.update(1, first.getId(), req);

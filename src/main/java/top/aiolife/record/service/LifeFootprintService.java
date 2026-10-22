@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.record.convertor.LifeFootprintConvertor;
+import top.aiolife.system.service.SystemRegionService;
 import top.aiolife.record.mapper.LifeFootprintMapper;
 import top.aiolife.record.pojo.entity.LifeFootprintEntity;
 import top.aiolife.record.pojo.req.LifeFootprintSaveReq;
@@ -21,6 +22,7 @@ import top.aiolife.record.pojo.vo.LifeFootprintVO;
 @RequiredArgsConstructor
 public class LifeFootprintService {
     private final LifeFootprintMapper mapper;
+    private final SystemRegionService regions;
 
     /** 个人长期地点全量读取，地图不依赖列表页码。 */
     public List<LifeFootprintVO> list(long userId) {
@@ -64,6 +66,7 @@ public class LifeFootprintService {
     private LifeFootprintEntity prepare(LifeFootprintSaveReq request) {
         LifeFootprintDates.validate(request.getStartDate(), request.getEndDate(),
                 LocalDate.now(ZoneId.of("Asia/Shanghai")));
+        regions.validateSelection(request.getRegionCode());
         var entity = LifeFootprintConvertor.INSTANCE.toEntity(request);
         entity.setPlaceName(request.getPlaceName().trim());
         entity.setAddress(trim(request.getAddress()));

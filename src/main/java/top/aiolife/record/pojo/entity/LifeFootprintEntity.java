@@ -23,6 +23,8 @@ public class LifeFootprintEntity extends BaseEntity {
     private String address;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String city;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String regionCode;
     private BigDecimal longitude;
     private BigDecimal latitude;
     private String coordinateSystem;

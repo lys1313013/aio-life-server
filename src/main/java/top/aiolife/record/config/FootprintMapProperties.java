@@ -10,7 +10,5 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "aio.life.server.footprints")
 public class FootprintMapProperties {
-    private String baiduServiceAk = "";
-    private String baiduBrowserAk = "";
     private int timeoutMs = 5000;
 }

@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.client.FootprintMapClient;
 import top.aiolife.record.pojo.vo.FootprintLocationVO;
+import top.aiolife.system.service.FootprintMapConfigService.TileSource;
+import top.aiolife.system.service.FootprintTencentConfigService;
+import top.aiolife.system.service.FootprintTencentConfigService.BrowserConfig;
 
 @RestController
 @Validated
@@ -24,12 +27,13 @@ import top.aiolife.record.pojo.vo.FootprintLocationVO;
 @Tag(name = "生活足迹地图")
 public class FootprintMapController {
     private final FootprintMapClient client;
+    private final FootprintTencentConfigService tencentConfig;
 
-    public record MapConfig(String browserKey, boolean searchEnabled, String coordinateSystem) {}
+    public record MapConfig(boolean searchEnabled, String coordinateSystem, TileSource tiles, BrowserConfig tencent) {}
 
     @GetMapping("/config")
     public ApiResponse<MapConfig> config() {
-        return ApiResponse.success(new MapConfig(client.browserKey(), client.available(), "GCJ02"));
+        return ApiResponse.success(new MapConfig(client.available(), "GCJ02", client.tileSource(), tencentConfig.browserConfig()));
     }
 
     @GetMapping("/search")

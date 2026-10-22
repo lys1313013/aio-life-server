@@ -17,6 +17,7 @@ public class LifeFootprintVO {
     private String placeName;
     private String address;
     private String city;
+    private String regionCode;
     private BigDecimal longitude;
     private BigDecimal latitude;
     private String coordinateSystem;

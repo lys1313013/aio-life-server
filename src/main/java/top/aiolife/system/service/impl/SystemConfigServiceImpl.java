@@ -12,6 +12,8 @@ import top.aiolife.system.pojo.req.SystemConfigUpdateReq;
 import top.aiolife.system.pojo.vo.SystemConfigVO;
 import top.aiolife.system.service.ISystemConfigService;
 import top.aiolife.system.service.WechatSystemConfigService;
+import top.aiolife.system.service.FootprintMapConfigService;
+import top.aiolife.system.service.FootprintTencentConfigService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -33,6 +35,8 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
 
     private final ISystemConfigMapper systemConfigMapper;
     private final WechatSystemConfigService wechatConfig;
+    private final FootprintMapConfigService footprintMapConfig;
+    private final FootprintTencentConfigService footprintTencentConfig;
 
     @Override
     public List<SystemConfigVO> list(String keyPrefix) {
@@ -44,15 +48,25 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
         List<SystemConfigEntity> entities = systemConfigMapper.selectList(wrapper);
         List<SystemConfigVO> result = entities.stream()
                 .filter(e -> !WechatSystemConfigService.KEY.equals(e.getConfigKey()))
+                .filter(e -> !FootprintMapConfigService.KEY.equals(e.getConfigKey()))
+                .filter(e -> !FootprintTencentConfigService.KEY.equals(e.getConfigKey()))
                 .map(this::toVO).collect(Collectors.toList());
         if (!StringUtils.hasText(keyPrefix) || WechatSystemConfigService.KEY.startsWith(keyPrefix)) {
             result.add(wechatConfig.getAdminConfig());
+        }
+        if (!StringUtils.hasText(keyPrefix) || FootprintMapConfigService.KEY.startsWith(keyPrefix)) {
+            result.add(footprintMapConfig.getAdminConfig());
+        }
+        if (!StringUtils.hasText(keyPrefix) || FootprintTencentConfigService.KEY.startsWith(keyPrefix)) {
+            result.add(footprintTencentConfig.getAdminConfig());
         }
         return result;
     }
 
     @Override
     public SystemConfigVO getByKey(String key) {
+        if (FootprintTencentConfigService.KEY.equals(key)) return footprintTencentConfig.getAdminConfig();
+        if (FootprintMapConfigService.KEY.equals(key)) return footprintMapConfig.getAdminConfig();
         if (WechatSystemConfigService.KEY.equals(key)) return wechatConfig.getAdminConfig();
         SystemConfigEntity entity = loadByKey(key);
         return entity == null ? null : toVO(entity);
@@ -60,12 +74,16 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
 
     @Override
     public String getValueByKey(String key) {
+        if (FootprintTencentConfigService.KEY.equals(key)) return footprintTencentConfig.getAdminConfig().getConfigValue();
+        if (FootprintMapConfigService.KEY.equals(key)) return footprintMapConfig.getAdminConfig().getConfigValue();
         SystemConfigEntity entity = loadByKey(key);
         return entity == null ? null : entity.getConfigValue();
     }
 
     @Override
     public SystemConfigVO update(String key, SystemConfigUpdateReq req, long operatorId) {
+        if (FootprintTencentConfigService.KEY.equals(key)) return footprintTencentConfig.save(req.getConfigValue(), operatorId);
+        if (FootprintMapConfigService.KEY.equals(key)) return footprintMapConfig.save(req.getConfigValue(), operatorId);
         if (WechatSystemConfigService.KEY.equals(key)) return wechatConfig.save(req.getConfigValue(), operatorId);
         SystemConfigEntity entity = loadByKey(key);
         if (entity == null) {

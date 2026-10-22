@@ -24,11 +24,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.record.config.FootprintMapProperties;
 import top.aiolife.record.pojo.vo.FootprintLocationVO;
+import top.aiolife.system.service.FootprintMapConfigService;
 
 /** 固定上游、有限超时及额度保护；不记录地址、坐标、AK 或上游异常中的完整 URL。 */
 @Component
 public class FootprintMapClient {
     private final FootprintMapProperties properties;
+    private final FootprintMapConfigService config;
     private final ObjectMapper json;
     private final HttpClient http;
     private final Semaphore concurrent = new Semaphore(8);
@@ -36,18 +38,19 @@ public class FootprintMapClient {
             .maximumSize(10000).expireAfterWrite(Duration.ofMinutes(1)).build();
 
     @Autowired
-    public FootprintMapClient(FootprintMapProperties properties, ObjectMapper json) {
-        this(properties, json, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
+    public FootprintMapClient(FootprintMapProperties properties, FootprintMapConfigService config, ObjectMapper json) {
+        this(properties, config, json, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
     }
 
-    FootprintMapClient(FootprintMapProperties properties, ObjectMapper json, HttpClient http) {
+    FootprintMapClient(FootprintMapProperties properties, FootprintMapConfigService config, ObjectMapper json, HttpClient http) {
         this.properties = properties;
+        this.config = config;
         this.json = json;
         this.http = http;
     }
 
-    public boolean available() { return !properties.getBaiduServiceAk().isBlank(); }
-    public String browserKey() { return properties.getBaiduBrowserAk(); }
+    public boolean available() { return config.searchEnabled(); }
+    public FootprintMapConfigService.TileSource tileSource() { return config.tileSource(); }
 
     public List<FootprintLocationVO> search(long userId, String keyword, String region) {
         // 全国使用明确支持“全国”的检索接口；指定城市时使用区域检索 3.0。
@@ -99,13 +102,14 @@ public class FootprintMapClient {
     }
 
     private JsonNode query(long userId, String path, Map<String, String> values) {
-        if (!available()) throw unavailable("地址搜索尚未配置，仍可使用地图选点");
+        String serviceAk = config.serviceKey();
+        if (serviceAk.isBlank()) throw unavailable("地址搜索尚未配置，请管理员在系统配置中填写服务端 AK");
         if (limits.get(userId, ignored -> new AtomicInteger()).incrementAndGet() > 60 || !concurrent.tryAcquire()) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "搜索较频繁，请稍后重试");
         }
         try {
             var parameters = new LinkedHashMap<>(values);
-            parameters.put("ak", properties.getBaiduServiceAk());
+            parameters.put("ak", serviceAk);
             parameters.put("output", "json");
             var query = parameters.entrySet().stream().map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
                     .reduce((left, right) -> left + "&" + right).orElse("");

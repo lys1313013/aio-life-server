@@ -168,8 +168,7 @@ aio:
       enabled: ${AIO_LIFE_NEO4J_ENABLED:false}
     server:
       footprints:
-        baidu-service-ak: ${AIO_LIFE_BAIDU_SERVICE_AK:}
-        baidu-browser-ak: ${AIO_LIFE_BAIDU_BROWSER_AK:}
+        # AK 由管理员在系统配置中保存至 system_config（footprints.baidu），实时生效。
         timeout-ms: ${AIO_LIFE_MAP_TIMEOUT_MS:5000}
       base-url: ${AIO_LIFE_SERVER_BASE_URL:http://localhost:45678/api}
       douban:
