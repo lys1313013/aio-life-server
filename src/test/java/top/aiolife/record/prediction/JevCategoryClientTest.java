@@ -21,6 +21,11 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import org.mockito.Mockito;
+import top.aiolife.system.service.IntegrationSystemConfigService;
+import top.aiolife.system.service.IntegrationSystemConfigService.TypesafeSnapshot;
+import java.util.function.IntFunction;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.List;
@@ -59,7 +64,7 @@ class JevCategoryClientTest {
         logger.setLevel(Level.INFO);
         var builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
-        ReflectionTestUtils.setField(client, "client", builder.build());
+        ReflectionTestUtils.setField(client, "clientFactory", (IntFunction<RestClient>) ignored -> builder.build());
         var scenario = JevScenarioSupport.scenarios().getFirst();
         request = JevScenarioSupport.request(scenario);
         response = JevScenarioSupport.mockResponse(scenario);
@@ -85,7 +90,7 @@ class JevCategoryClientTest {
         client = new JevCategoryClient("test-key", true, "jev-latest", 50);
         var builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
-        ReflectionTestUtils.setField(client, "client", builder.build());
+        ReflectionTestUtils.setField(client, "clientFactory", (IntFunction<RestClient>) ignored -> builder.build());
         server.expect(requestTo(JevCategoryClient.ENDPOINT)).andRespond(req -> {
             LockSupport.parkNanos(Duration.ofSeconds(2).toNanos());
             throw new IOException("simulated delay");
@@ -197,7 +202,7 @@ class JevCategoryClientTest {
         client = new JevCategoryClient("test-key", true, "jev-latest", 100);
         var builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
-        ReflectionTestUtils.setField(client, "client", builder.build());
+        ReflectionTestUtils.setField(client, "clientFactory", (IntFunction<RestClient>) ignored -> builder.build());
         var entered = new CountDownLatch(1);
         var release = new CountDownLatch(1);
         var finished = new CountDownLatch(1);
@@ -226,4 +231,32 @@ class JevCategoryClientTest {
             release.countDown();
         }
     }
+
+    @Test void testPredict_同一客户端下一次调用使用新的密钥模型超时和开关() {
+        client.close();
+        var configuration = Mockito.mock(IntegrationSystemConfigService.class);
+        var builders = new ArrayList<Integer>();
+        var builder = RestClient.builder();
+        server = MockRestServiceServer.bindTo(builder).build();
+        client = new JevCategoryClient(configuration::typesafe, timeout -> { builders.add(timeout); return builder.build(); });
+        Mockito.when(configuration.typesafe()).thenReturn(new TypesafeSnapshot(true, "first-key", "first-model", 1000, 0));
+        server.expect(requestTo(JevCategoryClient.ENDPOINT)).andExpect(header("Authorization", "Bearer first-key"))
+                .andExpect(content().json("{\"model\":\"first-model\"}"))
+                .andRespond(withSuccess(response.toString(), MediaType.APPLICATION_JSON));
+        server.expect(requestTo(JevCategoryClient.ENDPOINT)).andExpect(header("Authorization", "Bearer second-key"))
+                .andExpect(content().json("{\"model\":\"second-model\"}"))
+                .andRespond(withSuccess(response.toString(), MediaType.APPLICATION_JSON));
+        assertEquals(104L, client.predict(request));
+        Mockito.when(configuration.typesafe()).thenReturn(new TypesafeSnapshot(true, "second-key", "second-model", 2000, 0));
+        assertEquals(104L, client.predict(request));
+        assertEquals(List.of(1000, 2000), builders);
+        Mockito.when(configuration.typesafe()).thenReturn(new TypesafeSnapshot(false, "second-key", "second-model", 2000, 0));
+        assertNull(client.predict(request));
+        Mockito.when(configuration.typesafe()).thenReturn(new TypesafeSnapshot(true, "", "second-model", 2000, 0));
+        assertNull(client.predict(request));
+        server.verify();
+        assertFalse(logs().contains("first-key"));
+        assertFalse(logs().contains("second-key"));
+    }
+
 }

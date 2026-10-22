@@ -346,7 +346,7 @@ Web 主地图使用腾讯 JavaScript API GL 的白浅底图；新增和编辑继
 
 底图设置默认折叠。默认使用 `https://tile.openstreetmap.org/{z}/{x}/{y}.png`（WGS84），保留 OpenStreetMap 署名；遵守其 [瓦片使用政策](https://operations.osmfoundation.org/policies/tiles/)，仅加载当前视野、不批量预取、不绕过浏览器缓存。公共瓦片服务无可用性承诺，部署时可更换为适用的供应商或自建底图。请求底图时不发送业务 Token、起止时间或备注。自动化测试使用模拟瓦片，不对公共底图进行遍历。
 
-服务端 AK 留空保留原值，填写新值替换；勾选「清除服务端 AK」后关闭搜索和解析，地图展示和选点仍可使用。列表、单项和保存响应均不包含服务端 AK 或密文，仅返回 `serviceAkConfigured`。数据库保存底图设置和 `serviceAkCiphertext`，不要直接写明文服务端 AK。加密沿用 `AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY`（至少 16 位，部署侧提供并保持稳定）；超时仍使用 `AIO_LIFE_MAP_TIMEOUT_MS`，默认 5000ms，限制在 1000–15000ms。原两类 AK 环境变量不再读取；旧 JSON 中的 `browserAk` 不再使用，下一次保存时移除。
+服务端 AK 留空保留原值，填写新值替换；勾选「清除服务端 AK」后关闭搜索和解析，地图展示和选点仍可使用。列表、单项和保存响应均不包含服务端 AK 或密文，仅返回 `serviceAkConfigured`。数据库保存底图设置和 `serviceAkCiphertext`，不要直接写明文服务端 AK。加密沿用 `AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY`（至少 16 位，部署侧提供并保持稳定）；请求超时在同一表单维护为 `timeoutMs`，保存后下一次请求生效；未保存或旧记录缺少该字段时兼容 `AIO_LIFE_MAP_TIMEOUT_MS`，默认 5000ms，范围 1000–15000ms。原两类 AK 环境变量不再读取；旧 JSON 中的 `browserAk` 不再使用，下一次保存时移除。
 
 AK 申请：登录 [百度地图控制台](https://lbsyun.baidu.com/apiconsole/key)，按要求完成开发者认证，在「应用管理 → 我的应用 → 创建应用」选择「服务端」，启用地点检索、地理编码、逆地理编码；选择 IP 校验，填后端的**公网出口 IP**。当前客户端不计算 SN，不选择 SN 校验。前端不再需要 Referer 白名单或百度浏览器应用。
 
@@ -365,3 +365,19 @@ AK 申请：登录 [百度地图控制台](https://lbsyun.baidu.com/apiconsole/k
 - 足迹请求/响应新增可空 `regionCode`，保存最深选中编码；可停在任一级或不选，旧记录NULL。变更地区后需重新确认具体地图位置。
 
 先按 `sql/upgrade-plan.json` 完成建表、足迹列迁移和目录种子数据。目录使用固定2023快照，共44703项，不含港澳台/海外，不保证区划实时性；手填地址与地图选点仍可使用。来源、许可、覆盖范围及再生成方式见 [地区数据](docs/data/china-regions.md)。
+
+
+### Typesafe 与 MBTI 系统配置
+
+管理员在「系统管理 → 系统配置」维护以下两项，无需手动建表或插入记录；复用现有 `system_config`，首次保存自动新增，后续更新同一行。
+
+| 配置键 | 内容 | 校验范围 |
+| --- | --- | --- |
+| `typesafe.recommendation` | 智能推荐开关、API Key、模型、请求超时、数据缓存时长 | 超时 1–60000ms；缓存 0–604800000ms，0 关闭缓存；模型名称最多 128 字符 |
+| `mbti.api` | API Key、接口地址 | 地址必须为 HTTPS，不含账号、查询参数或片段 |
+
+首次保存前分别使用 `AIO_LIFE_TYPESAFE_*`、`AIO_LIFE_MBTI_*` 的兼容值；首次保存会将当前有效参数及加密后的密钥一并存入数据库，此后以数据库为准。明确清除密钥后不会重新回退到环境变量。修改后无需重启，下一次业务请求使用新配置；已发出的请求完成本次调用时仍使用原快照。Typesafe 的连接／读取／总等待超时同步调整，数据缓存时长变化后各实例在下一次读取时切换缓存，旧请求不能回填新缓存。
+
+密钥沿用微信配置的加密服务与 `AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY`：留空保留、填写替换，管理接口仅返回 `apiKeyConfigured`，不返回明文或密文。还可明确勾选清除；Typesafe 缺少密钥时回退日历规则，MBTI 缺少密钥时提示管理员配置。修改 MBTI 接口地址时须重新填写密钥或明确清除，避免把原密钥自动发送到新地址。部署侧加密主密钥应保持稳定。
+
+验证码限流统一读取 `aio.life.server.auth.code.*`，默认发送间隔 180 秒、单 IP 每日 100 次、单邮箱每日 20 次、全局每日 1000 次。原先误写的 `spring.auth.code.*` 读取路径已修正；如部署曾额外覆盖旧路径，应同步改用正式路径。本次限流配置仍由启动配置读取，不属于后台动态配置。

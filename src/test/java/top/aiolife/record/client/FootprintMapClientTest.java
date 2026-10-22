@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.record.api.FootprintMapController;
-import top.aiolife.record.config.FootprintMapProperties;
 import top.aiolife.system.service.FootprintMapConfigService;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,7 +18,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class FootprintMapClientTest {
-    private FootprintMapProperties properties;
     private FootprintMapConfigService config;
     private HttpClient http;
     private HttpResponse<String> response;
@@ -27,16 +25,16 @@ class FootprintMapClientTest {
 
     @SuppressWarnings("unchecked")
     @BeforeEach void setup() throws Exception {
-        properties = new FootprintMapProperties();
         config = mock(FootprintMapConfigService.class);
         when(config.serviceKey()).thenReturn("synthetic-server-key");
         when(config.tileSource()).thenReturn(new FootprintMapConfigService.TileSource(
                 FootprintMapConfigService.DEFAULT_TILE_URL, "© OpenStreetMap contributors", "https://www.openstreetmap.org/copyright", "WGS84"));
         when(config.searchEnabled()).thenReturn(true);
+        when(config.timeoutMs()).thenReturn(5000);
         http = mock(HttpClient.class); response = mock(HttpResponse.class);
         when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(response);
         when(response.statusCode()).thenReturn(200);
-        client = new FootprintMapClient(properties, config, new ObjectMapper(), http);
+        client = new FootprintMapClient(config, new ObjectMapper(), http);
     }
 
     @Test void testSearch_使用国测局坐标过滤缺失坐标且不混淆经纬度() throws Exception {
@@ -91,4 +89,16 @@ class FootprintMapClientTest {
         var json = new ObjectMapper().writeValueAsString(config);
         assertTrue(json.contains("tile.openstreetmap.org")); assertFalse(json.contains("browserKey")); assertFalse(json.contains("synthetic-server-key"));
     }
+
+    @Test void testTimeout_下一次地图调用立即使用新的超时() throws Exception {
+        when(response.body()).thenReturn("{\"status\":0,\"results\":[]}");
+        when(config.timeoutMs()).thenReturn(1200, 8000);
+        client.search(1, "住所", "全国");
+        client.search(1, "住所", "全国");
+        var requests = ArgumentCaptor.forClass(HttpRequest.class);
+        verify(http, times(2)).send(requests.capture(), any());
+        assertEquals(1200, requests.getAllValues().get(0).timeout().orElseThrow().toMillis());
+        assertEquals(8000, requests.getAllValues().get(1).timeout().orElseThrow().toMillis());
+    }
+
 }

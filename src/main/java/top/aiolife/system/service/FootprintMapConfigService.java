@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import top.aiolife.core.lock.DistributedLockExecutor;
+import top.aiolife.record.config.FootprintMapProperties;
 import top.aiolife.record.notification.NotificationCryptoService;
 import top.aiolife.system.mapper.ISystemConfigMapper;
 import top.aiolife.system.pojo.entity.SystemConfigEntity;
@@ -32,18 +33,26 @@ public class FootprintMapConfigService {
     private final NotificationCryptoService crypto;
     private final ObjectMapper json;
     private final DistributedLockExecutor locks;
+    private final FootprintMapProperties defaults;
 
     @Getter
     @Setter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Value {
         private String serviceAk;
+        private Integer timeoutMs;
         private String serviceAkCiphertext;
         private boolean clearServiceAk;
         private String tileUrl = DEFAULT_TILE_URL;
         private String tileAttribution = "© OpenStreetMap contributors";
         private String tileAttributionUrl = "https://www.openstreetmap.org/copyright";
         private String tileCoordinateSystem = "WGS84";
+    }
+
+    public int timeoutMs() { return effectiveTimeout(current()); }
+
+    private int effectiveTimeout(Value value) {
+        return value.getTimeoutMs() == null ? Math.max(1000, Math.min(defaults.getTimeoutMs(), 15000)) : value.getTimeoutMs();
     }
 
     public boolean searchEnabled() {
@@ -69,6 +78,7 @@ public class FootprintMapConfigService {
         vo.setConfigType("JSON");
         vo.setDescription("生活足迹地图");
         Map<String, Object> form = new LinkedHashMap<>();
+        form.put("timeoutMs", effectiveTimeout(value));
         form.put("serviceAkConfigured", StringUtils.hasText(value.getServiceAkCiphertext()));
         form.put("tileUrl", value.getTileUrl());
         form.put("tileAttribution", value.getTileAttribution());
@@ -93,11 +103,12 @@ public class FootprintMapConfigService {
             }
             SystemConfigEntity row = load();
             Value previous = row == null ? new Value() : readStored(row.getConfigValue());
+            if (value.getTimeoutMs() == null) value.setTimeoutMs(effectiveTimeout(previous));
             String ciphertext = previous.getServiceAkCiphertext();
             if (value.isClearServiceAk()) ciphertext = null;
             else if (!secret.isEmpty()) ciphertext = crypto.encrypt(secret);
             // 只存允许的字段，明文 AK 和清除指令均不落库。
-            var stored = json.createObjectNode()
+            var stored = json.createObjectNode().put("timeoutMs", value.getTimeoutMs())
                     .put("tileUrl", value.getTileUrl())
                     .put("tileAttribution", value.getTileAttribution())
                     .put("tileAttributionUrl", value.getTileAttributionUrl())
@@ -141,11 +152,19 @@ public class FootprintMapConfigService {
 
     private Value read(String input) {
         try {
-            Value value = json.readValue(input, Value.class);
+            var node = json.readTree(input);
+            if (node != null && node.has("timeoutMs")) {
+                var timeout = node.get("timeoutMs");
+                if (!timeout.isIntegralNumber() || !timeout.canConvertToInt()
+                        || timeout.intValue() < 1000 || timeout.intValue() > 15000) {
+                    throw new IllegalArgumentException();
+                }
+            }
+            Value value = json.treeToValue(node, Value.class);
             if (value == null) throw new IllegalArgumentException();
             return value;
         } catch (Exception exception) {
-            throw new IllegalArgumentException("地图配置必须是有效的配置对象");
+            throw new IllegalArgumentException("地图配置必须是有效的配置对象，超时须为 1000–15000 毫秒的整数");
         }
     }
 

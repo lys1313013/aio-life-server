@@ -114,6 +114,8 @@ mvn -q -Dtest=JevTimeCategoryLiveTest -Djev.live=true test
 
 ## 业务接入配置与验证
 
+管理员可在「系统管理 → 系统配置 → Typesafe 智能推荐」维护以下参数，保存后下一次调用生效。环境变量只在 `typesafe.recommendation` 尚未保存时作为兼容默认值；独立上游测试继续通过测试环境变量提供密钥。
+
 - `AIO_LIFE_TYPESAFE_API_KEY`：服务端 Key；为空时自动使用现有日历规则。
 - `AIO_LIFE_TYPESAFE_ENABLED`：默认 `true`，设为 `false` 可关闭模型调用。
 - `AIO_LIFE_TYPESAFE_MODEL`：默认 `jev-latest`。

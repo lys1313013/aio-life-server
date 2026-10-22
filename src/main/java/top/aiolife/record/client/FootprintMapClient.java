@@ -22,14 +22,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
-import top.aiolife.record.config.FootprintMapProperties;
 import top.aiolife.record.pojo.vo.FootprintLocationVO;
 import top.aiolife.system.service.FootprintMapConfigService;
 
 /** 固定上游、有限超时及额度保护；不记录地址、坐标、AK 或上游异常中的完整 URL。 */
 @Component
 public class FootprintMapClient {
-    private final FootprintMapProperties properties;
     private final FootprintMapConfigService config;
     private final ObjectMapper json;
     private final HttpClient http;
@@ -38,12 +36,11 @@ public class FootprintMapClient {
             .maximumSize(10000).expireAfterWrite(Duration.ofMinutes(1)).build();
 
     @Autowired
-    public FootprintMapClient(FootprintMapProperties properties, FootprintMapConfigService config, ObjectMapper json) {
-        this(properties, config, json, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
+    public FootprintMapClient(FootprintMapConfigService config, ObjectMapper json) {
+        this(config, json, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
     }
 
-    FootprintMapClient(FootprintMapProperties properties, FootprintMapConfigService config, ObjectMapper json, HttpClient http) {
-        this.properties = properties;
+    FootprintMapClient(FootprintMapConfigService config, ObjectMapper json, HttpClient http) {
         this.config = config;
         this.json = json;
         this.http = http;
@@ -114,7 +111,7 @@ public class FootprintMapClient {
             var query = parameters.entrySet().stream().map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
                     .reduce((left, right) -> left + "&" + right).orElse("");
             var request = HttpRequest.newBuilder(URI.create("https://api.map.baidu.com" + path + "?" + query))
-                    .timeout(Duration.ofMillis(Math.max(1000, Math.min(properties.getTimeoutMs(), 15000)))).GET().build();
+                    .timeout(Duration.ofMillis(config.timeoutMs())).GET().build();
             var response = http.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (response.statusCode() != 200) throw unavailable("地图服务暂不可用，请重试或手动选点");
             var root = json.readTree(response.body());

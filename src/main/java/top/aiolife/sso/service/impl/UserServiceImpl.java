@@ -77,16 +77,16 @@ public class UserServiceImpl implements IUserService {
     private final SecondaryLockMenuCache secondaryLockMenuCache;
     private final UserAvatarFileService avatarFiles;
 
-    @Value("${spring.auth.code.interval-seconds:180}")
+    @Value("${aio.life.server.auth.code.interval-seconds:180}")
     private long intervalSeconds;
 
-    @Value("${spring.auth.code.ip-limit-day:20}")
+    @Value("${aio.life.server.auth.code.ip-limit-day:100}")
     private long ipLimitDay;
 
-    @Value("${spring.auth.code.email-limit-day:10}")
+    @Value("${aio.life.server.auth.code.email-limit-day:20}")
     private long emailLimitDay;
 
-    @Value("${spring.auth.code.total-limit-day:1000}")
+    @Value("${aio.life.server.auth.code.total-limit-day:1000}")
     private long totalLimitDay;
 
     @Override

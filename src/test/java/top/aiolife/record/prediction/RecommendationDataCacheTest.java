@@ -88,4 +88,21 @@ class RecommendationDataCacheTest {
         cache.get("records", loads::incrementAndGet, 7L);
         assertEquals(2, cache.get("records", loads::incrementAndGet, 7L));
     }
+
+    @Test void testCache_动态调整时长丢弃旧数据且关闭后每次重查() {
+        var ttl = new AtomicInteger(15000);
+        var cache = new RecommendationDataCache(ttl::get);
+        var loads = new AtomicInteger();
+        assertEquals(1, cache.get("records", loads::incrementAndGet));
+        assertEquals(1, cache.get("records", loads::incrementAndGet));
+        ttl.set(30000);
+        assertEquals(2, cache.get("records", loads::incrementAndGet));
+        ttl.set(0);
+        assertEquals(3, cache.get("records", loads::incrementAndGet));
+        assertEquals(4, cache.get("records", loads::incrementAndGet));
+        ttl.set(15000);
+        assertEquals(5, cache.get("records", loads::incrementAndGet));
+        assertEquals(5, cache.get("records", loads::incrementAndGet));
+    }
+
 }

@@ -13,7 +13,7 @@ springdoc:
   writer-with-order-by-keys: true
   group-configs:
     - group: record
-      packages-to-scan: top.aiolife.record.api
+      packages-to-scan: top.aiolife.record.api,top.aiolife.capture.api
     - group: sso
       packages-to-scan: top.aiolife.sso.api
     - group: system
@@ -168,12 +168,13 @@ aio:
       enabled: ${AIO_LIFE_NEO4J_ENABLED:false}
     server:
       footprints:
-        # AK 由管理员在系统配置中保存至 system_config（footprints.baidu），实时生效。
+        # AK 和请求超时由管理员在 system_config（footprints.baidu）维护；旧记录缺少超时时使用以下兼容值。
         timeout-ms: ${AIO_LIFE_MAP_TIMEOUT_MS:5000}
       base-url: ${AIO_LIFE_SERVER_BASE_URL:http://localhost:45678/api}
       douban:
         # 允许配置域名及其任意子域名，按点号边界匹配；空值禁用远程封面下载。
         cover-allowed-domains: ${AIO_LIFE_DOUBAN_COVER_ALLOWED_DOMAINS:doubanio.com}
+      # 以下 Typesafe / MBTI 环境变量仅在对应系统配置首次保存前使用。
       typesafe:
         enabled: ${AIO_LIFE_TYPESAFE_ENABLED:true}
         api-key: ${AIO_LIFE_TYPESAFE_API_KEY:}

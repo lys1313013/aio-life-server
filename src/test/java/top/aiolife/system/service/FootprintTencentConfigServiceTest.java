@@ -42,7 +42,7 @@ class FootprintTencentConfigServiceTest {
         verify(mapper, times(1)).insert(any(SystemConfigEntity.class));
     }
     @Test void testRegistry_通用配置入口均脱敏且管理保存可发现配置() {
-        var registry = new SystemConfigServiceImpl(mapper, mock(WechatSystemConfigService.class), mock(FootprintMapConfigService.class), service);
+        var registry = new SystemConfigServiceImpl(mapper, mock(WechatSystemConfigService.class), mock(IntegrationSystemConfigService.class), mock(FootprintMapConfigService.class), service);
         var req = new SystemConfigUpdateReq(); req.setConfigValue("{\"browserKey\":\"synthetic-tencent-key\"}");
         registry.update(FootprintTencentConfigService.KEY, req, 9L);
         when(mapper.selectList(any())).thenReturn(List.of(row));

@@ -1,6 +1,7 @@
 package top.aiolife.system.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import top.aiolife.record.config.FootprintMapProperties;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ class FootprintMapConfigServiceTest {
     private final ISystemConfigMapper mapper = mock(ISystemConfigMapper.class);
     private final DistributedLockExecutor locks = mock(DistributedLockExecutor.class);
     private final NotificationCryptoService crypto = new NotificationCryptoService("synthetic-test-master-key");
-    private final FootprintMapConfigService service = new FootprintMapConfigService(mapper, crypto, json, locks);
+    private final FootprintMapConfigService service = new FootprintMapConfigService(mapper, crypto, json, locks, new FootprintMapProperties());
     private SystemConfigEntity row;
 
     @BeforeEach void setup() {
@@ -85,7 +86,7 @@ class FootprintMapConfigServiceTest {
     }
 
     @Test void testSave_未配置加密主密钥拒绝写入且锁占用不覆盖配置() {
-        var unconfigured = new FootprintMapConfigService(mapper, new NotificationCryptoService(""), json, locks);
+        var unconfigured = new FootprintMapConfigService(mapper, new NotificationCryptoService(""), json, locks, new FootprintMapProperties());
         assertThrows(IllegalStateException.class, () -> unconfigured.save("{\"serviceAk\":\"secret\"}", 9L));
         verify(mapper, never()).insert(any(SystemConfigEntity.class));
         doReturn(false).when(locks).tryRun(anyString(), any());
@@ -93,7 +94,7 @@ class FootprintMapConfigServiceTest {
     }
 
     @Test void testSystemConfig_列表单项及通用读取均不泄露密文且可通过管理接口保存() {
-        var registry = new SystemConfigServiceImpl(mapper, mock(WechatSystemConfigService.class), service, mock(FootprintTencentConfigService.class));
+        var registry = new SystemConfigServiceImpl(mapper, mock(WechatSystemConfigService.class), mock(IntegrationSystemConfigService.class), service, mock(FootprintTencentConfigService.class));
         var request = new SystemConfigUpdateReq();
         request.setConfigValue("{\"browserAk\":\"browser\",\"serviceAk\":\"secret\"}");
         registry.update(FootprintMapConfigService.KEY, request, 9L);
@@ -140,4 +141,26 @@ class FootprintMapConfigServiceTest {
         }
         verify(mapper, never()).insert(any(SystemConfigEntity.class));
     }
+
+    @Test void testTimeout_兼容旧数据且保存后不再依赖环境变量() throws Exception {
+        var defaults = new FootprintMapProperties();
+        defaults.setTimeoutMs(6500);
+        var config = new FootprintMapConfigService(mapper, crypto, json, locks, defaults);
+        assertEquals(6500, config.timeoutMs());
+        row = new SystemConfigEntity();
+        row.setConfigValue("{}");
+        assertEquals(6500, config.timeoutMs());
+        config.save("{\"timeoutMs\":2500}", 9L);
+        defaults.setTimeoutMs(9000);
+        assertEquals(2500, config.timeoutMs());
+        assertEquals(2500, json.readTree(config.getAdminConfig().getConfigValue()).path("timeoutMs").asInt());
+        config.save("{\"serviceAk\":\"updated-key\"}", 9L);
+        assertEquals(2500, config.timeoutMs());
+        for (String input : List.of("{\"timeoutMs\":999}", "{\"timeoutMs\":15001}",
+                "{\"timeoutMs\":null}", "{\"timeoutMs\":\"5000\"}", "{\"timeoutMs\":1000.5}")) {
+            assertThrows(IllegalArgumentException.class, () -> config.save(input, 9L));
+        }
+        assertEquals(2500, config.timeoutMs());
+    }
+
 }
