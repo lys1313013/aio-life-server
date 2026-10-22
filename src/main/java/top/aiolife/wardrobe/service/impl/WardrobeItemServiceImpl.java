@@ -76,7 +76,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         if (entity == null) {
             return null;
         }
-        return toVO(entity);
+        return toVO(entity, getCategoryNameMap(userId));
     }
 
     @Override
@@ -98,7 +98,8 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
 
         queryWrapper.orderByDesc(WardrobeItemEntity::getCreateTime);
         List<WardrobeItemEntity> list = this.list(queryWrapper);
-        return list.stream().map(this::toVO).collect(Collectors.toList());
+        Map<Long, String> categoryNameMap = list.isEmpty() ? Collections.emptyMap() : getCategoryNameMap(userId);
+        return list.stream().map(item -> toVO(item, categoryNameMap)).collect(Collectors.toList());
     }
 
     @Override
@@ -166,12 +167,12 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         return entity;
     }
 
-    private WardrobeItemVO toVO(WardrobeItemEntity entity) {
+    private WardrobeItemVO toVO(WardrobeItemEntity entity, Map<Long, String> categoryNameMap) {
         WardrobeItemVO vo = new WardrobeItemVO();
         vo.setId(entity.getId());
         vo.setName(entity.getName());
         vo.setCategoryId(entity.getCategoryId());
-        vo.setCategoryName(getCategoryNameMap(entity.getUserId()).get(entity.getCategoryId()));
+        vo.setCategoryName(categoryNameMap.get(entity.getCategoryId()));
         vo.setColor(entity.getColor());
         vo.setBrand(entity.getBrand());
         vo.setSeason(entity.getSeason());
