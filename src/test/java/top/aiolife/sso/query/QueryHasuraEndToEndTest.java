@@ -128,7 +128,7 @@ class QueryHasuraEndToEndTest {
     }
     private HttpResponse<String> query(String token, String operation) throws Exception {
         return call("POST", gatewayUrl + "/api/v1/queries/execute", token,
-                Map.of("domain", "time", "schemaVersion", "time-record-v1", "policyVersion", "time-record-v1", "operationName", "Q", "query", operation));
+                Map.of("domain", "time", "schemaVersion", "time-record-v3", "policyVersion", "time-record-v3", "operationName", "Q", "query", operation));
     }
     private JsonNode result(String token, String operation) throws Exception {
         var response = query(token, operation); assertEquals(200, response.statusCode(), response.body());
@@ -140,7 +140,7 @@ class QueryHasuraEndToEndTest {
         var catalog = call("GET", gatewayUrl + "/api/v1/datasets/time_record", tokenA, null);
         assertEquals(200, catalog.statusCode());
         String sdl = json.readTree(catalog.body()).path("data").path("graphqlSdl").asText();
-        assertFalse(sdl.contains("userId")); assertFalse(sdl.contains("description:"));
+        assertTrue(sdl.contains("userId")); assertTrue(sdl.contains("description:"));
         String where = "where:{date:{_gte:\"2026-09-01\",_lt:\"2026-10-01\"}}";
         String details = "query Q { timeRecords(" + where + ",orderBy:[{id:Asc}]) { id date categoryId durationMinutes } }";
         var a = result(tokenA, details).path("timeRecords");
@@ -156,7 +156,13 @@ class QueryHasuraEndToEndTest {
         assertEquals("2", stats.path("count").textValue()); assertEquals("90", stats.path("durationMinutes").path("sum").textValue());
         var empty = result(tokenA, "query Q { timeRecordStats(where:{date:{_gte:\"2026-08-01\",_lt:\"2026-09-01\"}}){count durationMinutes{sum}}}").path("timeRecordStats");
         assertEquals("0", empty.path("count").textValue()); assertTrue(empty.path("durationMinutes").path("sum").isNull());
-        assertEquals(400, query(tokenA, "query Q { timeRecords(" + where + ") { userId } }").statusCode());
+        var ownFields = result(tokenA, "query Q { timeRecords(" + where + ") { userId isDeleted startTime endTime title description } }").path("timeRecords");
+        for (var row : ownFields) {
+            assertEquals(userIds.getFirst().toString(), row.path("userId").asText());
+            assertEquals(0, row.path("isDeleted").asInt());
+        }
+        String otherUser = where.replace("}}", "},userId:{_eq:\"" + userIds.get(1) + "\"}}");
+        assertTrue(result(tokenA, "query Q { timeRecords(" + otherUser + "){id userId} }").path("timeRecords").isEmpty());
         var directly = call("POST", System.getenv().getOrDefault("AIO_QUERY_TEST_HASURA_URL", "http://127.0.0.1:45682/graphql"), tokenA, Map.of("query", details));
         assertTrue(directly.statusCode() != 200 || json.readTree(directly.body()).has("errors"), "登录凭据不能直接访问 Hasura");
         // MCP 与 REST 共用真实查询链；不使用测试模拟响应。
@@ -166,8 +172,8 @@ class QueryHasuraEndToEndTest {
         assertEquals("aio-life-query", initialized.at("/result/serverInfo/name").asText());
         var listed = rpc(tokenA, "tools/list", Map.of()).at("/result/tools"); assertEquals(4, listed.size());
         var described = tool(tokenA, "aio_query_describe_dataset", Map.of("name", "time_record"));
-        assertEquals("time-record-v1", described.at("/data/schemaVersion").asText());
-        var args = Map.<String, Object>of("domain", "time", "schemaVersion", "time-record-v1", "policyVersion", "time-record-v1",
+        assertEquals("time-record-v3", described.at("/data/schemaVersion").asText());
+        var args = Map.<String, Object>of("domain", "time", "schemaVersion", "time-record-v3", "policyVersion", "time-record-v3",
                 "operationName", "Q", "query", details);
         assertTrue(tool(tokenA, "aio_query_validate", args).at("/data/allowed").asBoolean());
         assertEquals(2, tool(tokenA, "aio_query_execute", args).at("/data/result/timeRecords").size());
@@ -190,11 +196,11 @@ class QueryHasuraEndToEndTest {
 
     @ParameterizedTest
     @CsvSource({
-        "exercise_record,exercise,exercise-record-v1,exerciseRecords,exerciseRecordStats,exerciseDate,exerciseCount,30",
-        "read_record,reading,read-record-v1,readRecords,readRecordStats,createdAt,,",
-        "movie,movie,movie-v1,movies,movieStats,createdAt,,",
-        "b_video,video,b-video-v1,bVideos,bVideoStats,createdAt,watchedDurationSeconds,120",
-        "performance,performance,performance-v1,performances,performanceStats,performanceDate,ticketPrice,40.01"})
+        "exercise_record,exercise,exercise-record-v2,exerciseRecords,exerciseRecordStats,exerciseDate,exerciseCount,30",
+        "read_record,reading,read-record-v2,readRecords,readRecordStats,createdAt,,",
+        "movie,movie,movie-v2,movies,movieStats,createdAt,,",
+        "b_video,video,b-video-v2,bVideos,bVideoStats,createdAt,watchedDurationSeconds,120",
+        "performance,performance,performance-v2,performances,performanceStats,performanceDate,ticketPrice,40.01"})
     void 新数据集真实REST及MCP明细统计分页和隔离(String dataset,String domain,String version,String root,String statsRoot,String date,String numeric,String expectedSum) throws Exception {
         var catalog=call("GET",gatewayUrl+"/api/v1/datasets/"+dataset,tokenA,null);
         assertEquals(200,catalog.statusCode(),catalog.body());
@@ -230,7 +236,9 @@ class QueryHasuraEndToEndTest {
         var empty=tool(tokenA,"aio_query_execute",args).at("/data/result/"+statsRoot);
         assertEquals("0",empty.path("count").textValue());if(numeric!=null) assertTrue(empty.path(numeric).path("sum").isNull());
         args.put("query","query Q { "+root+"("+where+"){id userId} }");
-        assertTrue(rpc(tokenA,"tools/call",Map.of("name","aio_query_execute","arguments",args)).at("/result/isError").asBoolean());
+        for (var row : tool(tokenA,"aio_query_execute",args).at("/data/result/"+root)) {
+            assertEquals(userIds.getFirst().toString(), row.path("userId").asText());
+        }
         args.put("query",details);
         var apiKey=apiKeys.generateApiKey(userIds.get(1),"life-query-e2e",1);apiKeyIds.add(apiKey.getId());
         assertEquals(1,tool(apiKey.getApiKey(),"aio_query_execute",args).at("/data/result/"+root).size());
