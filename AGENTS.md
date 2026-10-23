@@ -19,8 +19,8 @@ This file provides guidance to AI coding agents when working with code in this r
 - **LangChain4j 1.12.2** + **MCP 0.14.0** (MCP 工具注册与 Schema 适配)
 - **MapStruct 1.6.0** (对象映射)
 - **Hutool 5.8.36** (Java 工具库)
-- **fastjson2 2.0.57** (JSON 处理)
-- **jsoup 1.17.2** (HTML 解析，用于第三方数据同步)
+- **fastjson2 2.0.66** (JSON 处理)
+- **jsoup 1.23.2** (HTML 解析，用于第三方数据同步)
 - **Lombok 1.18.38**
 - **Log4j2** (日志框架)
 - **Micrometer + Brave** (可观测性：Prometheus 指标 + 分布式链路追踪)
@@ -62,6 +62,8 @@ mvn test -Dtest=TimeTrackerCategoryControllerIntegrationTest#testList_获取分�
 | `record` | 核心记录引擎：时迹、目标、待办、理财、荣誉、备忘、消息通知、第三方同步（LeetCode/CSDN/GitHub）、仪表盘 |
 | `system` | 系统管理：用户、菜单、字典 |
 | `wardrobe` | 衣柜管理 |
+| `membership` | 会员平台、订阅记录与统计 |
+| `feedback` | 用户反馈、评论与管理端处理 |
 | `relationship` | 人际关系图谱（Neo4j），通过 `AIO_LIFE_NEO4J_ENABLED` 环境变量控制 |
 | `mcp` | MCP 协议支持：自定义注解驱动的 Tool 注册，含认证层 |
 | `core` | 公共组件：ApiResponse、异常处理、工具类、常量 |
@@ -120,14 +122,17 @@ LLM 会话、消息和模型密钥业务接口已移除。为保留历史数据�
 
 ### API 响应格式
 
-```java
-// 统一返回 ApiResponse<T>
+统一返回 `ApiResponse<T>`，成功示例：
+
+```json
 {
-  "code": 0,      // 成功码为 0
-  "message": null,     // 错误提示信息
-  "data": {...}       // 业务数据
+  "code": 0,
+  "message": null,
+  "data": null
 }
 ```
+
+`data` 按接口返回对象、数组、标量或 `null`；HTTP 200 不代表业务成功。
 
 业务实际数量响应（卡面使用数、会员/衣柜统计、消息未读数）使用 `Integer`，输出 JSON 数字；Java `long` 计数在响应边界用 `Math.toIntExact()` 转换，禁止静默截断。ID 继续使用 `Long` 并输出字符串；`PageResp.total` 保留 `Long + CountSerializer` 的数字分页契约。
 
@@ -186,7 +191,7 @@ public interface MyConvertor {
 | `AIO_LIFE_MINIO_ACCESS_KEY` | MinIO AK | aio_life |
 | `AIO_LIFE_MINIO_SECRET_KEY` | MinIO SK | aio_life |
 | `AIO_LIFE_MINIO_BUCKET_NAME` | MinIO Bucket | aiolife |
-| `AIO_LIFE_NEO4J_ENABLED` | Neo4j 开关 | true |
+| `AIO_LIFE_NEO4J_ENABLED` | Neo4j 开关 | false |
 | `AIO_LIFE_NEO4J_URI` | Neo4j URI | bolt://localhost:7687 |
 | `AIO_LIFE_MAIL_USERNAME` | 邮件账号 | test@qq.com |
 | `AIO_LIFE_MAIL_PASSWORD` | 邮件密码 | password |
@@ -253,12 +258,9 @@ docker run -d \
   aio-life-server:latest
 ```
 
-### 部署脚本
+### 部署入口
 
-`deploy.sh` 提供自动化部署能力，需要配置环境变量：
-- `AIO_LIFE_SERVER_IP` — 服务器 IP
-- `AIO_LIFE_SERVER_USER` — SSH 用户名
-- `AIO_LIFE_SERVER_PASSWORD` — SSH 密码
+镜像构建与发布配置见 `.github/workflows/docker-publish.yml`；容器运行步骤见 [README](README.md#使用-docker-部署)。镜像发布不等于目标环境已部署。仓库当前没有 `deploy.sh`，不要依赖历史 SSH 部署说明。
 
 ## 日志与监控
 

@@ -4,7 +4,6 @@
 
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.16-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## 📖 项目简介
 
@@ -14,6 +13,7 @@
 
 - 🌐 **前端项目**：[aio-life-front](https://github.com/lys1313013/aio-life-front)
 - 🔧 **后端项目**：[aio-life-server](https://github.com/lys1313013/aio-life-server)（本仓库）
+- 📚 **文档导航**：[后端文档目录](docs/README.md)
 - 🤖 **AI 接口调用**：[OpenAPI 文档获取与调用指南](docs/AI接口调用指南.md)
 
 ## 🛠 技术栈
@@ -74,8 +74,8 @@ Web 入口为「系统管理 → 对象存储」。读取 `AIO_LIFE_MINIO_BUCKET
 
 - **MapStruct 1.6.0** — 高性能对象映射
 - **Hutool 5.8.36** — Java 工具类库
-- **fastjson2 2.0.57** — JSON 处理
-- **jsoup 1.17.2** — HTML 解析
+- **fastjson2 2.0.66** — JSON 处理
+- **jsoup 1.23.2** — HTML 解析
 - **Lombok 1.18.38** — 简化代码
 
 ### 监控与运维
@@ -135,8 +135,7 @@ cd aio-life-server
 
 ```bash
 # 创建 MySQL 数据库
-mysql -u root -p
-CREATE DATABASE `aio_life` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+mysql -u root -p -e 'CREATE DATABASE `aio_life` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;'
 
 # 执行初始化脚本
 mysql -u root -p aio_life < sql/1_init_table/2026-08-18_init_all_tables.sql
@@ -146,11 +145,13 @@ for sql_file in sql/2_ini_data/*.sql; do
 done
 ```
 
+应用数据源用户名固定为 `aio_life`（见 `application.yml`）；初始化后为该账号授予业务库权限，并通过 `AIO_LIFE_DB_PASSWORD` 配置对应密码。上述 `root` 仅用于初始化，不能把 root 密码直接当作应用账号密码。
+
 已有数据库升级及发布前只读结构预检见 [数据库升级验证](docs/数据库升级验证.md)。CI 分别验证新库与固定历史版本的增量升级，二者成功才允许镜像发布。
 
 #### 3. 配置环境变量
 
-创建 `.env` 文件或设置环境变量：
+Maven／`java -jar` 启动前，在当前终端导出环境变量。应用和 `start.sh` 不会自动读取 `.env`；Docker 的 `--env-file` 读取不含 `export` 的 `KEY=value` 文件。
 
 ```bash
 # 数据库配置
@@ -209,15 +210,17 @@ java -jar target/aio-life-server-1.0.0.jar
 
 ### 使用 Docker 部署
 
+先准备可达的 MySQL、Redis、业务账号及数据库结构。容器内的 `localhost` 指容器自身，`.env` 中的依赖地址须改为容器可达地址；下面的可选 Compose 文件不负责创建业务库。示例仅发布应用端口 45678；监控如需访问 45679，另行配置受限网络及端口映射。
+
 ```bash
-# 启动依赖服务（MySQL、Redis）
-docker-compose -f docker/docker-compose.yml up -d
+# 可选监控（Prometheus、Grafana）；此文件不提供 MySQL 或 Redis
+docker compose -f docker/docker-compose.yml up -d
 
 # 启动 MinIO（可选）
-docker-compose -f docker/docker-compose-minio.yml up -d
+docker compose -f docker/docker-compose-minio.yml up -d
 
 # 启动 Neo4j（可选）
-docker-compose -f docker/docker-compose-neo4j.yml up -d
+docker compose -f docker/docker-compose-neo4j.yml up -d
 
 # 构建应用镜像
 docker build -t aio-life-server:latest .
@@ -271,7 +274,7 @@ mvn clean package -DskipTests
 {
   "code": 0,
   "message": null,
-  "data": {...}
+  "data": null
 }
 ```
 
@@ -309,7 +312,7 @@ mvn clean package -DskipTests
 
 ## 📄 许可证
 
-[MIT License](LICENSE)
+本仓库当前未附独立 `LICENSE` 文件，项目授权需向维护者确认；第三方代码、图标与其他资源遵循各自许可证。
 
 ## 📮 联系方式
 

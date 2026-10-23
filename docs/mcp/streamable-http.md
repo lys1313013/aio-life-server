@@ -6,17 +6,17 @@
 - 传输协议：`streamable-http`
 - 认证方式：复用现有接口认证
   - `Authorization: Bearer <token>`
-  - 或现有 API Key 认证头
+  - 或 `Authorization: Bearer <api-key>`
 
-## 当前已接入工具
+## 工具目录与结果
 
-- `thought_save`
-  - 说明：保存一条想法，并可附带多个关联事件
-  - 入参主体：
-    - `content`
-    - `events[].content`
+当前源码包含 16 个工具，覆盖时迹、待办、闪念、首页卡片、阅读、观影、目标、纪念日、B 站及豆瓣想读／想看；完整清单和现存契约差异见[接口范围](../../../docs/需求/MCP接口需求方案.md)。实际部署版本通过 `tools/list` 发现并读取 `inputSchema`，不把下方的想法示例视为唯一工具。
+
+API Key 同样放在 `Authorization: Bearer <api-key>`，不是另一个未指明的自定义头。`tools/call` 检查 `isError` 及 `content` 中的业务结果；MCP 不使用 REST 的统一响应外壳。会话 ID 不能代替 Bearer 身份。
 
 ## 调试示例
+
+建议使用支持 Streamable HTTP 的 MCP 客户端。手动 curl 时先调用 `initialize`，按实际响应协商协议；若响应含 `Mcp-Session-Id`，后续请求必须携带该头和协商的 `MCP-Protocol-Version`，并发送 `notifications/initialized`。下方正文仅展示各请求形态，按服务返回补齐会话头；不要照搬独立 Query 服务的无会话假设。
 
 ### 初始化
 
@@ -57,6 +57,8 @@ curl -X POST 'http://localhost:45678/api/mcp' \
 
 ### 调用想法保存工具
 
+此请求会新增业务数据，仅在明确需要保存时调用；测试使用隔离账号与虚构内容。
+
 ```bash
 curl -X POST 'http://localhost:45678/api/mcp' \
   -H 'Content-Type: application/json' \
@@ -80,10 +82,9 @@ curl -X POST 'http://localhost:45678/api/mcp' \
   }'
 ```
 
-## 后续新增接口步骤
+## 新增工具
 
-1. 在目标 Controller 方法上增加 `@Tool`
-2. 在同一方法上增加 `@McpOperation`
-3. 配置 `name`、`description` 与 `ignoreInputFields`
-4. 保持方法签名为单个请求体对象，返回 `ApiResponse<T>`
-5. 编译后通过 `tools/list` 检查新工具是否自动注册
+1. 定义 `@McpToolProvider` 类，在方法上使用 LangChain4j `@Tool`，参数 DTO 字段使用 `@Description`。
+2. 注册器 `McpToolRegistry` 自动扫描；当前方法只允许零参数或单参数，不依赖 Controller 的 `@McpOperation`。
+3. 复用已有 Service／Controller 业务规则，确保当前用户、菜单二级锁、逻辑删除及关联归属一致。
+4. 通过 `tools/list` 核对名称及 Schema，并验证成功、错误、用户隔离和长 ID。源码注册成功不等于真实客户端或发布环境已验证。
