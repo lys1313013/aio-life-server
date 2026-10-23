@@ -55,4 +55,11 @@ public class ExpenseQuery {
      */
      @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime endTime;
+
+    /** 日历明细范围的结束时间，不包含该时刻；旧 endTime 仍保持包含语义。 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime endTimeBefore;
+
+    /** 仅查询未填写支出时间的历史账目。 */
+    private Boolean undated;
 }

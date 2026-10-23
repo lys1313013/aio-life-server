@@ -67,7 +67,9 @@ public class IncomeController {
         lambdaQueryWrapper.likeRight(SysUtil.isNotEmpty(condition.getYear()), IncomeEntity::getIncDate, condition.getYear());
         lambdaQueryWrapper.ge(SysUtil.isNotEmpty(condition.getStartTime()), IncomeEntity::getIncDate, condition.getStartTime());
         lambdaQueryWrapper.le(SysUtil.isNotEmpty(condition.getEndTime()), IncomeEntity::getIncDate, condition.getEndTime());
-        lambdaQueryWrapper.orderByDesc(IncomeEntity::getIncDate);
+        lambdaQueryWrapper.lt(SysUtil.isNotEmpty(condition.getEndTimeBefore()), IncomeEntity::getIncDate, condition.getEndTimeBefore());
+        lambdaQueryWrapper.isNull(Boolean.TRUE.equals(condition.getUndated()), IncomeEntity::getIncDate);
+        lambdaQueryWrapper.orderByDesc(IncomeEntity::getIncDate, IncomeEntity::getId);
         Page<IncomeEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<IncomeEntity> iPage = incomeMapper.selectPage(page, lambdaQueryWrapper);
         PageResp<IncomeEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());

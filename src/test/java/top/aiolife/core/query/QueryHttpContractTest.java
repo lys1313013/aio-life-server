@@ -120,6 +120,8 @@ class QueryHttpContractTest {
                         .param("expTypeId", "9007199254740993")
                         .param("startTime", "2026-09-01 08:30:00")
                         .param("endTime", "2026-09-12 23:59:59")
+                        .param("endTimeBefore", "2026-09-13 00:00:00")
+                        .param("undated", "false")
                         .param("remark", "午餐 & 饮料+甜点")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"page\":99,\"condition\":{\"remark\":\"不应读取请求体\"}}"))
@@ -132,6 +134,8 @@ class QueryHttpContractTest {
         assertEquals("9007199254740993", query.getCondition().getExpTypeId());
         assertEquals(LocalDateTime.of(2026, 9, 1, 8, 30), query.getCondition().getStartTime());
         assertEquals("午餐 & 饮料+甜点", query.getCondition().getRemark());
+        assertEquals(LocalDateTime.of(2026, 9, 13, 0, 0), query.getCondition().getEndTimeBefore());
+        assertEquals(Boolean.FALSE, query.getCondition().getUndated());
     }
 
     @Test

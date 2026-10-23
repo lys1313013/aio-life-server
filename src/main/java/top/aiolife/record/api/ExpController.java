@@ -81,10 +81,12 @@ public class ExpController {
                 condition.getYear());
         lambdaQueryWrapper.ge(condition.getStartTime() != null, ExpenseEntity::getExpTime, condition.getStartTime());
         lambdaQueryWrapper.le(condition.getEndTime() != null, ExpenseEntity::getExpTime, condition.getEndTime());
+        lambdaQueryWrapper.lt(condition.getEndTimeBefore() != null, ExpenseEntity::getExpTime, condition.getEndTimeBefore());
+        lambdaQueryWrapper.isNull(Boolean.TRUE.equals(condition.getUndated()), ExpenseEntity::getExpTime);
         lambdaQueryWrapper.like(SysUtil.isNotEmpty(condition.getRemark()), ExpenseEntity::getRemark, condition.getRemark());
         lambdaQueryWrapper.like(SysUtil.isNotEmpty(condition.getCounterparty()), ExpenseEntity::getCounterparty, condition.getCounterparty());
         lambdaQueryWrapper.like(SysUtil.isNotEmpty(condition.getExpDesc()), ExpenseEntity::getExpDesc, condition.getExpDesc());
-        lambdaQueryWrapper.orderByDesc(ExpenseEntity::getExpTime);
+        lambdaQueryWrapper.orderByDesc(ExpenseEntity::getExpTime, ExpenseEntity::getId);
         Page<ExpenseEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<ExpenseEntity> iPage = expenseMapper.selectPage(page, lambdaQueryWrapper);
         PageResp<ExpenseEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
