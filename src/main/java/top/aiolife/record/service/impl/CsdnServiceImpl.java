@@ -1,5 +1,8 @@
 package top.aiolife.record.service.impl;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Ticker;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -10,6 +13,9 @@ import top.aiolife.record.pojo.csdn.CsdnArticleVO;
 import top.aiolife.record.pojo.csdn.CsdnStatsVO;
 import top.aiolife.record.service.ICsdnService;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +24,38 @@ import java.util.List;
 public class CsdnServiceImpl implements ICsdnService {
 
     private static final String CSDN_BASE_URL = "https://blog.csdn.net/";
+
+    private final Cache<String, Document> homepageCache;
+
+    public CsdnServiceImpl() {
+        this(Ticker.systemTicker());
+    }
+
+    CsdnServiceImpl(Ticker ticker) {
+        homepageCache = Caffeine.newBuilder()
+                .maximumSize(1000)
+                .expireAfterWrite(Duration.ofSeconds(30))
+                .ticker(ticker)
+                .build();
+    }
+
+    /** 统计和文章共用主页；同一账号并发只抓取一次，失败不写入缓存。 */
+    private Document getHomepage(String username) throws IOException {
+        try {
+            return homepageCache.get(username, key -> {
+                try {
+                    return Jsoup.connect(CSDN_BASE_URL + key)
+                            .timeout(10000)
+                            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                            .get();
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        }
+    }
 
     @Override
     public CsdnStatsVO getCsdnStats(String username) {
@@ -29,10 +67,7 @@ public class CsdnServiceImpl implements ICsdnService {
         stats.setLikeCount(0);
         stats.setCommentCount(0);
         try {
-            Document doc = Jsoup.connect(CSDN_BASE_URL + username)
-                    .timeout(10000)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                    .get();
+            Document doc = getHomepage(username);
 
             Elements statNums = doc.select(".user-profile-statistics-num");
             Elements statNames = doc.select(".user-profile-statistics-name");
@@ -68,7 +103,7 @@ public class CsdnServiceImpl implements ICsdnService {
 
         } catch (Exception e) {
             log.warn("CSDN stats request failed: {}", e.getClass().getSimpleName());
-            throw new IllegalStateException("CSDN 统计请求失败，请稍后重试");
+            throw new IllegalStateException("CSDN 统计请求失败，请稍后重试", e);
         }
         return stats;
     }
@@ -81,10 +116,7 @@ public class CsdnServiceImpl implements ICsdnService {
         }
         
         try {
-            Document doc = Jsoup.connect(CSDN_BASE_URL + username)
-                    .timeout(10000)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                    .get();
+            Document doc = getHomepage(username);
 
             Elements articleElements = doc.select("article.blog-list-box");
             int count = 0;
@@ -167,7 +199,7 @@ public class CsdnServiceImpl implements ICsdnService {
 
         } catch (Exception e) {
             log.warn("CSDN articles request failed: {}", e.getClass().getSimpleName());
-            throw new IllegalStateException("CSDN 文章请求失败，请稍后重试");
+            throw new IllegalStateException("CSDN 文章请求失败，请稍后重试", e);
         }
         return articles;
     }
