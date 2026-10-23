@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.pojo.req.LifeFootprintSaveReq;
+import top.aiolife.record.pojo.req.LifeFootprintBatchSaveReq;
 import top.aiolife.record.pojo.vo.LifeFootprintVO;
 import top.aiolife.record.service.LifeFootprintService;
 
@@ -41,6 +42,11 @@ public class LifeFootprintController {
     @PostMapping
     public ApiResponse<LifeFootprintVO> create(@Valid @RequestBody LifeFootprintSaveReq request) {
         return ApiResponse.success(service.create(StpUtil.getLoginIdAsLong(), request));
+    }
+
+    @PostMapping("/batch")
+    public ApiResponse<List<LifeFootprintVO>> saveBatch(@Valid @RequestBody LifeFootprintBatchSaveReq request) {
+        return ApiResponse.success(service.saveBatch(StpUtil.getLoginIdAsLong(), request));
     }
 
     @PutMapping("/{id}")
