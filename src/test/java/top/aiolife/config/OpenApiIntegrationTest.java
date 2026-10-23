@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.core.util.PathUtils;
 import io.swagger.v3.oas.annotations.Hidden;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -51,6 +53,7 @@ import top.aiolife.sso.interceptor.UserLastActiveInterceptor;
 import top.aiolife.sso.service.IApiKeyService;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Answers.RETURNS_DEFAULTS;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -413,10 +416,24 @@ class OpenApiIntegrationTest {
                 }
                 for (Class<?> dependency : dependencies) {
                     if (factory.getBeanNamesForType(dependency, true, false).length == 0) {
-                        factory.registerSingleton("documentationMock:" + dependency.getName(), mock(dependency));
+                        factory.registerSingleton("documentationMock:" + dependency.getName(), mockDependency(dependency));
                     }
                 }
             };
+        }
+
+        private static Object mockDependency(Class<?> dependency) {
+            if (!Filter.class.isAssignableFrom(dependency)) return mock(dependency);
+            // MockMvc 会自动注册 Filter 类型的 Controller 依赖；模拟过滤器必须放行请求链。
+            // 保留真实认证拦截器，地图代理过滤器本身由专用 HTTP 测试覆盖。
+            return mock(dependency, invocation -> {
+                if ("doFilter".equals(invocation.getMethod().getName())) {
+                    FilterChain chain = invocation.getArgument(2);
+                    chain.doFilter(invocation.getArgument(0), invocation.getArgument(1));
+                    return null;
+                }
+                return RETURNS_DEFAULTS.answer(invocation);
+            });
         }
     }
 }
