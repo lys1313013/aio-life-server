@@ -331,30 +331,26 @@ Web 登录页的“App 扫码登录”入口为 `/auth/app-qrcode-login`。用�
 
 入口 `/record/life-footprints`，记录长期生活的起止日期、具体地点、地址和备注。数据库使用 `DATE`，接口使用 `YYYY-MM-DD`；结束日期必填，`9999-12-31` 表示至今，不使用 `ongoing`。地图取得当前用户全量记录。API 前缀 `/api/life-footprints`，增改使用完整字段，不使用幂等键或版本字段，暂不使用乐观锁；同一账号多端编辑以最后一次成功保存为准。`update_time` 仅用于审计，修改和删除仍校验用户归属及逻辑删除状态。保存期间拦截重复点击；网络结果不确定时先重新读取确认，不承诺重复新增请求返回同一记录。
 
-部署前按 [数据库升级说明](docs/数据库升级验证.md#生活足迹2026-10-21) 完成建表及菜单迁移。管理员在「系统管理 → 系统配置 → 生活足迹地图」维护地址解析与底图，保存至现有 `system_config` 表的 `footprints.baidu`（JSON）项，立即生效；该键沿用服务端百度地址解析配置命名。未保存时也会显示配置入口，首次保存自动建记录，无需新增表或手动执行 INSERT。
+部署前按 [数据库升级说明](docs/数据库升级验证.md#生活足迹2026-10-21) 完成建表及菜单迁移。Web 主地图与新增、编辑弹窗统一使用腾讯 JavaScript API GL；默认 `style1` 须在腾讯控制台绑定白浅模板。地图 Key 通过官方代理方案由后端注入，SDK 加载 URL 不含 Key。
 
-Web 主地图使用腾讯 JavaScript API GL 的白浅底图；新增和编辑继续使用 Leaflet 选点，移动端 H5 保持 Leaflet。后端仍使用百度地址检索/解析接口，不加载百度浏览器 SDK，也不代理底图。
+管理员在「系统管理 → 系统配置 → 生活足迹腾讯地图（Web）」维护两个不同的 Key，保存在现有 `system_config` 表的 `footprints.tencent` JSON 项，无需新增表。配置实时生效；页面刷新后更新地图可用状态。完整时序、路由和权限设置见[腾讯地图代理接入](docs/腾讯地图代理接入.md)。
 
-系统配置 `footprints.tencent` 维护 Web 展示 Key 与 `mapStyleId`。`browserKey` 仅写入，加密存为 `browserKeyCiphertext`；管理响应只返回 `browserKeyConfigured` 与样式编号。留空保留 Key，`clearBrowserKey: true` 显式清除。默认 `style1` 须在腾讯控制台绑定白浅模板。首次保存自动创建记录，无需额外 SQL。浏览器 Key 会随腾讯 SDK 请求公开，部署时应按控制台能力限制来源。加密主密钥与百度配置相同。
-
-| 配置字段 | 用途 |
+| 配置 | 用途 |
 | --- | --- |
-| 服务端 AK（`serviceAk`，仅写入请求） | 百度地点检索、地理编码和逆地理编码；加密存储且不回显 |
-| 底图地址（`tileUrl`） | HTTPS XYZ 模板，须含 `{z}`、`{x}`、`{y}`；也支持 `/maps/{z}/{x}/{y}.png` 等本站路径，可替换为自建服务 |
-| 底图坐标系（`tileCoordinateSystem`） | `WGS84` 或 `GCJ02`，必须与底图一致 |
-| 底图署名及链接（`tileAttribution` / `tileAttributionUrl`） | 地图右下角常驻署名；链接使用 HTTPS 或留空 |
+| 地图展示 Key（`browserKey`） | 只用于 GL 校验、统计和海外控制；加密为 `browserKeyCiphertext`，不启用 WebService |
+| 搜索解析 Key（`serviceKey`） | 腾讯关键词输入提示、地址解析、逆地址解析；加密为 `serviceKeyCiphertext`，WebService 设置后端公网出口 IP 白名单 |
+| 样式（`mapStyleId`） | 默认 `style1` |
+| 搜索超时（`timeoutMs`） | 1000–15000ms，默认 5000ms，不影响 GL 代理的 8 秒超时 |
 
-底图设置默认折叠。默认使用 `https://tile.openstreetmap.org/{z}/{x}/{y}.png`（WGS84），保留 OpenStreetMap 署名；遵守其 [瓦片使用政策](https://operations.osmfoundation.org/policies/tiles/)，仅加载当前视野、不批量预取、不绕过浏览器缓存。公共瓦片服务无可用性承诺，部署时可更换为适用的供应商或自建底图。请求底图时不发送业务 Token、起止时间或备注。自动化测试使用模拟瓦片，不对公共底图进行遍历。
+两个 Key 分别留空保留、填写替换、显式清除，不允许同值。管理响应仅返回 `browserKeyConfigured`、`serviceKeyConfigured`、样式与超时，不回显明文或密文。加密主密钥为部署侧 `AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY`（至少 16 位，保持稳定）。历史展示 Key 自动保留；腾讯搜索解析 Key 必须单独配置，不借用展示 Key。后台查询优先使用 `footprints.baidu` 的服务端 AK；百度配额耗尽或并发受限时改用腾讯搜索解析 Key。应用不能代替腾讯控制台设置权限；授权粒度及是否能单独禁用 JS API 以厂商控制台为准，当前服务端不计算 SN 签名。
 
-服务端 AK 留空保留原值，填写新值替换；勾选「清除服务端 AK」后关闭搜索和解析，地图展示和选点仍可使用。列表、单项和保存响应均不包含服务端 AK 或密文，仅返回 `serviceAkConfigured`。数据库保存底图设置和 `serviceAkCiphertext`，不要直接写明文服务端 AK。加密沿用 `AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY`（至少 16 位，部署侧提供并保持稳定）；请求超时在同一表单维护为 `timeoutMs`，保存后下一次请求生效；未保存或旧记录缺少该字段时兼容 `AIO_LIFE_MAP_TIMEOUT_MS`，默认 5000ms，范围 1000–15000ms。原两类 AK 环境变量不再读取；旧 JSON 中的 `browserAk` 不再使用，下一次保存时移除。
+`GET /api/life-footprints/map/config` 返回 `searchEnabled`、`coordinateSystem: "GCJ02"`、兼容移动端的 `tiles` 和 `tencent: { enabled, mapStyleId }`，不含凭据。GL 请求使用限定代理路径的加密 HttpOnly Cookie，仍须通过本站登录、账号状态与二级锁；搜索解析使用普通 Authorization。Key 只在后端调用固定腾讯上游时注入，本站凭据不转发给腾讯。百度与腾讯任一查询凭据已配置就启用搜索；两家均未配置时仍可展示地图并手工选点、填写地址。
 
-AK 申请：登录 [百度地图控制台](https://lbsyun.baidu.com/apiconsole/key)，按要求完成开发者认证，在「应用管理 → 我的应用 → 创建应用」选择「服务端」，启用地点检索、地理编码、逆地理编码；选择 IP 校验，填后端的**公网出口 IP**。当前客户端不计算 SN，不选择 SN 校验。前端不再需要 Referer 白名单或百度浏览器应用。
+后台通过 `FootprintMapProvider` 接口及百度、腾讯两个实现统一处理搜索、地理编码与逆解析。默认百度优先；百度业务状态 `4/301/302`、并发状态 `401/402` 或 HTTP `429` 触发同一次请求切换腾讯。额度耗尽按 AK 指纹与 API 路径记入 Redis，后续命中直接跳过百度：日额度至北京时间次日零点、永久配额缓存 24 小时后重新探测。并发限制只切换当次，不写额度状态；Redis 不可读时也直接走腾讯。普通错误、超时和空结果不切换。每家最多调用一次，更换 AK 使用独立状态。返回统一 GCJ02，逆解析不改变用户选点，候选定位仍须确认。该逻辑依据上游配额错误，不读取免费余额；若厂商继续消耗付费流量包并返回成功，无法检测免费额度已用完。
 
-`GET /api/life-footprints/map/config` 返回 `searchEnabled`、业务坐标系 `coordinateSystem: "GCJ02"` 、`tiles: { url, attribution, attributionUrl, coordinateSystem }` 和 `tencent: { key, mapStyleId }`。登录后的配置接口下发腾讯展示 Key，不下发百度服务端 AK 或任何密文。配置保存后刷新页面即可获取新底图，无需重启后端；地址服务每次请求读取最新服务端 AK。服务端按用户限制查询频率及并发，不记录完整 AK 或地址请求 URL，只在主动搜索/解析时发送地点信息。
+「生活足迹百度查询与 H5 底图」配置（`footprints.baidu`）维护优先使用的 `serviceAk`（仅写入，加密存为 `serviceAkCiphertext`）与 `timeoutMs`，留空保留、填写替换、`clearServiceAk` 显式清除；保留历史配置无需迁移。百度控制台应开通地点检索、地理编码与逆地理编码，并使用后端公网出口 IP 白名单。移动端 H5 保持 Leaflet，该表单同时维护其底图地址、坐标系与署名，默认 OpenStreetMap，遵循[瓦片使用政策](https://operations.osmfoundation.org/policies/tiles/)。Web 不使用该底图配置。微信和 App 保持原生 GCJ02 地图；移动端共用后端查询接口，因此同样采用百度优先、配额耗尽或并发受限后腾讯备用。
 
-记录仍固定保存 GCJ02，百度查询显式要求 `ret_coordtype=gcj02ll`。WGS84 底图上先将记录转为 WGS84 显示，选点转回 GCJ02 再提交；GCJ02 底图直接使用记录坐标。反向转换通过迭代求逆减少街区级近似误差；不要把 BD09/WGS84 原值写入历史字段。地址解析结果仍须用户确认。微信和 App 保留 GCJ02 原生地图，App SDK 配置与真机验证见移动端 README。
-
-本地专项：`mvn -Dtest=LifeFootprintTest,FootprintMapClientTest,FootprintMapConfigServiceTest,FootprintTencentConfigServiceTest test`。真实百度地址解析仍需服务端 AK 后联调；模拟接口结果不等于真实服务或定位精度验收。
+本地专项：`mvn -Dtest=BaiduMapQuotaStoreTest,FootprintMapClientTest,BaiduFootprintMapProviderTest,TencentFootprintMapProviderTest,FootprintMapConfigServiceTest,FootprintTencentConfigServiceTest,TencentMapProxyClientTest,TencentMapProxyHttpTest,TencentMapProxySessionFilterTest test`。真实腾讯搜索解析须单独配置有效服务端 Key 后联调；模拟测试不代表厂商权限或定位精度验收。
 
 #### 省市区县乡镇目录
 

@@ -26,19 +26,25 @@ class FootprintTencentConfigServiceTest {
         when(mapper.insert(any(SystemConfigEntity.class))).thenAnswer(i -> { row = i.getArgument(0); row.setId(8L); return 1; });
         when(locks.tryRun(anyString(), any())).thenAnswer(i -> { i.<Runnable>getArgument(1).run(); return true; });
     }
-    @Test void testKey_加密保存脱敏读取且按需提供浏览器配置() {
-        assertEquals("", service.browserConfig().key());
+    @Test void testKey_加密保存且浏览器配置不再下发Key() throws Exception {
+        assertEquals("", service.displayKey());
+        assertFalse(service.browserConfig().enabled());
         service.save("{\"browserKey\":\"synthetic-tencent-key\",\"mapStyleId\":\"style1\"}", 9L);
         assertFalse(row.getConfigValue().contains("synthetic-tencent-key"));
-        assertEquals("synthetic-tencent-key", service.browserConfig().key());
+        assertEquals("synthetic-tencent-key", service.displayKey());
+        assertTrue(service.browserConfig().enabled());
+        assertFalse(json.writeValueAsString(service.browserConfig()).contains("key"));
         assertEquals("style1", service.browserConfig().mapStyleId());
         assertFalse(service.getAdminConfig().getConfigValue().contains("synthetic-tencent-key"));
         assertFalse(service.getAdminConfig().getConfigValue().contains("Ciphertext"));
         service.save("{\"browserKey\":\"\",\"mapStyleId\":\"style2\"}", 10L);
-        assertEquals("synthetic-tencent-key", service.browserConfig().key());
+        assertEquals("synthetic-tencent-key", service.displayKey());
+        assertTrue(service.browserConfig().enabled());
+        assertFalse(json.writeValueAsString(service.browserConfig()).contains("key"));
         assertEquals("style2", service.browserConfig().mapStyleId());
         service.save("{\"clearBrowserKey\":true}", 10L);
-        assertEquals("", service.browserConfig().key());
+        assertEquals("", service.displayKey());
+        assertFalse(service.browserConfig().enabled());
         verify(mapper, times(1)).insert(any(SystemConfigEntity.class));
     }
     @Test void testRegistry_通用配置入口均脱敏且管理保存可发现配置() {
@@ -60,4 +66,40 @@ class FootprintTencentConfigServiceTest {
         }
         verify(mapper, never()).insert(any(SystemConfigEntity.class));
     }
+    @Test void testTwoKeys_独立保留清除加密与无回退() throws Exception {
+        service.save("{\"browserKey\":\"synthetic-display-key\",\"serviceKey\":\"synthetic-search-key\",\"timeoutMs\":1200}", 9L);
+        assertEquals("synthetic-display-key", service.displayKey());
+        assertEquals("synthetic-search-key", service.serviceKey());
+        assertEquals(1200, service.timeoutMs());
+        assertTrue(service.searchEnabled());
+        assertFalse(row.getConfigValue().contains("synthetic-"));
+        var admin = json.readTree(service.getAdminConfig().getConfigValue());
+        assertTrue(admin.path("browserKeyConfigured").asBoolean());
+        assertTrue(admin.path("serviceKeyConfigured").asBoolean());
+        assertFalse(admin.toString().contains("Ciphertext"));
+        service.save("{\"clearBrowserKey\":true}", 9L);
+        assertEquals("", service.displayKey());
+        assertEquals("synthetic-search-key", service.serviceKey());
+        assertFalse(service.browserConfig().enabled());
+        service.save("{\"browserKey\":\"synthetic-display-key\",\"clearServiceKey\":true}", 9L);
+        assertEquals("", service.serviceKey());
+        assertFalse(service.searchEnabled());
+        assertTrue(service.browserConfig().enabled());
+        assertEquals(1200, service.timeoutMs());
+    }
+
+    @Test void testTwoKeys_拒绝同值及服务端密文注入和无效超时() {
+        service.save("{\"browserKey\":\"synthetic-display-key\"}", 9L);
+        for (String value : List.of(
+                "{\"serviceKey\":\"synthetic-display-key\"}",
+                "{\"serviceKeyCiphertext\":\"unsafe\"}",
+                "{\"serviceKey\":\"bad key\"}",
+                "{\"serviceKey\":\"synthetic-search-key\",\"clearServiceKey\":true}",
+                "{\"timeoutMs\":999}", "{\"timeoutMs\":15001}", "{\"timeoutMs\":1000.5}", "{\"timeoutMs\":null}")) {
+            assertThrows(IllegalArgumentException.class, () -> service.save(value, 9L));
+        }
+        assertEquals("synthetic-display-key", service.displayKey());
+        assertEquals("", service.serviceKey());
+    }
+
 }

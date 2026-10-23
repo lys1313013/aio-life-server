@@ -14,7 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import top.aiolife.core.resq.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import top.aiolife.record.client.FootprintMapClient;
+import top.aiolife.record.filter.TencentMapProxySessionFilter;
 import top.aiolife.record.pojo.vo.FootprintLocationVO;
 import top.aiolife.system.service.FootprintMapConfigService.TileSource;
 import top.aiolife.system.service.FootprintTencentConfigService;
@@ -28,12 +31,16 @@ import top.aiolife.system.service.FootprintTencentConfigService.BrowserConfig;
 public class FootprintMapController {
     private final FootprintMapClient client;
     private final FootprintTencentConfigService tencentConfig;
+    private final TencentMapProxySessionFilter proxySession;
 
     public record MapConfig(boolean searchEnabled, String coordinateSystem, TileSource tiles, BrowserConfig tencent) {}
 
     @GetMapping("/config")
-    public ApiResponse<MapConfig> config() {
-        return ApiResponse.success(new MapConfig(client.available(), "GCJ02", client.tileSource(), tencentConfig.browserConfig()));
+    public ApiResponse<MapConfig> config(HttpServletRequest request, HttpServletResponse response) {
+        var browserConfig = tencentConfig.browserConfig();
+        if (browserConfig.enabled()) proxySession.issue(request, response);
+        response.setHeader("Cache-Control", "no-store");
+        return ApiResponse.success(new MapConfig(client.available(), "GCJ02", client.tileSource(), browserConfig));
     }
 
     @GetMapping("/search")

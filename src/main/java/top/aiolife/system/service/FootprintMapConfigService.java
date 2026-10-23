@@ -22,7 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-/** 地图 AK 从系统配置实时读取；服务端 AK 加密保存且不回显。 */
+/** 百度优先查询的服务端配置，同时保留移动端 H5 瓦片设置。 */
 @Service
 @RequiredArgsConstructor
 public class FootprintMapConfigService {
@@ -76,7 +76,7 @@ public class FootprintMapConfigService {
         SystemConfigVO vo = new SystemConfigVO();
         vo.setConfigKey(KEY);
         vo.setConfigType("JSON");
-        vo.setDescription("生活足迹地图");
+        vo.setDescription("生活足迹百度查询与 H5 底图");
         Map<String, Object> form = new LinkedHashMap<>();
         form.put("timeoutMs", effectiveTimeout(value));
         form.put("serviceAkConfigured", StringUtils.hasText(value.getServiceAkCiphertext()));
@@ -118,7 +118,7 @@ public class FootprintMapConfigService {
                 row = new SystemConfigEntity();
                 row.setConfigKey(KEY);
                 row.setConfigType("JSON");
-                row.setDescription("生活足迹地图");
+                row.setDescription("生活足迹百度查询与 H5 底图");
                 row.setConfigValue(write(stored));
                 row.fillCreateCommonField(operatorId);
                 mapper.insert(row);
