@@ -195,7 +195,7 @@ def verify(args, mysql):
         assert_true(mysql.run("SELECT CONCAT(status, ':', mobile_status) FROM sys_menu WHERE id=-900012", old) == '0:1',
                     'Menu status switches are not independent')
         mysql.run(target, fresh)
-        mysql.run(scoped_sql((ROOT / 'sql/2_ini_data/2_menu.sql').read_text()), fresh)
+        mysql.run(scoped_sql((ROOT / 'sql/menu/2_ini_data/2_menu.sql').read_text()), fresh)
         assert_true(mysql.run("SELECT COUNT(*) FROM sys_menu WHERE status=0 AND mobile_status=0", fresh) != '0',
                     'Fresh menu seed did not retain disabled menus')
         assert_true(mysql.run(status_mismatch, fresh) == '0',

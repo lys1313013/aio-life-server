@@ -22,6 +22,7 @@
 | 新库最终结构 | `sql/1_init_table/2026-08-18_init_all_tables.sql` | 表示当前完整结构，新库不重复执行历史 ALTER |
 | 增量结构迁移 | `sql/1_init_table/YYYY-MM-DD_<business>_<change>.sql` | 文件名描述业务及变更，例如 `2026-10-21_life_footprint_comments.sql` |
 | 初始化、数据修正 | `sql/2_ini_data/` | 区分“只补缺失数据”和“修正已有数据”，按现有目录约定命名 |
+| 菜单专属脚本 | `sql/menu/1_init_table/`、`sql/menu/2_ini_data/` | 分别存放菜单结构迁移与初始化/补缺数据；新库仍使用完整全量结构 |
 | 执行顺序与摘要 | `sql/upgrade-plan.json` | 纳入增量脚本，记录顺序及 SHA-256 |
 | 结构与发布说明 | `docs/数据库表结构.md`、`docs/数据库升级验证.md` | 同步最终结构、特殊值及迁移要求 |
 

@@ -116,9 +116,12 @@ jobs:
           # 新数据库使用最终全量结构；增量迁移脚本仅用于升级已有数据库，不能在全量结构后重复执行。
           mysql "${mysql_args[@]}" < sql/1_init_table/2026-08-18_init_all_tables.sql
 
+          # 先初始化父菜单，再补业务数据及各功能菜单。
+          mysql "${mysql_args[@]}" < sql/menu/2_ini_data/2_menu.sql
+
           while IFS= read -r sql_file; do
             mysql "${mysql_args[@]}" < "$sql_file"
-          done < <(find sql/2_ini_data -maxdepth 1 -type f -name '*.sql' | sort)
+          done < <(find sql/2_ini_data sql/menu/2_ini_data -maxdepth 1 -type f -name '*.sql' ! -name '2_menu.sql' | sort)
 
       - name: Test and package
         run: mvn package -B -ntp

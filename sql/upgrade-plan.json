@@ -20,15 +20,15 @@
       "sha256": "e99e31eee28d9e4d5d01ba71a20e93935f77860f0d627ebd10fc98652105586f"
     },
     {
-      "path": "sql/1_init_table/2026-10-02_menu_icon_color.sql",
+      "path": "sql/menu/1_init_table/2026-10-02_menu_icon_color.sql",
       "sha256": "5c8adf73e36a311472fe6cb0093c795662a8e704d7b20a4485614b719432ae67"
     },
     {
-      "path": "sql/2_ini_data/2026-10-02_bank_card_cover_menu.sql",
+      "path": "sql/menu/2_ini_data/2026-10-02_bank_card_cover_menu.sql",
       "sha256": "ef46412142f8b68f818e48f6417f718ccb6ffd3836c9a72040480995859372d4"
     },
     {
-      "path": "sql/2_ini_data/2026-10-02_storage_admin_menu.sql",
+      "path": "sql/menu/2_ini_data/2026-10-02_storage_admin_menu.sql",
       "sha256": "2c0ba6a63e027e270a13f8c40cbd501355927fe08d1c74184a018d20c8d2a309"
     },
     {
@@ -48,7 +48,7 @@
       "sha256": "1110409118d3a58d3871ef3d35d57dd7ac8fbabeaea9d342726ee6ea82852085"
     },
     {
-      "path": "sql/1_init_table/2026-10-04_menu_mobile_status.sql",
+      "path": "sql/menu/1_init_table/2026-10-04_menu_mobile_status.sql",
       "sha256": "0501fc22c096b9c8c0fdbb5791478aaf66303216fafec9ced22ca61f820bba2a"
     },
     {
@@ -56,7 +56,7 @@
       "sha256": "0231e5ad77e30b7ae1850fbb0bcd8381c23d9c5f264634666cd32fb072449abb"
     },
     {
-      "path": "sql/2_ini_data/2026-10-05_membership_provider_menu.sql",
+      "path": "sql/menu/2_ini_data/2026-10-05_membership_provider_menu.sql",
       "sha256": "2029e6b6902f49a8480ca4dd54758341548b20fd57002650e3592841fd40da9d"
     },
     {
@@ -64,7 +64,7 @@
       "sha256": "34fca771d8c56922c469e6ea7677bfc1614d83b5023c0c06961958b8bd2ab211"
     },
     {
-      "path": "sql/2_ini_data/2026-10-05_ai_api_key_menu.sql",
+      "path": "sql/menu/2_ini_data/2026-10-05_ai_api_key_menu.sql",
       "sha256": "70774308a15604fa17e7efa15647050f749493868d561ab395b1c87a68cc09fc"
     },
     {
@@ -84,7 +84,7 @@
       "sha256": "3b40b65515954b67769306f0a4bcb17123c51dc20135e19d7e44874acd860467"
     },
     {
-      "path": "sql/2_ini_data/2026-10-20_body_profile_menu.sql",
+      "path": "sql/menu/2_ini_data/2026-10-20_body_profile_menu.sql",
       "sha256": "6dc3a56f4a5d09e0b4b7838fed251761f2292a0886dcc65f99efd41e799482a7"
     },
     {
@@ -92,7 +92,7 @@
       "sha256": "a3b4cae2647d36438a1e35a3ecd4f655d54c29ac11d024ced637c590920216ab"
     },
     {
-      "path": "sql/2_ini_data/2026-10-21_life_footprint_menu.sql",
+      "path": "sql/menu/2_ini_data/2026-10-21_life_footprint_menu.sql",
       "sha256": "e3da7f4658c65e982e414f492590b9355c02944a846e276fc15be24cb1506c71"
     },
     {
@@ -100,7 +100,7 @@
       "sha256": "7b141eef2897b0dbf2ec23ba062097e623f3e808bce442e75ad43c5f59a17efe"
     },
     {
-      "path": "sql/2_ini_data/2026-10-21_operation_log_menu.sql",
+      "path": "sql/menu/2_ini_data/2026-10-21_operation_log_menu.sql",
       "sha256": "2cbb4867f700de73c9bc6a6e6bdc2095035f481cca5f8e9ce911c2333df41219"
     },
     {
@@ -120,7 +120,7 @@
       "sha256": "81b76be57db40f81b3ec4209c29efc7af2ab80fad9a52d64004d4ba83295b657"
     },
     {
-      "path": "sql/2_ini_data/2026-10-22_access_log_menu.sql",
+      "path": "sql/menu/2_ini_data/2026-10-22_access_log_menu.sql",
       "sha256": "0172090fb3b3e2b2d05b9b630d4b49a803026c52b0b17663fe6ad0eb6375960f"
     },
     {
@@ -138,6 +138,18 @@
     {
       "path": "sql/1_init_table/2026-10-22_device_expense.sql",
       "sha256": "2db36a8f226f1d8d4e9d2b23ecbe4253cddecb37910165d20fb7965ee6296163"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-25_personal_data_export.sql",
+      "sha256": "085ea55b8498a5f252d2da302b5739e8109669126f6560c809557f1d1586c135"
+    },
+    {
+      "path": "sql/1_init_table/2026-10-25_scheduled_jobs.sql",
+      "sha256": "ed23d74900d4070403ba799ad55dfaf1850afba5df0106a008596ac20aad21ca"
+    },
+    {
+      "path": "sql/menu/2_ini_data/2026-10-25_scheduled_jobs_menu.sql",
+      "sha256": "6cd62ef1f03ee0f94ed35f93eea432e4a0ae4640297e8c4f4530ba9f274f90dd"
     }
   ]
 }

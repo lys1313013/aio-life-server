@@ -47,7 +47,7 @@ Web 入口为「系统管理 → 对象存储」。读取 `AIO_LIFE_MINIO_BUCKET
 
 所有入口都校验 `admin` 角色，包括预览、下载和删除。前端通过 Authorization 请求图片 Blob；不返回 MinIO 凭据、公开链接或签名链接，不修改现有桶访问策略。对象 key 按原始值传递，由请求客户端编码，保留中文、空格、`+`、`#` 和目录分隔符。文件大小沿用全局 Long 序列化约定，Web 兼容字符串数值。
 
-已有数据库升级时执行 `sql/2_ini_data/2026-10-02_storage_admin_menu.sql`（可重复执行）。菜单配置直接读取数据库；执行后重新登录或刷新前端菜单以更新路由。MinIO 凭据需要业务桶的 ListBucket、GetObject 与 DeleteObject 权限。
+已有数据库升级时执行 `sql/menu/2_ini_data/2026-10-02_storage_admin_menu.sql`（可重复执行）。菜单配置直接读取数据库；执行后重新登录或刷新前端菜单以更新路由。MinIO 凭据需要业务桶的 ListBucket、GetObject 与 DeleteObject 权限。
 
 ### 认证与安全
 
@@ -105,7 +105,8 @@ aio-life-server/
 │   └── application.yml   # 应用配置
 ├── sql/
 │   ├── 1_init_table/     # 建表脚本
-│   └── 2_ini_data/       # 初始化数据
+│   ├── 2_ini_data/       # 业务初始化数据
+│   └── menu/             # 菜单结构迁移与初始化数据
 ├── docker/               # Docker 配置文件
 └── docs/                 # 文档
 ```
@@ -140,7 +141,8 @@ mysql -u root -p -e 'CREATE DATABASE `aio_life` CHARACTER SET utf8mb4 COLLATE ut
 # 执行初始化脚本
 mysql -u root -p aio_life < sql/1_init_table/2026-08-18_init_all_tables.sql
 # 全量结构已经包含历史 ALTER，不能再次逐个执行增量结构脚本
-for sql_file in sql/2_ini_data/*.sql; do
+mysql -u root -p aio_life < sql/menu/2_ini_data/2_menu.sql
+for sql_file in sql/2_ini_data/*.sql sql/menu/2_ini_data/202*.sql; do
   mysql -u root -p aio_life < "$sql_file"
 done
 ```

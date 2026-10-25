@@ -227,9 +227,11 @@ SQL 编写必须遵守 [SQL 脚本规范](docs/SQL脚本规范.md)：表和每�
 SQL 脚本位于 `sql/` 目录：
 
 - `1_init_table/` — 建表脚本（按日期命名）
-- `2_ini_data/` — 初始化数据脚本
+- `2_ini_data/` — 业务初始化数据脚本
+- `menu/1_init_table/` — 菜单专属结构迁移
+- `menu/2_ini_data/` — 菜单初始化与补缺脚本；说明见 [菜单 SQL](sql/menu/README.md)
 
-**新库**：只执行 `1_init_table/2026-08-18_init_all_tables.sql`，再按序执行 `2_ini_data` 的数据脚本；全量结构已包含历史 ALTER，禁止再把所有增量结构脚本重复执行。
+**新库**：只执行 `1_init_table/2026-08-18_init_all_tables.sql`，先执行 `menu/2_ini_data/2_menu.sql` 建立基础菜单，再执行 `2_ini_data/*.sql` 和 `menu/2_ini_data/202*.sql`；全量结构已包含历史 ALTER，禁止再把所有增量结构脚本重复执行。
 
 **旧库**：按 `sql/upgrade-plan.json` 和实际迁移记录执行尚未执行的增量，发布前运行只读结构预检。升级计划、校验和及 CI 验证规则见 `docs/数据库升级验证.md`。
 
