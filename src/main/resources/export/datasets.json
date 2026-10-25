@@ -1,0 +1,3249 @@
+[
+  {
+    "key": "user",
+    "title": "个人资料",
+    "table": "user",
+    "ownerColumn": "id",
+    "menus": [],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "记录ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "username",
+        "label": "用户名",
+        "type": "TEXT"
+      },
+      {
+        "key": "nickname",
+        "label": "昵称",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "last_active_at",
+        "label": "最后活跃时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "email",
+        "label": "邮箱",
+        "type": "TEXT"
+      },
+      {
+        "key": "introduction",
+        "label": "个人简介",
+        "type": "TEXT"
+      },
+      {
+        "key": "phone_country_code",
+        "label": "国际电话区号",
+        "type": "TEXT"
+      },
+      {
+        "key": "phone",
+        "label": "不含国际区号的手机号",
+        "type": "TEXT"
+      },
+      {
+        "key": "phone_verified_at",
+        "label": "最近接收可信手机号验证结果的时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "user_body_profile",
+    "title": "身体档案",
+    "table": "user_body_profile",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/record/body-profile"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "记录ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "height_cm",
+        "label": "身高（cm）",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "weight_kg",
+        "label": "体重（kg）",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "body_fat_percent",
+        "label": "体脂率（%）",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "shoulder_width_cm",
+        "label": "肩宽",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "chest_cm",
+        "label": "胸围",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "upper_arm_cm",
+        "label": "上臂围",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "forearm_cm",
+        "label": "前臂围",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "waist_cm",
+        "label": "腰围",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "hip_cm",
+        "label": "臀围",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "thigh_cm",
+        "label": "大腿围",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "calf_cm",
+        "label": "小腿围",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "inseam_cm",
+        "label": "腿内侧长",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "version",
+        "label": "版本",
+        "type": "NUMBER"
+      },
+      {
+        "key": "gender",
+        "label": "性别",
+        "type": "TEXT"
+      },
+      {
+        "key": "measurement_side",
+        "label": "测量侧",
+        "type": "TEXT"
+      },
+      {
+        "key": "arm_state",
+        "label": "手臂状态",
+        "type": "TEXT"
+      },
+      {
+        "key": "shoe_system",
+        "label": "鞋码体系",
+        "type": "TEXT"
+      },
+      {
+        "key": "top_size",
+        "label": "上装尺码",
+        "type": "TEXT"
+      },
+      {
+        "key": "trousers_size",
+        "label": "裤装尺码",
+        "type": "TEXT"
+      },
+      {
+        "key": "shoe_size",
+        "label": "鞋码",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "user_home_card_preference",
+    "title": "首页卡片设置",
+    "table": "user_home_card_preference",
+    "ownerColumn": "user_id",
+    "menus": [],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "记录ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "card_key",
+        "label": "卡片标识",
+        "type": "TEXT"
+      },
+      {
+        "key": "enabled",
+        "label": "是否启用",
+        "type": "NUMBER"
+      },
+      {
+        "key": "sort_order",
+        "label": "排序",
+        "type": "NUMBER"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "user_quick_nav",
+    "title": "快捷导航",
+    "table": "user_quick_nav",
+    "ownerColumn": "user_id",
+    "menus": [],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "menu_id",
+        "label": "关联 sys_menu.id",
+        "type": "TEXT"
+      },
+      {
+        "key": "sort_order",
+        "label": "排序号（越小越前）",
+        "type": "NUMBER"
+      },
+      {
+        "key": "enabled",
+        "label": "是否启用（1启用 / 0隐藏）",
+        "type": "NUMBER"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "user_menu_hidden",
+    "title": "隐藏菜单",
+    "table": "user_menu_hidden",
+    "ownerColumn": "user_id",
+    "menus": [],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键（雪花）",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "menu_id",
+        "label": "关联 sys_menu.id",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "user_secondary_lock_menu",
+    "title": "菜单锁设置",
+    "table": "user_secondary_lock_menu",
+    "ownerColumn": "user_id",
+    "menus": [],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键（雪花）",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "menu_id",
+        "label": "菜单ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "user_dict_type",
+    "title": "个人字典类型",
+    "table": "user_dict_type",
+    "ownerColumn": "user_id",
+    "menus": [],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "所属用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "sys_dict_id",
+        "label": "关联的系统字典类型ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "dict_name",
+        "label": "字典名称",
+        "type": "TEXT"
+      },
+      {
+        "key": "dict_type",
+        "label": "字典类型",
+        "type": "TEXT"
+      },
+      {
+        "key": "icon",
+        "label": "图标",
+        "type": "TEXT"
+      },
+      {
+        "key": "color",
+        "label": "颜色",
+        "type": "TEXT"
+      },
+      {
+        "key": "status",
+        "label": "状态（0正常 1停用）",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "remark",
+        "label": "备注",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "user_dict_data",
+    "title": "个人字典值",
+    "table": "user_dict_data",
+    "ownerColumn": "user_id",
+    "menus": [],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "字典主键",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "所属用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "template_id",
+        "label": "模板ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "dict_type",
+        "label": "字典类型",
+        "type": "TEXT"
+      },
+      {
+        "key": "dict_sort",
+        "label": "字典排序",
+        "type": "NUMBER"
+      },
+      {
+        "key": "dict_label",
+        "label": "字典标签(分类名称)",
+        "type": "TEXT"
+      },
+      {
+        "key": "dict_value",
+        "label": "字典键值(分类标识)",
+        "type": "TEXT"
+      },
+      {
+        "key": "color",
+        "label": "颜色值(Hex)",
+        "type": "TEXT"
+      },
+      {
+        "key": "icon",
+        "label": "图标名称(Iconify格式)",
+        "type": "TEXT"
+      },
+      {
+        "key": "ext_data",
+        "label": "特定分类所需的额外扩展字段(JSON)",
+        "type": "TEXT"
+      },
+      {
+        "key": "is_default",
+        "label": "是否默认（Y是 N否）",
+        "type": "TEXT"
+      },
+      {
+        "key": "status",
+        "label": "状态（0正常 1停用）",
+        "type": "TEXT"
+      },
+      {
+        "key": "is_readonly",
+        "label": "是否只读（Y是 N否）",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "remark",
+        "label": "备注",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "user_bind",
+    "title": "第三方账号",
+    "table": "user_bind",
+    "ownerColumn": "user_id",
+    "menus": [],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "本系统用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "platform",
+        "label": "平台类型",
+        "type": "TEXT"
+      },
+      {
+        "key": "platform_username",
+        "label": "第三方平台的用户名/账号",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "绑定时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "api_key",
+    "title": "API密钥元数据",
+    "table": "api_key",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/mcp/api-keys"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "remark",
+        "label": "备注",
+        "type": "TEXT"
+      },
+      {
+        "key": "expired_at",
+        "label": "过期时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "notification_channel_config",
+    "title": "通知渠道",
+    "table": "notification_channel_config",
+    "ownerColumn": "user_id",
+    "menus": [],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "AIO Life 用户 ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "channel",
+        "label": "通知渠道",
+        "type": "TEXT"
+      },
+      {
+        "key": "enabled",
+        "label": "是否启用",
+        "type": "NUMBER"
+      },
+      {
+        "key": "receiver_name",
+        "label": "接收用户名称",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "notification_preference",
+    "title": "通知偏好",
+    "table": "notification_preference",
+    "ownerColumn": "user_id",
+    "menus": [],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "channel",
+        "label": "通知渠道",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "biz_type",
+        "label": "业务类型",
+        "type": "TEXT"
+      },
+      {
+        "key": "enabled",
+        "label": "是否启用",
+        "type": "NUMBER"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "password_vault",
+    "title": "密码库元数据",
+    "table": "password_vault",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/record/password"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "记录ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "所属用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "title",
+        "label": "标题",
+        "type": "TEXT"
+      },
+      {
+        "key": "website",
+        "label": "网站/应用名",
+        "type": "TEXT"
+      },
+      {
+        "key": "category",
+        "label": "分类",
+        "type": "TEXT"
+      },
+      {
+        "key": "username",
+        "label": "账号（明文存储",
+        "type": "TEXT"
+      },
+      {
+        "key": "favorite",
+        "label": "是否收藏",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "time_tracker_category",
+    "title": "时迹分类",
+    "table": "time_tracker_category",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/time/my-categories"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "code",
+        "label": "分类标识(如: rest, work)",
+        "type": "TEXT"
+      },
+      {
+        "key": "name",
+        "label": "分类名称",
+        "type": "TEXT"
+      },
+      {
+        "key": "color",
+        "label": "颜色值(Hex)",
+        "type": "TEXT"
+      },
+      {
+        "key": "description",
+        "label": "描述",
+        "type": "TEXT"
+      },
+      {
+        "key": "is_track_time",
+        "label": "是否记录时间",
+        "type": "NUMBER"
+      },
+      {
+        "key": "sort",
+        "label": "排序权重",
+        "type": "NUMBER"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "is_enabled",
+        "label": "是否启用",
+        "type": "NUMBER"
+      },
+      {
+        "key": "template_id",
+        "label": "模板ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "parent_id",
+        "label": "上级分类ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "icon",
+        "label": "图标名称(Iconify格式)",
+        "type": "TEXT"
+      },
+      {
+        "key": "time_type",
+        "label": "时间类型: 1-必须, 2-积极, 3-休闲",
+        "type": "NUMBER"
+      }
+    ]
+  },
+  {
+    "key": "time_record",
+    "title": "时迹",
+    "table": "time_record",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/time/time-tracker"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "记录ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "category_id",
+        "label": "分类ID(关联time_tracker_category.id)",
+        "type": "TEXT"
+      },
+      {
+        "key": "date",
+        "label": "日期（YYYY-MM-DD格式）",
+        "type": "TEXT"
+      },
+      {
+        "key": "start_time",
+        "label": "开始时间（分钟",
+        "type": "NUMBER"
+      },
+      {
+        "key": "end_time",
+        "label": "结束时间（分钟",
+        "type": "NUMBER"
+      },
+      {
+        "key": "title",
+        "label": "标题",
+        "type": "TEXT"
+      },
+      {
+        "key": "description",
+        "label": "详细描述",
+        "type": "TEXT"
+      },
+      {
+        "key": "duration",
+        "label": "时长（分钟）",
+        "type": "NUMBER"
+      },
+      {
+        "key": "is_manual",
+        "label": "是否手动创建",
+        "type": "NUMBER"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "relate_id",
+        "label": "关联业务ID（阅读记录/观影记录等的主键ID）",
+        "type": "TEXT"
+      },
+      {
+        "key": "relate_type",
+        "label": "关联业务类型",
+        "type": "NUMBER"
+      }
+    ]
+  },
+  {
+    "key": "task_column",
+    "title": "待办列表",
+    "table": "task_column",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/task/todo"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "列ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "title",
+        "label": "列标题",
+        "type": "TEXT"
+      },
+      {
+        "key": "sort_order",
+        "label": "排序",
+        "type": "NUMBER"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "bg_color",
+        "label": "背景颜色",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "task",
+    "title": "待办任务",
+    "table": "task",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/task/todo"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "due_date",
+        "label": "最后时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "sort_order",
+        "label": "排序字段",
+        "type": "NUMBER"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "content",
+        "label": "内容",
+        "type": "TEXT"
+      },
+      {
+        "key": "detail",
+        "label": "详情",
+        "type": "TEXT"
+      },
+      {
+        "key": "column_id",
+        "label": "列表ID",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "task_detail",
+    "title": "任务明细",
+    "table": "task_detail",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/task/todo"
+    ],
+    "parents": [
+      {
+        "table": "task",
+        "localColumn": "task_id",
+        "targetColumn": "id",
+        "ownerColumn": "user_id"
+      }
+    ],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "task_id",
+        "label": "关联任务ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "content",
+        "label": "明细任务内容",
+        "type": "TEXT"
+      },
+      {
+        "key": "is_completed",
+        "label": "是否完成 0-未完成 1-已完成",
+        "type": "NUMBER"
+      },
+      {
+        "key": "sort",
+        "label": "排序权重",
+        "type": "NUMBER"
+      },
+      {
+        "key": "priority",
+        "label": "优先级: 1-高, 10-中, 20-低",
+        "type": "NUMBER"
+      },
+      {
+        "key": "user_id",
+        "label": "所属用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "is_starred",
+        "label": "是否关注: 0-未关注, 1-已关注",
+        "type": "NUMBER"
+      },
+      {
+        "key": "start_time",
+        "label": "开始时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "end_time",
+        "label": "结束时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "goal",
+    "title": "目标",
+    "table": "goal",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/task/goal"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "目标ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "type",
+        "label": "目标类型",
+        "type": "NUMBER"
+      },
+      {
+        "key": "title",
+        "label": "目标标题",
+        "type": "TEXT"
+      },
+      {
+        "key": "description",
+        "label": "目标描述",
+        "type": "TEXT"
+      },
+      {
+        "key": "content",
+        "label": "目标详细内容/行动计划",
+        "type": "TEXT"
+      },
+      {
+        "key": "status",
+        "label": "目标状态",
+        "type": "TEXT"
+      },
+      {
+        "key": "target_value",
+        "label": "目标值",
+        "type": "NUMBER"
+      },
+      {
+        "key": "current_value",
+        "label": "当前值",
+        "type": "NUMBER"
+      },
+      {
+        "key": "year",
+        "label": "年份（用于年度目标筛选）",
+        "type": "NUMBER"
+      },
+      {
+        "key": "month",
+        "label": "月份（用于月度目标筛选）",
+        "type": "NUMBER"
+      },
+      {
+        "key": "day",
+        "label": "日期（用于日目标筛选）",
+        "type": "NUMBER"
+      },
+      {
+        "key": "parent_id",
+        "label": "父目标ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "start_date",
+        "label": "开始时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "end_date",
+        "label": "结束时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "completed_at",
+        "label": "完成时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "tags",
+        "label": "目标标签（JSON格式存储）",
+        "type": "TEXT"
+      },
+      {
+        "key": "is_pinned",
+        "label": "是否固定到首页",
+        "type": "NUMBER"
+      },
+      {
+        "key": "pinned_sort",
+        "label": "首页固定排序",
+        "type": "NUMBER"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "honor_category",
+    "title": "荣誉分类",
+    "table": "honor_category",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/my-hub/honor"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "分类ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID（NULL表示系统预设分类）",
+        "type": "TEXT"
+      },
+      {
+        "key": "name",
+        "label": "分类名称",
+        "type": "TEXT"
+      },
+      {
+        "key": "icon",
+        "label": "分类图标",
+        "type": "TEXT"
+      },
+      {
+        "key": "color",
+        "label": "分类颜色",
+        "type": "TEXT"
+      },
+      {
+        "key": "sort_order",
+        "label": "排序顺序",
+        "type": "NUMBER"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "honor_record",
+    "title": "荣誉",
+    "table": "honor_record",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/my-hub/honor"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "记录ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "title",
+        "label": "荣誉标题",
+        "type": "TEXT"
+      },
+      {
+        "key": "description",
+        "label": "荣誉描述",
+        "type": "TEXT"
+      },
+      {
+        "key": "honor_date",
+        "label": "获得日期",
+        "type": "TEXT"
+      },
+      {
+        "key": "issuer",
+        "label": "颁发机构/组织",
+        "type": "TEXT"
+      },
+      {
+        "key": "level",
+        "label": "荣誉级别",
+        "type": "TEXT"
+      },
+      {
+        "key": "category_id",
+        "label": "所属分类ID（可为空）",
+        "type": "TEXT"
+      },
+      {
+        "key": "custom_category",
+        "label": "自定义分类名称（当不选择预设分类时使用）",
+        "type": "TEXT"
+      },
+      {
+        "key": "tags",
+        "label": "标签（JSON格式存储）",
+        "type": "TEXT"
+      },
+      {
+        "key": "is_top",
+        "label": "是否置顶",
+        "type": "NUMBER"
+      },
+      {
+        "key": "is_public",
+        "label": "是否公开",
+        "type": "NUMBER"
+      },
+      {
+        "key": "sort_order",
+        "label": "排序顺序",
+        "type": "NUMBER"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "file_id",
+        "label": "证书/奖牌图片文件ID(UUID)",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "anniversary_record",
+    "title": "纪念日",
+    "table": "anniversary_record",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/record/anniversary"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "记录ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "title",
+        "label": "标题",
+        "type": "TEXT"
+      },
+      {
+        "key": "target_date",
+        "label": "目标日期",
+        "type": "TEXT"
+      },
+      {
+        "key": "type",
+        "label": "类型",
+        "type": "TEXT"
+      },
+      {
+        "key": "note",
+        "label": "备注",
+        "type": "TEXT"
+      },
+      {
+        "key": "color",
+        "label": "渐变色class",
+        "type": "TEXT"
+      },
+      {
+        "key": "icon",
+        "label": "Emoji图标",
+        "type": "TEXT"
+      },
+      {
+        "key": "is_pinned",
+        "label": "是否固定到首页",
+        "type": "NUMBER"
+      },
+      {
+        "key": "pinned_sort",
+        "label": "首页固定排序",
+        "type": "NUMBER"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "milestone",
+    "title": "里程碑",
+    "table": "milestone",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/record/milestone"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "title",
+        "label": "标题",
+        "type": "TEXT"
+      },
+      {
+        "key": "description",
+        "label": "详细描述",
+        "type": "TEXT"
+      },
+      {
+        "key": "date",
+        "label": "开始日期",
+        "type": "TEXT"
+      },
+      {
+        "key": "end_date",
+        "label": "结束日期",
+        "type": "TEXT"
+      },
+      {
+        "key": "type",
+        "label": "类型: work, study, life, other",
+        "type": "TEXT"
+      },
+      {
+        "key": "tags",
+        "label": "标签数组",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "memo",
+    "title": "备忘",
+    "table": "memo",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/record/memo"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "content",
+        "label": "备忘录内容",
+        "type": "TEXT"
+      },
+      {
+        "key": "hidden_content",
+        "label": "是否隐藏内容",
+        "type": "NUMBER"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "title",
+        "label": "标题",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "thought",
+    "title": "闪念",
+    "table": "thought",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/record/think"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "记录ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "content",
+        "label": "内容",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户 ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "修改时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "is_pinned",
+        "label": "是否固定(用于在看板等重要位置展示): 0-否, 1-是",
+        "type": "NUMBER"
+      },
+      {
+        "key": "hidden_content",
+        "label": "是否隐藏内容",
+        "type": "NUMBER"
+      }
+    ]
+  },
+  {
+    "key": "thought_rela_event",
+    "title": "闪念关联",
+    "table": "thought_rela_event",
+    "ownerColumn": null,
+    "menus": [
+      "/record/think"
+    ],
+    "parents": [
+      {
+        "table": "thought",
+        "localColumn": "thought_id",
+        "targetColumn": "id",
+        "ownerColumn": "user_id"
+      }
+    ],
+    "columns": [
+      {
+        "key": "id",
+        "label": "记录ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "修改时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "thought_id",
+        "label": "闪念ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "content",
+        "label": "内容",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "record_article",
+    "title": "文章",
+    "table": "record_article",
+    "ownerColumn": "create_user",
+    "menus": [
+      "/my-hub/article"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "文章ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "url",
+        "label": "原文链接",
+        "type": "TEXT"
+      },
+      {
+        "key": "title",
+        "label": "标题",
+        "type": "TEXT"
+      },
+      {
+        "key": "author",
+        "label": "作者",
+        "type": "TEXT"
+      },
+      {
+        "key": "content_html",
+        "label": "文章HTML内容",
+        "type": "TEXT"
+      },
+      {
+        "key": "category",
+        "label": "分类",
+        "type": "TEXT"
+      },
+      {
+        "key": "tags",
+        "label": "标签",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "record_article_annotation",
+    "title": "文章标注",
+    "table": "record_article_annotation",
+    "ownerColumn": "create_user",
+    "menus": [
+      "/my-hub/article"
+    ],
+    "parents": [
+      {
+        "table": "record_article",
+        "localColumn": "article_id",
+        "targetColumn": "id",
+        "ownerColumn": "create_user"
+      }
+    ],
+    "columns": [
+      {
+        "key": "id",
+        "label": "标注ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "article_id",
+        "label": "文章ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "selected_text",
+        "label": "选中文本",
+        "type": "TEXT"
+      },
+      {
+        "key": "note_content",
+        "label": "标注内容",
+        "type": "TEXT"
+      },
+      {
+        "key": "start_container_path",
+        "label": "起始容器路径",
+        "type": "TEXT"
+      },
+      {
+        "key": "start_offset",
+        "label": "起始偏移量",
+        "type": "NUMBER"
+      },
+      {
+        "key": "end_container_path",
+        "label": "结束容器路径",
+        "type": "TEXT"
+      },
+      {
+        "key": "end_offset",
+        "label": "结束偏移量",
+        "type": "NUMBER"
+      },
+      {
+        "key": "color",
+        "label": "标注颜色",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "income",
+    "title": "收入",
+    "table": "income",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/finance/income"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "amt",
+        "label": "收入",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "inc_date",
+        "label": "收入时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "remark",
+        "label": "备注",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户id",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "inc_type_id",
+        "label": "收入类型",
+        "type": "TEXT"
+      },
+      {
+        "key": "tax",
+        "label": "税额",
+        "type": "DECIMAL"
+      }
+    ]
+  },
+  {
+    "key": "expense",
+    "title": "支出",
+    "table": "expense",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/finance/expense"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "账单ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "amt",
+        "label": "花费金额",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "transaction_amt",
+        "label": "交易金额",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "exp_type_id",
+        "label": "支出类型ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "pay_type_id",
+        "label": "支付方式ID(关联user_dict_data)",
+        "type": "TEXT"
+      },
+      {
+        "key": "remark",
+        "label": "备注",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户id",
+        "type": "TEXT"
+      },
+      {
+        "key": "exp_time",
+        "label": "支出时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "merchant_order_no",
+        "label": "商家订单号",
+        "type": "TEXT"
+      },
+      {
+        "key": "transaction_status",
+        "label": "交易状态",
+        "type": "TEXT"
+      },
+      {
+        "key": "exp_desc",
+        "label": "支出描述",
+        "type": "TEXT"
+      },
+      {
+        "key": "transaction_id",
+        "label": "交易号",
+        "type": "TEXT"
+      },
+      {
+        "key": "counterparty",
+        "label": "交易对方",
+        "type": "TEXT"
+      },
+      {
+        "key": "counterparty_acct",
+        "label": "对方账号",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "bank_card",
+    "title": "银行卡",
+    "table": "bank_card",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/finance/bank-cards"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "雪花ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "所属用户",
+        "type": "TEXT"
+      },
+      {
+        "key": "bank_id",
+        "label": "sys_dict_data.dict_code",
+        "type": "TEXT"
+      },
+      {
+        "key": "custom_bank_name",
+        "label": "用户填写的银行名称",
+        "type": "TEXT"
+      },
+      {
+        "key": "card_name",
+        "label": "卡片产品名称",
+        "type": "TEXT"
+      },
+      {
+        "key": "alias",
+        "label": "个人别名",
+        "type": "TEXT"
+      },
+      {
+        "key": "card_type",
+        "label": "debit储蓄卡 credit信用卡",
+        "type": "TEXT"
+      },
+      {
+        "key": "card_no_last4",
+        "label": "卡号末四位",
+        "type": "TEXT"
+      },
+      {
+        "key": "branch_name",
+        "label": "开户支行",
+        "type": "TEXT"
+      },
+      {
+        "key": "status",
+        "label": "normal frozen lost closed",
+        "type": "TEXT"
+      },
+      {
+        "key": "opened_date",
+        "label": "开卡日期",
+        "type": "TEXT"
+      },
+      {
+        "key": "expiry_month",
+        "label": "有效期月份",
+        "type": "TEXT"
+      },
+      {
+        "key": "balance",
+        "label": "储蓄卡余额",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "credit_limit",
+        "label": "信用额度",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "statement_day",
+        "label": "每月账单日1至31",
+        "type": "NUMBER"
+      },
+      {
+        "key": "repayment_day",
+        "label": "每月固定还款日1至31",
+        "type": "NUMBER"
+      },
+      {
+        "key": "cover_template_id",
+        "label": "公共卡面ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "cover_color",
+        "label": "默认卡面Hex颜色",
+        "type": "TEXT"
+      },
+      {
+        "key": "sort_order",
+        "label": "排序值",
+        "type": "NUMBER"
+      },
+      {
+        "key": "remark",
+        "label": "备注",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "bank_card_tag_rel",
+    "title": "银行卡标签",
+    "table": "bank_card_tag_rel",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/finance/bank-cards"
+    ],
+    "parents": [
+      {
+        "table": "bank_card",
+        "localColumn": "bank_card_id",
+        "targetColumn": "id",
+        "ownerColumn": "user_id"
+      },
+      {
+        "table": "user_dict_data",
+        "localColumn": "tag_id",
+        "targetColumn": "id",
+        "ownerColumn": "user_id"
+      }
+    ],
+    "columns": [
+      {
+        "key": "id",
+        "label": "记录ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "与银行卡和标签的所属用户一致",
+        "type": "TEXT"
+      },
+      {
+        "key": "tag_id",
+        "label": "user_dict_data.id",
+        "type": "TEXT"
+      },
+      {
+        "key": "bank_card_id",
+        "label": "银行卡ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "device",
+    "title": "设备",
+    "table": "device",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/my-hub/device"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "name",
+        "label": "设备名称",
+        "type": "TEXT"
+      },
+      {
+        "key": "spec",
+        "label": "设备规格",
+        "type": "TEXT"
+      },
+      {
+        "key": "type",
+        "label": "设备类型",
+        "type": "TEXT"
+      },
+      {
+        "key": "status",
+        "label": "设备状态",
+        "type": "TEXT"
+      },
+      {
+        "key": "remark",
+        "label": "备注",
+        "type": "TEXT"
+      },
+      {
+        "key": "purchase_date",
+        "label": "购买日期",
+        "type": "TEXT"
+      },
+      {
+        "key": "purchase_price",
+        "label": "购买价格",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "purchase_place",
+        "label": "购买地点",
+        "type": "TEXT"
+      },
+      {
+        "key": "purchase_company",
+        "label": "购买公司",
+        "type": "TEXT"
+      },
+      {
+        "key": "end_date",
+        "label": "结束日期（用于计算日均费用）",
+        "type": "TEXT"
+      },
+      {
+        "key": "file_id",
+        "label": "图片文件ID(UUID)",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "device_expense",
+    "title": "设备支出关联",
+    "table": "device_expense",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/my-hub/device",
+      "/finance/expense"
+    ],
+    "parents": [
+      {
+        "table": "device",
+        "localColumn": "device_id",
+        "targetColumn": "id",
+        "ownerColumn": "user_id"
+      },
+      {
+        "table": "expense",
+        "localColumn": "expense_id",
+        "targetColumn": "id",
+        "ownerColumn": "user_id"
+      }
+    ],
+    "columns": [
+      {
+        "key": "id",
+        "label": "关联ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "所属用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "device_id",
+        "label": "关联设备ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "expense_id",
+        "label": "关联支出ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "首次创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "最后更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "read_record",
+    "title": "阅读",
+    "table": "read_record",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/record/read"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键",
+        "type": "TEXT"
+      },
+      {
+        "key": "title",
+        "label": "书名或文章标题",
+        "type": "TEXT"
+      },
+      {
+        "key": "type",
+        "label": "类型",
+        "type": "NUMBER"
+      },
+      {
+        "key": "author",
+        "label": "作者",
+        "type": "TEXT"
+      },
+      {
+        "key": "url",
+        "label": "链接（主要针对文章/网页或豆瓣链接）",
+        "type": "TEXT"
+      },
+      {
+        "key": "status",
+        "label": "状态",
+        "type": "TEXT"
+      },
+      {
+        "key": "total_progress",
+        "label": "总进度（总页数或100表示百分比）",
+        "type": "NUMBER"
+      },
+      {
+        "key": "current_progress",
+        "label": "当前进度（当前页数或当前百分比）",
+        "type": "NUMBER"
+      },
+      {
+        "key": "start_time",
+        "label": "开始阅读时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "finish_time",
+        "label": "完成时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "remark",
+        "label": "备注/读后感",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "归属用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "file_id",
+        "label": "封面文件ID(UUID)",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "movie",
+    "title": "影视",
+    "table": "movie",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/record/movie"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键",
+        "type": "TEXT"
+      },
+      {
+        "key": "title",
+        "label": "影视名称",
+        "type": "TEXT"
+      },
+      {
+        "key": "type",
+        "label": "类型",
+        "type": "NUMBER"
+      },
+      {
+        "key": "director",
+        "label": "导演/演员",
+        "type": "TEXT"
+      },
+      {
+        "key": "url",
+        "label": "链接（主要针对豆瓣等外部链接）",
+        "type": "TEXT"
+      },
+      {
+        "key": "status",
+        "label": "状态",
+        "type": "TEXT"
+      },
+      {
+        "key": "total_progress",
+        "label": "总进度（总集数或时长）",
+        "type": "NUMBER"
+      },
+      {
+        "key": "current_progress",
+        "label": "当前进度（当前集数或观看时长）",
+        "type": "NUMBER"
+      },
+      {
+        "key": "start_time",
+        "label": "开始观看时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "finish_time",
+        "label": "看完时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "rating",
+        "label": "个人评分",
+        "type": "NUMBER"
+      },
+      {
+        "key": "remark",
+        "label": "短评/备注",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "归属用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "file_id",
+        "label": "封面文件ID(UUID)",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "b_video",
+    "title": "视频",
+    "table": "b_video",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/record/videoWatch"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "title",
+        "label": "视频标题",
+        "type": "TEXT"
+      },
+      {
+        "key": "url",
+        "label": "B站视频URL",
+        "type": "TEXT"
+      },
+      {
+        "key": "duration",
+        "label": "视频时长（秒）",
+        "type": "NUMBER"
+      },
+      {
+        "key": "watched_duration",
+        "label": "观看时长",
+        "type": "NUMBER"
+      },
+      {
+        "key": "episodes",
+        "label": "总集数",
+        "type": "NUMBER"
+      },
+      {
+        "key": "current_episode",
+        "label": "当前观看集数",
+        "type": "NUMBER"
+      },
+      {
+        "key": "status",
+        "label": "学习状态",
+        "type": "TEXT"
+      },
+      {
+        "key": "last_watched",
+        "label": "最后观看时间（syncProgress 同步时写入）",
+        "type": "TEXT"
+      },
+      {
+        "key": "notes",
+        "label": "学习笔记",
+        "type": "TEXT"
+      },
+      {
+        "key": "bvid",
+        "label": "BV号",
+        "type": "TEXT"
+      },
+      {
+        "key": "aid",
+        "label": "AV号",
+        "type": "TEXT"
+      },
+      {
+        "key": "description",
+        "label": "视频描述",
+        "type": "TEXT"
+      },
+      {
+        "key": "pages_info",
+        "label": "分集信息",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户 ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "cover_file_id",
+        "label": "封面附件ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "owner_name",
+        "label": "视频作者",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "performance",
+    "title": "演出",
+    "table": "performance",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/record/performance"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "唯一标识",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "所属用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "performance_name",
+        "label": "演出名称",
+        "type": "TEXT"
+      },
+      {
+        "key": "performance_type",
+        "label": "演出类型(演唱会/话剧/音乐会等)",
+        "type": "TEXT"
+      },
+      {
+        "key": "performance_date",
+        "label": "演出日期",
+        "type": "TEXT"
+      },
+      {
+        "key": "city",
+        "label": "演出城市",
+        "type": "TEXT"
+      },
+      {
+        "key": "venue",
+        "label": "演出地点",
+        "type": "TEXT"
+      },
+      {
+        "key": "ticket_price",
+        "label": "票价",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "seat_info",
+        "label": "座位信息",
+        "type": "TEXT"
+      },
+      {
+        "key": "duration",
+        "label": "演出时长(分钟)",
+        "type": "NUMBER"
+      },
+      {
+        "key": "rating",
+        "label": "演出评分(1-5)",
+        "type": "NUMBER"
+      },
+      {
+        "key": "review",
+        "label": "演出评价",
+        "type": "TEXT"
+      },
+      {
+        "key": "purchase_platform",
+        "label": "购票平台",
+        "type": "TEXT"
+      },
+      {
+        "key": "order_number",
+        "label": "购票订单号",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "performer",
+        "label": "演出人员",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "exercise_record",
+    "title": "运动",
+    "table": "exercise_record",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/record/exercise"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "exercise_type_id",
+        "label": "运动类型ID(关联user_dict_data.id)",
+        "type": "TEXT"
+      },
+      {
+        "key": "exercise_date",
+        "label": "运动日期",
+        "type": "TEXT"
+      },
+      {
+        "key": "description",
+        "label": "运动描述",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "time_id",
+        "label": "时间ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "exercise_count",
+        "label": "运动次数",
+        "type": "NUMBER"
+      }
+    ]
+  },
+  {
+    "key": "membership_record",
+    "title": "会员",
+    "table": "membership_record",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/membership"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "name",
+        "label": "会员名称",
+        "type": "TEXT"
+      },
+      {
+        "key": "category",
+        "label": "分类:video/music/shopping/cloud/study/game/AI/other",
+        "type": "TEXT"
+      },
+      {
+        "key": "provider_id",
+        "label": "会员平台ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "provider",
+        "label": "平台/服务商",
+        "type": "TEXT"
+      },
+      {
+        "key": "icon",
+        "label": "emoji图标",
+        "type": "TEXT"
+      },
+      {
+        "key": "color",
+        "label": "卡片背景色class",
+        "type": "TEXT"
+      },
+      {
+        "key": "start_date",
+        "label": "开通日期",
+        "type": "TEXT"
+      },
+      {
+        "key": "expiry_date",
+        "label": "到期日期",
+        "type": "TEXT"
+      },
+      {
+        "key": "price",
+        "label": "支付金额",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "billing_cycle",
+        "label": "计费周期:week/two_weeks/month/quarter/half_year/year",
+        "type": "TEXT"
+      },
+      {
+        "key": "monthly_amount",
+        "label": "折算后的月均成本",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "auto_renew",
+        "label": "是否自动续费:0-否 1-是",
+        "type": "NUMBER"
+      },
+      {
+        "key": "note",
+        "label": "备注",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "wardrobe_category",
+    "title": "衣柜分类",
+    "table": "wardrobe_category",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/wardrobe"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "name",
+        "label": "分类名称",
+        "type": "TEXT"
+      },
+      {
+        "key": "icon",
+        "label": "图标",
+        "type": "TEXT"
+      },
+      {
+        "key": "parent_id",
+        "label": "父分类ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "sort",
+        "label": "排序",
+        "type": "NUMBER"
+      },
+      {
+        "key": "category_type",
+        "label": "0=系统预设 1=用户自定义",
+        "type": "NUMBER"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID(用户自定义分类时)",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "wardrobe_item",
+    "title": "衣物",
+    "table": "wardrobe_item",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/wardrobe"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "name",
+        "label": "衣物名称",
+        "type": "TEXT"
+      },
+      {
+        "key": "category_id",
+        "label": "分类ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "color",
+        "label": "颜色",
+        "type": "TEXT"
+      },
+      {
+        "key": "brand",
+        "label": "品牌",
+        "type": "TEXT"
+      },
+      {
+        "key": "season",
+        "label": "适用季节:春,夏,秋,冬",
+        "type": "TEXT"
+      },
+      {
+        "key": "purchase_date",
+        "label": "购买日期",
+        "type": "TEXT"
+      },
+      {
+        "key": "price",
+        "label": "价格",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "file_id",
+        "label": "图片文件ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "size",
+        "label": "尺码",
+        "type": "TEXT"
+      },
+      {
+        "key": "memo",
+        "label": "备注",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "mbti_result",
+    "title": "MBTI结果",
+    "table": "mbti_result",
+    "ownerColumn": "user_id",
+    "menus": [],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "test_id",
+        "label": "测试ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "mbti_type",
+        "label": "MBTI类型",
+        "type": "TEXT"
+      },
+      {
+        "key": "raw_result",
+        "label": "原始结果数据(JSON)",
+        "type": "TEXT"
+      },
+      {
+        "key": "results_page",
+        "label": "官方结果页面URL",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "cbti_result",
+    "title": "CBTI结果",
+    "table": "cbti_result",
+    "ownerColumn": "user_id",
+    "menus": [],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "personality_code",
+        "label": "人格代码",
+        "type": "TEXT"
+      },
+      {
+        "key": "similarity",
+        "label": "匹配度（0-100）",
+        "type": "NUMBER"
+      },
+      {
+        "key": "dimensions",
+        "label": "15维度结果(JSON)",
+        "type": "TEXT"
+      },
+      {
+        "key": "answers",
+        "label": "答题结果(JSON",
+        "type": "TEXT"
+      },
+      {
+        "key": "hidden_answers",
+        "label": "彩蛋答题结果(JSON)",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "life_footprint",
+    "title": "生活足迹",
+    "table": "life_footprint",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/record/life-footprints"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "足迹ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "所属用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "start_date",
+        "label": "开始日期",
+        "type": "TEXT"
+      },
+      {
+        "key": "end_date",
+        "label": "结束日期",
+        "type": "TEXT"
+      },
+      {
+        "key": "place_name",
+        "label": "地点名称",
+        "type": "TEXT"
+      },
+      {
+        "key": "address",
+        "label": "详细地址",
+        "type": "TEXT"
+      },
+      {
+        "key": "city",
+        "label": "地点所属城市名称",
+        "type": "TEXT"
+      },
+      {
+        "key": "region_code",
+        "label": "所选最深层地区编码",
+        "type": "TEXT"
+      },
+      {
+        "key": "longitude",
+        "label": "经度",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "latitude",
+        "label": "纬度",
+        "type": "DECIMAL"
+      },
+      {
+        "key": "coordinate_system",
+        "label": "坐标系",
+        "type": "TEXT"
+      },
+      {
+        "key": "provider_uid",
+        "label": "百度地点UID",
+        "type": "TEXT"
+      },
+      {
+        "key": "note",
+        "label": "备注",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "最后更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "feedback",
+    "title": "反馈",
+    "table": "feedback",
+    "ownerColumn": "user_id",
+    "menus": [
+      "/my-hub/feedback"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "反馈ID（雪花）",
+        "type": "TEXT"
+      },
+      {
+        "key": "user_id",
+        "label": "反馈人ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "title",
+        "label": "标题",
+        "type": "TEXT"
+      },
+      {
+        "key": "content",
+        "label": "内容（Markdown）",
+        "type": "TEXT"
+      },
+      {
+        "key": "feedback_type",
+        "label": "类型",
+        "type": "TEXT"
+      },
+      {
+        "key": "status",
+        "label": "状态",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "feedback_comment",
+    "title": "反馈回复",
+    "table": "feedback_comment",
+    "ownerColumn": null,
+    "menus": [
+      "/my-hub/feedback"
+    ],
+    "parents": [
+      {
+        "table": "feedback",
+        "localColumn": "feedback_id",
+        "targetColumn": "id",
+        "ownerColumn": "user_id"
+      }
+    ],
+    "columns": [
+      {
+        "key": "id",
+        "label": "评论ID（雪花）",
+        "type": "TEXT"
+      },
+      {
+        "key": "feedback_id",
+        "label": "所属反馈ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "role_type",
+        "label": "角色",
+        "type": "TEXT"
+      },
+      {
+        "key": "content",
+        "label": "评论内容（Markdown）",
+        "type": "TEXT"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  },
+  {
+    "key": "message",
+    "title": "收到的消息",
+    "table": "message",
+    "ownerColumn": "receiver_id",
+    "menus": [
+      "/message"
+    ],
+    "parents": [],
+    "columns": [
+      {
+        "key": "id",
+        "label": "主键ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "receiver_id",
+        "label": "接收用户ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "title",
+        "label": "消息标题",
+        "type": "TEXT"
+      },
+      {
+        "key": "content",
+        "label": "消息内容",
+        "type": "TEXT"
+      },
+      {
+        "key": "type",
+        "label": "消息类型: 0-系统通知, 1-用户消息",
+        "type": "NUMBER"
+      },
+      {
+        "key": "is_read",
+        "label": "是否已读: 0-未读, 1-已读",
+        "type": "NUMBER"
+      },
+      {
+        "key": "create_time",
+        "label": "创建时间",
+        "type": "TEXT"
+      },
+      {
+        "key": "update_time",
+        "label": "更新时间",
+        "type": "TEXT"
+      }
+    ]
+  }
+]

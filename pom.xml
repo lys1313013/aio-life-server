@@ -45,6 +45,11 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>6.0.0</version>
+        </dependency>
         <!-- JDK ImageIO 不支持 WebP；真实内容解码校验需保留已有 WebP 支持。 -->
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
