@@ -183,6 +183,7 @@ aio:
         request-timeout-ms: ${AIO_LIFE_TYPESAFE_REQUEST_TIMEOUT_MS:1500}
         # 仅缓存数据库查询，默认 5 小时；修改记录或分类后清理。0 表示关闭。
         data-cache-ttl-ms: ${AIO_LIFE_TYPESAFE_DATA_CACHE_TTL_MS:18000000}
+      # 仅首次初始化定时任务时读取；已有任务请在 Web 系统管理 → 定时任务中修改。
       leetcode-corn: 0 30 23 * * ?
       auth:
         code:
