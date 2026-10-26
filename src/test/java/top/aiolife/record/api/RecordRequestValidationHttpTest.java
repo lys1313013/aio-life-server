@@ -104,7 +104,7 @@ class RecordRequestValidationHttpTest {
     }
 
     @Test
-    void testTaskDates_空格格式和历史ISO格式映射为相同时间() throws Exception {
+    void testTaskDates_严格使用空格格式() throws Exception {
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
             mvc.perform(put("/tasks/9007199254740993").contentType(MediaType.APPLICATION_JSON)
@@ -116,7 +116,7 @@ class RecordRequestValidationHttpTest {
             assertEquals(LocalDateTime.of(2026, 10, 22, 10, 30), task.getValue().getDueDate());
 
             mvc.perform(put("/taskDetails").contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"id\":\"9007199254740993\",\"startTime\":\"2026-10-22 10:30:00\",\"endTime\":\"2026-10-22T10:30:00\"}"))
+                            .content("{\"id\":\"9007199254740993\",\"startTime\":\"2026-10-22 10:30:00\",\"endTime\":\"2026-10-22 10:30:00\"}"))
                     .andExpect(jsonPath("$.code").value(0));
             var detail = ArgumentCaptor.forClass(TaskDetailEntity.class);
             verify(details).update(detail.capture(), any(Wrapper.class));
@@ -127,7 +127,7 @@ class RecordRequestValidationHttpTest {
     @Test
     void testMalformedInput_无效日期和类型以及缺少参数返回统一参数错误() throws Exception {
         for (String payload : List.of("{", "{\"dueDate\":\"2026-02-30 10:30:00\"}",
-                "{\"dueDate\":\"2026-10-22T10:30:00Z\"}", "{\"dueDate\":123}")) {
+                "{\"dueDate\":\"2026-10-22T10:30:00\"}", "{\"dueDate\":\"2026-10-22T10:30:00Z\"}", "{\"dueDate\":123}")) {
             mvc.perform(put("/tasks/1").contentType(MediaType.APPLICATION_JSON).content(payload))
                     .andExpect(jsonPath("$.code").value(ResponseCodeConst.PARAM_FAIL));
         }
@@ -167,7 +167,7 @@ class RecordRequestValidationHttpTest {
 
             var task = json.readValue("{\"columnId\":\"1\",\"content\":\"任务\",\"dueDate\":\"2026-10-22 10:30:00\"}", TaskCreateReq.class);
             assertTrue(validator.validate(task).isEmpty());
-            var detail = json.readValue("{\"taskId\":\"1\",\"content\":\"明细\",\"startTime\":\"2026-10-22T10:30:00\",\"endTime\":\"2026-10-22 10:30:00\"}", TaskDetailCreateReq.class);
+            var detail = json.readValue("{\"taskId\":\"1\",\"content\":\"明细\",\"startTime\":\"2026-10-22 10:30:00\",\"endTime\":\"2026-10-22 10:30:00\"}", TaskDetailCreateReq.class);
             assertTrue(validator.validate(detail).isEmpty());
             assertEquals(task.getDueDate(), detail.getStartTime());
             assertEquals(detail.getStartTime(), detail.getEndTime());

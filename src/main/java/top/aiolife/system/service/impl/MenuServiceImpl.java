@@ -310,7 +310,7 @@ public class MenuServiceImpl implements IMenuService {
         if (req.getStatus() != null || entity.getStatus() == null) {
             entity.setStatus(req.getStatus() == null ? 1 : req.getStatus());
         }
-        // 旧客户端更新时缺省字段不覆盖；新增时未指定则从 Web 状态初始化。
+        // 局部更新时缺省字段不覆盖；新增时未指定则从 Web 状态初始化。
         if (req.getMobileStatus() != null || entity.getMobileStatus() == null) {
             entity.setMobileStatus(req.getMobileStatus() == null ? entity.getStatus() : req.getMobileStatus());
         }

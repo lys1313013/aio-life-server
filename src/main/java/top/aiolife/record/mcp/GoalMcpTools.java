@@ -227,11 +227,6 @@ public class GoalMcpTools {
         if (!StringUtils.hasText(tags)) {
             return null;
         }
-        try {
-            return JSON.parseArray(tags, String.class);
-        } catch (Exception e) {
-            // 兼容非 JSON 的历史数据，原样返回
-            return List.of(tags);
-        }
+        return JSON.parseArray(tags, String.class);
     }
 }

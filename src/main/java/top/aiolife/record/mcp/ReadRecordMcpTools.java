@@ -39,12 +39,12 @@ public class ReadRecordMcpTools {
         if (req.getStatus() != null) {
             query.setStatus(ProgressStatusEnum.fromCode(req.getStatus()));
         }
-        query.setCurrent(req.getPage() == null ? 1 : req.getPage());
+        query.setPage(req.getPage() == null ? 1 : req.getPage());
         int size = req.getSize() == null ? 10 : req.getSize();
         if (size > 100) {
             size = 100;
         }
-        query.setSize(size);
+        query.setPageSize(size);
 
         PageResp<ReadRecordVO> page = readRecordController.pageList(query).getData();
         List<ReadRecordMcpVO> records = page.getItems().stream()

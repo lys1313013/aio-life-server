@@ -1,8 +1,6 @@
 package top.aiolife.record.pojo.query;
 
 import lombok.Data;
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
@@ -22,18 +20,11 @@ public class MovieQuery implements PaginationRequest {
     private Boolean activeOnly;
     /** 首页优先展示在看的作品。 */
     private Boolean inProgressFirst;
-    @NotNull @Min(1) @JsonAlias("current")
+    @NotNull @Min(1)
     @Schema(description = "页码，从 1 开始", defaultValue = "1")
     private Integer page = 1;
-    @NotNull @Min(1) @Max(MAX_PAGE_SIZE) @JsonAlias("size")
+    @NotNull @Min(1) @Max(MAX_PAGE_SIZE)
     @Schema(description = "每页条数，最多 200", defaultValue = "10")
     private Integer pageSize = 10;
 
-    /** 兼容内部旧调用；HTTP 参数以 page/pageSize 为准。 */
-    @JsonIgnore @Schema(hidden = true)
-    public Integer getCurrent() { return page; }
-    public void setCurrent(Integer current) { this.page = current; }
-    @JsonIgnore @Schema(hidden = true)
-    public Integer getSize() { return pageSize; }
-    public void setSize(Integer size) { this.pageSize = size; }
 }

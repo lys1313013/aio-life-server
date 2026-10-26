@@ -102,8 +102,8 @@ class WorkCalendarIntegrationTest {
             try (var clock = mockStatic(LocalDateTime.class, CALLS_REAL_METHODS)) {
                 var now = LocalDateTime.of(2026, 12, 31, 12, 0);
                 clock.when(LocalDateTime::now).thenReturn(now);
-                assertEquals(104L, service.recommendType(1L, "2026-09-21", 600, null));
-                assertEquals(105L, service.recommendType(1L, "2026-09-26", 600, null));
+                assertEquals(104L, service.recommendType(1L, "2026-09-21", 600));
+                assertEquals(105L, service.recommendType(1L, "2026-09-26", 600));
                 assertEquals(1, timeMapper.findReferenceRecords(1L, "2026-09-20", 600, 1440).size());
                 assertTrue(timeMapper.findReferenceRecords(1L, "2026-09-20", 600, 699).isEmpty());
                 assertTrue(timeMapper.findReferenceRecords(1L, "2026-09-19", 600, 1440).isEmpty());
@@ -111,7 +111,7 @@ class WorkCalendarIntegrationTest {
                 jdbc.update("INSERT INTO time_record VALUES ('9',1,'2026-09-20',106,600,699,0)");
                 session.clearCache();
                 assertEquals(2, timeMapper.findReferenceRecords(1L, "2026-09-20", 601, 1440).size());
-                assertNull(service.recommendType(1L, "2026-09-21", 601, null));
+                assertNull(service.recommendType(1L, "2026-09-21", 601));
             }
 
             // 修正日历后只清除受影响的目标日期缓存，下次请求重新查库。
@@ -122,7 +122,7 @@ class WorkCalendarIntegrationTest {
 
             assertNull(calendar.findPreviousComparableDate(LocalDate.of(2026, 1, 1)));
             assertFalse(Boolean.TRUE.equals(redis.hasKey("workCalendar:prevDate:2026-01-01")));
-            assertNull(service.recommendType(1L, "2027-01-04", 600, null));
+            assertNull(service.recommendType(1L, "2027-01-04", 600));
         } finally {
             redisFactory.destroy();
         }

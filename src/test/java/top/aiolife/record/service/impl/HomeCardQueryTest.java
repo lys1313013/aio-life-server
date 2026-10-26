@@ -37,8 +37,8 @@ class HomeCardQueryTest {
             var query = new ReadRecordQuery();
             query.setActiveOnly(true);
             query.setInProgressFirst(true);
-            query.setCurrent(3);
-            query.setSize(20);
+            query.setPage(3);
+            query.setPageSize(20);
             service.pageList(query);
         }
     }
@@ -58,8 +58,8 @@ class HomeCardQueryTest {
             var query = new MovieQuery();
             query.setActiveOnly(true);
             query.setInProgressFirst(true);
-            query.setCurrent(3);
-            query.setSize(20);
+            query.setPage(3);
+            query.setPageSize(20);
             service.pageList(query);
         }
     }

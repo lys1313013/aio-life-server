@@ -54,7 +54,7 @@ public final class SecondaryLockPolicy {
             Map.entry("/config-management/sysDictData", List.of("/sysDictData")),
             Map.entry("/mcp/tools", List.of("/mcp")),
             Map.entry("/mcp/api-keys", List.of("/api-key")),
-            Map.entry("/analytics", List.of("/dashboard", "/home/sections")),
+            Map.entry("/", List.of("/dashboard", "/home/sections")),
             Map.entry("/workspace", List.of("/dashboard", "/home/sections")));
 
     public static String canonicalMenu(String path) {
@@ -108,7 +108,7 @@ public final class SecondaryLockPolicy {
             case "movie_query" -> Set.of("/record/movie");
             case "read_record_query" -> Set.of("/record/read");
             case "anniversary_query" -> Set.of("/record/anniversary");
-            case "dashboard_cards" -> Set.of("/analytics", "/workspace", "/record/exercise",
+            case "dashboard_cards" -> Set.of("/", "/workspace", "/record/exercise",
                     "/coding/leetcode", "/coding/github", "/record/weread");
             // 具体媒体业务在解析 URL 后检查，避免锁电影时阻断书籍录入。
             case "douban_wishlist_add" -> Set.<String>of();

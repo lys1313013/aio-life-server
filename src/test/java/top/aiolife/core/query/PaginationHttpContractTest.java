@@ -71,67 +71,32 @@ class PaginationHttpContractTest {
         assertEquals(1, mockingDetails(controller).getInvocations().size());
     }
 
-    @Test
-    void testMovie_新旧分页参数等值兼容且冲突被拒绝() throws Exception {
-        MovieController controller = mock(MovieController.class);
-        MockMvc mvc = mvc(controller);
-        mvc.perform(get("/movie/page").param("page", "2").param("current", "2")
-                .param("pageSize", "30").param("size", "30")).andExpect(status().isOk());
-        ArgumentCaptor<MovieQuery> query = ArgumentCaptor.forClass(MovieQuery.class);
-        verify(controller).pageList(query.capture());
-        assertEquals(2, query.getValue().getPage());
-        assertEquals(30, query.getValue().getPageSize());
-        clearInvocations(controller);
-        mvc.perform(get("/movie/page").param("current", "3").param("size", "20")).andExpect(status().isOk());
-        verify(controller).pageList(query.capture());
-        assertEquals(3, query.getValue().getPage());
-        assertEquals(20, query.getValue().getPageSize());
-        clearInvocations(controller);
-        mvc.perform(get("/movie/page").param("page", "2").param("current", "3")).andExpect(status().isBadRequest());
-        mvc.perform(get("/movie/page").param("pageSize", "20").param("size", "30")).andExpect(status().isBadRequest());
-        mvc.perform(get("/movie/page").param("size", "-1")).andExpect(status().isBadRequest());
+    @ParameterizedTest
+    @MethodSource("endpoints")
+    void testPagination_只接受当前参数名(Class<?> type, String path, int limit) throws Exception {
+        Object controller = mock(type);
+        for (String alias : List.of("current", "size", "get", "perPage")) {
+            mvc(controller).perform(get(path).param(alias, "2"))
+                    .andExpect(status().isBadRequest());
+        }
         verifyNoInteractions(controller);
     }
 
     @Test
-    void testTask_兼容get并保留默认每页100条() throws Exception {
+    void testTask_默认每页100条() throws Exception {
         TaskController controller = mock(TaskController.class);
-        MockMvc mvc = mvc(controller);
-        mvc.perform(get("/tasks").param("get", "3")).andExpect(status().isOk());
+        mvc(controller).perform(get("/tasks").param("page", "3")).andExpect(status().isOk());
         ArgumentCaptor<TaskPageQuery> query = ArgumentCaptor.forClass(TaskPageQuery.class);
         verify(controller).queryPage(query.capture());
         assertEquals(3, query.getValue().getPage());
         assertEquals(100, query.getValue().getPageSize());
-        clearInvocations(controller);
-        mvc.perform(get("/tasks").param("get", "2").param("page", "3")).andExpect(status().isBadRequest());
-        verifyNoInteractions(controller);
-    }
-
-    @Test
-    void testMessageAndCover_保留原别名和更严格上限() throws Exception {
-        MessageController messages = mock(MessageController.class);
-        mvc(messages).perform(get("/message/page").param("current", "2").param("size", "50"))
-                .andExpect(status().isOk());
-        ArgumentCaptor<MessagePageQuery> message = ArgumentCaptor.forClass(MessagePageQuery.class);
-        verify(messages).queryPage(message.capture());
-        assertEquals(2, message.getValue().getPage());
-        assertEquals(50, message.getValue().getPageSize());
-        clearInvocations(messages);
-        mvc(messages).perform(get("/message/page").param("size", "51")).andExpect(status().isBadRequest());
-        verifyNoInteractions(messages);
-        BankCardCoverTemplateAdminController covers = mock(BankCardCoverTemplateAdminController.class);
-        mvc(covers).perform(get("/system/bank-card-covers/page").param("size", "24"))
-                .andExpect(status().isOk());
-        ArgumentCaptor<BankCardCoverQuery> cover = ArgumentCaptor.forClass(BankCardCoverQuery.class);
-        verify(covers).page(cover.capture());
-        assertEquals(24, cover.getValue().getPageSize());
     }
 
     @Test
     void testWeread_统一pageSize并保持游标分页和上限20() throws Exception {
         WereadController controller = mock(WereadController.class);
         MockMvc mvc = mvc(controller);
-        mvc.perform(get("/weread/recent").param("cursor", "123:book").param("size", "20"))
+        mvc.perform(get("/weread/recent").param("cursor", "123:book").param("pageSize", "20"))
                 .andExpect(status().isOk());
         ArgumentCaptor<WereadRecentQuery> query = ArgumentCaptor.forClass(WereadRecentQuery.class);
         verify(controller).recent(query.capture());
@@ -139,8 +104,7 @@ class PaginationHttpContractTest {
         assertEquals(20, query.getValue().getPageSize());
         clearInvocations(controller);
         mvc.perform(get("/weread/recent").param("pageSize", "21")).andExpect(status().isBadRequest());
-        mvc.perform(get("/weread/recent").param("pageSize", "-1")).andExpect(status().isBadRequest());
-        mvc.perform(get("/weread/recent").param("pageSize", "6").param("size", "7")).andExpect(status().isBadRequest());
+        mvc.perform(get("/weread/recent").param("size", "7")).andExpect(status().isBadRequest());
         verifyNoInteractions(controller);
     }
 

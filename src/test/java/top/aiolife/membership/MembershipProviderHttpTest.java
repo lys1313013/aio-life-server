@@ -144,8 +144,8 @@ class MembershipProviderHttpTest {
         verify(service).save(eq(1L), eq(10L), argThat(req -> "改名".equals(req.getName())));
         mvc.perform(put("/system/membership-providers/10").header("Authorization", "Bearer " + admin)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"旧客户端\",\"code\":\"../ignored\",\"category\":\"video\"}"))
+                        .content("{\"name\":\"平台名称\",\"category\":\"video\"}"))
                 .andExpect(jsonPath("$.code").value(0));
-        verify(service).save(eq(1L), eq(10L), argThat(req -> "旧客户端".equals(req.getName())));
+        verify(service).save(eq(1L), eq(10L), argThat(req -> "平台名称".equals(req.getName())));
     }
 }

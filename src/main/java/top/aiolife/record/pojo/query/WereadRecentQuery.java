@@ -1,6 +1,5 @@
 package top.aiolife.record.pojo.query;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -11,7 +10,7 @@ import lombok.Data;
 @Data
 public class WereadRecentQuery {
     private String cursor;
-    @NotNull @Min(1) @Max(20) @JsonAlias("size")
+    @NotNull @Min(1) @Max(20)
     @Schema(description = "每批图书数量，最多 20", defaultValue = "6")
     private Integer pageSize = 6;
 }

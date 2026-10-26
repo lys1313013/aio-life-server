@@ -305,15 +305,13 @@ public class TimeRecordController {
      *
      * @param date 目标日期，格式 yyyy-MM-dd，例如 2026-09-25
      * @param time 目标时刻距当天 00:00 的分钟数，范围 0～1439，例如 600 表示 10:00；不是时长或时间戳
-     * @param previousCategoryId 紧邻上一条记录的分类 ID（可选，数字字符串）；当前仅保留兼容，
-     *                           不参与推荐计算，允许推荐与上一条相同的分类；空串或无法解析为 Long 时按未指定处理
      * @return 成功响应的 data 为分类 ID 字符串；无推荐时 data 为 ""，仍返回成功码 "0"
      */
     @GetMapping("/recommendType")
-    public ApiResponse<String> recommendType(String date, int time, @RequestParam(required = false) String previousCategoryId) {
+    public ApiResponse<String> recommendType(String date, int time) {
         // 从登录上下文确定用户，推荐所用的分类和历史记录均按该用户查询。
         long userId = RequestLoginContext.requireUserId();
-        Long categoryId = timeRecordService.recommendType(userId, date, time, toCategoryId(previousCategoryId));
+        Long categoryId = timeRecordService.recommendType(userId, date, time);
         if (categoryId == null) {
             // 无推荐属于正常业务结果，用空字符串表示本次没有可自动填入的分类。
             return ApiResponse.success("");
@@ -338,35 +336,10 @@ public class TimeRecordController {
             return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeRecordRecommendationVO(result));
         }
 
-        // 寻找紧邻的上一条记录分类
-        Long previousCategoryId = null;
-        if (result.getRecords() != null) {
-            for (TimeRecordEntity record : result.getRecords()) {
-                if (record.getEndTime() != null && record.getEndTime() == recommend.getStartTime() - 1) {
-                    previousCategoryId = record.getCategoryId();
-                    break;
-                }
-            }
-        }
-
-        Long categoryId = timeRecordService.recommendType(userId, date, recommend.getStartTime(), previousCategoryId);
+        Long categoryId = timeRecordService.recommendType(userId, date, recommend.getStartTime());
         recommend.setCategoryId(categoryId);
 
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeRecordRecommendationVO(result));
-    }
-
-    /**
-     * 将前端传入的分类标识（数字字符串）转为 Long；空串 / 非数字视为未指定。
-     */
-    private Long toCategoryId(String s) {
-        if (s == null || s.isEmpty()) {
-            return null;
-        }
-        try {
-            return Long.valueOf(s);
-        } catch (NumberFormatException e) {
-            return null;
-        }
     }
 
     /**

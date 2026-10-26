@@ -70,7 +70,7 @@ class JevTimeCategoryScenarioTest {
         try (var clock = mockStatic(LocalDateTime.class, CALLS_REAL_METHODS)) {
             var now = LocalDateTime.of(2026, 12, 31, 12, 0);
             clock.when(LocalDateTime::now).thenReturn(now);
-            assertEquals(104L, service.recommendType(1L, target, 600, null));
+            assertEquals(104L, service.recommendType(1L, target, 600));
         }
         verify(mapper).findReferenceRecords(1L, expected, 600, 1440);
         verifyNoMoreInteractions(mapper);

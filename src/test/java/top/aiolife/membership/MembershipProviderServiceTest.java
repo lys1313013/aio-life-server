@@ -95,7 +95,7 @@ class MembershipProviderServiceTest {
         assertThrows(IllegalArgumentException.class, () -> tx.execute(status -> records.create(1, req(999L))));
     }
 
-    @Test void 省略关联保留而显式空值清除且旧客户端字段映射兼容() throws Exception {
+    @Test void 省略关联保留而显式空值清除() throws Exception {
         var created = tx.execute(status -> records.create(1, req(10L)));
         var omitted = json.readValue("{\"id\":" + created.getId() + ",\"name\":\"改名\"}", MembershipReq.class);
         assertFalse(omitted.hasProviderId());
@@ -148,8 +148,8 @@ class MembershipProviderServiceTest {
         assertEquals(first.getCode(), platformMapper.selectById(first.getId()).getCode());
     }
 
-    @Test void 旧客户端传入编码被忽略且编辑内置平台保持原编码() throws Exception {
-        var request = json.readValue("{\"name\":\"改名\",\"category\":\"music\",\"code\":\"b\",\"isEnabled\":0}", MembershipProviderReq.class);
+    @Test void 编辑内置平台保持原编码() throws Exception {
+        var request = json.readValue("{\"name\":\"改名\",\"category\":\"music\",\"isEnabled\":0}", MembershipProviderReq.class);
         var edited = tx.execute(status -> providers.save(9, 10L, request));
         assertEquals("a", edited.getCode());
         assertEquals("a", platformMapper.selectById(10L).getCode());

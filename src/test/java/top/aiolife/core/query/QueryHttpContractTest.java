@@ -142,8 +142,7 @@ class QueryHttpContractTest {
     @SuppressWarnings("unchecked")
     void testTimeRecord_仅绑定单日日期不再分页() throws Exception {
         TimeRecordController controller = mock(TimeRecordController.class);
-        mvc(controller).perform(get("/timeRecord/query").param("date", "2026-09-12")
-                        .param("categoryId", "9007199254740993"))
+        mvc(controller).perform(get("/timeRecord/query").param("date", "2026-09-12"))
                 .andExpect(status().isOk());
         ArgumentCaptor<TimeRecordQuery> captor = ArgumentCaptor.forClass(TimeRecordQuery.class);
         verify(controller).query(captor.capture());
@@ -184,14 +183,14 @@ class QueryHttpContractTest {
         for (String[] codes : new String[][]{{"in_progress"}, {"in_progress", "on_hold"}}) {
             MovieController controller = mock(MovieController.class);
             mvc(controller).perform(get("/movie/page").param("statuses", codes)
-                            .param("activeOnly", "false").param("current", "3"))
+                            .param("activeOnly", "false").param("page", "3"))
                     .andExpect(status().isOk());
             ArgumentCaptor<MovieQuery> captor = ArgumentCaptor.forClass(MovieQuery.class);
             verify(controller).pageList(captor.capture());
             assertEquals(codes.length, captor.getValue().getStatuses().size());
             assertEquals(ProgressStatusEnum.IN_PROGRESS, captor.getValue().getStatuses().getFirst());
             assertFalse(captor.getValue().getActiveOnly());
-            assertEquals(3, captor.getValue().getCurrent());
+            assertEquals(3, captor.getValue().getPage());
         }
     }
 

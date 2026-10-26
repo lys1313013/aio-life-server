@@ -135,7 +135,7 @@ public class MembershipRecordWriteService {
         if (entity.getCategory() == null || entity.getCategory().isBlank()) entity.setCategory(previous.getCategory());
         applyPlatform(entity, provider);
         entity.fillUpdateCommonField(userId);
-        // 显式 null 可解除关联；省略 providerId 保持兼容旧客户端。
+        // 显式 null 可解除关联；省略 providerId 保留原关联。
         mapper.update(entity, new LambdaUpdateWrapper<MembershipRecordEntity>()
                 .eq(MembershipRecordEntity::getId, previous.getId())
                 .eq(MembershipRecordEntity::getUserId, userId)

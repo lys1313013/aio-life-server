@@ -71,7 +71,7 @@ class TimeRecordServiceImplTest {
         when(calendar.isWorkday(date)).thenReturn(true);
         when(calendar.findPreviousComparableDate(date)).thenReturn(reference);
         when(jev.recommend(1L, date, 600, true, reference)).thenReturn(104L);
-        assertEquals(104L, timeRecordService.recommendType(1L, date.toString(), 600, 104L));
+        assertEquals(104L, timeRecordService.recommendType(1L, date.toString(), 600));
         verifyNoInteractions(mapper);
     }
 
@@ -80,7 +80,7 @@ class TimeRecordServiceImplTest {
         LocalDate date = LocalDate.of(2027, 1, 4);
         when(calendar.isWorkday(date)).thenReturn(null);
 
-        assertNull(timeRecordService.recommendType(1L, date.toString(), 600, null));
+        assertNull(timeRecordService.recommendType(1L, date.toString(), 600));
         verifyNoInteractions(mapper);
         verify(calendar, never()).findPreviousComparableDate(any());
     }
@@ -90,7 +90,7 @@ class TimeRecordServiceImplTest {
         LocalDate date = LocalDate.of(2026, 1, 1);
         when(calendar.isWorkday(date)).thenReturn(false);
         when(calendar.findPreviousComparableDate(date)).thenReturn(null);
-        assertNull(timeRecordService.recommendType(1L, date.toString(), 600, null));
+        assertNull(timeRecordService.recommendType(1L, date.toString(), 600));
         verifyNoInteractions(mapper, categories);
     }
 
@@ -102,7 +102,7 @@ class TimeRecordServiceImplTest {
         visibleCategories(104L);
         when(mapper.findReferenceRecords(1L, "2020-09-18", 600, 1440))
                 .thenReturn(List.of(referenceRecord(104L)));
-        assertEquals(104L, timeRecordService.recommendType(1L, date.toString(), 600, 104L));
+        assertEquals(104L, timeRecordService.recommendType(1L, date.toString(), 600));
         verify(mapper).findReferenceRecords(1L, "2020-09-18", 600, 1440);
         verifyNoMoreInteractions(mapper);
     }

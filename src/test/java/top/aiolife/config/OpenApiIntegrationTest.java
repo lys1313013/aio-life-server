@@ -119,7 +119,7 @@ class OpenApiIntegrationTest {
                     || handler.hasMethodAnnotation(Hidden.class) || handler.getBeanType().isAnnotationPresent(Hidden.class)) return;
             for (String path : mapping.getPatternValues()) {
                 // springdoc 会去掉 Spring 的 catch-all 路径变量前缀 *。
-                String documentedPath = PathUtils.parsePath(path, new LinkedHashMap<>());
+                String documentedPath = PathUtils.parsePath(path.replace("{*", "{"), new LinkedHashMap<>());
                 assertTrue(document.path("paths").has(documentedPath), "缺少路由 " + path);
                 mapping.getMethodsCondition().getMethods().forEach(method -> assertTrue(
                         document.path("paths").path(documentedPath).has(method.name().toLowerCase(Locale.ROOT)),
@@ -202,7 +202,7 @@ class OpenApiIntegrationTest {
     }
 
     @Test
-    void 分页使用统一名称并明确标记兼容别名() throws Exception {
+    void 分页只展示统一名称() throws Exception {
         JsonNode document = document("/v3/api-docs");
         for (String path : List.of("/movie/page", "/read-record/page", "/tasks", "/message/page",
                 "/message/admin/list", "/system/bank-card-covers/page", "/github/recent-commits")) {
@@ -210,13 +210,13 @@ class OpenApiIntegrationTest {
             assertTrue(query.containsKey("page"), path + " 缺少 page");
             assertTrue(query.containsKey("pageSize"), path + " 缺少 pageSize");
             for (String alias : List.of("current", "size", "get", "perPage")) {
-                if (query.containsKey(alias)) assertTrue(query.get(alias).path("deprecated").asBoolean(), path + ": " + alias);
+                assertFalse(query.containsKey(alias), path + ": " + alias);
             }
         }
         Map<String, JsonNode> cursor = parameters(document.path("paths").path("/weread/recent").path("get"));
         assertTrue(cursor.containsKey("cursor"));
         assertTrue(cursor.containsKey("pageSize"));
-        assertTrue(cursor.get("size").path("deprecated").asBoolean());
+        assertFalse(cursor.containsKey("size"));
         assertFalse(cursor.containsKey("page"));
     }
 

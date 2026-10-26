@@ -150,7 +150,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     @Transactional(rollbackFor = Exception.class)
     public String saveTimeRecord(TimeRecordReq timeRecordReq) {
         TimeRecordEntity entity = TimeRecordConvertor.INSTANCE.Req2Entity(timeRecordReq);
-        // 新增时始终由服务端生成 ID，兼容旧客户端携带的临时 ID。
+        // 新增时始终由服务端生成 ID。
         entity.setId(null);
         List<ExerciseRecordReq> exerciseRecordReqs = timeRecordReq.getExercises();
 
@@ -360,7 +360,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     }
 
     @Override
-    public Long recommendType(long userId, String date, int time, Long previousCategoryId) {
+    public Long recommendType(long userId, String date, int time) {
         // time 表示当天的第几分钟：0 为 00:00，1439 为 23:59。
         if (time < 0 || time > 1439) throw new IllegalArgumentException("时间必须在 0 到 1439 之间");
         LocalDate localDate = LocalDate.parse(date);
@@ -378,7 +378,6 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
                 () -> workCalendarService.findPreviousComparableDate(localDate), localDate);
 
         // 优先使用 Jev AI，结合用户可见分类、目标日该时刻之前及参考日的有效历史记录预测。
-        // previousCategoryId 仅为兼容旧调用保留，不影响预测，允许连续记录使用同一分类。
         Long predicted = jevRecommendationService.recommend(userId, localDate, time, isWorkday, targetDate);
         if (predicted != null) return logRecommendation(userId, date, time, "JEV", predicted);
 
