@@ -88,19 +88,19 @@ class ActivityLogPersistenceTest {
         return query;
     }
 
-    @Test void 请求时间优先且历史回退并正确处理跨日及毫秒() {
+    @Test void 请求时间过滤正确处理跨日及毫秒且不使用审计时间回退() {
         var result = service.list("OPERATION", day());
-        assertEquals(List.of(3L,7L,2L), result.getItems().stream().map(ActivityLogEntity::getId).toList());
-        assertEquals(3L,result.getTotal());
+        assertEquals(List.of(3L,2L), result.getItems().stream().map(ActivityLogEntity::getId).toList());
+        assertEquals(2L,result.getTotal());
         assertEquals(999000000,result.getItems().getFirst().getRequestTime().getNano());
         var query = day(); query.setPageSize(1); query.setPage(2);
-        assertEquals(7L,service.list("OPERATION",query).getItems().getFirst().getId());
-        assertEquals(3L,service.list("OPERATION",query).getTotal());
+        assertEquals(2L,service.list("OPERATION",query).getItems().getFirst().getId());
+        assertEquals(2L,service.list("OPERATION",query).getTotal());
     }
 
     @Test void 账号筛选按通配符字面值匹配() {
         var query = day(); query.setUsername("a_%");
-        assertEquals(3L, service.list("OPERATION",query).getTotal());
+        assertEquals(2L, service.list("OPERATION",query).getTotal());
         query.setUsername("aX"); assertEquals(0L, service.list("OPERATION",query).getTotal());
     }
 
@@ -114,7 +114,7 @@ class ActivityLogPersistenceTest {
         else jdbc.update("UPDATE sys_activity_log SET request_params=? WHERE id=2",value);
         assertTrue(service.detail(2L).getRequestParams().contains("9223372036854775806"));
         assertTrue(service.list("OPERATION",day()).getItems().stream().allMatch(row -> row.getRequestParams()==null));
-        var query = day(); assertEquals(7L,mapper.operationMaxId(query));
+        var query = day(); assertEquals(3L,mapper.operationMaxId(query));
         assertEquals(List.of(3L,2L),mapper.exportOperations(query,3L,null).stream().map(ActivityLogEntity::getId).toList());
         assertEquals(List.of(2L),mapper.exportOperations(query,3L,3L).stream().map(ActivityLogEntity::getId).toList());
     }

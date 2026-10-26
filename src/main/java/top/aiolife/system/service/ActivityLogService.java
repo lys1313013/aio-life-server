@@ -85,7 +85,7 @@ public class ActivityLogService {
             if (batch.isEmpty()) break;
             for (var row : batch) {
                 String time = row.getRequestTime() == null
-                        ? row.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "（历史记录时间）"
+                        ? "未采集"
                         : row.getRequestTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
                 writer.write(++index + "," + csv(row.getUserId() == null ? "" : "'" + row.getUserId()) + ","
                         + csv(row.getUsername()) + "," + csv(functionPoint(row)) + "," + csv(row.getRequestPath()) + ","
