@@ -99,34 +99,9 @@ class HomeSectionMapperTest {
         assertTrue(mapper.activeDevices(99).isEmpty());
     }
 
-    @Test
-    void testFinance_月份半开区间和小数金额且隔离用户删除记录() {
-        var start = LocalDate.of(2026, 10, 1);
-        var end = start.plusMonths(1);
-        jdbc.update("INSERT INTO income VALUES (1,10.10,'2026-10-01',0),(1,20.20,'2026-10-31',0),(1,100,'2026-09-30',0),(1,100,'2026-11-01',0),(2,100,'2026-10-01',0),(1,100,'2026-10-01',1)");
-        jdbc.update("INSERT INTO expense VALUES (1,3.15,'2026-10-01 00:00:00',0),(1,4.25,'2026-10-31 23:59:59',0),(1,100,'2026-09-30 23:59:59',0),(1,100,'2026-11-01 00:00:00',0),(2,100,'2026-10-01 00:00:00',0),(1,100,'2026-10-01 00:00:00',1)");
-        assertEquals(0, new BigDecimal("30.30").compareTo(mapper.incomeTotal(1, start, end)));
-        assertEquals(0, new BigDecimal("7.40").compareTo(mapper.expenseTotal(1, start.atStartOfDay(), end.atStartOfDay())));
-        assertEquals(0, BigDecimal.ZERO.compareTo(mapper.incomeTotal(99, start, end)));
-        assertEquals(0, BigDecimal.ZERO.compareTo(mapper.expenseTotal(99, start.atStartOfDay(), end.atStartOfDay())));
-    }
 
-    @Test
-    void testFinance_跨年月份年度与全部保留归属和删除过滤() {
-        jdbc.update("INSERT INTO income VALUES (1,1.10,'2025-12-31',0),(1,2.20,'2026-01-01',0),(1,3.30,'2026-12-31',0),(1,4.40,'2027-01-01',0),(1,1.10,NULL,0),(2,1000,'2026-12-31',0),(1,1000,'2026-12-31',1)");
-        jdbc.update("INSERT INTO expense VALUES (1,0.10,'2025-12-31 23:59:59',0),(1,0.20,'2026-01-01 00:00:00',0),(1,0.30,'2026-12-31 23:59:59',0),(1,0.40,'2027-01-01 00:00:00',0),(1,0.10,NULL,0),(2,1000,'2026-12-31 00:00:00',0),(1,1000,'2026-12-31 00:00:00',1)");
-        var yearStart = LocalDate.of(2026, 1, 1);
-        var monthStart = LocalDate.of(2026, 12, 1);
-        var end = LocalDate.of(2027, 1, 1);
-        assertEquals(0, new BigDecimal("3.30").compareTo(mapper.incomeTotal(1, monthStart, end)));
-        assertEquals(0, new BigDecimal("0.30").compareTo(mapper.expenseTotal(1, monthStart.atStartOfDay(), end.atStartOfDay())));
-        assertEquals(0, new BigDecimal("5.50").compareTo(mapper.incomeTotal(1, yearStart, end)));
-        assertEquals(0, new BigDecimal("0.50").compareTo(mapper.expenseTotal(1, yearStart.atStartOfDay(), end.atStartOfDay())));
-        assertEquals(0, new BigDecimal("12.10").compareTo(mapper.incomeTotal(1, null, null)));
-        assertEquals(0, new BigDecimal("1.10").compareTo(mapper.expenseTotal(1, null, null)));
-        assertEquals(0, BigDecimal.ZERO.compareTo(mapper.incomeTotal(99, null, null)));
-        assertEquals(0, BigDecimal.ZERO.compareTo(mapper.expenseTotal(99, null, null)));
-    }
+
+
 
     @Test
     void testImages_查询返回存储文件ID与封面状态而非原图地址() {

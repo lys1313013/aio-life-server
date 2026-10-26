@@ -1,8 +1,5 @@
 package top.aiolife.record.mapper;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -33,25 +30,4 @@ public interface HomeSectionMapper {
         """)
     List<DeviceEntity> activeDevices(@Param("userId") long userId);
 
-    @Select("""
-        <script>
-        SELECT COALESCE(SUM(amt), 0) FROM income
-        WHERE user_id = #{userId} AND is_deleted = 0
-        <if test="start != null">AND inc_date &gt;= #{start}</if>
-        <if test="end != null">AND inc_date &lt; #{end}</if>
-        </script>
-        """)
-    BigDecimal incomeTotal(@Param("userId") long userId, @Param("start") LocalDate start,
-                             @Param("end") LocalDate end);
-
-    @Select("""
-        <script>
-        SELECT COALESCE(SUM(amt), 0) FROM expense
-        WHERE user_id = #{userId} AND is_deleted = 0
-        <if test="start != null">AND exp_time &gt;= #{start}</if>
-        <if test="end != null">AND exp_time &lt; #{end}</if>
-        </script>
-        """)
-    BigDecimal expenseTotal(@Param("userId") long userId, @Param("start") LocalDateTime start,
-                              @Param("end") LocalDateTime end);
 }

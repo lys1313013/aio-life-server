@@ -12,17 +12,6 @@ public final class HomeSectionVO {
     private HomeSectionVO() {}
 
     public record Items<T>(List<T> items, int refreshInterval) {}
-    /** startDate 含、endDate 不含；all 时均为 null。month 只为旧月视图兼容。 */
-    public record Finance(String period, String label,
-                          @JsonFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
-                          @JsonFormat(pattern = "yyyy-MM-dd") LocalDate endDate,
-                          String month, BigDecimal income, BigDecimal expense,
-                          BigDecimal balance, int refreshInterval) {}
-    public record FinanceAmount(String period, String label,
-                          @JsonFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
-                          @JsonFormat(pattern = "yyyy-MM-dd") LocalDate endDate,
-                                String month, BigDecimal amount, int refreshInterval) {}
-
     @Data
     public static class Memo {
         private Long id;

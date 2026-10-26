@@ -129,115 +129,24 @@ class HomeSectionServiceTest {
     }
 
     @Test
-    void testFinance_跨年月份边界与精确结余() {
-        var start = LocalDate.of(2026, 12, 1);
-        var end = LocalDate.of(2027, 1, 1);
-        when(mapper.incomeTotal(7, start, end)).thenReturn(new BigDecimal("100.10"));
-        when(mapper.expenseTotal(7, start.atStartOfDay(), end.atStartOfDay())).thenReturn(new BigDecimal("30.20"));
-        var result = service.finance(7, LocalDate.of(2026, 12, 31));
-        assertEquals("2026-12", result.month());
-        assertEquals("month", result.period());
-        assertEquals("2026年12月", result.label());
-        assertEquals(start, result.startDate());
-        assertEquals(end, result.endDate());
-        assertEquals(new BigDecimal("69.90"), result.balance());
-        verify(mapper).incomeTotal(7, start, end);
-        verify(mapper).expenseTotal(7, start.atStartOfDay(), end.atStartOfDay());
-    }
-
-    @Test
     void testAccess_任何来源权限拒绝时不查询业务数据() {
         var denied = new ResponseStatusException(HttpStatus.FORBIDDEN);
-        doThrow(denied).when(access).check(7, "/finance/dashboard", "/finance/income", "/finance/expense");
         doThrow(denied).when(access).check(7, "/record/memo");
         doThrow(denied).when(access).check(7, "/record/videoWatch");
         doThrow(denied).when(access).check(7, "/my-hub/device");
-        assertThrows(ResponseStatusException.class, () -> service.finance(7));
         assertThrows(ResponseStatusException.class, () -> service.memos(7));
         assertThrows(ResponseStatusException.class, () -> service.videos(7));
         assertThrows(ResponseStatusException.class, () -> service.devices(7));
         verifyNoInteractions(mapper);
     }
 
-    @Test
-    void testFinance_年度跨年边界且不冒充月份() {
-        var start = LocalDate.of(2024, 1, 1);
-        var end = LocalDate.of(2025, 1, 1);
-        when(mapper.incomeTotal(7, start, end)).thenReturn(new BigDecimal("100.10"));
-        when(mapper.expenseTotal(7, start.atStartOfDay(), end.atStartOfDay())).thenReturn(new BigDecimal("30.20"));
-        var result = service.finance(7, "year", LocalDate.of(2024, 2, 29));
-        assertEquals("year", result.period());
-        assertEquals("2024年", result.label());
-        assertEquals(start, result.startDate());
-        assertEquals(end, result.endDate());
-        assertNull(result.month());
-        assertEquals(new BigDecimal("69.90"), result.balance());
-        verify(mapper).incomeTotal(7, start, end);
-        verify(mapper).expenseTotal(7, start.atStartOfDay(), end.atStartOfDay());
-    }
 
-    @Test
-    void testFinance_全部区间没有日期或月份边界且允许负结余() {
-        when(mapper.incomeTotal(7, null, null)).thenReturn(new BigDecimal("30.10"));
-        when(mapper.expenseTotal(7, null, null)).thenReturn(new BigDecimal("100.20"));
-        var result = service.finance(7, "all", today);
-        assertEquals("all", result.period());
-        assertEquals("全部", result.label());
-        assertNull(result.startDate());
-        assertNull(result.endDate());
-        assertNull(result.month());
-        assertEquals(new BigDecimal("-70.10"), result.balance());
-        verify(mapper).incomeTotal(7, null, null);
-        verify(mapper).expenseTotal(7, null, null);
-    }
 
-    @Test
-    void testIncome_仅检查收入权限且不查询支出() {
-        when(mapper.incomeTotal(7, null, null)).thenReturn(new BigDecimal("10.20"));
-        var result = service.income(7, "all");
-        assertEquals(new BigDecimal("10.20"), result.amount());
-        assertEquals("all", result.period());
-        assertNull(result.startDate());
-        assertNull(result.endDate());
-        verify(access).check(7, "/finance/income");
-        verify(mapper).incomeTotal(7, null, null);
-        verifyNoMoreInteractions(access, mapper);
-    }
 
-    @Test
-    void testExpense_仅检查支出权限且不查询收入() {
-        when(mapper.expenseTotal(7, null, null)).thenReturn(new BigDecimal("3.40"));
-        var result = service.expense(7, "all");
-        assertEquals(new BigDecimal("3.40"), result.amount());
-        assertEquals("all", result.period());
-        assertNull(result.month());
-        verify(access).check(7, "/finance/expense");
-        verify(mapper).expenseTotal(7, null, null);
-        verifyNoMoreInteractions(access, mapper);
-    }
 
-    @Test
-    void testPeriod_非法范围在所有财务入口拒绝且不查询数据库() {
-        for (var period : List.of("week", "YEAR", "2026-10", " all ")) {
-            assertEquals(HttpStatus.BAD_REQUEST,
-                    assertThrows(ResponseStatusException.class, () -> service.finance(7, period)).getStatusCode());
-            assertEquals(HttpStatus.BAD_REQUEST,
-                    assertThrows(ResponseStatusException.class, () -> service.income(7, period)).getStatusCode());
-            assertEquals(HttpStatus.BAD_REQUEST,
-                    assertThrows(ResponseStatusException.class, () -> service.expense(7, period)).getStatusCode());
-        }
-        verifyNoInteractions(mapper);
-    }
 
-    @Test
-    void testAccess_独立收支入口拒绝时不查询数据库() {
-        var denied = new ResponseStatusException(HttpStatus.FORBIDDEN);
-        doThrow(denied).when(access).check(7, "/finance/income");
-        doThrow(denied).when(access).check(7, "/finance/expense");
-        assertThrows(ResponseStatusException.class, () -> service.income(7, "all"));
-        assertThrows(ResponseStatusException.class, () -> service.expense(7, "year"));
-        verifyNoInteractions(mapper);
-    }
+
+
 
     @Test
     void testImages_摘要映射保留图片文件ID与封面状态() {

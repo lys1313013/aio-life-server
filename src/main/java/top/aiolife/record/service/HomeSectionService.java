@@ -4,13 +4,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 import top.aiolife.record.convertor.HomeSectionConvertor;
 import top.aiolife.record.mapper.HomeSectionMapper;
@@ -30,70 +27,6 @@ public class HomeSectionService {
         access.check(userId, "/record/memo");
         return new HomeSectionVO.Items<>(mapper.recentMemos(userId).stream()
                 .map(HomeSectionConvertor.INSTANCE::memo).toList(), 300);
-    }
-
-    public HomeSectionVO.Finance finance(long userId) {
-        return finance(userId, "month");
-    }
-
-    public HomeSectionVO.Finance finance(long userId, String period) {
-        access.check(userId, "/finance/dashboard", "/finance/income", "/finance/expense");
-        return finance(userId, period, LocalDate.now(BUSINESS_ZONE));
-    }
-
-    HomeSectionVO.Finance finance(long userId, LocalDate today) {
-        return finance(userId, "month", today);
-    }
-
-    HomeSectionVO.Finance finance(long userId, String period, LocalDate today) {
-        var range = FinancialRange.of(period, today);
-        BigDecimal income = income(userId, range);
-        BigDecimal expense = expense(userId, range);
-        return new HomeSectionVO.Finance(range.period(), range.label(), range.start(), range.end(),
-                range.month(), income, expense, income.subtract(expense), 300);
-    }
-
-    public HomeSectionVO.FinanceAmount income(long userId, String period) {
-        access.check(userId, "/finance/income");
-        var range = FinancialRange.of(period, LocalDate.now(BUSINESS_ZONE));
-        return amount(range, income(userId, range));
-    }
-
-    public HomeSectionVO.FinanceAmount expense(long userId, String period) {
-        access.check(userId, "/finance/expense");
-        var range = FinancialRange.of(period, LocalDate.now(BUSINESS_ZONE));
-        return amount(range, expense(userId, range));
-    }
-
-    private BigDecimal income(long userId, FinancialRange range) {
-        return mapper.incomeTotal(userId, range.start(), range.end());
-    }
-
-    private BigDecimal expense(long userId, FinancialRange range) {
-        return mapper.expenseTotal(userId, range.start() == null ? null : range.start().atStartOfDay(),
-                range.end() == null ? null : range.end().atStartOfDay());
-    }
-
-    private HomeSectionVO.FinanceAmount amount(FinancialRange range, BigDecimal value) {
-        return new HomeSectionVO.FinanceAmount(range.period(), range.label(), range.start(), range.end(),
-                range.month(), value, 300);
-    }
-
-    /** 服务端集中确定中国业务日历边界，两端只切换 period。 */
-    private record FinancialRange(String period, String label, LocalDate start, LocalDate end, String month) {
-        static FinancialRange of(String period, LocalDate today) {
-            return switch (period) {
-                case "month" -> {
-                    var month = YearMonth.from(today);
-                    yield new FinancialRange(period, month.getYear() + "年" + month.getMonthValue() + "月",
-                            month.atDay(1), month.plusMonths(1).atDay(1), month.toString());
-                }
-                case "year" -> new FinancialRange(period, today.getYear() + "年",
-                        today.withDayOfYear(1), today.plusYears(1).withDayOfYear(1), null);
-                case "all" -> new FinancialRange(period, "全部", null, null, null);
-                default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "period 只能为 month、year 或 all");
-            };
-        }
     }
 
     public HomeSectionVO.Items<HomeSectionVO.Video> videos(long userId) {
