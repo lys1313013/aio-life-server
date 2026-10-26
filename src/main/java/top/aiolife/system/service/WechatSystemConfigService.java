@@ -25,7 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-/** 复用系统配置表保存微信配置；环境变量只在尚未保存后台配置时兼容使用。 */
+/** 复用系统配置表保存微信配置；环境变量只提供尚未保存后台配置时的初始值。 */
 @Service
 @RequiredArgsConstructor
 public class WechatSystemConfigService {

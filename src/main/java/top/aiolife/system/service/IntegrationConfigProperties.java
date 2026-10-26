@@ -5,7 +5,7 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-/** 仅用于系统配置首次保存前的部署兼容值。 */
+/** 系统配置首次保存前的部署默认值。 */
 @Getter
 @Setter
 @Component

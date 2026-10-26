@@ -168,7 +168,7 @@ aio:
       enabled: ${AIO_LIFE_NEO4J_ENABLED:false}
     server:
       footprints:
-        # AK 和请求超时由管理员在 system_config（footprints.baidu）维护；旧记录缺少超时时使用以下兼容值。
+        # AK 和请求超时由管理员在 system_config（footprints.baidu）维护；后台未配置超时时使用以下默认值。
         timeout-ms: ${AIO_LIFE_MAP_TIMEOUT_MS:5000}
       base-url: ${AIO_LIFE_SERVER_BASE_URL:http://localhost:45678/api}
       douban:
@@ -206,7 +206,7 @@ aio:
         object-prefix: ${AIO_LIFE_CBTI_OBJECT_PREFIX:images/cbti/characters/}
         characters-dir: ${AIO_LIFE_CBTI_CHARACTERS_DIR:src/main/resources/cbti/characters}
       notification:
-        # 与微信登录一起在管理员系统配置中维护；此处仅兼容首次保存前的部署。
+        # 与微信登录一起在管理员系统配置中维护；此处仅提供首次保存前的初始值。
         wechat-mini:
           enabled: ${AIO_LIFE_WECHAT_SUBSCRIBE_ENABLED:false}
           template-id: ${AIO_LIFE_WECHAT_SUBSCRIBE_TEMPLATE_ID:}

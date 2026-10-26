@@ -92,7 +92,7 @@ curl --fail-with-body --silent --show-error --get \
 - `OpenApiConfig` 适配字符串 Long、`@JsonFormat`、平铺 `@QueryParams`、数组查询及匿名认证接口。HTTP 方法和路径生成稳定的 `operationId`，分组与全量文档保持一致。
 - 本版覆盖当前启用 Controller 的结构与已有注释，补充了目标接口示例说明。历史代码中缺少注释的字段、`Map<String,Object>`/`Object` 动态结构、手工校验规则和流式响应仍需逐步补充，不能把自动生成文档等同于完整业务语义。
 - MCP 的 `/mcp/tools` 可列出已注册工具的 `inputSchema`。OpenAPI 中 `/mcp/tools/call` 的 `arguments` 是动态对象，调用前必须读取工具列表。
-- 文件预览使用 `/file/preview/{id}`。历史兼容入口 `/file/preview/{*fileName}` 仍可运行，但因与标准入口形成冲突的 OpenAPI 路径模板，仅在文档中隐藏。
+- 文件预览使用 `/file/preview/{id}`。桶名／对象路径式预览入口已移除。CBTI 公共人格图片使用 `/cbti/images/{objectName}`，只允许当前人格绑定的对象。
 
 ## 本地验证
 

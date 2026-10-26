@@ -48,7 +48,7 @@ public class FootprintTencentConfigService {
         return new BrowserConfig(StringUtils.hasText(value.getBrowserKeyCiphertext()), value.getMapStyleId());
     }
 
-    /** 仅供固定上游的腾讯代理调用；沿用历史加密配置，无需重新填写 Key。 */
+    /** 仅供固定上游的腾讯代理调用；读取当前加密配置。 */
     public String displayKey() {
         Value value = stored(load());
         return StringUtils.hasText(value.getBrowserKeyCiphertext())

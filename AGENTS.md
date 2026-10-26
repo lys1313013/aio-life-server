@@ -1,5 +1,7 @@
 # AGENTS.md
 
+- 系统尚未正式上线，只维护当前数据结构和接口契约；不保留旧数据格式、旧客户端、旧参数或旧缓存的兼容分支，也不维护历史升级链。结构变更同步全量初始化、实体和两端调用方。
+
 This file provides guidance to AI coding agents when working with code in this repository.
 
 ## 项目概述
@@ -69,7 +71,7 @@ mvn test -Dtest=TimeTrackerCategoryControllerIntegrationTest#testList_获取分�
 | `core` | 公共组件：ApiResponse、异常处理、工具类、常量 |
 | `config` | 全局配置：Cache、CORS、JSON、MinIO、MyBatis Plus、Neo4j、Redis、Sa-Token |
 
-LLM 会话、消息和模型密钥业务接口已移除。为保留历史数据并满足物理表实体映射检查，`llm_key`、`conversation`、`chat_message` 仅保留实体和基础 Mapper；不得恢复对应业务 API 或服务层。
+LLM 会话、消息和模型密钥业务接口、数据表及实体 Mapper 已移除，不恢复已取消的业务。
 
 ### 模块内部分层
 
@@ -222,20 +224,15 @@ class MyControllerTest extends BaseIntegrationTest {
 
 ## 数据库初始化
 
-SQL 编写必须遵守 [SQL 脚本规范](docs/SQL脚本规范.md)：表和每个字段必须有中文 `COMMENT`（包括 ID、版本、审计及逻辑删除字段），索引和约束必须说明用途；新增脚本写明前置、影响、重跑和恢复方式。同步全量结构、增量迁移、结构文档及升级计划摘要，不能用 `CREATE TABLE IF NOT EXISTS` 代替已有表升级。
+SQL 编写必须遵守 [SQL 脚本规范](docs/SQL脚本规范.md)：表和每个字段必须有中文 COMMENT，索引和约束说明用途。上线前直接修改全量结构，不维护增量迁移或历史基线。
 
-SQL 脚本位于 `sql/` 目录：
+- `sql/1_init_table/2026-08-18_init_all_tables.sql`：唯一的当前完整结构。
+- `sql/2_ini_data/`：业务初始化数据。
+- `sql/menu/2_ini_data/`：菜单初始化数据，先运行 `2_menu.sql`，说明见 [菜单 SQL](sql/menu/README.md)。
 
-- `1_init_table/` — 建表脚本（按日期命名）
-- `2_ini_data/` — 业务初始化数据脚本
-- `menu/1_init_table/` — 菜单专属结构迁移
-- `menu/2_ini_data/` — 菜单初始化与补缺脚本；说明见 [菜单 SQL](sql/menu/README.md)
+初始化和验证顺序见 [数据库初始化与验证](docs/数据库初始化与验证.md)。CI 在隔离数据库验证当前结构、种子数据和约束；结构预检仅作只读比较。
 
-**新库**：只执行 `1_init_table/2026-08-18_init_all_tables.sql`，先执行 `menu/2_ini_data/2_menu.sql` 建立基础菜单，再执行 `2_ini_data/*.sql` 和 `menu/2_ini_data/202*.sql`；全量结构已包含历史 ALTER，禁止再把所有增量结构脚本重复执行。
-
-**旧库**：按 `sql/upgrade-plan.json` 和实际迁移记录执行尚未执行的增量，发布前运行只读结构预检。升级计划、校验和及 CI 验证规则见 `docs/数据库升级验证.md`。
-
-会员平台预设统一维护在 `sql/2_ini_data/2026-10-20_membership_providers.sql`，新增平台直接补入该文件，不再拆分 INSERT 脚本。该目录仅补缺失平台，可重复执行并保留已有配置及删除状态；历史数据修正使用独立迁移。修改后同步升级计划 SHA-256。
+会员平台预设统一维护在 `sql/2_ini_data/2026-10-20_membership_providers.sql`；保留初始化的补缺、幂等语义，不覆盖管理员日常修改。
 
 全量表结构说明见 `docs/数据库表结构.md`（由建表脚本合并生成）。
 

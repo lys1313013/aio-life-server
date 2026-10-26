@@ -41,13 +41,13 @@ Web 入口为「系统管理 → 对象存储」。读取 `AIO_LIFE_MINIO_BUCKET
 - `GET /api/system/storage/objects`：`prefix`、`cursor`、`pageSize`；`nextCursor` 为空表示末页，切换前缀后重置游标。
 - `GET /api/system/storage/preview?key=...`：预览不超过 20 MB 的 JPG、PNG、GIF、WebP、AVIF、BMP 图片。
 - `GET /api/system/storage/download?key=...`：以附件方式下载，其他格式也可使用。
-- `DELETE /api/system/storage/object?key=...`：删除与上传按桶名/对象名共用互斥锁，在锁内实时查询 `file` 及 CBTI 图片引用；匹配完整对象名、历史带桶路径及旧文件名/属主/业务目录组合。有任意关联（包括 `biz_id` 为空、软删除记录）或对象正在处理均返回 HTTP 409；加锁/查库失败不会执行存储删除。上传锁保持到数据库事务完成，回滚清理早于释放锁。
+- `DELETE /api/system/storage/object?key=...`：删除与上传按桶名/对象名共用互斥锁，在锁内实时查询 `file` 及 CBTI 图片引用；按当前完整对象键精确匹配。有任意关联（包括 `biz_id` 为空、软删除记录）或对象正在处理均返回 HTTP 409；加锁/查库失败不会执行存储删除。上传锁保持到数据库事务完成，回滚清理早于释放锁。
 
-上传和删除实例需同步升级以遵循同一对象锁协议；滚动升级存在旧实例时应暂停管理员清理。
+上传和删除共用同一对象锁协议。
 
 所有入口都校验 `admin` 角色，包括预览、下载和删除。前端通过 Authorization 请求图片 Blob；不返回 MinIO 凭据、公开链接或签名链接，不修改现有桶访问策略。对象 key 按原始值传递，由请求客户端编码，保留中文、空格、`+`、`#` 和目录分隔符。文件大小沿用全局 Long 序列化约定，Web 兼容字符串数值。
 
-已有数据库升级时执行 `sql/menu/2_ini_data/2026-10-02_storage_admin_menu.sql`（可重复执行）。菜单配置直接读取数据库；执行后重新登录或刷新前端菜单以更新路由。MinIO 凭据需要业务桶的 ListBucket、GetObject 与 DeleteObject 权限。
+菜单初始化执行 `sql/menu/2_ini_data/2026-10-02_storage_admin_menu.sql`（可重复执行）。菜单配置直接读取数据库；执行后重新登录或刷新前端菜单以更新路由。MinIO 凭据需要业务桶的 ListBucket、GetObject 与 DeleteObject 权限。
 
 ### 认证与安全
 
@@ -68,7 +68,7 @@ Web 入口为「系统管理 → 对象存储」。读取 `AIO_LIFE_MINIO_BUCKET
 - **LangChain4j 1.12.2** — MCP 工具注解与 Schema 适配
 - **MCP 0.14.0** — Model Context Protocol 支持
 
-服务端已移除 LLM 会话、消息和模型密钥 API 与业务代码。为保留历史数据，`llm_key`、`conversation`、`chat_message` 数据表及其实体 Mapper 映射仍保留；不再提供读写接口。
+服务端已移除 LLM 会话、消息和模型密钥 API 与业务代码。对应的 `llm_key`、`conversation`、`chat_message` 表及实体 Mapper 已从当前初始化和源码移除。
 
 ### 工具库
 
@@ -97,7 +97,6 @@ aio-life-server/
 │   ├── system/           # 系统管理：用户、菜单、字典
 │   ├── wardrobe/         # 衣柜管理
 │   ├── relationship/     # 人际关系图谱（Neo4j，可选）
-│   ├── llm/              # 仅保留历史数据表的实体与 Mapper 映射，不提供业务接口
 │   ├── mcp/              # MCP 协议支持
 │   ├── core/             # 公共组件：ApiResponse、异常处理、工具类
 │   └── config/           # 全局配置
@@ -106,7 +105,7 @@ aio-life-server/
 ├── sql/
 │   ├── 1_init_table/     # 建表脚本
 │   ├── 2_ini_data/       # 业务初始化数据
-│   └── menu/             # 菜单结构迁移与初始化数据
+│   └── menu/             # 菜单初始化数据
 ├── docker/               # Docker 配置文件
 └── docs/                 # 文档
 ```
@@ -140,7 +139,7 @@ mysql -u root -p -e 'CREATE DATABASE `aio_life` CHARACTER SET utf8mb4 COLLATE ut
 
 # 执行初始化脚本
 mysql -u root -p aio_life < sql/1_init_table/2026-08-18_init_all_tables.sql
-# 全量结构已经包含历史 ALTER，不能再次逐个执行增量结构脚本
+# 只初始化当前完整结构
 mysql -u root -p aio_life < sql/menu/2_ini_data/2_menu.sql
 for sql_file in sql/2_ini_data/*.sql sql/menu/2_ini_data/202*.sql; do
   mysql -u root -p aio_life < "$sql_file"
@@ -149,7 +148,7 @@ done
 
 应用数据源用户名固定为 `aio_life`（见 `application.yml`）；初始化后为该账号授予业务库权限，并通过 `AIO_LIFE_DB_PASSWORD` 配置对应密码。上述 `root` 仅用于初始化，不能把 root 密码直接当作应用账号密码。
 
-已有数据库升级及发布前只读结构预检见 [数据库升级验证](docs/数据库升级验证.md)。CI 分别验证新库与固定历史版本的增量升级，二者成功才允许镜像发布。
+当前空库初始化、隔离验证及只读结构预检见 [数据库初始化与验证](docs/数据库初始化与验证.md)。CI 验证当前全量结构和种子数据，不维护历史基线升级。
 
 #### 3. 配置环境变量
 
@@ -263,8 +262,8 @@ mvn clean package -DskipTests
 
 - 用户表只保存 `avatar_file_id`（关联 `file.id`），不保存头像 URL。更新资料提交 `avatarFileId`：不传保持原值，传 `null` 清除，非空必须是当前用户上传、未删除且公开的头像图片。
 - `/user/info`、`/auth/info` 和 `/user/{id}/basic` 返回 `avatarFileId`、`avatarUrl`；展示地址为当前 `AIO_LIFE_SERVER_BASE_URL` + `/file/preview/{fileId}`。部署变量必须使用 `SERVER` 拼写并配置公网 HTTPS，如 `https://aiolife.top/api`。
-- 旧库执行 `2026-10-03_user_avatar_file_id.sql`：直接删除 `avatar` 列，不迁移旧头像，用户需重新上传。先备份，协调后端、Web 与移动端一起升级；旧客户端的 `avatar` 不再作为头像保存字段。
-- `avatar_file_id` 外键阻止直接删除被引用的文件记录；存储管理仍禁止删除 file 表关联的对象。解除绑定不自动删除文件。回滚旧程序需要同时恢复旧结构备份，不能只切换镜像。
+- 当前用户头像只存 `avatar_file_id`，重新上传通过统一文件入口绑定。
+- `avatar_file_id` 外键阻止直接删除被引用的文件记录；存储管理仍禁止删除 file 表关联的对象。解除绑定不自动删除文件。开发环境按当前结构与当前程序配套运行。
 
 ### API 文档
 
@@ -336,7 +335,7 @@ Web 登录页的“App 扫码登录”入口为 `/auth/app-qrcode-login`。用�
 
 入口 `/record/life-footprints`，记录长期生活的起止日期、具体地点、地址和备注。数据库使用 `DATE`，接口使用 `YYYY-MM-DD`；结束日期必填，`9999-12-31` 表示至今，不使用 `ongoing`。地图取得当前用户全量记录。API 前缀 `/api/life-footprints`，增改使用完整字段，不使用幂等键或版本字段，暂不使用乐观锁；同一账号多端编辑以最后一次成功保存为准。`update_time` 仅用于审计，修改和删除仍校验用户归属及逻辑删除状态。保存期间拦截重复点击；网络结果不确定时先重新读取确认，不承诺重复新增请求返回同一记录。
 
-部署前按 [数据库升级说明](docs/数据库升级验证.md#生活足迹2026-10-21) 完成建表及菜单迁移。Web 主地图与新增、编辑弹窗统一使用腾讯 JavaScript API GL；默认 `style1` 须在腾讯控制台绑定白浅模板。地图 Key 通过官方代理方案由后端注入，SDK 加载 URL 不含 Key。
+部署前按 [数据库初始化说明](docs/数据库初始化与验证.md) 完成当前结构和菜单初始化。Web 主地图与新增、编辑弹窗统一使用腾讯 JavaScript API GL；默认 `style1` 须在腾讯控制台绑定白浅模板。地图 Key 通过官方代理方案由后端注入，SDK 加载 URL 不含 Key。
 
 管理员在「系统管理 → 系统配置 → 生活足迹腾讯地图（Web）」维护两个不同的 Key，保存在现有 `system_config` 表的 `footprints.tencent` JSON 项，无需新增表。配置实时生效；页面刷新后更新地图可用状态。完整时序、路由和权限设置见[腾讯地图代理接入](docs/腾讯地图代理接入.md)。
 
@@ -347,13 +346,13 @@ Web 登录页的“App 扫码登录”入口为 `/auth/app-qrcode-login`。用�
 | 样式（`mapStyleId`） | 默认 `style1` |
 | 搜索超时（`timeoutMs`） | 1000–15000ms，默认 5000ms，不影响 GL 代理的 8 秒超时 |
 
-两个 Key 分别留空保留、填写替换、显式清除，不允许同值。管理响应仅返回 `browserKeyConfigured`、`serviceKeyConfigured`、样式与超时，不回显明文或密文。加密主密钥为部署侧 `AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY`（至少 16 位，保持稳定）。历史展示 Key 自动保留；腾讯搜索解析 Key 必须单独配置，不借用展示 Key。后台查询优先使用 `footprints.baidu` 的服务端 AK；百度配额耗尽或并发受限时改用腾讯搜索解析 Key。应用不能代替腾讯控制台设置权限；授权粒度及是否能单独禁用 JS API 以厂商控制台为准，当前服务端不计算 SN 签名。
+两个 Key 分别留空保留、填写替换、显式清除，不允许同值。管理响应仅返回 `browserKeyConfigured`、`serviceKeyConfigured`、样式与超时，不回显明文或密文。加密主密钥为部署侧 `AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY`（至少 16 位，保持稳定）。展示 Key 加密保存；腾讯搜索解析 Key 必须单独配置，不借用展示 Key。后台查询优先使用 `footprints.baidu` 的服务端 AK；百度配额耗尽或并发受限时改用腾讯搜索解析 Key。应用不能代替腾讯控制台设置权限；授权粒度及是否能单独禁用 JS API 以厂商控制台为准，当前服务端不计算 SN 签名。
 
 `GET /api/life-footprints/map/config` 返回 `searchEnabled`、`coordinateSystem: "GCJ02"`、兼容移动端的 `tiles` 和 `tencent: { enabled, mapStyleId }`，不含凭据。GL 请求使用限定代理路径的加密 HttpOnly Cookie，仍须通过本站登录、账号状态与二级锁；搜索解析使用普通 Authorization。Key 只在后端调用固定腾讯上游时注入，本站凭据不转发给腾讯。百度与腾讯任一查询凭据已配置就启用搜索；两家均未配置时仍可展示地图并手工选点、填写地址。
 
 后台通过 `FootprintMapProvider` 接口及百度、腾讯两个实现统一处理搜索、地理编码与逆解析。默认百度优先；百度业务状态 `4/301/302`、并发状态 `401/402` 或 HTTP `429` 触发同一次请求切换腾讯。额度耗尽按 AK 指纹与 API 路径记入 Redis，后续命中直接跳过百度：日额度至北京时间次日零点、永久配额缓存 24 小时后重新探测。并发限制只切换当次，不写额度状态；Redis 不可读时也直接走腾讯。普通错误、超时和空结果不切换。每家最多调用一次，更换 AK 使用独立状态。返回统一 GCJ02，逆解析不改变用户选点，候选定位仍须确认。该逻辑依据上游配额错误，不读取免费余额；若厂商继续消耗付费流量包并返回成功，无法检测免费额度已用完。
 
-「生活足迹百度查询与 H5 底图」配置（`footprints.baidu`）维护优先使用的 `serviceAk`（仅写入，加密存为 `serviceAkCiphertext`）与 `timeoutMs`，留空保留、填写替换、`clearServiceAk` 显式清除；保留历史配置无需迁移。百度控制台应开通地点检索、地理编码与逆地理编码，并使用后端公网出口 IP 白名单。移动端 H5 保持 Leaflet，该表单同时维护其底图地址、坐标系与署名，默认 OpenStreetMap，遵循[瓦片使用政策](https://operations.osmfoundation.org/policies/tiles/)。Web 不使用该底图配置。微信和 App 保持原生 GCJ02 地图；移动端共用后端查询接口，因此同样采用百度优先、配额耗尽或并发受限后腾讯备用。
+「生活足迹百度查询与 H5 底图」配置（`footprints.baidu`）维护优先使用的 `serviceAk`（仅写入，加密存为 `serviceAkCiphertext`）与 `timeoutMs`，留空保留、填写替换、`clearServiceAk` 显式清除；按当前配置保存。百度控制台应开通地点检索、地理编码与逆地理编码，并使用后端公网出口 IP 白名单。移动端 H5 保持 Leaflet，该表单同时维护其底图地址、坐标系与署名，默认 OpenStreetMap，遵循[瓦片使用政策](https://operations.osmfoundation.org/policies/tiles/)。Web 不使用该底图配置。微信和 App 保持原生 GCJ02 地图；移动端共用后端查询接口，因此同样采用百度优先、配额耗尽或并发受限后腾讯备用。
 
 本地专项：`mvn -Dtest=BaiduMapQuotaStoreTest,FootprintMapClientTest,BaiduFootprintMapProviderTest,TencentFootprintMapProviderTest,FootprintMapConfigServiceTest,FootprintTencentConfigServiceTest,TencentMapProxyClientTest,TencentMapProxyHttpTest,TencentMapProxySessionFilterTest test`。真实腾讯搜索解析须单独配置有效服务端 Key 后联调；模拟测试不代表厂商权限或定位精度验收。
 
@@ -363,9 +362,9 @@ Web 登录页的“App 扫码登录”入口为 `/auth/app-qrcode-login`。用�
 
 - `GET /api/system/regions?parentCode=0`：根省份；传父编码加载其下级，返回 `{code,name,level,hasChildren}` 数组，`level` 为数字1至4、`code` 为字符串。
 - `GET /api/system/regions/{code}/path`：恢复从省到所选编码的完整路径。均需登录，无需地图AK。
-- 足迹请求/响应新增可空 `regionCode`，保存最深选中编码；可停在任一级或不选，旧记录NULL。变更地区后需重新确认具体地图位置。
+- 足迹请求/响应新增可空 `regionCode`，保存最深选中编码；可停在任一级或不选，未填写时为 NULL。变更地区后需重新确认具体地图位置。
 
-先按 `sql/upgrade-plan.json` 完成建表、足迹列迁移和目录种子数据。目录使用固定2023快照，共44703项，不含港澳台/海外，不保证区划实时性；手填地址与地图选点仍可使用。来源、许可、覆盖范围及再生成方式见 [地区数据](docs/data/china-regions.md)。
+使用当前全量结构并初始化地区目录种子数据。目录使用固定2023快照，共44703项，不含港澳台/海外，不保证区划实时性；手填地址与地图选点仍可使用。来源、许可、覆盖范围及再生成方式见 [地区数据](docs/data/china-regions.md)。
 
 
 ### Typesafe 与 MBTI 系统配置

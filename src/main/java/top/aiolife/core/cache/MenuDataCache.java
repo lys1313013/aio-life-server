@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import top.aiolife.system.service.MenuClient;
 
-/** 菜单参与访问控制，直接读取权威数据，避免提交后 Redis 失效丢失。保留原类名以兼容调用方。 */
+/** 菜单参与访问控制，直接读取权威数据，避免提交后 Redis 失效丢失。 */
 @Component
 @RequiredArgsConstructor
 public class MenuDataCache {

@@ -176,7 +176,7 @@ mvn -q -Dtest=JevCategoryRecommendationServiceTest,JevCategoryClientTest,JevTime
 
 ## 参考日降级规则修复
 
-- 推荐顺序：Jev → 上一个同类日同一时段 → 空分类。已删除历史高频、历史后继分类及强制换类逻辑和对应 Mapper SQL；允许与上一条记录分类相同。`previousCategoryId` 参数保留兼容旧调用，不再影响分类选择。
+- 推荐顺序：Jev → 上一个同类日同一时段 → 空分类。已删除历史高频、历史后继分类及强制换类逻辑和对应 Mapper SQL；允许与上一条记录分类相同。`previousCategoryId` 参数已移除。
 - 参考日必须早于目标日，且不能晚于实际今天。参考日是今天时，只使用结束分钟严格早于当前分钟的完整记录；目标时段尚未发生则不查询。
 - 参考日候选只允许使用 `listUserVisibleCategories` 返回的分类，公共分类覆盖、隐藏、禁用和删除规则与 Jev 一致。只有一条有效匹配记录才推荐；无匹配或多条有效记录重叠时返回空，不按频次猜测、不任意选取第一条。
 - 参考日 Mapper 返回列表，避免重叠记录触发单结果查询异常；SQL 继续限定当前用户、指定日期和未删除记录，并排除非法起始分钟及未结束记录。
