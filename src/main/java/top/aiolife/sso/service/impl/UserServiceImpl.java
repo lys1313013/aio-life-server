@@ -33,6 +33,7 @@ import top.aiolife.record.service.IMailService;
 import top.aiolife.record.util.RedisUtil;
 import top.aiolife.sso.convertor.UserConvertor;
 import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
+import top.aiolife.sso.util.SecondaryPasswordPolicy;
 import top.aiolife.sso.mapper.ApiKeyMapper;
 import top.aiolife.sso.mapper.LoginLogMapper;
 import top.aiolife.sso.mapper.UserMapper;
@@ -565,6 +566,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public void setSecondaryPassword(long userId, String password, String oldPassword) {
+        SecondaryPasswordPolicy.validate(password);
         UserEntity user = userMapper.selectById(userId);
         if (user == null) {
             throw new RuntimeException("用户不存在");
@@ -575,10 +577,8 @@ public class UserServiceImpl implements IUserService {
             if (!StringUtils.hasText(oldPassword)) {
                 throw new RuntimeException("请提供旧二级密码");
             }
-            String encryptedOld = PasswordUtil.encryptPassword(oldPassword, user.getSecondaryPasswordSalt());
-            if (!user.getSecondaryPassword().equals(encryptedOld)) {
-                throw new RuntimeException("旧二级密码错误");
-            }
+            // 修改入口沿用同一数字密码规则及用户级失败次数限制。
+            verifySecondaryPasswordOrThrow(user, oldPassword);
         }
 
         String salt = PasswordUtil.getSalt();
@@ -618,6 +618,7 @@ public class UserServiceImpl implements IUserService {
      * 校验二级密码是否正确，含失败次数限制；正确后清除失败计数。
      */
     private void verifySecondaryPasswordOrThrow(UserEntity user, String password) {
+        SecondaryPasswordPolicy.validate(password);
         long userId = user.getId();
         String failKey = SecondaryLockInterceptor.failCountKey(userId);
         String failCountStr = redisUtil.get(failKey);
@@ -698,6 +699,8 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public void resetSecondaryPassword(long userId, String code, String password) {
+        // 先校验新密码，避免无效提交消耗已发送的邮箱验证码。
+        SecondaryPasswordPolicy.validate(password);
         UserEntity user = userMapper.selectById(userId);
         if (user == null) {
             throw new RuntimeException("用户不存在");
