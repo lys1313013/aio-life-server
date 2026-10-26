@@ -18,6 +18,7 @@ import top.aiolife.export.pojo.entity.ExportGrantEntity;
 import top.aiolife.export.pojo.req.ExportAuthorizeReq;
 import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.util.PasswordUtil;
+import top.aiolife.sso.util.SecondaryPasswordPolicy;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -48,6 +49,7 @@ public class ExportAuthorizationService {
         if (!StringUtils.hasText(stored))
             throw new ExportException(
                     HttpStatus.CONFLICT, "EXPORT_PASSWORD_REQUIRED", "请先在账户安全中设置登录密码或二级密码");
+        if (secondary) SecondaryPasswordPolicy.validate(req.getPassword());
         String actual = PasswordUtil.encryptPassword(req.getPassword(), salt);
         if (!MessageDigest.isEqual(
                 stored.getBytes(StandardCharsets.UTF_8), actual.getBytes(StandardCharsets.UTF_8)))
