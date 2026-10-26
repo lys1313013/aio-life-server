@@ -18,7 +18,7 @@ class WechatAuthServiceTest {
     WechatAccountService accounts = mock(WechatAccountService.class);
     LoginSessionService sessions = mock(LoginSessionService.class);
     WechatAuthService service = new WechatAuthService(client, tickets, accounts, sessions);
-    WechatTicketStore.Ticket ticket = new WechatTicketStore.Ticket("openid", null, null, null);
+    WechatTicketStore.Ticket ticket = new WechatTicketStore.Ticket("openid", null);
 
     @Test void 已绑定用户直接登录不获取手机号() {
         when(client.exchangeLogin("code")).thenReturn(new WechatMiniClient.Identity("openid", null));
@@ -28,7 +28,6 @@ class WechatAuthServiceTest {
         var result = service.login("code", "ip");
         assertEquals("LOGGED_IN", result.getStatus());
         assertEquals("business-token", result.getAccessToken());
-        verify(client, never()).exchangePhone(anyString());
         verify(tickets, never()).issue(any());
     }
 
@@ -36,59 +35,21 @@ class WechatAuthServiceTest {
         when(client.exchangeLogin("code")).thenReturn(new WechatMiniClient.Identity("openid", null));
         when(tickets.issue(ticket)).thenReturn("ticket");
         var result = service.login("code", "ip");
-        assertEquals("PHONE_REQUIRED", result.getStatus());
+        assertEquals("REGISTRATION_REQUIRED", result.getStatus());
         assertEquals("ticket", result.getLoginTicket());
         assertNull(result.getAccessToken());
         verifyNoInteractions(sessions);
     }
 
-    @Test void 手机号匹配已有用户只返回绑定状态() {
-        when(tickets.consume("ticket")).thenReturn(ticket);
-        when(client.exchangePhone("phone")).thenReturn(new WechatMiniClient.Phone("86", "13800138000"));
-        when(accounts.register(any())).thenReturn(new WechatAccountService.Registration(null, false));
-        when(tickets.issue(any())).thenReturn("bind-ticket");
-        var result = service.phoneLogin(new WechatAuthRequests.PhoneLogin("ticket", "phone"), "ip");
-        assertEquals("BIND_REQUIRED", result.getStatus());
-        assertNull(result.getAccessToken());
-        verifyNoInteractions(sessions);
-    }
 
-    @Test void 创建提交完成后才签发token() {
-        UserEntity user = user();
-        when(tickets.consume("ticket")).thenReturn(ticket);
-        when(client.exchangePhone("phone")).thenReturn(new WechatMiniClient.Phone("86", "13800138000"));
-        when(accounts.register(any())).thenReturn(new WechatAccountService.Registration(user, true));
-        when(sessions.complete(user, "ip", false)).thenReturn(token());
-        var result = service.phoneLogin(new WechatAuthRequests.PhoneLogin("ticket", "phone"), "ip");
-        assertTrue(result.isNewUser());
-        assertFalse(result.isHasPassword());
-        var order = inOrder(accounts, sessions);
-        order.verify(accounts).register(any());
-        order.verify(sessions).complete(user, "ip", false);
-    }
 
-    @Test void 重复票据在调用微信手机号前被拒绝() {
-        when(tickets.consume("used")).thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST));
-        assertThrows(ResponseStatusException.class, () -> service.phoneLogin(new WechatAuthRequests.PhoneLogin("used", "phone"), "ip"));
-        verify(client, never()).exchangePhone(anyString());
-        verifyNoInteractions(accounts, sessions);
-    }
 
-    @Test void 绑定票据不能当作注册票据() {
-        when(tickets.consume("ticket")).thenReturn(ticket.withPhone(new WechatMiniClient.Phone("86", "13800138000")));
-        assertThrows(ResponseStatusException.class, () -> service.phoneLogin(new WechatAuthRequests.PhoneLogin("ticket", "phone"), "ip"));
-        verify(client, never()).exchangePhone(anyString());
-    }
 
-    @Test void 并发唯一键冲突不签发token且不泄漏SQL() {
-        when(tickets.consume("ticket")).thenReturn(ticket);
-        when(client.exchangePhone("phone")).thenReturn(new WechatMiniClient.Phone("86", "13800138000"));
-        when(accounts.register(any())).thenThrow(new DuplicateKeyException("private SQL"));
-        var error = assertThrows(ResponseStatusException.class,
-                () -> service.phoneLogin(new WechatAuthRequests.PhoneLogin("ticket", "phone"), "ip"));
-        assertFalse(error.getMessage().contains("private SQL"));
-        verifyNoInteractions(sessions);
-    }
+
+
+
+
+
 
     @Test void 微信注册仅消费身份票据且提交后签发会话() {
         UserEntity user = user();
@@ -104,16 +65,9 @@ class WechatAuthServiceTest {
         order.verify(tickets).consume("ticket");
         order.verify(accounts).register(ticket);
         order.verify(sessions).complete(user, "ip", false);
-        verify(client, never()).exchangePhone(anyString());
     }
 
-    @Test void 微信注册拒绝已消费及原账号绑定票据() {
-        when(tickets.consume("used")).thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST));
-        when(tickets.consume("bind")).thenReturn(ticket.withPhone(new WechatMiniClient.Phone("86", "13800138000")));
-        assertThrows(ResponseStatusException.class, () -> service.register(new WechatAuthRequests.Register("used"), "ip"));
-        assertThrows(ResponseStatusException.class, () -> service.register(new WechatAuthRequests.Register("bind"), "ip"));
-        verifyNoInteractions(accounts, sessions);
-    }
+
 
     @Test void 微信注册并发冲突不签发会话或泄漏SQL() {
         when(tickets.consume("ticket")).thenReturn(ticket);

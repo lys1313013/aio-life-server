@@ -30,24 +30,9 @@ class WechatAccountIntegrationTest {
     @Autowired UserMapper users;
     @Autowired JdbcTemplate jdbc;
 
-    @Test void 手机号注册允许空密码并保存独立区号() {
-        var registered = service.register(ticket("86", "13800138000"));
-        var user = users.selectById(registered.user().getId());
-        assertTrue(registered.newUser());
-        assertNull(user.getPassword());
-        assertNull(user.getEmail());
-        assertEquals("86", user.getPhoneCountryCode());
-        assertEquals("13800138000", user.getPhone());
-        assertEquals("user", user.getRole());
-        assertEquals("u_" + user.getId(), user.getUsername());
-    }
 
-    @Test void 已有手机号不会创建第二账号或自动绑定() {
-        var existing = service.register(ticket("86", "13800138001")).user();
-        var result = service.register(ticket("86", "13800138001"));
-        assertNull(result.user());
-        assertEquals(existing.getWechatOpenid(), users.selectById(existing.getId()).getWechatOpenid());
-    }
+
+
 
     @Test void 无手机号的微信注册不伪造验证时间且重复注册返回原账号() {
         var ticket = ticket(null, null);
@@ -65,16 +50,12 @@ class WechatAccountIntegrationTest {
         assertEquals(user.getId(), repeated.user().getId());
     }
 
-    @Test void 手机号唯一性包含国际区号() {
-        var first = service.register(ticket("86", "7700900123")).user();
-        var second = service.register(ticket("44", "7700900123")).user();
-        assertNotEquals(first.getId(), second.getId());
-    }
+
 
     @Test void openid按大小写区分() {
         String id = "wx_" + UUID.randomUUID();
-        var first = service.register(new WechatTicketStore.Ticket(id + "A", null, "86", "13800138002")).user();
-        var second = service.register(new WechatTicketStore.Ticket(id + "a", null, "86", "13800138003")).user();
+        var first = service.register(new WechatTicketStore.Ticket(id + "A", null)).user();
+        var second = service.register(new WechatTicketStore.Ticket(id + "a", null)).user();
         assertNotEquals(first.getId(), second.getId());
     }
 
@@ -88,18 +69,7 @@ class WechatAccountIntegrationTest {
         assertNotNull(service.register(identity).user());
     }
 
-    @Test void 数据库阻止重复有效凭证与半个手机号() {
-        var user = service.register(ticket("86", "13800138005")).user();
-        assertThrows(DataIntegrityViolationException.class, () -> jdbc.update(
-                "INSERT INTO `user` (id,username,nickname,phone_country_code,phone,wechat_openid) VALUES (?,?,?,?,?,?)",
-                -91001L, "test_duplicate", "test", "86", "13800138005", "other"));
-        assertThrows(DataIntegrityViolationException.class, () -> jdbc.update(
-                "INSERT INTO `user` (id,username,nickname,wechat_openid) VALUES (?,?,?,?)",
-                -91002L, "test_duplicate_wx", "test", user.getWechatOpenid()));
-        assertThrows(DataAccessException.class, () -> jdbc.update(
-                "INSERT INTO `user` (id,username,nickname,phone) VALUES (?,?,?,?)",
-                -91003L, "test_half_phone", "test", "13800138006"));
-    }
+
 
     @Test void 老账号验证密码后绑定且保留原ID和资料() {
         UserEntity user = legacy();
@@ -116,11 +86,11 @@ class WechatAccountIntegrationTest {
         assertNull(users.selectById(user.getId()).getWechatOpenid());
     }
 
-    @Test void 不能覆盖原微信或占用别人的手机号() {
+    @Test void 不能覆盖原微信() {
         UserEntity user = legacy();
-        service.register(ticket("86", "13800138009"));
+        service.bind(user.getId(), "old-password", ticket("86", "13800138009"));
         assertThrows(ResponseStatusException.class, () -> service.bind(user.getId(), "old-password", ticket("86", "13800138009")));
-        assertNull(users.selectById(user.getId()).getWechatOpenid());
+        assertNotNull(users.selectById(user.getId()).getWechatOpenid());
     }
 
     @Test void 首次设置密码必须是同一微信且不能覆盖已有密码() {
@@ -134,7 +104,7 @@ class WechatAccountIntegrationTest {
     }
 
     private WechatTicketStore.Ticket ticket(String country, String phone) {
-        return new WechatTicketStore.Ticket("wx_" + UUID.randomUUID(), null, country, phone);
+        return new WechatTicketStore.Ticket("wx_" + UUID.randomUUID(), null);
     }
 
     private UserEntity legacy() {

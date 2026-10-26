@@ -9,7 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.service.LoginSessionService;
 
-/** 微信身份识别、可选手机号注册与老账号绑定，不自动合并账号。 */
+/** 微信身份识别、注册与已有账号绑定，不自动合并账号。 */
 @Service
 @RequiredArgsConstructor
 public class WechatAuthService {
@@ -24,43 +24,19 @@ public class WechatAuthService {
         WechatMiniClient.Identity identity = client.exchangeLogin(code);
         UserEntity user = accounts.findByOpenid(identity.openid());
         if (user != null) return authenticated(user, false, ip);
-        return WechatLoginVO.pending("PHONE_REQUIRED", tickets.issue(
-                new WechatTicketStore.Ticket(identity.openid(), identity.unionid(), null, null)));
+        return WechatLoginVO.pending("REGISTRATION_REQUIRED", tickets.issue(
+                new WechatTicketStore.Ticket(identity.openid(), identity.unionid())));
     }
 
     public WechatLoginVO register(WechatAuthRequests.Register request, String ip) {
         client.requireEnabled();
         tickets.rateLimit("register", ip, 10);
         WechatTicketStore.Ticket ticket = tickets.consume(request.loginTicket());
-        if (ticket.phone() != null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请验证原账号后绑定微信");
-        }
         WechatAccountService.Registration registration;
         try {
             registration = accounts.register(ticket);
         } catch (DuplicateKeyException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "账号绑定状态已变化，请重新微信登录");
-        }
-        return authenticated(registration.user(), registration.newUser(), ip);
-    }
-
-    public WechatLoginVO phoneLogin(WechatAuthRequests.PhoneLogin request, String ip) {
-        client.requireEnabled();
-        tickets.rateLimit("phone", ip, 10);
-        WechatTicketStore.Ticket ticket = tickets.consume(request.loginTicket());
-        if (ticket.phone() != null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请验证原账号后绑定微信");
-        }
-        ticket = ticket.withPhone(client.exchangePhone(request.phoneCode()));
-        WechatAccountService.Registration registration;
-        try {
-            registration = accounts.register(ticket);
-        } catch (DuplicateKeyException e) {
-            // 唯一索引处理不同票据之间的并发竞争；事务已回滚，不重复创建或自动合并。
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "账号绑定状态已变化，请重新微信登录");
-        }
-        if (registration.user() == null) {
-            return WechatLoginVO.pending("BIND_REQUIRED", tickets.issue(ticket));
         }
         return authenticated(registration.user(), registration.newUser(), ip);
     }

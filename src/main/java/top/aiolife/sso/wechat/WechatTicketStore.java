@@ -73,10 +73,5 @@ public class WechatTicketStore {
         return new ResponseStatusException(HttpStatus.BAD_REQUEST, "登录票据已失效，请重新微信登录");
     }
 
-    /** phone 非空时票据仅用于绑定原账号，不能再次用于手机号注册。 */
-    public record Ticket(String openid, String unionid, String countryCode, String phone) {
-        public Ticket withPhone(WechatMiniClient.Phone value) {
-            return new Ticket(openid, unionid, value.countryCode(), value.number());
-        }
-    }
+    public record Ticket(String openid, String unionid) {}
 }

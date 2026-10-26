@@ -19,7 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WechatAuthController {
     public static final String[] PUBLIC_PATHS = {"/auth/wechat/mini/capabilities",
-            "/auth/wechat/mini/login", "/auth/wechat/mini/register", "/auth/wechat/mini/phone-login"};
+            "/auth/wechat/mini/login", "/auth/wechat/mini/register"};
     private final WechatAuthService service;
     private final WechatMiniClient client;
 
@@ -40,12 +40,6 @@ public class WechatAuthController {
     @PostMapping("/register")
     public ApiResponse<WechatLoginVO> register(@Valid @RequestBody WechatAuthRequests.Register body, HttpServletRequest request) {
         return ApiResponse.success(service.register(body, request.getRemoteAddr()));
-    }
-
-    /** 用户主动授权手机号后注册；已占用号码进入原账号验证。 */
-    @PostMapping("/phone-login")
-    public ApiResponse<WechatLoginVO> phoneLogin(@Valid @RequestBody WechatAuthRequests.PhoneLogin body, HttpServletRequest request) {
-        return ApiResponse.success(service.phoneLogin(body, request.getRemoteAddr()));
     }
 
     /** 使用当前业务会话及原账号密码，绑定已验证的微信身份。 */

@@ -94,37 +94,6 @@ public class WechatMiniClient {
         return new Identity(openid, unionid.isEmpty() ? null : unionid);
     }
 
-    public Phone exchangePhone(String code) {
-        WechatMiniProperties properties = settings();
-        requireEnabled(properties);
-        String token = accessToken(properties);
-        JsonNode body;
-        try {
-            body = readJson(client.post().uri(uri -> uri.path("/wxa/business/getuserphonenumber")
-                    .queryParam("access_token", token).build()).body(Map.of("code", code))
-                    .retrieve(), "getuserphonenumber");
-        } catch (RestClientException e) {
-            log.warn("微信接口调用失败 operation=getuserphonenumber type={}", e.getClass().getSimpleName());
-            // 请求可能已消费一次性 code，不能自动重放。
-            throw unavailable();
-        }
-        if (body != null && (body.path("errcode").asInt() == 40001 || body.path("errcode").asInt() == 42001)) {
-            redis.unlock(tokenKey(properties), token); // 只移除本次使用的旧缓存，不能删掉并发刷新的 Token。
-        }
-        check(body, "getuserphonenumber");
-        JsonNode info = body.path("phone_info");
-        JsonNode watermark = info.path("watermark");
-        long timestamp = watermark.path("timestamp").asLong(0);
-        long now = Instant.now().getEpochSecond();
-        if (!properties.getAppId().equals(watermark.path("appid").asText())
-                || timestamp < now - 300 || timestamp > now + 60) throw unavailable();
-        String country = info.path("countryCode").asText("");
-        String number = info.path("purePhoneNumber").asText("");
-        if (!country.matches("[1-9][0-9]{0,2}") || !number.matches("[0-9]{4,14}")
-                || country.length() + number.length() > 15) throw unavailable();
-        return new Phone(country, number);
-    }
-
     /** 微信返回图片或 JSON 错误；只接收 PNG/JPEG，绝不将上游错误正文返回前端。 */
     public String webLoginQrCode(String scene) {
         WechatMiniProperties properties = settings();
@@ -258,5 +227,4 @@ public class WechatMiniClient {
     }
 
     public record Identity(String openid, String unionid) {}
-    public record Phone(String countryCode, String number) {}
 }

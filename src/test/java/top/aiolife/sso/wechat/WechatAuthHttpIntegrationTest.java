@@ -35,16 +35,15 @@ class WechatAuthHttpIntegrationTest {
         String openid = "http_" + UUID.randomUUID();
         when(client.enabled()).thenReturn(true);
         when(client.exchangeLogin("http-login-code")).thenReturn(new WechatMiniClient.Identity(openid, null));
-        when(client.exchangePhone("http-phone-code")).thenReturn(new WechatMiniClient.Phone("86", "13900139998"));
         mvc.perform(get("/auth/wechat/mini/capabilities")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.enabled").value(true));
         JsonNode pending = postJson("/auth/wechat/mini/login", Map.of("loginCode", "http-login-code"), null);
-        assertEquals("PHONE_REQUIRED", pending.path("status").asText());
+        assertEquals("REGISTRATION_REQUIRED", pending.path("status").asText());
         assertTrue(pending.path("expiresIn").isInt(), "期限必须是数字，不能被全局 Long 序列化器转换成字符串");
         assertTrue(pending.path("accessToken").isNull());
         String ticket = pending.path("loginTicket").asText();
         mvc.perform(get("/user/info").header("Authorization", "Bearer " + ticket)).andExpect(status().isUnauthorized());
-        JsonNode login = postJson("/auth/wechat/mini/phone-login", Map.of("loginTicket", ticket, "phoneCode", "http-phone-code"), null);
+        JsonNode login = postJson("/auth/wechat/mini/register", Map.of("loginTicket", ticket), null);
         assertEquals("LOGGED_IN", login.path("status").asText());
         assertTrue(login.path("id").isTextual());
         assertFalse(login.path("hasPassword").asBoolean());
@@ -60,11 +59,9 @@ class WechatAuthHttpIntegrationTest {
         JsonNode repeated = postJson("/auth/wechat/mini/login", Map.of("loginCode", "http-login-code"), null);
         assertEquals(login.path("id"), repeated.path("id"));
         assertTrue(repeated.path("hasPassword").asBoolean());
-        verify(client, times(1)).exchangePhone(anyString());
-        mvc.perform(post("/auth/wechat/mini/phone-login").contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsBytes(Map.of("loginTicket", ticket, "phoneCode", "http-phone-code"))))
+        mvc.perform(post("/auth/wechat/mini/register").contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsBytes(Map.of("loginTicket", ticket))))
                 .andExpect(status().isBadRequest());
-        verify(client, times(1)).exchangePhone(anyString());
     }
 
     @Test void 绑定和设密接口不能匿名访问() throws Exception {
@@ -101,7 +98,6 @@ class WechatAuthHttpIntegrationTest {
         mvc.perform(post("/auth/wechat/mini/register").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"loginTicket\":\"\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(100400));
-        verify(client, never()).exchangePhone(anyString());
     }
 
     private JsonNode postJson(String path, Object body, String token) throws Exception {

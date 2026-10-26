@@ -14,8 +14,6 @@ import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.util.PasswordUtil;
 
-import java.time.LocalDateTime;
-import java.util.Objects;
 
 /** 只在短数据库事务内变更认证字段，微信网络调用由上层提前完成。 */
 @Service
@@ -27,21 +25,12 @@ public class WechatAccountService {
         return users.selectOne(new LambdaQueryWrapper<UserEntity>().eq(UserEntity::getWechatOpenid, openid));
     }
 
-    private UserEntity findByPhone(String country, String number) {
-        return users.selectOne(new LambdaQueryWrapper<UserEntity>().eq(UserEntity::getPhoneCountryCode, country)
-                .eq(UserEntity::getPhone, number));
-    }
-
     @Transactional
     public Registration register(WechatTicketStore.Ticket ticket) {
         UserEntity identityOwner = findByOpenid(ticket.openid());
-        UserEntity phoneOwner = ticket.phone() == null ? null : findByPhone(ticket.countryCode(), ticket.phone());
         if (identityOwner != null) {
-            if (phoneOwner != null && !phoneOwner.getId().equals(identityOwner.getId())) throw conflict();
             return new Registration(identityOwner, false);
         }
-        // 手机号匹配不构成接管旧账号的凭证，必须转入原账号验证。
-        if (phoneOwner != null) return new Registration(null, false);
         UserEntity user = new UserEntity();
         user.setId(IdWorker.getId());
         user.setUsername("u_" + user.getId());
@@ -50,9 +39,6 @@ public class WechatAccountService {
         user.setIsDeleted(0);
         user.setWechatOpenid(ticket.openid());
         user.setWechatUnionid(ticket.unionid());
-        user.setPhoneCountryCode(ticket.countryCode());
-        user.setPhone(ticket.phone());
-        if (ticket.phone() != null) user.setPhoneVerifiedAt(LocalDateTime.now());
         user.setCreateUser(user.getId());
         user.setUpdateUser(user.getId());
         users.insert(user);
@@ -73,14 +59,6 @@ public class WechatAccountService {
         LambdaUpdateWrapper<UserEntity> update = new LambdaUpdateWrapper<UserEntity>()
                 .eq(UserEntity::getId, userId).set(UserEntity::getWechatOpenid, ticket.openid())
                 .set(UserEntity::getWechatUnionid, ticket.unionid()).set(UserEntity::getUpdateUser, userId);
-        if (ticket.phone() != null) {
-            UserEntity phoneOwner = findByPhone(ticket.countryCode(), ticket.phone());
-            if (phoneOwner != null && phoneOwner.getId() != userId) throw conflict();
-            if (user.getPhone() != null && (!Objects.equals(user.getPhoneCountryCode(), ticket.countryCode())
-                    || !user.getPhone().equals(ticket.phone()))) throw conflict();
-            update.set(UserEntity::getPhoneCountryCode, ticket.countryCode()).set(UserEntity::getPhone, ticket.phone())
-                    .set(UserEntity::getPhoneVerifiedAt, LocalDateTime.now());
-        }
         if (users.update(null, update) != 1) throw conflict();
         return users.selectById(userId);
     }
@@ -102,7 +80,7 @@ public class WechatAccountService {
     }
 
     private ResponseStatusException conflict() {
-        return new ResponseStatusException(HttpStatus.CONFLICT, "微信或手机号与已有账号绑定冲突，请使用原账号登录");
+        return new ResponseStatusException(HttpStatus.CONFLICT, "微信与已有账号绑定冲突，请使用原账号登录");
     }
 
     public record Registration(UserEntity user, boolean newUser) {}

@@ -23,7 +23,7 @@ class WechatTicketStoreIntegrationTest {
     @Autowired WechatTicketStore store;
 
     @Test void 同一个票据并发只能消费一次() throws Exception {
-        var ticket = new WechatTicketStore.Ticket("test-openid", null, null, null);
+        var ticket = new WechatTicketStore.Ticket("test-openid", null);
         String value = store.issue(ticket);
         try (var executor = Executors.newFixedThreadPool(8)) {
             var calls = IntStream.range(0, 8).<Callable<Boolean>>mapToObj(i -> () -> {
