@@ -31,10 +31,6 @@ public class MailLogEntity {
      */
     private String subject;
 
-    /**
-     * 历史兼容字段；新日志使用 [REDACTED]，不保存可能含验证码的邮件正文
-     */
-    private String content;
 
     /**
      * 业务类型：register-注册, login-登录, reset_pwd-重置密码, system_notice-系统通知等

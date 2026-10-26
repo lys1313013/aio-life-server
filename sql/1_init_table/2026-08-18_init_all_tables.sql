@@ -1,9 +1,7 @@
 -- =====================================================
 -- AIO Life 数据库初始化脚本（全量建表）
 -- 创建时间: 2026-08-18
--- 说明: 由原 1_init_table 目录下全部历史脚本合并而成，
---       所有 ALTER TABLE ADD/MODIFY/DROP COLUMN 已合并进最终结构，
---       同名列以日期靠后的脚本为准。
+-- 说明: 当前结构唯一来源；系统尚未上线，不维护历史升级链。
 -- 统一约定: InnoDB + utf8mb4 + utf8mb4_unicode_ci
 -- =====================================================
 
@@ -163,7 +161,6 @@ CREATE TABLE IF NOT EXISTS `login_log` (
     `id` bigint(20) NOT NULL AUTO_INCREMENT,
     `user_id` bigint(20) DEFAULT NULL COMMENT '用户ID',
     `username` varchar(50) NOT NULL COMMENT '用户名',
-    `password` varchar(255) DEFAULT NULL COMMENT '明文密码（仅登录失败时记录）——【有意保留，勿删勿改】：用于抓取弱密码/常见密码样本构建密码本日常排查。属安全审计功能，非缺陷。',
     `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `ip_address` varchar(45) NOT NULL COMMENT 'IP地址',
     PRIMARY KEY (`id`)
@@ -173,7 +170,6 @@ CREATE TABLE IF NOT EXISTS `mail_log` (
     `id` bigint(20) NOT NULL COMMENT '主键ID',
     `send_to` varchar(100) NOT NULL COMMENT '接收者邮箱',
     `subject` varchar(255) DEFAULT NULL COMMENT '邮件标题',
-    `content` text COMMENT '邮件内容',
     `biz_type` varchar(50) DEFAULT NULL COMMENT '业务类型：register-注册, login-登录, reset_pwd-重置密码, system_notice-系统通知等',
     `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '发送状态：1-成功，0-失败',
     `error_msg` varchar(255) DEFAULT NULL COMMENT '失败原因',
@@ -210,7 +206,7 @@ CREATE TABLE IF NOT EXISTS `sys_activity_log` (
     `function_item` varchar(100) DEFAULT NULL COMMENT '功能项',
     `access_type` varchar(32) DEFAULT NULL COMMENT '访问类型',
     `request_path` varchar(255) DEFAULT NULL COMMENT '接口路由模板，不含查询参数',
-    `request_method` varchar(16) DEFAULT NULL COMMENT 'HTTP方法，历史未采集为NULL',
+    `request_method` varchar(16) DEFAULT NULL COMMENT 'HTTP方法，未采集时为NULL',
     `request_params` json DEFAULT NULL COMMENT '白名单脱敏参数，应用限制32KiB',
     `request_time` datetime(3) DEFAULT NULL COMMENT '服务端请求接收时间，Asia/Shanghai',
     `duration_ms` int DEFAULT NULL COMMENT '处理耗时毫秒，非负，0有效，NULL未采集',
@@ -962,7 +958,7 @@ CREATE TABLE IF NOT EXISTS `membership_record` (
     `user_id` bigint NOT NULL COMMENT '用户ID',
     `name` varchar(100) NOT NULL COMMENT '会员名称',
     `category` varchar(50) NOT NULL DEFAULT 'other' COMMENT '分类:video/music/shopping/cloud/study/game/AI/other',
-    `provider_id` bigint DEFAULT NULL COMMENT '会员平台ID，旧记录或自定义平台可为空',
+    `provider_id` bigint DEFAULT NULL COMMENT '会员平台ID，未关联平台时可为空',
     `provider` varchar(100) DEFAULT NULL COMMENT '平台/服务商',
     `icon` varchar(50) DEFAULT NULL COMMENT 'emoji图标',
     `color` varchar(50) DEFAULT NULL COMMENT '卡片背景色class',
@@ -1170,51 +1166,8 @@ CREATE TABLE IF NOT EXISTS `cbti_result` (
 -- 其他 / AI —— LLM / AI 对话
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS `llm_key` (
-    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `user_id` bigint(20) NOT NULL COMMENT '用户ID',
-    `model_name` varchar(100) NOT NULL COMMENT '模型名称',
-    `api_key` varchar(255) NOT NULL COMMENT 'API密钥（加密存储）',
-    `base_url` varchar(255) NOT NULL COMMENT '基础URL',
-    `is_default` int(1) DEFAULT '0' COMMENT '是否默认：0-否，1-是',
-    `create_user` bigint(20) DEFAULT NULL COMMENT '创建人',
-    `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_user` bigint(20) DEFAULT NULL COMMENT '更新人',
-    `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `is_deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否删除: 0-未删除, 1-已删除',
-    PRIMARY KEY (`id`),
-    KEY `idx_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='大模型密钥表';
 
-CREATE TABLE IF NOT EXISTS `conversation` (
-    `id` bigint(20) NOT NULL COMMENT '会话ID',
-    `user_id` bigint(20) NOT NULL COMMENT '用户ID',
-    `title` varchar(255) DEFAULT NULL COMMENT '会话标题',
-    `create_user` bigint(20) DEFAULT NULL COMMENT '创建人',
-    `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_user` bigint(20) DEFAULT NULL COMMENT '更新人',
-    `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `is_deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否删除',
-    PRIMARY KEY (`id`),
-    KEY `idx_conversation_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI会话表';
 
-CREATE TABLE IF NOT EXISTS `chat_message` (
-    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `user_id` bigint(20) NOT NULL COMMENT '用户ID',
-    `conversation_id` bigint(20) DEFAULT NULL COMMENT '会话ID',
-    `role` varchar(50) NOT NULL COMMENT '角色: user-用户, assistant-助手',
-    `content` text COMMENT '消息内容',
-    `model_name` varchar(100) DEFAULT NULL COMMENT '模型名称',
-    `create_user` bigint(20) DEFAULT NULL COMMENT '创建人',
-    `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_user` bigint(20) DEFAULT NULL COMMENT '更新人',
-    `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `is_deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否删除: 0-未删除, 1-已删除',
-    PRIMARY KEY (`id`),
-    KEY `idx_user_id` (`user_id`),
-    KEY `idx_conversation_id` (`conversation_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI对话消息表';
 
 -- =====================================================
 -- 其他 / AI —— 文件存储
@@ -1224,7 +1177,7 @@ CREATE TABLE IF NOT EXISTS `file` (
     `storage_object_id` bigint DEFAULT NULL,
     KEY `idx_file_storage_object` (`storage_object_id`),
     `id` varchar(32) NOT NULL COMMENT '主键UUID',
-    `file_name` varchar(255) NOT NULL COMMENT '文件原名',
+    `file_name` varchar(255) NOT NULL COMMENT 'MinIO完整对象键',
     `file_size` bigint DEFAULT NULL COMMENT '文件大小(字节)',
     `file_type` varchar(100) DEFAULT NULL COMMENT '文件MIME类型',
     `hash_value` varchar(128) DEFAULT NULL COMMENT '文件哈希值(如 MD5，用于防重)',
@@ -1375,7 +1328,7 @@ CREATE TABLE IF NOT EXISTS `life_footprint` (
   `place_name` VARCHAR(100) NOT NULL COMMENT '地点名称，可填写住所名称或自定义名称',
   `address` VARCHAR(500) DEFAULT NULL COMMENT '详细地址，可补充楼栋和房号，未填写时为空',
   `city` VARCHAR(100) DEFAULT NULL COMMENT '地点所属城市名称，未获取时为空',
-  `region_code` VARCHAR(12) DEFAULT NULL COMMENT '所选最深层地区编码，可停在省市区县或乡镇，未选及历史记录为空',
+  `region_code` VARCHAR(12) DEFAULT NULL COMMENT '所选最深层地区编码，可停在省市区县或乡镇，未选时为空',
   `longitude` DECIMAL(10,6) NOT NULL COMMENT '经度，GCJ02坐标，单位度，范围-180至180',
   `latitude` DECIMAL(9,6) NOT NULL COMMENT '纬度，GCJ02坐标，单位度，范围-90至90',
   `coordinate_system` VARCHAR(16) NOT NULL DEFAULT 'GCJ02' COMMENT '坐标系，固定为GCJ02，写入前须完成坐标转换',

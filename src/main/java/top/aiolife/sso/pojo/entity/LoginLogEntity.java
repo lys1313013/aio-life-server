@@ -27,10 +27,6 @@ public class LoginLogEntity {
      */
     private String username;
     /**
-     * 历史兼容字段；新登录日志不再写入密码，历史记录须单独按保留策略清理。
-     */
-    private String password;
-    /**
      * 创建时间
      */
     private Timestamp createdAt;

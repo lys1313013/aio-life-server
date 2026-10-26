@@ -24,6 +24,7 @@ hs_err_pid*
 replay_pid*
 /target/
 /artifacts/database-upgrade/
+/artifacts/database-schema/
 /scripts/__pycache__/
 
 ### IntelliJ IDEA ###

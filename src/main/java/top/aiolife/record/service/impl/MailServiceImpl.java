@@ -49,7 +49,6 @@ public class MailServiceImpl implements IMailService {
         logEntity.setSendTo(sendTo);
         logEntity.setSubject(title);
         // 邮件日志仅作投递审计；正文可能携带验证码，不复制到持久化日志。
-        logEntity.setContent("[REDACTED]");
         logEntity.setBizType(bizType);
         logEntity.setIpAddress(ipAddress);
         logEntity.setCreateTime(LocalDateTime.now());
@@ -89,7 +88,6 @@ public class MailServiceImpl implements IMailService {
         MailLogEntity logEntity = new MailLogEntity();
         logEntity.setSendTo(sendTo);
         logEntity.setSubject(title);
-        logEntity.setContent("[REDACTED]");
         logEntity.setBizType(bizType);
         logEntity.setIpAddress(ipAddress);
         logEntity.setCreateTime(LocalDateTime.now());

@@ -71,7 +71,7 @@ class PhysicalTableEntitySelectIntegrationTest {
         Map<String, List<MapperBinding>> bindingsByTable = discoverMapperBindings(failures);
 
         for (String table : physicalTables) {
-            if (!isMigrationBackupTable(table) && !bindingsByTable.containsKey(table)) {
+            if (!bindingsByTable.containsKey(table)) {
                 failures.add("物理表 `" + table + "` 没有对应的 MyBatis-Plus 实体 Mapper；字段："
                         + describeColumns(table));
             }
@@ -172,10 +172,6 @@ class PhysicalTableEntitySelectIntegrationTest {
     }
 
     /** 历史迁移备份表不属于应用运行时模型，不为其维护业务实体。 */
-    private static boolean isMigrationBackupTable(String tableName) {
-        return tableName.contains("_bak_");
-    }
-
     private static String rootMessage(Throwable throwable) {
         Throwable root = throwable;
         while (root.getCause() != null && root.getCause() != root) {

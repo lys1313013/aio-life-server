@@ -40,10 +40,10 @@ class LifeFootprintTest {
         var ds = new JdbcDataSource();
         ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds);
-        jdbc.execute(Files.readString(Path.of("sql/1_init_table/2026-10-21_life_footprint.sql"))
-                .replace("  `city`", "  `region_code` VARCHAR(12) DEFAULT NULL,\n  `city`")
-                .replaceAll("(?m)^--.*$", "")
-                .replace("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", ""));
+        String full = Files.readString(Path.of("sql/1_init_table/2026-08-18_init_all_tables.sql"));
+        int start = full.indexOf("CREATE TABLE IF NOT EXISTS `life_footprint`");
+        String ddl = full.substring(start, full.indexOf(";", start));
+        jdbc.execute(ddl.substring(0, ddl.indexOf(" ENGINE=")));
         var config = new MybatisConfiguration(); config.addMapper(LifeFootprintMapper.class);
         var factory = new MybatisSqlSessionFactoryBean(); factory.setDataSource(ds); factory.setConfiguration(config);
         service = new LifeFootprintService(new SqlSessionTemplate(factory.getObject()).getMapper(LifeFootprintMapper.class), mock(SystemRegionService.class));

@@ -70,7 +70,7 @@ class PasswordLoginCompatibilityTest {
         assertThrows(RuntimeException.class, () -> service.login(request, "127.0.0.1"));
         var audit = ArgumentCaptor.forClass(LoginLogEntity.class);
         verify(logs).insert(audit.capture());
-        assertNull(audit.getValue().getPassword());
+        assertFalse(new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(audit.getValue()).has("password"));
         assertEquals("u_test", audit.getValue().getUsername());
         assertEquals("127.0.0.1", audit.getValue().getIpAddress());
         verifyNoInteractions(sessions);

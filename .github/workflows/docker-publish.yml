@@ -19,8 +19,8 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  database-upgrade:
-    name: Verify database upgrade
+  database-schema:
+    name: Verify current database schema
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -29,11 +29,11 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: upgrade_test_password
+          MYSQL_ROOT_PASSWORD: schema_test_password
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pupgrade_test_password"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pschema_test_password"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -41,17 +41,17 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Check upgrade plan and isolation guards
-        run: python3 scripts/test-database-upgrade.py
-      - name: Upgrade previous schema and compare with fresh schema
+      - name: Check current initialization and isolation guards
+        run: python3 scripts/test-database-schema.py
+      - name: Initialize current schema and verify constraints
         env:
-          MYSQL_PWD: upgrade_test_password
-        run: python3 scripts/check-database-upgrade.py verify
-      - name: Upload release schema contract and upgrade evidence
+          MYSQL_PWD: schema_test_password
+        run: python3 scripts/check-database-schema.py verify
+      - name: Upload release schema contract and initialization evidence
         uses: actions/upload-artifact@v6
         with:
-          name: database-upgrade-${{ github.sha }}
-          path: artifacts/database-upgrade/*.json
+          name: database-schema-${{ github.sha }}
+          path: artifacts/database-schema/*.json
           if-no-files-found: error
           retention-days: 30
 
@@ -147,7 +147,7 @@ jobs:
   build-and-push:
     name: Build & Push Docker Image
     if: github.event_name != 'pull_request'
-    needs: [test, database-upgrade]
+    needs: [test, database-schema]
     runs-on: ubuntu-latest
     permissions:
       contents: read

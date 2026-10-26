@@ -119,7 +119,7 @@ class CredentialLoggingTest {
             var audit = captureAudit(mapper);
             assertEquals(1, audit.getStatus());
             assertEquals(bizType, audit.getBizType());
-            assertEquals("[REDACTED]", audit.getContent());
+            assertFalse(new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules().valueToTree(audit).has("content"));
             assertNull(audit.getErrorMsg());
             assertTrue(capture.text().contains("邮件发送成功"));
             assertSafe(capture.text());
@@ -138,7 +138,7 @@ class CredentialLoggingTest {
             var audit = captureAudit(mapper);
             assertEquals(0, audit.getStatus());
             assertEquals(MailSendException.class.getName(), audit.getErrorMsg());
-            assertEquals("[REDACTED]", audit.getContent());
+            assertFalse(new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules().valueToTree(audit).has("content"));
             assertTrue(capture.text().contains("保存邮件发送日志失败"));
             assertSafe(capture.text());
         }
@@ -167,7 +167,7 @@ class CredentialLoggingTest {
             assertTrue(bytes.toString(StandardCharsets.UTF_8).contains(PASSWORD));
             var audit = captureAudit(mapper);
             assertEquals(fail ? 0 : 1, audit.getStatus());
-            assertEquals("[REDACTED]", audit.getContent());
+            assertFalse(new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules().valueToTree(audit).has("content"));
             if (fail) assertEquals(MailSendException.class.getName(), audit.getErrorMsg());
             assertSafe(capture.text());
         }
