@@ -4,8 +4,6 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +27,7 @@ import top.aiolife.record.pojo.req.LifeFootprintBatchItemReq;
 import top.aiolife.record.pojo.req.LifeFootprintBatchSaveReq;
 import top.aiolife.record.service.LifeFootprintService;
 import top.aiolife.system.service.SystemRegionService;
+import top.aiolife.support.CurrentSchema;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -44,10 +43,7 @@ class LifeFootprintBatchTest {
         var ds = new JdbcDataSource();
         ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds);
-        jdbc.execute(Files.readString(Path.of("sql/1_init_table/2026-10-21_life_footprint.sql"))
-                .replace("  `city`", "  `region_code` VARCHAR(12) DEFAULT NULL,\n  `city`")
-                .replaceAll("(?m)^--.*$", "")
-                .replace("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", ""));
+        jdbc.execute(CurrentSchema.h2Table("life_footprint"));
         var config = new MybatisConfiguration();
         config.addMapper(LifeFootprintMapper.class);
         var factory = new MybatisSqlSessionFactoryBean();

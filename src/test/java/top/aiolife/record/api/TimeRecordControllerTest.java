@@ -72,7 +72,7 @@ class TimeRecordControllerTest {
             assertEquals(1L, args[0]);
             assertEquals("2026-09-12", args[1]);
             assertEquals(1439, args[2]);
-            assertEquals(10L, args[3]);
+            assertEquals(3, args.length);
             return 20L;
         });
 

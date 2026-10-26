@@ -1,8 +1,6 @@
 package top.aiolife.bankcard;
 
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDate;
 import jakarta.validation.Validation;
 import java.time.LocalDateTime;
@@ -26,6 +24,7 @@ import top.aiolife.bankcard.pojo.req.*;
 import top.aiolife.bankcard.pojo.vo.BankCardVO;
 import top.aiolife.bankcard.service.*;
 import top.aiolife.core.util.MinioUtil;
+import top.aiolife.support.CurrentSchema;
 import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.pojo.entity.FileEntity;
 import top.aiolife.record.service.FilePreviewGuard;
@@ -60,15 +59,9 @@ class BankCardServiceTest {
         jdbc.execute("INSERT INTO sys_dict_data VALUES(20,10,'测试银行','TEST',0,'0',0),(21,11,'其他字典','OTHER',0,'0',0)");
         jdbc.execute("CREATE TABLE user_dict_data(id BIGINT PRIMARY KEY,user_id BIGINT,dict_type VARCHAR(100),dict_label VARCHAR(100),dict_value VARCHAR(100),color VARCHAR(20),dict_sort INT,status CHAR(1),is_default CHAR(1),is_readonly CHAR(1),is_deleted INT DEFAULT 0,create_user BIGINT,update_user BIGINT,create_time DATETIME,update_time DATETIME)");
         jdbc.execute("CREATE TABLE file(id VARCHAR(32) PRIMARY KEY,biz_type VARCHAR(50),biz_id BIGINT,create_user BIGINT,update_user BIGINT,is_deleted INT DEFAULT 0,is_public INT DEFAULT 0,update_time DATETIME)");
-        String ddl=Files.readString(Path.of("sql/1_init_table/2026-09-26_add_bank_card.sql"))
-                .replaceAll("(?m)^--.*$", "").replace("USE `aio_life`;", "")
-                .replaceAll("ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", "");
-        for(String statement:ddl.split(";")) if(!statement.isBlank()) jdbc.execute(statement);
-        String templateDdl=Files.readString(Path.of("sql/1_init_table/2026-10-02_bank_card_cover_template.sql")).split("-- 兼容")[0]
-                .replace("USE `aio_life`;", "").replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci", "");
-        for(String statement:templateDdl.split(";")) if(!statement.isBlank()) jdbc.execute(statement);
-        jdbc.execute(Files.readString(Path.of("sql/1_init_table/2026-10-20_bank_card_balance.sql"))
-                .replaceAll("(?m)^--.*$", "").replace("USE `aio_life`;", ""));
+        for (String table : List.of("bank_card", "bank_card_tag_rel", "bank_card_cover_template")) {
+            jdbc.execute(CurrentSchema.h2Table(table));
+        }
         crypto = new BankCardCrypto(Base64.getEncoder().encodeToString(new byte[32]));
         var config = new MybatisConfiguration();
         config.addMappers("top.aiolife.bankcard.mapper");

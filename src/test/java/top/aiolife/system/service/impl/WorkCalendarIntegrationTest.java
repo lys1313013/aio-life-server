@@ -21,6 +21,7 @@ import top.aiolife.record.service.ITimeTrackerCategoryService;
 import top.aiolife.record.service.impl.TimeRecordServiceImpl;
 import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.system.mapper.IWorkCalendarMapper;
+import top.aiolife.support.CurrentSchema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,7 +41,7 @@ class WorkCalendarIntegrationTest {
                 + System.getenv("AIO_CALENDAR_TEST_MYSQL_PORT")
                 + "/aio_life?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai", "root", "");
         try (var connection = dataSource.getConnection()) {
-            ScriptUtils.executeSqlScript(connection, new FileSystemResource("sql/1_init_table/2026-09-22_add_sys_work_calendar.sql"));
+            new JdbcTemplate(dataSource).execute(CurrentSchema.table("sys_work_calendar"));
             ScriptUtils.executeSqlScript(connection, new FileSystemResource("sql/2_ini_data/2026-09-22_sys_work_calendar_2026.sql"));
         }
         var jdbc = new JdbcTemplate(dataSource);
