@@ -1,9 +1,11 @@
 # CI 使用测试任务生成的 JAR；两个目标架构共用同一份 Java 字节码。
-FROM eclipse-temurin:21-jre-alpine
+FROM amazoncorretto:21.0.13-alpine3.24@sha256:d942d2e3e0f480c076ec10d03deac7444dc717bc25bb3e2bc5373676b7b6c406
 
-RUN apk add --no-cache tzdata \
+RUN apk add --no-cache tzdata fontconfig ttf-dejavu \
     && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo "Asia/Shanghai" > /etc/timezone
+
+ENV TZ=Asia/Shanghai
 
 WORKDIR /app
 
