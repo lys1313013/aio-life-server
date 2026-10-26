@@ -275,17 +275,7 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
         FileVO vo = new FileVO();
         BeanUtils.copyProperties(entity, vo);
         vo.setId(entity.getId());
-        if (FileBizType.AVATAR.getBizType().equals(entity.getBizType())) {
-            vo.setFileUrl(minioUtil.getFilePreviewUrl(entity.getId()));
-            return vo;
-        }
-        // 构造文件预览 URL
-        if (entity.getStorageObjectId() != null) {
-            vo.setFileUrl("/api/file/preview/" + entity.getId());
-            return vo;
-        }
-        String bucketName = resolveBucketName();
-        vo.setFileUrl(minioUtil.getPreviewUrl(bucketName, entity.getFileName()));
+        vo.setFileUrl(minioUtil.getFilePreviewUrl(entity.getId()));
         return vo;
     }
 }

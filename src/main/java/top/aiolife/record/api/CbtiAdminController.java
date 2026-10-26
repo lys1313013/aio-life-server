@@ -200,7 +200,7 @@ public class CbtiAdminController {
 
             Map<String, Object> data = new HashMap<>();
             data.put("imageObject", objectName);
-            data.put("imageUrl", buildPreviewUrl(bucketName, objectName));
+            data.put("imageUrl", buildPreviewUrl(objectName));
             return ApiResponse.success(data);
         } catch (Exception e) {
             return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "上传失败: " + e.getMessage());
@@ -305,7 +305,7 @@ public class CbtiAdminController {
         String objectName = entity.getImageObject();
         if (StringUtils.hasText(objectName)) {
             String bucketName = resolveBucketName();
-            vo.setImageUrl(buildPreviewUrl(bucketName, objectName));
+            vo.setImageUrl(buildPreviewUrl(objectName));
         }
         return vo;
     }
@@ -341,9 +341,9 @@ public class CbtiAdminController {
         return StringUtils.hasText(code) ? code.trim() : null;
     }
 
-    private String buildPreviewUrl(String bucketName, String objectName) {
+    private String buildPreviewUrl(String objectName) {
         String normalized = objectName.startsWith("/") ? objectName.substring(1) : objectName;
-        return serveBaseUrl + "/file/preview/" + bucketName + "/" + normalized;
+        return serveBaseUrl + "/cbti/images/" + normalized;
     }
 
     private String detectExt(String filename, String contentType) {

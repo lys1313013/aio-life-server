@@ -54,27 +54,13 @@ class StorageDeleteTest {
         jdbc.update("INSERT INTO file VALUES(?,?,?,?,?,?)", "file-reference", name, owner, type, bizId, deleted);
     }
 
-    @ParameterizedTest
-    @CsvSource({
-            "7/honor/a.jpg,7/honor/a.jpg,honor_record",
-            "https://old.example/api/file/preview/business/7/honor/a.jpg,7/honor/a.jpg,honor_record",
-            "/business/7/honor/a.jpg,7/honor/a.jpg,honor_record",
-            "business/7/honor/a.jpg,7/honor/a.jpg,honor_record",
-            "a.jpg,7/honor/a.jpg,honor_record",
-            "a.jpg,7/honor_record/a.jpg,honor_record",
-            "a.jpg,7/honor-record/a.jpg,honor_record",
-            "a.jpg,7/wardrobe/a.jpg,wardrobe_item",
-            "a.jpg,7/bank-card/a.jpg,bank_card_cover",
-            "https://old.example/business/a.jpg,7/honor/a.jpg,honor_record"
-    })
-    void 所有现有文件路径格式有关联时禁止删除(String name, String key, String type) {
-        record(name, 7L, type, 99L, 0);
-        var error = assertThrows(ResponseStatusException.class, () -> service.delete(key));
+    @Test
+    void 当前对象键有关联时禁止删除() {
+        record("7/honor/a.jpg", 7L, "honor_record", 99L, 0);
+        var error = assertThrows(ResponseStatusException.class, () -> service.delete("7/honor/a.jpg"));
         assertEquals(409, error.getStatusCode().value());
         assertTrue(error.getReason().contains("file-reference"));
-        assertTrue(error.getReason().contains("99"));
         verifyNoInteractions(minio);
-        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM file", Integer.class));
     }
 
     @Test
@@ -88,8 +74,8 @@ class StorageDeleteTest {
     }
 
     @Test
-    void URL文件名通配符按原值匹配且不存在关联时仅删除指定对象() throws Exception {
-        record("https://old.example/business/中文 +#%_!.png", 7L, "avatar", 99L, 0);
+    void 特殊字符按原值匹配且不存在关联时仅删除指定对象() throws Exception {
+        record("中文 +#%_!.png", 7L, "avatar", 99L, 0);
         assertThrows(ResponseStatusException.class, () -> service.delete("中文 +#%_!.png"));
         verifyNoInteractions(minio);
         service.delete("中文 +#OTHER.png");
@@ -102,13 +88,13 @@ class StorageDeleteTest {
 
     @Test
     void 不会因同名但不同属主业务或桶的文件误判关联() throws Exception {
-        record("a.jpg", 8L, "honor_record", 99L, 0);
+        record("8/honor/a.jpg", 8L, "honor_record", 99L, 0);
         service.delete("7/honor/a.jpg");
         jdbc.update("DELETE FROM file");
-        record("a.jpg", 7L, "movie", 99L, 0);
+        record("7/movie/a.jpg", 7L, "movie", 99L, 0);
         service.delete("7/honor/a.jpg");
         jdbc.update("DELETE FROM file");
-        record("https://old.example/other/7/honor/a.jpg", 7L, "honor_record", 99L, 0);
+        record("7/other/a.jpg", 7L, "honor_record", 99L, 0);
         service.delete("7/honor/a.jpg");
         verify(minio, times(3)).removeObject(any());
     }

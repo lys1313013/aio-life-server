@@ -29,9 +29,6 @@ import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.system.mapper.StorageObjectMapper;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -117,8 +114,7 @@ public class SysFileController {
         }
         // 从 MinIO 拿取文件
         String bucketName = StringUtils.hasText(minioConfig.getBucketName()) ? minioConfig.getBucketName() : "aiolife";
-        String objectName = normalizeObjectName(fileEntity.getFileName(), bucketName);
-        objectName = resolveObjectName(fileEntity, bucketName, objectName);
+        String objectName = fileEntity.getFileName();
 
         if (!StringUtils.hasText(objectName)) {
             log.error("文件名或路径不存在: id={}", id);
@@ -135,49 +131,4 @@ public class SysFileController {
         }
     }
 
-    private String normalizeObjectName(String objectName, String bucketName) {
-        if (!StringUtils.hasText(objectName)) {
-            return objectName;
-        }
-        int idx = objectName.indexOf("/" + bucketName + "/");
-        if (idx != -1) {
-            return objectName.substring(idx + bucketName.length() + 2);
-        }
-        return objectName;
-    }
-
-    private String resolveObjectName(FileEntity fileEntity, String bucketName, String objectName) {
-        List<String> candidates = buildObjectCandidates(fileEntity, objectName);
-        for (String candidate : candidates) {
-            if (minioUtil.objectExists(bucketName, candidate)) {
-                return candidate;
-            }
-        }
-        return objectName;
-    }
-
-    private List<String> buildObjectCandidates(FileEntity fileEntity, String objectName) {
-        LinkedHashSet<String> candidates = new LinkedHashSet<>();
-        if (!StringUtils.hasText(objectName)) {
-            return new ArrayList<>();
-        }
-        candidates.add(objectName);
-        if (objectName.contains("/") || fileEntity.getCreateUser() == null || !StringUtils.hasText(fileEntity.getBizType())) {
-            return new ArrayList<>(candidates);
-        }
-        String userPrefix = String.valueOf(fileEntity.getCreateUser());
-        String bizType = fileEntity.getBizType();
-        LinkedHashSet<String> bizDirs = new LinkedHashSet<>();
-        bizDirs.add(bizType);
-        bizDirs.add(bizType.replace('_', '-'));
-        if (bizType.endsWith("_record")) {
-            bizDirs.add(bizType.substring(0, bizType.length() - "_record".length()));
-        }
-        for (String bizDir : bizDirs) {
-            if (StringUtils.hasText(bizDir)) {
-                candidates.add(userPrefix + "/" + bizDir + "/" + objectName);
-            }
-        }
-        return new ArrayList<>(candidates);
-    }
 }

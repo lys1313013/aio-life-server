@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-import top.aiolife.config.CbtiConfig;
 import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.pojo.entity.CbtiPersonalityEntity;
@@ -35,13 +34,8 @@ public class CbtiController {
 
     private final ObjectMapper objectMapper;
 
-    private final CbtiConfig cbtiConfig;
-
     @Value("${aio.life.server.base-url}")
     private String serveBaseUrl;
-
-    @Value("${aio.life.server.minio.bucket-name:aiolife}")
-    private String minioBucketName;
 
     /**
      * 获取 CBTI 题库与维度定义接口。
@@ -206,7 +200,6 @@ public class CbtiController {
 
     private String buildPreviewUrl(String objectName) {
         String normalized = objectName.startsWith("/") ? objectName.substring(1) : objectName;
-        String bucketName = StringUtils.hasText(cbtiConfig.getBucketName()) ? cbtiConfig.getBucketName() : minioBucketName;
-        return serveBaseUrl + "/file/preview/" + bucketName + "/" + normalized;
+        return serveBaseUrl + "/cbti/images/" + normalized;
     }
 }

@@ -222,7 +222,7 @@ class ApiBoundaryContractTest {
         detail.put("id", 9007199254740993L); detail.put("userId", 11L); detail.put("personality", personality);
         when(service.getUserHistory(11L)).thenReturn(List.of(history));
         when(service.getHistoryDetail(1L, 11L)).thenReturn(detail);
-        var controller = new CbtiController(service, json, new CbtiConfig());
+        var controller = new CbtiController(service, json);
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
             JsonNode list = json.valueToTree(controller.results().getData());
