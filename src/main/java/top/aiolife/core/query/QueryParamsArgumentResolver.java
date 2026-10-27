@@ -1,5 +1,6 @@
 package top.aiolife.core.query;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -19,6 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.util.Objects;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -48,6 +51,7 @@ public class QueryParamsArgumentResolver implements HandlerMethodArgumentResolve
                 values.put(name, items.length == 1 ? items[0] : items);
             }
         }
+        normalizeAliases(parameter.getParameterType(), values);
         JavaType type = objectMapper.constructType(parameter.getGenericParameterType());
         if (CommonQuery.class.isAssignableFrom(parameter.getParameterType())) {
             Map<String, Object> pagination = new LinkedHashMap<>();
@@ -64,7 +68,6 @@ public class QueryParamsArgumentResolver implements HandlerMethodArgumentResolve
             JsonNode tree = objectMapper.valueToTree(values);
             argument = objectMapper.readerFor(type)
                     .with(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-                    .with(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                     .readValue(tree);
             // 分页边界始终生效，不能依赖每个 Controller 都记得添加 @Valid。
             if (argument instanceof PaginationRequest pagination) pagination.validatePagination();
@@ -88,4 +91,22 @@ public class QueryParamsArgumentResolver implements HandlerMethodArgumentResolve
         return argument;
     }
 
+    /** 先归一化旧名称，再绑定，避免参数顺序决定最终页码或页长。 */
+    private static void normalizeAliases(Class<?> type, Map<String, Object> values) {
+        for (Class<?> current = type; current != Object.class; current = current.getSuperclass()) {
+            for (Field field : current.getDeclaredFields()) {
+                JsonAlias aliases = field.getAnnotation(JsonAlias.class);
+                if (aliases == null) continue;
+                for (String alias : aliases.value()) {
+                    if (!values.containsKey(alias)) continue;
+                    Object legacy = values.remove(alias);
+                    if (values.containsKey(field.getName()) && !Objects.equals(values.get(field.getName()), legacy)) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                field.getName() + " 与兼容参数 " + alias + " 冲突");
+                    }
+                    values.putIfAbsent(field.getName(), legacy);
+                }
+            }
+        }
+    }
 }
