@@ -8,6 +8,8 @@ import java.io.ByteArrayOutputStream;
 import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 import javax.imageio.ImageIO;
 import org.h2.jdbcx.JdbcDataSource;
@@ -154,6 +156,29 @@ class VideoCoverServiceTest {
         var downloader=mock(VideoCoverDownloader.class); new VideoCoverWorker(tasks,downloader,service).runBatch();
         assertEquals("FAILED",videos.selectById(1L).getCoverState()); verifyNoInteractions(downloader);
         service.retry(1,11); assertEquals("PENDING",videos.selectById(1L).getCoverState()); assertEquals(2,tasks.selectCount(null));
+    }
+    @Test void 短暂失败快速退避且成功后保留最近失败码() {
+        video(1,11); service.enqueue(1,11,URL,false);
+        var task=tasks.due().getFirst();
+        for (int attempt=1; attempt<=4; attempt++) {
+            assertEquals(1,tasks.claim(task.getId(),"lease"));
+            LocalDateTime before=LocalDateTime.now();
+            service.failed(task.getId(),"lease","IMAGE_DOWNLOAD_TIMEOUT");
+            task=tasks.selectById(task.getId());
+            long delay=Duration.between(before,task.getNextAttemptAt()).toSeconds();
+            long expected=Math.min(30L,5L << (attempt-1));
+            assertTrue(delay>=expected-1 && delay<=expected, "退避秒数: "+delay);
+            assertEquals(attempt,task.getAttempts());
+            assertEquals("PENDING",task.getState());
+            jdbc.update("UPDATE image_import_task SET next_attempt_at=TIMESTAMPADD(SECOND,-1,CURRENT_TIMESTAMP) WHERE id=?",task.getId());
+        }
+        assertEquals(1,tasks.claim(task.getId(),"lease"));
+        service.complete(task.getId(),"lease",png);
+        task=tasks.selectById(task.getId());
+        assertEquals("READY",task.getState());
+        assertEquals("IMAGE_DOWNLOAD_TIMEOUT",task.getErrorCode());
+        assertEquals("READY",videos.selectById(1L).getCoverState());
+        assertNotNull(videos.selectById(1L).getCoverFileId());
     }
     @Test void 非属主不可重试且假装公开的文件也必须按业务授权() {
         video(1,11); service.enqueue(1,11,URL,false); finishNext();

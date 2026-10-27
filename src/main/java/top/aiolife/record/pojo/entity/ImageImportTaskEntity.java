@@ -17,5 +17,6 @@ public class ImageImportTaskEntity extends BaseEntity {
     private LocalDateTime nextAttemptAt;
     private String leaseToken;
     private LocalDateTime leaseUntil;
+    /** 最近一次失败码，重试成功后保留，便于回溯导入延迟。 */
     private String errorCode;
 }

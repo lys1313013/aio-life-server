@@ -60,7 +60,7 @@ public class VideoCoverService {
         if (task == null) return;
         var video = videos.lockOwned(task.getVideoId(), task.getCreateUser());
         if (video == null || !Objects.equals(video.getCoverVersion(), task.getCoverVersion())) {
-            finish(taskId, "CANCELLED", null); return;
+            finish(taskId, "CANCELLED"); return;
         }
         var object = storage.store(bytes, video.getUserId());
         var file = new FileEntity();
@@ -71,7 +71,7 @@ public class VideoCoverService {
         files.insert(file);
         videos.update(null, new LambdaUpdateWrapper<BVideoEntity>().eq(BVideoEntity::getId, video.getId())
                 .set(BVideoEntity::getCoverFileId, file.getId()).set(BVideoEntity::getCoverState, "READY"));
-        finish(taskId, "READY", null);
+        finish(taskId, "READY");
     }
 
     @Transactional
@@ -80,21 +80,22 @@ public class VideoCoverService {
         if (task == null) return;
         var video = videos.lockOwned(task.getVideoId(), task.getCreateUser());
         if (video == null || !Objects.equals(video.getCoverVersion(), task.getCoverVersion())) {
-            finish(taskId, "CANCELLED", null); return;
+            finish(taskId, "CANCELLED"); return;
         }
         boolean exhausted = task.getAttempts() >= 5;
         tasks.update(null, new LambdaUpdateWrapper<ImageImportTaskEntity>().eq(ImageImportTaskEntity::getId, taskId)
                 .set(ImageImportTaskEntity::getState, exhausted ? "FAILED" : "PENDING")
                 .set(ImageImportTaskEntity::getErrorCode, errorCode)
-                .set(ImageImportTaskEntity::getNextAttemptAt, LocalDateTime.now().plusSeconds(15L << task.getAttempts()))
+                .set(ImageImportTaskEntity::getNextAttemptAt, LocalDateTime.now().plusSeconds(
+                        Math.min(30L, 5L << Math.max(0, task.getAttempts() - 1))))
                 .set(ImageImportTaskEntity::getLeaseToken, null).set(ImageImportTaskEntity::getLeaseUntil, null));
         if (exhausted) videos.update(null, new LambdaUpdateWrapper<BVideoEntity>().eq(BVideoEntity::getId, video.getId())
                 .set(BVideoEntity::getCoverState, "FAILED"));
     }
 
-    private void finish(long taskId, String state, String error) {
+    private void finish(long taskId, String state) {
         tasks.update(null, new LambdaUpdateWrapper<ImageImportTaskEntity>().eq(ImageImportTaskEntity::getId, taskId)
-                .set(ImageImportTaskEntity::getState, state).set(ImageImportTaskEntity::getErrorCode, error)
+                .set(ImageImportTaskEntity::getState, state)
                 .set(ImageImportTaskEntity::getLeaseToken, null).set(ImageImportTaskEntity::getLeaseUntil, null));
     }
 
