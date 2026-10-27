@@ -1,6 +1,6 @@
 # AGENTS.md
 
-- 系统尚未正式上线，只维护当前数据结构和接口契约；不保留旧数据格式、旧客户端、旧参数或旧缓存的兼容分支，也不维护历史升级链。结构变更同步全量初始化、实体和两端调用方。
+- 系统尚未正式上线，应用只维护当前数据结构和接口契约，不保留旧数据格式、旧客户端、旧参数或旧缓存的兼容分支。数据库结构变更必须同时更新全量初始化 SQL 和提供已有库可执行的增量脚本，并同步实体和两端调用方。此前清理历史 SQL 仅针对已整理的旧脚本，不代表后续停止维护增量迁移。
 
 This file provides guidance to AI coding agents when working with code in this repository.
 
@@ -222,15 +222,16 @@ class MyControllerTest extends BaseIntegrationTest {
 
 使用中文描述测试场景：`testMethod_测试场景描述()`
 
-## 数据库初始化
+## 数据库初始化与增量升级
 
-SQL 编写必须遵守 [SQL 脚本规范](docs/SQL脚本规范.md)：表和每个字段必须有中文 COMMENT，索引和约束说明用途。上线前直接修改全量结构，不维护增量迁移或历史基线。
+SQL 编写必须遵守 [SQL 脚本规范](docs/SQL脚本规范.md)：表和每个字段必须有中文 COMMENT，索引和约束说明用途。结构变更同时更新全量结构并提供增量脚本；清理历史脚本不取消后续增量维护。
 
 - `sql/1_init_table/2026-08-18_init_all_tables.sql`：唯一的当前完整结构。
+- `sql/migrations/`：后续已有库增量脚本，按 `YYYY-MM-DD_NN_description.sql` 命名，说明适用结构、依赖顺序、数据影响及重跑策略。
 - `sql/2_ini_data/`：业务初始化数据。
 - `sql/menu/2_ini_data/`：菜单初始化数据，先运行 `2_menu.sql`，说明见 [菜单 SQL](sql/menu/README.md)。
 
-初始化和验证顺序见 [数据库初始化与验证](docs/数据库初始化与验证.md)。CI 在隔离数据库验证当前结构、种子数据和约束；结构预检仅作只读比较。
+初始化、增量升级和验证顺序见 [数据库初始化与验证](docs/数据库初始化与验证.md)。CI 在隔离数据库验证当前结构、种子数据和约束；结构预检仅作只读比较。
 
 会员平台预设统一维护在 `sql/2_ini_data/2026-10-20_membership_providers.sql`；保留初始化的补缺、幂等语义，不覆盖管理员日常修改。
 
