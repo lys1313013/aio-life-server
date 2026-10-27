@@ -23,6 +23,16 @@ import java.time.LocalDateTime;
 @TableName("user")
 public class UserEntity extends AuditEntity {
 
+    /** 最近一次注册协议同意版本和时间，不向普通用户资料接口暴露。 */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String policyVersion;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private LocalDateTime policyAcceptedAt;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private LocalDateTime erasureRequestedAt;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private LocalDateTime erasureRetryAt;
+
     /**
      * 主键
      */

@@ -8,6 +8,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.service.LoginSessionService;
+import top.aiolife.sso.service.LegalPolicyService;
 
 /** 微信身份识别、注册与已有账号绑定，不自动合并账号。 */
 @Service
@@ -29,6 +30,7 @@ public class WechatAuthService {
     }
 
     public WechatLoginVO register(WechatAuthRequests.Register request, String ip) {
+        LegalPolicyService.requireAcceptance(request.agreedPolicy(), request.policyVersion());
         client.requireEnabled();
         tickets.rateLimit("register", ip, 10);
         WechatTicketStore.Ticket ticket = tickets.consume(request.loginTicket());

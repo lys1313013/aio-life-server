@@ -39,7 +39,7 @@ class UserAvatarPersistenceTest {
               is_public INT, is_deleted INT DEFAULT 0, create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP)
             """);
         jdbc.execute("""
-            CREATE TABLE user(id BIGINT PRIMARY KEY, username VARCHAR(255), password VARCHAR(255), password_salt VARCHAR(255),
+            CREATE TABLE user(policy_version VARCHAR(32), policy_accepted_at TIMESTAMP, erasure_requested_at TIMESTAMP, erasure_retry_at TIMESTAMP, id BIGINT PRIMARY KEY, username VARCHAR(255), password VARCHAR(255), password_salt VARCHAR(255),
               secondary_password VARCHAR(255), secondary_password_salt VARCHAR(255), nickname VARCHAR(255),
               avatar_file_id VARCHAR(32), email VARCHAR(255), phone_country_code VARCHAR(32), phone VARCHAR(64),
               phone_verified_at TIMESTAMP, wechat_openid VARCHAR(255), wechat_unionid VARCHAR(255), role VARCHAR(255),

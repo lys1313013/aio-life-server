@@ -53,6 +53,7 @@ import top.aiolife.sso.pojo.vo.UserLoginVO;
 import top.aiolife.sso.pojo.vo.UserVO;
 import top.aiolife.sso.service.IUserService;
 import top.aiolife.sso.service.LoginSessionService;
+import top.aiolife.sso.service.LegalPolicyService;
 import top.aiolife.sso.service.UserAvatarFileService;
 import top.aiolife.sso.util.PasswordUtil;
 
@@ -528,6 +529,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public void register(RegisterReq registerReq) {
+        LegalPolicyService.requireAcceptance(registerReq.getAgreedPolicy(), registerReq.getPolicyVersion());
         // 校验验证码（含尝试次数限制，成功即作废）
         verifyEmailCode("register:code:" + registerReq.getEmail(), registerReq.getCode());
         // 校验用户名是否已存在
@@ -555,6 +557,7 @@ public class UserServiceImpl implements IUserService {
         userEntity.setPasswordSalt(salt);
         userEntity.setPassword(PasswordUtil.encryptPassword(userEntity.getPassword(), salt));
 
+        LegalPolicyService.recordAcceptance(userEntity);
         userMapper.insert(userEntity);
     }
 

@@ -1,7 +1,7 @@
 -- =====================================================
 -- AIO Life 数据库初始化脚本（全量建表）
 -- 创建时间: 2026-08-18
--- 说明: 当前结构唯一来源；系统尚未上线，不维护历史升级链。
+-- 说明: 当前完整结构用于空库初始化；已有库使用 sql/migrations/ 中适用的增量脚本升级。
 -- 统一约定: InnoDB + utf8mb4 + utf8mb4_unicode_ci
 -- =====================================================
 
@@ -20,6 +20,12 @@ CREATE TABLE IF NOT EXISTS `user` (
     `username` varchar(50) NOT NULL COMMENT '用户名',
     `password` varchar(255) DEFAULT NULL COMMENT '密码，NULL表示未设置',
     `nickname` varchar(50) NOT NULL COMMENT '昵称',
+    `policy_version` varchar(32) DEFAULT NULL COMMENT '注册时明确同意的隐私政策与服务条款版本',
+    `policy_accepted_at` datetime DEFAULT NULL COMMENT '注册协议同意时间，上海时区',
+    `erasure_requested_at` datetime DEFAULT NULL COMMENT '自助注销受理时间，非空表示等待不可撤销的数据清理',
+    `erasure_retry_at` datetime DEFAULT NULL COMMENT '注销后台清理下次重试时间，上海时区',
+    -- 后台只扫描已停用且到期的注销任务，避免遍历全部账号。
+    KEY `idx_user_erasure_retry` (`is_deleted`, `erasure_retry_at`),
     `create_user` bigint(20) DEFAULT NULL COMMENT '创建人',
     `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_user` bigint(20) DEFAULT NULL COMMENT '更新人',

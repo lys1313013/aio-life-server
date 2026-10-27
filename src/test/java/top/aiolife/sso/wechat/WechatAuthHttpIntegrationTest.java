@@ -43,7 +43,7 @@ class WechatAuthHttpIntegrationTest {
         assertTrue(pending.path("accessToken").isNull());
         String ticket = pending.path("loginTicket").asText();
         mvc.perform(get("/user/info").header("Authorization", "Bearer " + ticket)).andExpect(status().isUnauthorized());
-        JsonNode login = postJson("/auth/wechat/mini/register", Map.of("loginTicket", ticket), null);
+        JsonNode login = postJson("/auth/wechat/mini/register", Map.of("loginTicket", ticket, "agreedPolicy", true, "policyVersion", "2026-10-27"), null);
         assertEquals("LOGGED_IN", login.path("status").asText());
         assertTrue(login.path("id").isTextual());
         assertFalse(login.path("hasPassword").asBoolean());
@@ -60,7 +60,7 @@ class WechatAuthHttpIntegrationTest {
         assertEquals(login.path("id"), repeated.path("id"));
         assertTrue(repeated.path("hasPassword").asBoolean());
         mvc.perform(post("/auth/wechat/mini/register").contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsBytes(Map.of("loginTicket", ticket))))
+                .content(json.writeValueAsBytes(Map.of("loginTicket", ticket, "agreedPolicy", true, "policyVersion", "2026-10-27"))))
                 .andExpect(status().isBadRequest());
     }
 
@@ -82,7 +82,7 @@ class WechatAuthHttpIntegrationTest {
                 .andExpect(jsonPath("$.data.registrationEnabled").value(true));
         JsonNode pending = postJson("/auth/wechat/mini/login", Map.of("loginCode", "register-code"), null);
         String ticket = pending.path("loginTicket").asText();
-        JsonNode login = postJson("/auth/wechat/mini/register", Map.of("loginTicket", ticket), null);
+        JsonNode login = postJson("/auth/wechat/mini/register", Map.of("loginTicket", ticket, "agreedPolicy", true, "policyVersion", "2026-10-27"), null);
         assertEquals("LOGGED_IN", login.path("status").asText());
         assertTrue(login.path("newUser").asBoolean());
         assertTrue(login.path("id").isTextual());
@@ -93,7 +93,7 @@ class WechatAuthHttpIntegrationTest {
         assertEquals(login.path("id"), repeated.path("id"));
         assertFalse(repeated.path("newUser").asBoolean());
         mvc.perform(post("/auth/wechat/mini/register").contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsBytes(Map.of("loginTicket", ticket))))
+                .content(json.writeValueAsBytes(Map.of("loginTicket", ticket, "agreedPolicy", true, "policyVersion", "2026-10-27"))))
                 .andExpect(status().isBadRequest());
         mvc.perform(post("/auth/wechat/mini/register").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"loginTicket\":\"\"}"))

@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.util.PasswordUtil;
+import top.aiolife.sso.service.LegalPolicyService;
 
 
 /** 只在短数据库事务内变更认证字段，微信网络调用由上层提前完成。 */
@@ -41,6 +42,7 @@ public class WechatAccountService {
         user.setWechatUnionid(ticket.unionid());
         user.setCreateUser(user.getId());
         user.setUpdateUser(user.getId());
+        LegalPolicyService.recordAcceptance(user);
         users.insert(user);
         return new Registration(user, true);
     }

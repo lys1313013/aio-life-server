@@ -56,7 +56,7 @@ class WechatAuthServiceTest {
         when(tickets.consume("ticket")).thenReturn(ticket);
         when(accounts.register(ticket)).thenReturn(new WechatAccountService.Registration(user, true));
         when(sessions.complete(user, "ip", false)).thenReturn(token());
-        var result = service.register(new WechatAuthRequests.Register("ticket"), "ip");
+        var result = service.register(new WechatAuthRequests.Register("ticket", true, "2026-10-27"), "ip");
         assertEquals("LOGGED_IN", result.getStatus());
         assertTrue(result.isNewUser());
         assertEquals("business-token", result.getAccessToken());
@@ -72,9 +72,19 @@ class WechatAuthServiceTest {
     @Test void 微信注册并发冲突不签发会话或泄漏SQL() {
         when(tickets.consume("ticket")).thenReturn(ticket);
         when(accounts.register(ticket)).thenThrow(new DuplicateKeyException("private SQL"));
-        var error = assertThrows(ResponseStatusException.class, () -> service.register(new WechatAuthRequests.Register("ticket"), "ip"));
+        var error = assertThrows(ResponseStatusException.class, () -> service.register(new WechatAuthRequests.Register("ticket", true, "2026-10-27"), "ip"));
         assertFalse(error.getMessage().contains("private SQL"));
         verifyNoInteractions(sessions);
+    }
+
+    @Test void 未同意或旧协议不会消费注册票据() {
+        for (var request : new WechatAuthRequests.Register[]{
+                new WechatAuthRequests.Register("ticket", false, "2026-10-27"),
+                new WechatAuthRequests.Register("ticket", true, "old"),
+                new WechatAuthRequests.Register("ticket", null, null)}) {
+            assertThrows(ResponseStatusException.class, () -> service.register(request, "ip"));
+        }
+        verifyNoInteractions(client, tickets, accounts, sessions);
     }
 
     private UserEntity user() { UserEntity user = new UserEntity(); user.setId(123L); user.setUsername("u_123"); return user; }

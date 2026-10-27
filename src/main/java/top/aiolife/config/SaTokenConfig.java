@@ -89,7 +89,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
                 .excludePathPatterns(QueryAccessController.INTERNAL_EVALUATE_PATH)
                 .excludePathPatterns(WechatWebLoginController.PUBLIC_PATHS)
-                .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
+                .excludePathPatterns("/auth/legal", "/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
                         "/actuator/**");
 
@@ -114,7 +114,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
                 .excludePathPatterns(QueryAccessController.INTERNAL_EVALUATE_PATH)
                 .excludePathPatterns(WechatWebLoginController.PUBLIC_PATHS)
-                .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
+                .excludePathPatterns("/auth/legal", "/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
                         "/actuator/**",
                         "/file/preview/**",
@@ -131,7 +131,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
                 .excludePathPatterns(QueryAccessController.INTERNAL_EVALUATE_PATH)
                 .excludePathPatterns(WechatWebLoginController.PUBLIC_PATHS)
-                .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
+                .excludePathPatterns("/auth/legal", "/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
                         "/auth/secondary-verify", "/auth/secondary-password/status", "/auth/secondary-password",
                         "/auth/secondary-lock/menus",
@@ -151,7 +151,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
                 .excludePathPatterns(QueryAccessController.INTERNAL_EVALUATE_PATH)
                 .excludePathPatterns(WechatWebLoginController.PUBLIC_PATHS)
-                .excludePathPatterns("/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
+                .excludePathPatterns("/auth/legal", "/auth/login", "/auth/register", "/auth/sendEmailCode", "/auth/sendResetPasswordCode",
                         "/auth/resetPassword",
                         "/actuator/**",
                         "/file/preview/**",

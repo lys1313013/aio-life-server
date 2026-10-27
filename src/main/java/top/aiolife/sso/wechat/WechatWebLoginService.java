@@ -79,14 +79,23 @@ public class WechatWebLoginService {
     }
 
     public UserLoginVO exchange(String scene, String secret, String ip) {
+        UserEntity user = consumeConfirmedUser(scene, secret);
+        return sessions.complete(user, ip, true);
+    }
+
+    /** 消费扫码确认结果而不签发会话，供本人账号注销等重新核验使用。 */
+    public long consumeConfirmedIdentity(String scene, String secret) {
+        return consumeConfirmedUser(scene, secret).getId();
+    }
+
+    private UserEntity consumeConfirmedUser(String scene, String secret) {
         requireEnabled();
         String result = tickets.browser(scene, secret, "exchange");
         if (!result.startsWith("USER:")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "登录请求未确认或已失效，请重新扫码");
         }
         // 再查数据库，防止确认后账号被删除；消费成功才允许签发一次 Web 会话。
-        UserEntity user = activeUser(Long.parseLong(result.substring(5)));
-        return sessions.complete(user, ip, true);
+        return activeUser(Long.parseLong(result.substring(5)));
     }
 
     private UserEntity activeUser(long userId) {

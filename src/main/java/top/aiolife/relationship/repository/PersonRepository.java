@@ -12,6 +12,9 @@ import java.util.Optional;
  * 人物节点 Repository
  */
 public interface PersonRepository extends Neo4jRepository<PersonRelationship, String> {
+    @Query("MATCH (p:Person) WHERE p.userId = $userId DETACH DELETE p")
+    void eraseByUserId(@Param("userId") Long userId);
+
 
     /**
      * 查询用户的所有人物

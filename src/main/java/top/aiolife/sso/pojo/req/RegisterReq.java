@@ -1,6 +1,9 @@
 package top.aiolife.sso.pojo.req;
 
 import lombok.Data;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * 注册请求参数
@@ -10,6 +13,12 @@ import lombok.Data;
  */
 @Data
 public class RegisterReq {
+
+    /** 必须明确同意本次注册展示的协议版本。 */
+    @NotNull @AssertTrue
+    private Boolean agreedPolicy;
+    @NotBlank
+    private String policyVersion;
 
     /**
      * 用户名

@@ -10,6 +10,7 @@ import top.aiolife.sso.pojo.req.SendEmailCodeReq;
 import top.aiolife.sso.pojo.req.ResetPasswordReq;
 import top.aiolife.sso.service.IUserService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 
 /**
  * 认证控制器
@@ -90,7 +91,7 @@ public class AuthController {
      * @param registerReq 注册参数
      */
     @PostMapping("/register")
-    public ApiResponse<Void> register(@RequestBody RegisterReq registerReq) {
+    public ApiResponse<Void> register(@Valid @RequestBody RegisterReq registerReq) {
         userService.register(registerReq);
         return ApiResponse.success();
     }
