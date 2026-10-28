@@ -26,6 +26,7 @@ import top.aiolife.capture.service.DoubanCaptureService;
 import top.aiolife.capture.service.DoubanSourceGuard;
 import top.aiolife.capture.service.DoubanSyncCoverService;
 import top.aiolife.capture.service.PurchaseCaptureService;
+import top.aiolife.capture.service.PurchaseSourceGuard;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.core.exception.SecondaryLockRequiredException;
 import top.aiolife.record.enums.FileBizType;
@@ -57,7 +58,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-/** 隔离原始MySQL5.7 schema（无capture表）及Redis的真实事务测试。 */
+/** 隔离当前业务结构（无capture表）及Redis的真实事务测试。 */
 @ActiveProfiles("test")
 @SpringBootTest(
         classes = PhysicalTableEntitySelectIntegrationTest.DatabaseMapperTestApplication.class,
@@ -69,6 +70,7 @@ import java.util.concurrent.TimeUnit;
     DoubanSourceGuard.class,
     DoubanSyncCoverService.class,
     PurchaseCaptureService.class,
+    PurchaseSourceGuard.class,
     JsonConfig.class
 })
 class CaptureIntegrationTest {
@@ -119,6 +121,7 @@ class CaptureIntegrationTest {
     private ObjectNode order() {
         var n = json.createObjectNode();
         n.put("platform", "jd");
+        n.put("orderNo", "9007199254740993555");
         n.put("sourceUrl", "https://details.jd.com/normal/item.action?PassKey=private");
         n.put("shopName", "模拟测试商家");
         n.put("orderStatus", "paid");
@@ -127,6 +130,7 @@ class CaptureIntegrationTest {
         var line = n.putArray("items").addObject();
         line.put("sourceItemId", "line:0");
         line.put("title", "模拟商品");
+        line.put("sku", "9007199254740993666");
         line.put("quantity", 2);
         line.put("paidAmount", "10.01");
         return n;
@@ -175,6 +179,10 @@ class CaptureIntegrationTest {
         long wardrobeId = Long.parseLong(result.path("assets").get(1).path("id").asText());
         assertEquals(new BigDecimal("5.01"), devices.selectById(deviceId).getPurchasePrice());
         assertEquals(new BigDecimal("5.00"), wardrobe.selectById(wardrobeId).getPrice());
+        assertEquals("line:0", devices.selectById(deviceId).getSourceItemId());
+        assertEquals(1, devices.selectById(deviceId).getSourceUnitIndex());
+        assertEquals("line:0", wardrobe.selectById(wardrobeId).getSourceItemId());
+        assertEquals(2, wardrobe.selectById(wardrobeId).getSourceUnitIndex());
         assertEquals(
                 0,
                 expenses.selectCount(
@@ -198,9 +206,12 @@ class CaptureIntegrationTest {
     }
 
     @Test
-    void 无订单号仍可预览且返回不含历史查重结果() {
-        var result = purchases.preview(USER, order());
-        assertFalse(result.has("existing"));
+    void 无订单号可预览但不能保存无来源物品() {
+        var input = order(); input.remove("orderNo");
+        var result = purchases.preview(USER, input);
+        assertTrue(result.path("existingAssets").isEmpty());
+        var req = request(); req.set("order", input); asset(req, "device", 1);
+        assertThrows(RuntimeException.class, () -> purchases.commit(USER, req));
         assertFalse(result.has("expenseCandidates"));
         assertFalse(result.path("draft").path("sourceUrl").asText().contains("PassKey"));
     }
@@ -243,6 +254,191 @@ class CaptureIntegrationTest {
         assertTrue(redis.keys("aio:capture:request:v2:" + USER + ":*").isEmpty());
         ((ObjectNode) req.path("assets").get(1).path("fields")).remove("fileId");
         assertEquals(2, purchases.commit(USER, req).path("assets").size());
+    }
+
+    @Test
+    void 新请求键重新采集同订单商品返回原物品并保留编辑() {
+        var req = request(); asset(req, "device", 1); asset(req, "wardrobe", 2);
+        var saved = purchases.commit(USER, req);
+        long deviceId = Long.parseLong(saved.path("assets").get(0).path("id").asText());
+        jdbc.update("UPDATE device SET name='服务器新名称' WHERE id=?", deviceId);
+        var second = req.deepCopy(); second.put("idempotencyKey", UUID.randomUUID().toString());
+        ((ObjectNode) second.path("assets").get(0)).put("kind", "wardrobe");
+        var replay = purchases.commit(USER, second);
+        assertEquals("existing", replay.path("operation").asText());
+        assertEquals(saved.path("assets"), replay.path("assets"));
+        assertEquals("服务器新名称", devices.selectById(deviceId).getName());
+        var row = devices.selectById(deviceId);
+        assertEquals("9007199254740993555", row.getSourceOrderId());
+        assertEquals("9007199254740993666", row.getSourceProductId());
+        assertEquals("jd", row.getSourcePlatform());
+        var preview = purchases.preview(USER, order());
+        assertEquals(saved.path("assets"), preview.path("existingAssets"));
+        assertEquals(1, countDevices());
+    }
+
+    @Test
+    void 跨归属查重重放仍检查实际物品菜单锁() {
+        var first = request(); asset(first, "device", 1); purchases.commit(USER, first);
+        var second = request(); asset(second, "wardrobe", 1);
+        assertEquals("device", purchases.commit(USER, second).path("assets").get(0).path("kind").asText());
+        doThrow(new SecondaryLockRequiredException("/my-hub/device")).when(locks).checkMenus(USER, "/my-hub/device");
+        assertThrows(SecondaryLockRequiredException.class, () -> purchases.commit(USER, second));
+    }
+
+    @Test
+    void 部分已保存只创建剩余件且删除后可重新录入() {
+        var first = request(); asset(first, "device", 1); purchases.commit(USER, first);
+        var next = request(); asset(next, "device", 1); asset(next, "wardrobe", 2);
+        var result = purchases.commit(USER, next);
+        assertEquals("mixed", result.path("operation").asText());
+        assertEquals(1, result.path("createdCount").asInt());
+        long id = Long.parseLong(result.path("assets").get(0).path("id").asText());
+        devices.deleteById(id);
+        var recreated = request(); asset(recreated, "device", 1);
+        assertNotEquals(Long.toString(id), purchases.commit(USER, recreated).path("assets").get(0).path("id").asText());
+    }
+
+    @Test
+    void 不同平台订单或明细独立保存且同明细商品变更拒绝() {
+        var first = request(); asset(first, "device", 1); purchases.commit(USER, first);
+        for (String field : List.of("orderNo", "sourceItemId", "platform")) {
+            var req = request(); asset(req, "device", 1);
+            var order = (ObjectNode) req.path("order");
+            if (field.equals("orderNo")) order.put(field, "other-order");
+            else if (field.equals("platform")) { order.put(field, "taobao"); order.put("sourceUrl", "https://trade.taobao.com/trade/detail/trade_item_detail.htm"); }
+            else { ((ObjectNode) order.path("items").get(0)).put(field, "other-product");
+                if (field.equals("sourceItemId")) ((ObjectNode) req.path("assets").get(0)).put(field, "other-product"); }
+            assertEquals("created", purchases.commit(USER, req).path("operation").asText());
+        }
+        var changed = request(); asset(changed, "device", 1);
+        ((ObjectNode) changed.path("order").path("items").get(0)).put("sku", "other-product");
+        assertThrows(RuntimeException.class, () -> purchases.commit(USER, changed));
+        assertThrows(RuntimeException.class,
+                () -> purchases.preview(USER, (ObjectNode) changed.path("order")));
+        assertEquals(4, countDevices());
+    }
+
+    @Test
+    void 查重不泄露锁定模块和其他用户记录() {
+        var req = request(); asset(req, "device", 1); purchases.commit(USER, req);
+        assertTrue(purchases.preview(USER + 1, order()).path("existingAssets").isEmpty());
+        doThrow(new SecondaryLockRequiredException("/my-hub/device")).when(locks).checkMenus(USER, "/my-hub/device");
+        assertThrows(SecondaryLockRequiredException.class, () -> purchases.preview(USER, order()));
+    }
+
+    @Test
+    void 缺商品ID拒绝保存且不会伪造来源() {
+        var req = request(); asset(req, "device", 1);
+        ((ObjectNode) req.path("order").path("items").get(0)).remove("sku");
+        assertThrows(RuntimeException.class, () -> purchases.commit(USER, req));
+        assertEquals(0, countDevices());
+    }
+
+    @Test
+    void 不同请求键跨设备衣柜并发采集只创建一件() throws Exception {
+        var executor = Executors.newFixedThreadPool(2);
+        var start = new CountDownLatch(1);
+        try {
+            var a = executor.submit(() -> { start.await(); var req = request(); asset(req, "device", 1); return purchases.commit(USER, req); });
+            var b = executor.submit(() -> { start.await(); var req = request(); asset(req, "wardrobe", 1); return purchases.commit(USER, req); });
+            start.countDown();
+            var one = a.get(15, TimeUnit.SECONDS); var two = b.get(15, TimeUnit.SECONDS);
+            assertEquals(one.path("assets"), two.path("assets"));
+            assertEquals(1, countDevices() + jdbc.queryForObject("SELECT COUNT(*) FROM wardrobe_item WHERE user_id=? AND is_deleted=0", Long.class, USER));
+        } finally { executor.shutdownNow(); }
+    }
+
+    @Test
+    void 只选第二件重新采集保留件序号且第一件独立新增() {
+        var first = request(); asset(first, "device", 2);
+        String id = purchases.commit(USER, first).path("assets").get(0).path("id").asText();
+        var next = request(); asset(next, "device", 2);
+        assertEquals(id, purchases.commit(USER, next).path("assets").get(0).path("id").asText());
+        assertEquals(1, countDevices());
+        var preview = purchases.preview(USER, order());
+        assertEquals(1, preview.path("existingAssets").size());
+        assertEquals(2, preview.path("existingAssets").get(0).path("unitIndex").asInt());
+        assertEquals(id, preview.path("existingAssets").get(0).path("id").asText());
+        var add = request(); asset(add, "device", 1); asset(add, "wardrobe", 2);
+        ((ObjectNode) add.path("assets").get(1)).put("existingId", id);
+        var result = purchases.commit(USER, add);
+        assertEquals(1, result.path("createdCount").asInt());
+        assertNotEquals(id, result.path("assets").get(0).path("id").asText());
+        assertEquals(id, result.path("assets").get(1).path("id").asText());
+        assertEquals(2, countDevices());
+    }
+
+    @Test
+    void 同商品不同明细按来源分别保存且页面重排不串件() {
+        var req = request();
+        var order = (ObjectNode) req.path("order");
+        order.put("paidAmount", "20.02");
+        var firstLine = (ObjectNode) order.path("items").get(0);
+        firstLine.put("spec", "红色");
+        var secondLine = firstLine.deepCopy().put("sourceItemId", "line:1").put("spec", "蓝色");
+        ((com.fasterxml.jackson.databind.node.ArrayNode) order.path("items")).add(secondLine);
+        asset(req, "device", 1);
+        asset(req, "wardrobe", 1);
+        ((ObjectNode) req.path("assets").get(1)).put("sourceItemId", "line:1");
+        var saved = purchases.commit(USER, req);
+        assertNotEquals(saved.path("assets").get(0).path("id"), saved.path("assets").get(1).path("id"));
+        assertEquals(2, saved.path("createdCount").asInt());
+        var reordered = order.deepCopy();
+        reordered.putArray("items").add(secondLine).add(firstLine);
+        var preview = purchases.preview(USER, reordered).path("existingAssets");
+        assertEquals(saved.path("assets").get(1), preview.get(0));
+        assertEquals(saved.path("assets").get(0), preview.get(1));
+        var next = req.deepCopy();
+        next.put("idempotencyKey", UUID.randomUUID().toString());
+        next.set("order", reordered);
+        assertEquals(saved.path("assets"), purchases.commit(USER, next).path("assets"));
+        assertEquals(1, countDevices());
+    }
+
+    @Test
+    void 已有物品不能借用到同商品的其他件() {
+        var first = request(); asset(first, "device", 2);
+        String id = purchases.commit(USER, first).path("assets").get(0).path("id").asText();
+        var next = request(); asset(next, "wardrobe", 1);
+        ((ObjectNode) next.path("assets").get(0)).put("existingId", id);
+        assertThrows(RuntimeException.class, () -> purchases.commit(USER, next));
+        assertEquals(1, countDevices());
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM wardrobe_item WHERE user_id=?", Long.class, USER));
+    }
+
+    @Test
+    void 来源冲突先检查实际物品菜单权限() {
+        var first = request(); asset(first, "device", 1); purchases.commit(USER, first);
+        var changed = request(); asset(changed, "wardrobe", 1);
+        ((ObjectNode) changed.path("order").path("items").get(0)).put("sku", "other-product");
+        doThrow(new SecondaryLockRequiredException("/my-hub/device"))
+                .when(locks).checkMenus(USER, "/my-hub/device");
+        assertThrows(SecondaryLockRequiredException.class, () -> purchases.commit(USER, changed));
+        assertThrows(SecondaryLockRequiredException.class,
+                () -> purchases.preview(USER, (ObjectNode) changed.path("order")));
+    }
+
+    @Test
+    void 跨设备衣柜存在相同来源件时拒绝任选一条() {
+        var req = request(); asset(req, "device", 1); asset(req, "wardrobe", 2);
+        purchases.commit(USER, req);
+        jdbc.update("UPDATE wardrobe_item SET source_unit_index=1 WHERE user_id=?", USER);
+        assertThrows(RuntimeException.class, () -> purchases.preview(USER, order()));
+        var next = request(); asset(next, "device", 1);
+        assertThrows(RuntimeException.class, () -> purchases.commit(USER, next));
+        assertEquals(1, countDevices());
+    }
+
+    @Test
+    void 保留物品已删除时拒绝自动补建() {
+        var req = request(); asset(req, "device", 1);
+        String id = purchases.commit(USER, req).path("assets").get(0).path("id").asText();
+        devices.deleteById(Long.parseLong(id));
+        var next = request(); asset(next, "device", 1); asset(next, "wardrobe", 2);
+        ((ObjectNode) next.path("assets").get(0)).put("existingId", id);
+        assertThrows(RuntimeException.class, () -> purchases.commit(USER, next));
+        assertEquals(0, countDevices());
     }
 
     private ObjectNode book() {

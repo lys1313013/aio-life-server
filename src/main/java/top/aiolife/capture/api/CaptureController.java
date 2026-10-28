@@ -121,7 +121,7 @@ public class CaptureController {
     }
 
     @PostMapping("/purchase/preview")
-    @Operation(summary = "预览购物页面物品", description = "页面只是预填来源，返回draft/warnings，不查询或保存采购订单。")
+    @Operation(summary = "预览购物页面物品", description = "页面只是预填来源，返回draft/warnings/existingAssets，按来源订单和商品查询已保存设备／衣物，不保存订单正文。")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
             content =
@@ -149,7 +149,7 @@ public class CaptureController {
     @Operation(
             summary = "直接创建设备或衣物",
             description =
-                    "按选择批量写入现有device/wardrobe_item，事务保证全部成功或回滚；不新建支出、不保留订单或物品来源关联。短期重试不能替代永久查重。")
+                    "按选择批量写入现有device/wardrobe_item，事务保证全部成功或回滚；不新建支出；保存平台、订单ID和商品ID，同一订单商品跨设备／衣柜按已有数量查重，已有记录不覆盖。")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
             content =

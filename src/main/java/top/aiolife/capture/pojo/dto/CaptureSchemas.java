@@ -201,12 +201,13 @@ public final class CaptureSchemas {
         @Schema(
                 requiredMode = Schema.RequiredMode.REQUIRED,
                 maxLength = 128,
-                description = "本次草稿内唯一行标识，允许line:0等临时ID，不持久化")
+                description = "当前请求内唯一商品行标识，仅用于页面映射，不持久化")
         private String sourceItemId;
 
         @Schema(requiredMode = Schema.RequiredMode.REQUIRED, maxLength = 255)
         private String title;
 
+        @Schema(maxLength = 100, description = "来源商品ID，选中保存的商品必填，保持字符串")
         private String sku;
         private String spec;
 
@@ -229,7 +230,7 @@ public final class CaptureSchemas {
                 allowableValues = {"jd", "taobao"})
         private String platform;
 
-        @Schema(maxLength = 100, description = "可选，仅供页面参考，不用于查重或持久化")
+        @Schema(maxLength = 100, description = "预览可空、提交必填；原始订单ID，与平台共同定位来源")
         private String orderNo;
 
         @Schema(
@@ -301,7 +302,10 @@ public final class CaptureSchemas {
 
     @Data
     public static class AssetAction {
-        @Schema(description = "本次草稿内商品行标识，允许line:0等临时ID")
+        @Schema(description = "可选，本次保留的已保存物品ID；必须属于当前用户、平台、订单和商品，删除后拒绝重建")
+        private String existingId;
+
+        @Schema(description = "当前请求内商品行标识，不持久化")
         private String sourceItemId;
 
         @Schema(description = "第几件，1..quantity")
@@ -346,8 +350,11 @@ public final class CaptureSchemas {
     public static class PurchaseResult {
         private List<AssetLink> assets;
 
-        @Schema(allowableValues = {"created"})
+        @Schema(allowableValues = {"created", "existing", "mixed"})
         private String operation;
+
+        private Integer createdCount;
+        private Integer existingCount;
 
         @Schema(description = "短期结果缓存过期时间（UTC ISO8601），不是永久去重保证")
         private String replayExpiresAt;
@@ -361,6 +368,7 @@ public final class CaptureSchemas {
     @Data
     public static class PurchasePreview {
         private PurchaseOrder draft;
+        private List<AssetLink> existingAssets;
         private List<String> warnings;
     }
 

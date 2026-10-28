@@ -66,10 +66,25 @@ public class WardrobeItemEntity extends BaseEntity {
     /**
      * 备注
      */
-    private String memo;
+    private String remark;
 
     /**
      * 用户ID
      */
     private Long userId;
+    /** 采集来源平台：jd或taobao；手工录入及历史记录为空。 */
+    private String sourcePlatform;
+
+    /** 来源订单ID，保持第三方原始字符串。 */
+    private String sourceOrderId;
+
+    /** 来源商品ID，来自采集行sku，保持原始字符串。 */
+    private String sourceProductId;
+
+    /** 订单内稳定商品明细标识，区分同商品的规格或多行。 */
+    private String sourceItemId;
+
+    /** 来源商品行内件序号，从1开始。 */
+    private Integer sourceUnitIndex;
+
 }
