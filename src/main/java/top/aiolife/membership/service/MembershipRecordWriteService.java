@@ -52,22 +52,18 @@ public class MembershipRecordWriteService {
     }
 
     public MembershipStatsVO stats(long userId) {
-        List<MembershipRecordEntity> entities = mapper.selectList(new LambdaQueryWrapper<MembershipRecordEntity>()
-                .eq(MembershipRecordEntity::getUserId, userId));
-        LocalDate today = LocalDate.now();
+        return stats(userId, LocalDate.now());
+    }
+
+    MembershipStatsVO stats(long userId, LocalDate today) {
         LocalDate monthEnd = today.withDayOfMonth(today.lengthOfMonth());
+        var totals = mapper.aggregateStats(userId, today, today.plusDays(DEFAULT_REMIND_DAYS), monthEnd);
         MembershipStatsVO vo = new MembershipStatsVO();
-        vo.setActiveCount(Math.toIntExact(entities.stream().filter(e -> STATUS_ACTIVE.equals(calcStatus(e, today))).count()));
-        vo.setExpiringCount(Math.toIntExact(entities.stream().filter(e -> STATUS_EXPIRING.equals(calcStatus(e, today))).count()));
-        vo.setExpiredCount(Math.toIntExact(entities.stream().filter(e -> STATUS_EXPIRED.equals(calcStatus(e, today))).count()));
-        vo.setExpiringThisMonthCount(Math.toIntExact(entities.stream()
-                .filter(e -> !e.getExpiryDate().isBefore(today) && !e.getExpiryDate().isAfter(monthEnd)).count()));
-        vo.setMonthlyAmount(entities.stream()
-                .filter(e -> !e.getExpiryDate().isBefore(today))
-                .filter(e -> e.getStartDate() == null || !e.getStartDate().isAfter(today))
-                .map(MembershipRecordEntity::getMonthlyAmount)
-                .filter(amount -> amount != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add));
+        vo.setActiveCount(Math.toIntExact(totals.getActiveCount()));
+        vo.setExpiringCount(Math.toIntExact(totals.getExpiringCount()));
+        vo.setExpiredCount(Math.toIntExact(totals.getExpiredCount()));
+        vo.setExpiringThisMonthCount(Math.toIntExact(totals.getExpiringThisMonthCount()));
+        vo.setMonthlyAmount(totals.getMonthlyAmount());
         return vo;
     }
 

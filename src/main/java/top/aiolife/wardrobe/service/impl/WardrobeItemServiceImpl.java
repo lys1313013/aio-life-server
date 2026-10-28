@@ -17,6 +17,7 @@ import top.aiolife.wardrobe.pojo.vo.WardrobeStatsVO;
 import top.aiolife.wardrobe.service.IWardrobeItemService;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -103,53 +104,27 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
     }
 
     @Override
+    @Transactional(readOnly = true)
     public WardrobeStatsVO getStats(Long userId) {
-        List<WardrobeItemEntity> items = this.lambdaQuery()
-                .eq(WardrobeItemEntity::getUserId, userId)
-                .list();
-
+        var aggregate = baseMapper.aggregateStats(userId);
         WardrobeStatsVO stats = new WardrobeStatsVO();
-        stats.setTotalCount(items.size());
+        stats.setTotalCount(Math.toIntExact(aggregate.totalCount()));
 
-        // 分类统计
+        // 仅合并数据库分类汇总行，保留原来的 Java 名称精确匹配规则。
         Map<String, Integer> categoryCount = new HashMap<>();
-        Map<Long, String> categoryNameMap = getCategoryNameMap(userId);
-        for (WardrobeItemEntity item : items) {
-            String name = categoryNameMap.getOrDefault(item.getCategoryId(), "未分类");
-            categoryCount.put(name, categoryCount.getOrDefault(name, 0) + 1);
+        for (var category : baseMapper.aggregateCategoryCounts(userId)) {
+            String name = category.categoryName() == null ? "未分类" : category.categoryName();
+            categoryCount.merge(name, Math.toIntExact(category.itemCount()), Math::addExact);
         }
         stats.setCategoryCount(categoryCount);
-
-        // 季节统计
-        Map<String, Integer> seasonCount = new HashMap<>();
-        seasonCount.put("春", 0);
-        seasonCount.put("夏", 0);
-        seasonCount.put("秋", 0);
-        seasonCount.put("冬", 0);
-        for (WardrobeItemEntity item : items) {
-            if (item.getSeason() != null) {
-                if (item.getSeason().contains("春")) seasonCount.put("春", seasonCount.get("春") + 1);
-                if (item.getSeason().contains("夏")) seasonCount.put("夏", seasonCount.get("夏") + 1);
-                if (item.getSeason().contains("秋")) seasonCount.put("秋", seasonCount.get("秋") + 1);
-                if (item.getSeason().contains("冬")) seasonCount.put("冬", seasonCount.get("冬") + 1);
-            }
-        }
-        stats.setSeasonCount(seasonCount);
-
-        // 价格统计
-        BigDecimal totalValue = BigDecimal.ZERO;
-        for (WardrobeItemEntity item : items) {
-            if (item.getPrice() != null) {
-                totalValue = totalValue.add(item.getPrice());
-            }
-        }
-        stats.setTotalValue(totalValue);
-        if (!items.isEmpty()) {
-            stats.setAvgPrice(totalValue.divide(BigDecimal.valueOf(items.size()), 2, BigDecimal.ROUND_HALF_UP));
-        } else {
-            stats.setAvgPrice(BigDecimal.ZERO);
-        }
-
+        stats.setSeasonCount(Map.of(
+                "春", Math.toIntExact(aggregate.springCount()),
+                "夏", Math.toIntExact(aggregate.summerCount()),
+                "秋", Math.toIntExact(aggregate.autumnCount()),
+                "冬", Math.toIntExact(aggregate.winterCount())));
+        stats.setTotalValue(aggregate.totalValue());
+        stats.setAvgPrice(aggregate.totalCount() == 0 ? BigDecimal.ZERO
+                : aggregate.totalValue().divide(BigDecimal.valueOf(aggregate.totalCount()), 2, RoundingMode.HALF_UP));
         return stats;
     }
 
@@ -163,7 +138,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         entity.setPrice(req.getPrice());
         entity.setFileId(req.getFileId());
         entity.setSize(req.getSize());
-        entity.setMemo(req.getMemo());
+        entity.setRemark(req.getRemark());
         return entity;
     }
 
@@ -180,7 +155,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         vo.setPrice(entity.getPrice());
         vo.setFileId(entity.getFileId());
         vo.setSize(entity.getSize());
-        vo.setMemo(entity.getMemo());
+        vo.setRemark(entity.getRemark());
         vo.setCreateTime(entity.getCreateTime());
         return vo;
     }
