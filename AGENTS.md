@@ -1,6 +1,6 @@
 # AGENTS.md
 
-- 系统尚未正式上线，应用只维护当前数据结构和接口契约，不保留旧数据格式、旧客户端、旧参数或旧缓存的兼容分支。数据库结构变更必须同时更新全量初始化 SQL 和提供已有库可执行的增量脚本，并同步实体和两端调用方。此前清理历史 SQL 仅针对已整理的旧脚本，不代表后续停止维护增量迁移。
+- 系统尚未正式上线，应用只维护当前数据结构和接口契约，不保留旧数据格式、旧客户端、旧参数或旧缓存的兼容分支。数据库结构变更必须提供已有库可执行的增量脚本，并同步实体和两端调用方；日常开发尽量不修改全量初始化 SQL，由用户在选定时间节点统一合并此前增量。此前清理历史 SQL 仅针对已整理的旧脚本，不代表后续停止维护增量迁移。
 
 This file provides guidance to AI coding agents when working with code in this repository.
 
@@ -70,6 +70,8 @@ mvn test -Dtest=TimeTrackerCategoryControllerIntegrationTest#testList_获取分�
 | `mcp` | MCP 协议支持：自定义注解驱动的 Tool 注册，含认证层 |
 | `core` | 公共组件：ApiResponse、异常处理、工具类、常量 |
 | `config` | 全局配置：Cache、CORS、JSON、MinIO、MyBatis Plus、Neo4j、Redis、Sa-Token |
+
+公共 Redis 封装放在 `core/redis`；`core` 不依赖业务模块的实体、Mapper 或服务。系统菜单权威读取由 `system/service/MenuAccessReader` 负责，二级锁菜单解析与业务映射归 `sso/service/SecondaryLockMenuResolver`、`SecondaryLockPolicy`；这些授权读取直接查询当前数据，不增加本地或 Redis 缓存。该依赖边界由 `CoreDependencyArchitectureTest` 检查。
 
 LLM 会话、消息和模型密钥业务接口、数据表及实体 Mapper 已移除，不恢复已取消的业务。
 
@@ -224,9 +226,9 @@ class MyControllerTest extends BaseIntegrationTest {
 
 ## 数据库初始化与增量升级
 
-SQL 编写必须遵守 [SQL 脚本规范](docs/SQL脚本规范.md)：表和每个字段必须有中文 COMMENT，索引和约束说明用途。结构变更同时更新全量结构并提供增量脚本；清理历史脚本不取消后续增量维护。
+SQL 编写必须遵守 [SQL 脚本规范](docs/SQL脚本规范.md)：表和每个字段必须有中文 COMMENT，索引和约束说明用途。结构变更必须提供可执行的增量脚本，日常开发尽量不修改全量初始化 SQL，由用户在选定时间节点统一合并；清理历史脚本不取消后续增量维护。
 
-- `sql/1_init_table/2026-08-18_init_all_tables.sql`：唯一的当前完整结构。
+- `sql/1_init_table/2026-08-18_init_all_tables.sql`：最近一次合并的全量初始化基线；当前结构还包括尚未合并的增量。
 - `sql/migrations/`：后续已有库增量脚本，按 `YYYY-MM-DD_NN_description.sql` 命名，说明适用结构、依赖顺序、数据影响及重跑策略。
 - `sql/2_ini_data/`：业务初始化数据。
 - `sql/menu/2_ini_data/`：菜单初始化数据，先运行 `2_menu.sql`，说明见 [菜单 SQL](sql/menu/README.md)。
@@ -235,7 +237,7 @@ SQL 编写必须遵守 [SQL 脚本规范](docs/SQL脚本规范.md)：表和每�
 
 会员平台预设统一维护在 `sql/2_ini_data/2026-10-20_membership_providers.sql`；保留初始化的补缺、幂等语义，不覆盖管理员日常修改。
 
-全量表结构说明见 `docs/数据库表结构.md`（由建表脚本合并生成）。
+当前表结构说明见 `docs/数据库表结构.md`，随增量变更同步维护。
 
 ## Git 工作流
 
