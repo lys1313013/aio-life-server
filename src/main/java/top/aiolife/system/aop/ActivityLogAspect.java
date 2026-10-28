@@ -12,6 +12,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.HandlerMapping;
@@ -20,7 +21,9 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.util.LogSafeException;
 import top.aiolife.sso.pojo.req.LoginReq;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
+import top.aiolife.sso.util.LoginAuditContext;
 import top.aiolife.sso.util.RequestLoginContext;
+import top.aiolife.sso.wechat.WechatLoginVO;
 import top.aiolife.system.filter.ActivityLogTimingFilter;
 import top.aiolife.system.pojo.entity.ActivityLogEntity;
 import top.aiolife.system.service.ActivityLogParameters;
@@ -35,7 +38,8 @@ public class ActivityLogAspect {
     private final ActivityLogRecorder recorder;
     private final ActivityLogParameters parameters;
 
-    @Around("@within(org.springframework.web.bind.annotation.RestController) && execution(public * *(..))")
+    @Around("@within(org.springframework.web.bind.annotation.RestController) && execution(public * *(..))"
+            + " && !@annotation(org.springframework.web.bind.annotation.ModelAttribute)")
     public Object around(ProceedingJoinPoint point) throws Throwable {
         if (!(RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes)) return point.proceed();
         var request = attributes.getRequest();
@@ -43,7 +47,8 @@ public class ActivityLogAspect {
         LocalDateTime startedTime = request.getAttribute(ActivityLogTimingFilter.START_TIME) instanceof LocalDateTime time
                 ? time : LocalDateTime.now(ZoneId.of("Asia/Shanghai")).truncatedTo(ChronoUnit.MILLIS);
         String path = request.getRequestURI().substring(request.getContextPath().length());
-        boolean login = "/auth/login".equals(path);
+        String loginMethod = "POST".equals(request.getMethod()) ? loginMethod(path) : null;
+        boolean login = loginMethod != null;
         boolean logout = "/auth/logout".equals(path);
         // 会话心跳、鉴权辅助、文件读取不属于用户主动操作。
         if ("OPTIONS".equals(request.getMethod()) || path.startsWith("/actuator/") || path.equals("/auth/info") || path.equals("/auth/codes") || path.equals("/user/info")
@@ -62,7 +67,7 @@ public class ActivityLogAspect {
         if (!login && row.getUserId() == null) return point.proceed();
         row.fillCreateCommonField(row.getUserId());
         row.setLogType(login || logout ? "ACCESS" : "OPERATION");
-        row.setAccessType(login ? "账密登录" : logout ? "登出" : null);
+        row.setAccessType(login ? loginMethod : logout ? "登出" : null);
         // 来源地址使用直连/反向代理解析后的地址，避免直接信任客户端伪造的 XFF。
         row.setIpAddress(request.getRemoteAddr());
         Object pattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
@@ -84,13 +89,22 @@ public class ActivityLogAspect {
         }
         row.setFunctionItem(action(request.getMethod(), point.getSignature().getName()));
         row.setSuccess(false);
+        boolean recordLog = true;
         try {
             Object result = point.proceed();
             row.setSuccess(!(result instanceof ApiResponse<?> response) || ResponseCodeConst.SUCCESS == response.getCode());
-            if (login && result instanceof ApiResponse<?> response && response.getData() instanceof UserLoginVO user) {
-                row.setUserId(user.getId());
-                row.setCreateUser(user.getId());
-                row.setUpdateUser(user.getId());
+            if (login && row.getSuccess()) {
+                // 微信待注册只返回临时票据，HTTP/业务成功不等于已经登录。
+                if (result instanceof ApiResponse<?> response && response.getData() instanceof UserLoginVO user
+                        && user.getId() != null && StringUtils.hasText(user.getAccessToken())
+                        && (!(user instanceof WechatLoginVO wechat) || "LOGGED_IN".equals(wechat.getStatus()))) {
+                    row.setUserId(user.getId());
+                    row.setCreateUser(user.getId());
+                    row.setUpdateUser(user.getId());
+                    recordLog = !LoginAuditContext.isResultReplayed();
+                } else {
+                    recordLog = false;
+                }
             }
             return result;
         } finally {
@@ -100,12 +114,22 @@ public class ActivityLogAspect {
                 else log.warn("操作日志耗时超出范围");
             }
             try {
-                recorder.record(row, request.getHeader("X-Page-Path"), request.getHeader("User-Agent"));
+                if (recordLog) recorder.record(row, request.getHeader("X-Page-Path"), request.getHeader("User-Agent"));
             } catch (Exception error) {
                 // 日志库不可用时不改变原业务返回；保留可监测的服务端错误。
                 log.error("行为日志写入失败，type={}, path={}", row.getLogType(), row.getRequestPath(), LogSafeException.withoutMessages(error));
             }
         }
+    }
+
+    private static String loginMethod(String path) {
+        return switch (path) {
+            case "/auth/login" -> "账密登录";
+            case "/auth/wechat/mini/login", "/auth/wechat/mini/register", "/auth/wechat/mini/bind" -> "微信登录";
+            case "/auth/wechat/web/exchange" -> "微信扫码登录";
+            case "/auth/qr-login/consume" -> "App 扫码登录";
+            default -> null;
+        };
     }
 
     static String action(String method, String name) {

@@ -11,6 +11,7 @@ import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
 import top.aiolife.sso.service.AccountStatusGuard;
 import top.aiolife.sso.service.LoginSessionService;
+import top.aiolife.sso.util.LoginAuditContext;
 
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -84,6 +85,7 @@ public class QrLoginService {
         requireAuthorizer(ticket);
         if (ticket.status().equals("CONSUMED")) {
             if (StpUtil.getLoginIdByToken(ticket.result().getAccessToken()) == null) throw expired();
+            LoginAuditContext.markResultReplayed();
             return ticket.result();
         }
         // 先抢占且永不重新开放签发。进程崩溃时让票据自然过期，避免重复会话。
