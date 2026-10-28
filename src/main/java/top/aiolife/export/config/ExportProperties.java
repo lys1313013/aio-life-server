@@ -15,8 +15,8 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "aio.life.server.data-export")
 public class ExportProperties {
-    @Value("${AIO_LIFE_DATA_EXPORT_ENABLED:false}")
-    private boolean enabled = false;
+    @Value("${AIO_LIFE_DATA_EXPORT_ENABLED:true}")
+    private boolean enabled = true;
 
     private int monthlyLimit = 5;
     private int batchSize = 500;
