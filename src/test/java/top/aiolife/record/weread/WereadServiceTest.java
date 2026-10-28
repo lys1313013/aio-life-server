@@ -124,12 +124,15 @@ class WereadServiceTest {
     void sync_分页未推进时失败且不更新成功时间() throws Exception {
         when(mapper.selectOne(any())).thenReturn(connection());
         when(client.call(anyString(),eq("/shelf/sync"),any())).thenReturn(json.readTree("{\"books\":[]}"));
-        when(client.call(anyString(),eq("/user/notebooks"),any())).thenReturn(json.readTree("{\"hasMore\":1,\"books\":[{\"bookId\":\"1\",\"sortOrder\":3}]}"));
+        when(client.call(anyString(),eq("/user/notebooks"),any())).thenReturn(json.readTree("{\"hasMore\":1,\"books\":[{\"bookId\":\"1\",\"sort\":3}]}"));
         try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            assertThrows(IllegalStateException.class, () -> service.sync("annually"));
+            var error = assertThrows(IllegalStateException.class, () -> service.sync("annually"));
+            assertEquals("笔记本分页未推进，请重试", error.getMessage());
             verify(mapper,never()).update(isNull(),any());
             verify(client,times(2)).call(anyString(),eq("/user/notebooks"),any());
+            verify(client).call("wrk-test", "/user/notebooks", Map.of("count", 100));
+            verify(client).call("wrk-test", "/user/notebooks", Map.of("count", 100, "lastSort", 3L));
         }
     }
 
