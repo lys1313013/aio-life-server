@@ -15,7 +15,7 @@ import top.aiolife.record.pojo.vo.DoubanAccountVO;
 import top.aiolife.record.pojo.vo.UserBindVO;
 import top.aiolife.record.service.IUserBindService;
 import top.aiolife.record.service.IWereadService;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 
 /**
  * 用户第三方账号绑定接口

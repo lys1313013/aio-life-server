@@ -22,7 +22,7 @@ import top.aiolife.export.service.ExportException;
 import top.aiolife.export.service.ExportScope;
 import top.aiolife.export.service.ExportTime;
 import top.aiolife.export.storage.ExportArtifactStore;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.system.pojo.entity.SysMenuEntity;
 
@@ -40,10 +40,10 @@ class ExportSecurityTest {
         var dataset = dataset();
         assertDoesNotThrow(() -> guard.check(7L, List.of(dataset), true));
         var parent = security.menus().get(1);
-        parent.setStatus(0);
-        parent.setMobileStatus(0);
+        parent.setWebIsEnabled(0);
+        parent.setMobileIsEnabled(0);
         assertThrows(ExportException.class, () -> guard.check(7L, List.of(dataset), true));
-        parent.setStatus(1);
+        parent.setWebIsEnabled(1);
         parent.setRoles("admin");
         assertThrows(ExportException.class, () -> guard.check(7L, List.of(dataset), true));
     }
@@ -124,8 +124,8 @@ class ExportSecurityTest {
         menu.setId(id);
         menu.setParentId(parent);
         menu.setPath(path);
-        menu.setStatus(1);
-        menu.setMobileStatus(1);
+        menu.setWebIsEnabled(1);
+        menu.setMobileIsEnabled(1);
         return menu;
     }
 

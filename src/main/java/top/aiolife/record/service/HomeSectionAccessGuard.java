@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
-import top.aiolife.core.cache.SecondaryLockPolicy;
+import top.aiolife.sso.service.SecondaryLockPolicy;
 import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.system.service.MenuClient;
 import top.aiolife.system.service.MenuVisualService;

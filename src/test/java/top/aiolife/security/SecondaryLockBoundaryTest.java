@@ -6,13 +6,13 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import top.aiolife.core.cache.SecondaryLockMenuCache;
-import top.aiolife.core.cache.MenuDataCache;
-import top.aiolife.core.cache.SecondaryLockPolicy;
+import top.aiolife.sso.service.SecondaryLockMenuResolver;
+import top.aiolife.system.service.MenuAccessReader;
+import top.aiolife.sso.service.SecondaryLockPolicy;
 import top.aiolife.core.exception.SecondaryLockRequiredException;
 import top.aiolife.mcp.invoker.McpToolInvoker;
 import top.aiolife.mcp.registry.McpToolRegistry;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
 import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
 import top.aiolife.sso.pojo.entity.UserSecondaryLockMenuEntity;
@@ -94,9 +94,9 @@ class SecondaryLockBoundaryTest {
             locked.setMenuId(1L);
             when(locks.selectForAccessControl(11L)).thenReturn(List.of(locked));
             when(menus.selectAllForAccessControl()).thenReturn(List.of(menu(1L, null, route.getValue())));
-            var cache = new SecondaryLockMenuCache(new MenuDataCache(locks, menus));
+            var resolver = new SecondaryLockMenuResolver(locks, new MenuAccessReader(menus));
             var redis = mock(RedisUtil.class);
-            var interceptor = new SecondaryLockInterceptor(cache, redis, new ObjectMapper());
+            var interceptor = new SecondaryLockInterceptor(resolver, redis, new ObjectMapper());
             try (var identity = mockStatic(RequestLoginContext.class)) {
                 identity.when(RequestLoginContext::userIdOrNull).thenReturn(11L);
                 var response = new MockHttpServletResponse();
@@ -118,12 +118,12 @@ class SecondaryLockBoundaryTest {
         when(locks.selectForAccessControl(anyLong())).thenReturn(List.of(parent, child));
         when(menus.selectAllForAccessControl()).thenReturn(List.of(menu(1L, null, "/record"),
                 menu(2L, 1L, "/my-hub/honor")));
-        var cache = new SecondaryLockMenuCache(new MenuDataCache(locks, menus));
-        assertEquals(Set.of("/record", "/my-hub/honor"), cache.findMatchedPaths(11L, "/honorRecords/7"));
-        assertEquals(Set.of("/record", "/my-hub/honor"), cache.findLockedMenus(11L, Set.of("/my-hub/honor")));
+        var resolver = new SecondaryLockMenuResolver(locks, new MenuAccessReader(menus));
+        assertEquals(Set.of("/record", "/my-hub/honor"), resolver.findMatchedPaths(11L, "/honorRecords/7"));
+        assertEquals(Set.of("/record", "/my-hub/honor"), resolver.findLockedMenus(11L, Set.of("/my-hub/honor")));
         var redis = mock(RedisUtil.class);
         when(redis.hasKey("secondary:unlock:11:/record")).thenReturn(true);
-        var guard = new SecondaryLockGuard(cache, redis);
+        var guard = new SecondaryLockGuard(resolver, redis);
         assertThrows(SecondaryLockRequiredException.class, () -> guard.checkMenus(11L, "/my-hub/honor"));
         when(redis.hasKey("secondary:unlock:11:/my-hub/honor")).thenReturn(true);
         assertDoesNotThrow(() -> guard.checkMenus(11L, "/my-hub/honor"));
@@ -132,9 +132,9 @@ class SecondaryLockBoundaryTest {
     @Test
     void interceptor_normalizesEncodedAndMatrixPathsAndReturnsActualMenu() throws Exception {
         for (String uri : List.of("/api/tasks", "/api/%74asks", "/api/tasks;x=1")) {
-            var cache = mock(SecondaryLockMenuCache.class); var redis = mock(RedisUtil.class);
-            when(cache.findMatchedPaths(11L, "/tasks")).thenReturn(Set.of("/task/todo"));
-            var interceptor = new SecondaryLockInterceptor(cache, redis, new ObjectMapper());
+            var resolver = mock(SecondaryLockMenuResolver.class); var redis = mock(RedisUtil.class);
+            when(resolver.findMatchedPaths(11L, "/tasks")).thenReturn(Set.of("/task/todo"));
+            var interceptor = new SecondaryLockInterceptor(resolver, redis, new ObjectMapper());
             try (var identity = mockStatic(RequestLoginContext.class)) {
                 identity.when(RequestLoginContext::userIdOrNull).thenReturn(11L);
                 var response = new MockHttpServletResponse();

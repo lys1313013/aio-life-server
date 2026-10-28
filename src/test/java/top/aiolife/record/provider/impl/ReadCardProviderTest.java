@@ -11,7 +11,7 @@ import top.aiolife.record.client.WeReadClient;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.vo.DashboardCardVO;
 import top.aiolife.record.service.IUserBindService;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 
 import java.time.LocalDate;
 import java.time.ZoneId;

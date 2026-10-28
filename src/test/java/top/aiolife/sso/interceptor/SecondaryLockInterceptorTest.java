@@ -8,8 +8,8 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import top.aiolife.core.cache.SecondaryLockMenuCache;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.sso.service.SecondaryLockMenuResolver;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.util.RequestLoginContext;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,7 +18,7 @@ import static org.mockito.Mockito.*;
 class SecondaryLockInterceptorTest {
     @Test
     void testLock_复用认证身份后仍检查菜单锁及解锁状态() throws Exception {
-        var menu = mock(SecondaryLockMenuCache.class);
+        var menu = mock(SecondaryLockMenuResolver.class);
         var redis = mock(RedisUtil.class);
         var interceptor = new SecondaryLockInterceptor(menu, redis, new ObjectMapper());
         var request = new MockHttpServletRequest("GET", "/api/timeRecord/recommendNext");

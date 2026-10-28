@@ -14,7 +14,7 @@ import top.aiolife.record.pojo.req.UserBindCreateReq;
 import top.aiolife.record.pojo.req.UserBindUpdateReq;
 import top.aiolife.record.service.IUserBindService;
 import top.aiolife.record.service.IWereadService;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;

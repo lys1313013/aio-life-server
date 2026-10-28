@@ -12,7 +12,7 @@ import top.aiolife.record.notification.*;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.leetcode.*;
 import top.aiolife.record.service.*;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import java.time.LocalDate;

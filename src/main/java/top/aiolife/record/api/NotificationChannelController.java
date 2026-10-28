@@ -16,7 +16,7 @@ import top.aiolife.record.pojo.vo.FeishuChannelConfigVO;
 import top.aiolife.record.pojo.vo.FeishuRecipientListVO;
 import top.aiolife.record.pojo.vo.NotificationPreferenceVO;
 import top.aiolife.record.service.FeishuNotificationService;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;

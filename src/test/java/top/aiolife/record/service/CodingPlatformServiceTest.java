@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
-import top.aiolife.core.cache.SecondaryLockPolicy;
+import top.aiolife.sso.service.SecondaryLockPolicy;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 
 import java.util.Set;

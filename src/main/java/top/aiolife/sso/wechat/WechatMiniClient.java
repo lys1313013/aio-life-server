@@ -14,7 +14,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.core.lock.DistributedLockExecutor;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.system.service.WechatSystemConfigService;
 
 import java.io.IOException;

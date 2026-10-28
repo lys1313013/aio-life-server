@@ -3,7 +3,7 @@ package top.aiolife.record.notification;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import top.aiolife.core.lock.DistributedLockExecutor;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;

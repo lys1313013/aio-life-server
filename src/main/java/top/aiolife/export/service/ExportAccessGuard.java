@@ -10,11 +10,11 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import top.aiolife.core.cache.SecondaryLockPolicy;
+import top.aiolife.sso.service.SecondaryLockPolicy;
 import top.aiolife.core.exception.SecondaryLockRequiredException;
 import top.aiolife.export.dataset.ExportDataset;
 import top.aiolife.export.mapper.ExportSecurityMapper;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.system.pojo.entity.SysMenuEntity;
@@ -112,7 +112,7 @@ public class ExportAccessGuard {
         Set<Long> visited = new HashSet<>();
         SysMenuEntity cursor = leaf;
         while (cursor != null && visited.add(cursor.getId())) {
-            if (!Integer.valueOf(1).equals(mobile ? cursor.getMobileStatus() : cursor.getStatus())
+            if (!Integer.valueOf(1).equals(mobile ? cursor.getMobileIsEnabled() : cursor.getWebIsEnabled())
                     || !allowedRole(cursor.getRoles(), roles)) return false;
             if (cursor.getParentId() == null || cursor.getParentId() == 0L) return true;
             cursor = menus.get(cursor.getParentId());

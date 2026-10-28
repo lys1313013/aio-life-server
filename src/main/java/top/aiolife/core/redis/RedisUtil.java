@@ -1,4 +1,4 @@
-package top.aiolife.record.util;
+package top.aiolife.core.redis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -30,12 +30,11 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import top.aiolife.bankcard.mapper.BankCardFileMapper;
 import top.aiolife.config.SaTokenConfig;
-import top.aiolife.core.cache.SecondaryLockMenuCache;
 import top.aiolife.core.exception.ExceptionHandle;
 import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.service.FilePreviewGuard;
 import top.aiolife.record.service.IMailService;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.interceptor.ApiKeyInterceptor;
 import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
 import top.aiolife.sso.interceptor.UserLastActiveInterceptor;
@@ -102,7 +101,7 @@ class CredentialRevocationTest {
         redis = mock(RedisUtil.class);
         var implementation = new UserServiceImpl(userMapper, apiKeyMapper, mock(LoginSessionService.class),
                 mock(LoginLogMapper.class), mock(IMailService.class), redis,
-                mock(UserSecondaryLockMenuMapper.class), mock(SecondaryLockMenuCache.class),
+                mock(UserSecondaryLockMenuMapper.class), mock(SecondaryLockMenuResolver.class),
                 mock(UserAvatarFileService.class));
         var proxy = new ProxyFactory(implementation);
         proxy.setProxyTargetClass(true);

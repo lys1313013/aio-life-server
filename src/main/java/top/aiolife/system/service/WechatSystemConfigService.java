@@ -12,7 +12,7 @@ import org.springframework.util.StringUtils;
 import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.record.notification.NotificationCryptoService;
 import top.aiolife.record.notification.WechatSubscriptionProperties;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.wechat.WechatMiniProperties;

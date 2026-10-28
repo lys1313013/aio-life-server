@@ -2,9 +2,8 @@ package top.aiolife.sso.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import top.aiolife.core.cache.SecondaryLockMenuCache;
 import top.aiolife.record.service.IMailService;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
 import top.aiolife.sso.mapper.ApiKeyMapper;
 import top.aiolife.sso.mapper.LoginLogMapper;
@@ -31,7 +30,7 @@ class SecondaryPasswordTest {
     void setup() {
         mapper = mock(UserMapper.class);
         redis = mock(RedisUtil.class);
-        var menus = mock(SecondaryLockMenuCache.class);
+        var menus = mock(SecondaryLockMenuResolver.class);
         when(menus.findMatchedPaths(1L, "/finance")).thenReturn(Set.of("/finance"));
         service = new UserServiceImpl(mapper, mock(ApiKeyMapper.class), mock(LoginSessionService.class),
                 mock(LoginLogMapper.class), mock(IMailService.class), redis,

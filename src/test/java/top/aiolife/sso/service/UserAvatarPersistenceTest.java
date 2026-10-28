@@ -11,11 +11,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionTemplate;
-import top.aiolife.core.cache.SecondaryLockMenuCache;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.record.mapper.IFileMapper;
 import top.aiolife.record.service.IMailService;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.mapper.*;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.service.impl.UserServiceImpl;
@@ -56,7 +55,7 @@ class UserAvatarPersistenceTest {
         var minio = new MinioUtil(); ReflectionTestUtils.setField(minio,"serveBaseUrl","https://example.test/api");
         users = new UserServiceImpl(session.getMapper(UserMapper.class), mock(ApiKeyMapper.class), mock(LoginSessionService.class),
             mock(LoginLogMapper.class), mock(IMailService.class), mock(RedisUtil.class), mock(UserSecondaryLockMenuMapper.class),
-            mock(SecondaryLockMenuCache.class), new UserAvatarFileService(session.getMapper(IFileMapper.class), minio));
+            mock(SecondaryLockMenuResolver.class), new UserAvatarFileService(session.getMapper(IFileMapper.class), minio));
         tx = new TransactionTemplate(new DataSourceTransactionManager(source));
     }
     private UserEntity update(String id) { var e = new UserEntity(); e.setId(42L); e.setAvatarFileId(id); return e; }

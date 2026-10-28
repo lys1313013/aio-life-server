@@ -11,10 +11,10 @@ import org.springframework.http.server.PathContainer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.util.ServletRequestPathUtils;
-import top.aiolife.core.cache.SecondaryLockMenuCache;
+import top.aiolife.sso.service.SecondaryLockMenuResolver;
 import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -38,7 +38,7 @@ public class SecondaryLockInterceptor implements HandlerInterceptor {
     private static final int MAX_FAIL_COUNT = 5;
     private static final long FAIL_LOCK_MINUTES = 10;
 
-    private final SecondaryLockMenuCache menuCache;
+    private final SecondaryLockMenuResolver menuResolver;
     private final RedisUtil redisUtil;
     private final ObjectMapper objectMapper;
 
@@ -58,7 +58,7 @@ public class SecondaryLockInterceptor implements HandlerInterceptor {
                         ? segment.valueToMatch() : element.value())
                 .collect(Collectors.joining());
         if (request.getContextPath().isEmpty() && path.startsWith("/api/")) path = path.substring(4);
-        String lockedMenu = menuCache.findMatchedPaths(userId, path).stream()
+        String lockedMenu = menuResolver.findMatchedPaths(userId, path).stream()
                 .filter(menu -> !redisUtil.hasKey(unlockKey(userId, menu))).findFirst().orElse(null);
         if (lockedMenu == null) return true;
 

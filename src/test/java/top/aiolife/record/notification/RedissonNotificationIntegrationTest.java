@@ -12,7 +12,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.record.autotask.NotificationRetryTask;
 import top.aiolife.record.service.FeishuNotificationService;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.pojo.entity.UserEntity;
 
 import java.util.*;

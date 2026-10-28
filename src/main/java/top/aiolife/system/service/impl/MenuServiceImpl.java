@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import top.aiolife.core.cache.MenuDataCache;
+import top.aiolife.system.service.MenuAccessReader;
 import top.aiolife.system.mapper.ISysMenuMapper;
 import top.aiolife.system.pojo.entity.SysMenuEntity;
 import top.aiolife.system.pojo.req.MenuSaveReq;
@@ -43,7 +43,7 @@ public class MenuServiceImpl implements IMenuService {
     private final ISysMenuMapper sysMenuMapper;
 
     private final ObjectMapper objectMapper;
-    private final MenuDataCache menuDataCache;
+    private final MenuAccessReader menuAccessReader;
 
     @Override
     public List<MenuRouteVO> getAccessibleMenuTree(List<String> roles, MenuClient client) {
@@ -65,7 +65,7 @@ public class MenuServiceImpl implements IMenuService {
 
     private List<SysMenuEntity> accessibleMenus(List<String> roles, MenuClient client) {
         List<String> roleList = roles == null ? List.of() : roles;
-        List<SysMenuEntity> enabled = menuDataCache.getEnabledMenus(client).stream()
+        List<SysMenuEntity> enabled = menuAccessReader.getEnabledMenus(client).stream()
                 .filter(m -> isRoleAllowed(m.getRoles(), roleList)).toList();
         Map<Long, SysMenuEntity> byId = enabled.stream()
                 .collect(Collectors.toMap(SysMenuEntity::getId, m -> m));
@@ -155,9 +155,9 @@ public class MenuServiceImpl implements IMenuService {
     }
 
     @Override
-    public MenuAdminVO updateStatus(long id, int status, long userId) throws Exception {
-        if (status != 0 && status != 1) {
-            throw new IllegalArgumentException("status 只能为 0 或 1");
+    public MenuAdminVO updateStatus(long id, int webIsEnabled, long userId) throws Exception {
+        if (webIsEnabled != 0 && webIsEnabled != 1) {
+            throw new IllegalArgumentException("webIsEnabled 只能为 0 或 1");
         }
         SysMenuEntity exist = sysMenuMapper.selectById(id);
         if (exist == null || !Objects.equals(exist.getIsDeleted(), 0)) {
@@ -167,21 +167,21 @@ public class MenuServiceImpl implements IMenuService {
         SysMenuEntity patch = new SysMenuEntity();
         patch.fillUpdateCommonField(userId);
         sysMenuMapper.update(null, new LambdaUpdateWrapper<SysMenuEntity>()
-                .eq(SysMenuEntity::getId, id).set(SysMenuEntity::getStatus, status)
+                .eq(SysMenuEntity::getId, id).set(SysMenuEntity::getWebIsEnabled, webIsEnabled)
                 .set(SysMenuEntity::getUpdateUser, patch.getUpdateUser())
                 .set(SysMenuEntity::getUpdateTime, patch.getUpdateTime()));
         return toAdminVo(sysMenuMapper.selectById(id));
     }
 
     @Override
-    public MenuAdminVO updateMobileStatus(long id, int status, long userId) throws Exception {
-        if (status != 0 && status != 1) throw new IllegalArgumentException("status 只能为 0 或 1");
+    public MenuAdminVO updateMobileStatus(long id, int webIsEnabled, long userId) throws Exception {
+        if (webIsEnabled != 0 && webIsEnabled != 1) throw new IllegalArgumentException("webIsEnabled 只能为 0 或 1");
         SysMenuEntity exist = sysMenuMapper.selectById(id);
         if (exist == null || !Objects.equals(exist.getIsDeleted(), 0)) throw new IllegalArgumentException("菜单不存在");
         SysMenuEntity patch = new SysMenuEntity();
         patch.fillUpdateCommonField(userId);
         sysMenuMapper.update(null, new LambdaUpdateWrapper<SysMenuEntity>()
-                .eq(SysMenuEntity::getId, id).set(SysMenuEntity::getMobileStatus, status)
+                .eq(SysMenuEntity::getId, id).set(SysMenuEntity::getMobileIsEnabled, webIsEnabled)
                 .set(SysMenuEntity::getUpdateUser, patch.getUpdateUser())
                 .set(SysMenuEntity::getUpdateTime, patch.getUpdateTime()));
         return toAdminVo(sysMenuMapper.selectById(id));
@@ -193,7 +193,7 @@ public class MenuServiceImpl implements IMenuService {
         if (exist == null || !Objects.equals(exist.getIsDeleted(), 0)) {
             throw new IllegalArgumentException("菜单不存在");
         }
-        exist.setSort(sort);
+        exist.setSortOrder(sort);
         exist.fillUpdateCommonField(userId);
         sysMenuMapper.updateById(exist);
         return toAdminVo(exist);
@@ -229,7 +229,7 @@ public class MenuServiceImpl implements IMenuService {
     private List<SysMenuEntity> listAllMenus() {
         LambdaQueryWrapper<SysMenuEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(SysMenuEntity::getIsDeleted, 0);
-        wrapper.orderByAsc(SysMenuEntity::getSort);
+        wrapper.orderByAsc(SysMenuEntity::getSortOrder);
         wrapper.orderByAsc(SysMenuEntity::getId);
         return sysMenuMapper.selectList(wrapper);
     }
@@ -247,16 +247,16 @@ public class MenuServiceImpl implements IMenuService {
         return sysMenuMapper.selectCount(wrapper) > 0;
     }
 
-    private void validateStatus(Integer status) {
-        if (status != null && status != 0 && status != 1) throw new IllegalArgumentException("启用状态只能为 0 或 1");
+    private void validateStatus(Integer webIsEnabled) {
+        if (webIsEnabled != null && webIsEnabled != 0 && webIsEnabled != 1) throw new IllegalArgumentException("启用状态只能为 0 或 1");
     }
 
     private void validateReq(MenuSaveReq req, boolean isUpdate) {
         if (req == null) {
             throw new IllegalArgumentException("请求体不能为空");
         }
-        validateStatus(req.getStatus());
-        validateStatus(req.getMobileStatus());
+        validateStatus(req.getWebIsEnabled());
+        validateStatus(req.getMobileIsEnabled());
         if (!isUpdate) {
             if (!StringUtils.hasText(req.getPath())) {
                 throw new IllegalArgumentException("path 不能为空");
@@ -306,13 +306,13 @@ public class MenuServiceImpl implements IMenuService {
         entity.setComponent(StringUtils.hasText(req.getComponent()) ? req.getComponent().trim() : null);
         entity.setRedirect(StringUtils.hasText(req.getRedirect()) ? req.getRedirect().trim() : null);
         entity.setRoles(StringUtils.hasText(req.getRoles()) ? req.getRoles().trim() : null);
-        entity.setSort(req.getSort() == null ? 0 : req.getSort());
-        if (req.getStatus() != null || entity.getStatus() == null) {
-            entity.setStatus(req.getStatus() == null ? 1 : req.getStatus());
+        entity.setSortOrder(req.getSortOrder() == null ? 0 : req.getSortOrder());
+        if (req.getWebIsEnabled() != null || entity.getWebIsEnabled() == null) {
+            entity.setWebIsEnabled(req.getWebIsEnabled() == null ? 1 : req.getWebIsEnabled());
         }
         // 局部更新时缺省字段不覆盖；新增时未指定则从 Web 状态初始化。
-        if (req.getMobileStatus() != null || entity.getMobileStatus() == null) {
-            entity.setMobileStatus(req.getMobileStatus() == null ? entity.getStatus() : req.getMobileStatus());
+        if (req.getMobileIsEnabled() != null || entity.getMobileIsEnabled() == null) {
+            entity.setMobileIsEnabled(req.getMobileIsEnabled() == null ? entity.getWebIsEnabled() : req.getMobileIsEnabled());
         }
         entity.setMeta(req.getMeta() == null ? null : objectMapper.writeValueAsString(req.getMeta()));
     }
@@ -324,7 +324,7 @@ public class MenuServiceImpl implements IMenuService {
             childrenMap.computeIfAbsent(pid, k -> new ArrayList<>()).add(entity);
         }
         for (List<SysMenuEntity> children : childrenMap.values()) {
-            children.sort(Comparator.comparing(SysMenuEntity::getSort).thenComparing(SysMenuEntity::getId));
+            children.sort(Comparator.comparing(SysMenuEntity::getSortOrder).thenComparing(SysMenuEntity::getId));
         }
 
         return buildChildren(0L, childrenMap);
@@ -351,7 +351,7 @@ public class MenuServiceImpl implements IMenuService {
             childrenMap.computeIfAbsent(pid, k -> new ArrayList<>()).add(entity);
         }
         for (List<SysMenuEntity> children : childrenMap.values()) {
-            children.sort(Comparator.comparing(SysMenuEntity::getSort).thenComparing(SysMenuEntity::getId));
+            children.sort(Comparator.comparing(SysMenuEntity::getSortOrder).thenComparing(SysMenuEntity::getId));
         }
 
         return buildAdminChildren(0L, childrenMap);
@@ -400,9 +400,9 @@ public class MenuServiceImpl implements IMenuService {
         vo.setRedirect(entity.getRedirect());
         vo.setMeta(readMeta(entity.getMeta()));
         vo.setRoles(entity.getRoles());
-        vo.setSort(entity.getSort());
-        vo.setStatus(entity.getStatus());
-        vo.setMobileStatus(entity.getMobileStatus());
+        vo.setSortOrder(entity.getSortOrder());
+        vo.setWebIsEnabled(entity.getWebIsEnabled());
+        vo.setMobileIsEnabled(entity.getMobileIsEnabled());
         return vo;
     }
 

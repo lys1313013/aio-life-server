@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import top.aiolife.support.CurrentSchema;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
@@ -19,7 +21,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.config.JsonConfig;
-import top.aiolife.core.cache.SecondaryLockPolicy;
+import top.aiolife.sso.service.SecondaryLockPolicy;
 import top.aiolife.record.mapper.LifeFootprintMapper;
 import top.aiolife.record.pojo.req.LifeFootprintSaveReq;
 import top.aiolife.record.service.LifeFootprintDates;
@@ -40,10 +42,7 @@ class LifeFootprintTest {
         var ds = new JdbcDataSource();
         ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds);
-        String full = Files.readString(Path.of("sql/1_init_table/2026-08-18_init_all_tables.sql"));
-        int start = full.indexOf("CREATE TABLE IF NOT EXISTS `life_footprint`");
-        String ddl = full.substring(start, full.indexOf(";", start));
-        jdbc.execute(ddl.substring(0, ddl.indexOf(" ENGINE=")));
+        jdbc.execute(CurrentSchema.h2Table("life_footprint"));
         var config = new MybatisConfiguration(); config.addMapper(LifeFootprintMapper.class);
         var factory = new MybatisSqlSessionFactoryBean(); factory.setDataSource(ds); factory.setConfiguration(config);
         service = new LifeFootprintService(new SqlSessionTemplate(factory.getObject()).getMapper(LifeFootprintMapper.class), mock(SystemRegionService.class));
@@ -53,7 +52,7 @@ class LifeFootprintTest {
         var req = new LifeFootprintSaveReq();
         req.setStartDate("2016-09-01"); req.setEndDate("2020-06-30");
         req.setRegionCode("110101001");
-        req.setPlaceName(" 示例住所 "); req.setAddress(" 示例地址 "); req.setNote(" 备注 ");
+        req.setPlaceName(" 示例住所 "); req.setAddress(" 示例地址 "); req.setRemark(" 备注 ");
         req.setLongitude(new BigDecimal("120.127128")); req.setLatitude(new BigDecimal("30.273297"));
         req.setCoordinateSystem("GCJ02");
         return req;
@@ -78,16 +77,16 @@ class LifeFootprintTest {
         var req = request(); var first = service.create(1, req);
         assertEquals(LocalDate.of(2016, 9, 1), first.getStartDate()); assertEquals(LocalDate.of(2020, 6, 30), first.getEndDate());
         assertEquals("110101001", first.getRegionCode());
-        assertEquals("示例住所", first.getPlaceName()); assertEquals("备注", first.getNote());
+        assertEquals("示例住所", first.getPlaceName()); assertEquals("备注", first.getRemark());
         req.setRegionCode(null);
-        req.setNote(null); req.setAddress(null); req.setEndDate("9999-12-31");
+        req.setRemark(null); req.setAddress(null); req.setEndDate("9999-12-31");
         service.update(1, first.getId(), req);
         var persisted = service.get(1, first.getId());
         assertNull(persisted.getRegionCode());
-        assertNull(persisted.getNote()); assertNull(persisted.getAddress()); assertEquals(LifeFootprintDates.PRESENT, persisted.getEndDate());
-        req.setNote("再次编辑");
+        assertNull(persisted.getRemark()); assertNull(persisted.getAddress()); assertEquals(LifeFootprintDates.PRESENT, persisted.getEndDate());
+        req.setRemark("再次编辑");
         service.update(1, first.getId(), req);
-        assertEquals("再次编辑", service.get(1, first.getId()).getNote());
+        assertEquals("再次编辑", service.get(1, first.getId()).getRemark());
         assertNotNull(jdbc.queryForObject("SELECT update_time FROM life_footprint WHERE id=?", Timestamp.class, first.getId()));
         service.delete(1, first.getId());
         assertTrue(service.list(1).isEmpty());

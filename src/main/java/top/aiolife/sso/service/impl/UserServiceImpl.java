@@ -26,11 +26,11 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import top.aiolife.core.cache.SecondaryLockMenuCache;
+import top.aiolife.sso.service.SecondaryLockMenuResolver;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.record.service.IMailService;
-import top.aiolife.record.util.RedisUtil;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.convertor.UserConvertor;
 import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
 import top.aiolife.sso.util.SecondaryPasswordPolicy;
@@ -76,7 +76,7 @@ public class UserServiceImpl implements IUserService {
     private final IMailService mailService;
     private final RedisUtil redisUtil;
     private final UserSecondaryLockMenuMapper lockMenuMapper;
-    private final SecondaryLockMenuCache secondaryLockMenuCache;
+    private final SecondaryLockMenuResolver secondaryLockMenuResolver;
     private final UserAvatarFileService avatarFiles;
 
     @Value("${aio.life.server.auth.code.interval-seconds:180}")
@@ -605,7 +605,7 @@ public class UserServiceImpl implements IUserService {
         }
         String path = menuPath.split("\\?", 2)[0];
         if (path.startsWith("/api/")) path = path.substring(4);
-        Set<String> paths = secondaryLockMenuCache.findMatchedPaths(userId, path);
+        Set<String> paths = secondaryLockMenuResolver.findMatchedPaths(userId, path);
         verifySecondaryPasswordOrThrow(user, password);
         // 一次密码验证同时满足当前菜单及其父级锁；键仍是原锁定菜单路径。
         if (paths.isEmpty()) paths = Set.of(menuPath);
@@ -645,7 +645,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public List<Long> getSecondaryLockMenuIds(long userId) {
-        return secondaryLockMenuCache.getLockedMenuIds(userId);
+        return secondaryLockMenuResolver.getLockedMenuIds(userId);
     }
 
     @Override
