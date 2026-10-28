@@ -10,6 +10,7 @@ import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.export.storage.ExportArtifactStore;
 import top.aiolife.relationship.repository.PersonRepository;
+import top.aiolife.record.service.TimeTrackerCategoryCache;
 import top.aiolife.sso.mapper.AccountErasureMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,7 +25,8 @@ class AccountErasureServiceTest {
     ExportArtifactStore exports = mock(ExportArtifactStore.class);
     @SuppressWarnings("unchecked") ObjectProvider<PersonRepository> people = mock(ObjectProvider.class);
     CacheManager caches = mock(CacheManager.class);
-    AccountErasureService service = new AccountErasureService(mapper, minio, config, locks, exports, people, caches);
+    TimeTrackerCategoryCache categoryCache = mock(TimeTrackerCategoryCache.class);
+    AccountErasureService service = new AccountErasureService(mapper, minio, config, locks, exports, people, caches, categoryCache);
     @BeforeEach void setup() {
         var user = new UserEntity(); user.setId(7L); user.setEmail("fixture@example.test");
         when(mapper.lockPending(7L)).thenReturn(user);
@@ -36,6 +38,7 @@ class AccountErasureServiceTest {
         doThrow(new IllegalStateException("fixture storage failure")).when(minio).removeObject("fixture-bucket", "fixture-avatar.png");
         assertThrows(IllegalStateException.class, () -> service.erase(7));
         verify(mapper, never()).purgePersonalRecords(anyLong(), any()); verify(mapper, never()).finish(anyLong());
+        verifyNoInteractions(categoryCache);
     }
     @Test void 共享引用出现后不会删除对象且锁覆盖整个事务() throws Exception {
         var object = new AccountErasureMapper.StoredObject(99L, "fixture-bucket", "fixture-shared.png");
@@ -44,6 +47,7 @@ class AccountErasureServiceTest {
         service.erase(7);
         verify(locks).holdUntilTransactionCompletion("fixture-bucket", "fixture-shared.png");
         verifyNoInteractions(minio); verify(mapper).purgePersonalRecords(7L, "fixture@example.test"); verify(mapper).finish(7L);
+        verify(categoryCache).evictAfterCommit(7L);
     }
     @Test void 导出任务未停止时不能删除文件或清理数据库() {
         when(mapper.runningExports(eq(7L), any())).thenReturn(1L);

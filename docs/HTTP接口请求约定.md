@@ -64,6 +64,16 @@ Web 首页、日视图和日统计，以及独立移动端已同步适配；前�
 尚未实测目标环境历史单日最大条数和响应体大小；发布前应在目标数据库只读测量。
 契约回归使用 151 条模拟记录，验证超过旧分页上限时完整返回，不据此声称真实数据量上限。
 
+## 时迹分类缓存（2026-10-28）
+
+`GET /timeTrackerCategory/list` 和 `/timeTrackerCategory/all` 共用 Redis 原始分类缓存：
+`timeTrackerCategory:v2:0` 保存公共分类，`timeTrackerCategory:v2:{userId}` 保存个人分类及覆盖记录。
+TTL 为 5 分钟，空列表也缓存；每次请求重新合并公共配置、个人覆盖与父级启停状态，不缓存跨用户共享的合并结果。
+
+读取通过独立缓存 Bean 的 `@Cacheable`，显式使用 Redis `cacheManager`；TTL 和类型化 JSON 序列化集中在 `RedisConfig`。个人新增、修改、删除、隐藏/恢复和排序发布变更事件，由 `@TransactionalEventListener(AFTER_COMMIT)` 配合 `@CacheEvict` 在事务提交后清理本人缓存；公共分类变更清理共享的公共缓存，使所有用户后续读取重新加载公共数据。账号注销也清理个人缓存。回滚不失效，无事务时立即失效，写事务中的查询绕过缓存。
+
+采用标准 Spring Cache 注解，不使用自定义 Lua 回填令牌；并发慢查询仍可能在缓存清理后回填旧值，不保证强一致性，陈旧值由回填后的 5 分钟 TTL 兜底。缓存读取/写入故障时回源数据库，失效故障记录日志；直接 SQL 修改不触发失效，需要同步删除对应缓存键。
+
 ## 查询参数
 
 旧请求体 `{"page":2,"pageSize":20,"condition":{"expTypeId":"123","startTime":"2026-09-01 08:30:00"}}`

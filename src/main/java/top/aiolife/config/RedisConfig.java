@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import top.aiolife.record.pojo.vo.TimeRecordListVO;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
+import top.aiolife.record.service.TimeTrackerCategoryCache;
 import top.aiolife.record.service.UserDictDataCache;
 
 /**
@@ -54,21 +56,27 @@ public class RedisConfig implements CachingConfigurer {
                 objectMapper.getTypeFactory().constructCollectionType(List.class, UserDictDataEntity.class));
         var dictConfiguration = cacheConfiguration.entryTtl(Duration.ofMinutes(5))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(dictSerializer));
+        var categorySerializer = new Jackson2JsonRedisSerializer<List<TimeTrackerCategoryEntity>>(objectMapper,
+                objectMapper.getTypeFactory().constructCollectionType(List.class, TimeTrackerCategoryEntity.class));
+        var categoryConfiguration = cacheConfiguration.entryTtl(Duration.ofMinutes(5))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(categorySerializer));
         return RedisCacheManager.builder(factory)
                 .cacheDefaults(cacheConfiguration)
                 .withInitialCacheConfigurations(Map.of("timeRecordDay:v1", dayConfiguration,
-                        UserDictDataCache.CACHE_NAME, dictConfiguration))
+                        UserDictDataCache.CACHE_NAME, dictConfiguration,
+                        TimeTrackerCategoryCache.CACHE_NAME, categoryConfiguration))
                 .build();
     }
 
-    /** 日列表和字典缓存故障时回源；其他缓存保留原有异常行为。 */
+    /** 日列表、字典和时迹分类缓存故障时回源；其他缓存保留原有异常行为。 */
     @Override
     @Bean
     public CacheErrorHandler errorHandler() {
         return new CacheErrorHandler() {
             private void handle(RuntimeException exception, Cache cache) {
                 if (!"timeRecordDay:v1".equals(cache.getName())
-                        && !UserDictDataCache.CACHE_NAME.equals(cache.getName())) throw exception;
+                        && !UserDictDataCache.CACHE_NAME.equals(cache.getName())
+                        && !TimeTrackerCategoryCache.CACHE_NAME.equals(cache.getName())) throw exception;
                 log.warn("Cache operation failed: cache={}", cache.getName(), exception);
             }
             @Override

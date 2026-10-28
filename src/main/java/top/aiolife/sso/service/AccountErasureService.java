@@ -13,6 +13,7 @@ import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.export.storage.ExportArtifactStore;
 import top.aiolife.relationship.repository.PersonRepository;
+import top.aiolife.record.service.TimeTrackerCategoryCache;
 import top.aiolife.sso.mapper.AccountErasureMapper;
 
 /** 账号行锁防止多实例重复清理；外部删除幂等，失败保留任务和资源索引供重试。 */
@@ -26,6 +27,7 @@ public class AccountErasureService {
     private final ExportArtifactStore exports;
     private final ObjectProvider<PersonRepository> people;
     private final CacheManager caches;
+    private final TimeTrackerCategoryCache categoryCache;
 
     @Transactional(rollbackFor = Exception.class, isolation = Isolation.READ_COMMITTED)
     public void erase(long userId) throws Exception {
@@ -49,6 +51,7 @@ public class AccountErasureService {
         mapper.purgePersonalRecords(userId, user.getEmail());
         for (var object : objects) mapper.purgeStoredObject(object.id());
         if (mapper.finish(userId) != 1) throw new IllegalStateException("注销清理状态已变化");
+        categoryCache.evictAfterCommit(userId);
         for (String name : caches.getCacheNames()) {
             var cache = caches.getCache(name);
             if (cache != null) cache.evict(userId);

@@ -13,13 +13,22 @@ import org.springframework.test.util.ReflectionTestUtils;
 import top.aiolife.record.mapper.ITimeRecordMapper;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
+import top.aiolife.record.service.TimeTrackerCategoryCache;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class TimeCategoryHierarchyTest {
+    private TimeTrackerCategoryServiceImpl newService() {
+        var cache = mock(TimeTrackerCategoryCache.class);
+        when(cache.list(any(), any())).thenAnswer(invocation ->
+                invocation.<Supplier<List<TimeTrackerCategoryEntity>>>getArgument(1).get());
+        return new TimeTrackerCategoryServiceImpl(cache);
+    }
+
     @BeforeAll
     static void tables() {
         for (var type : List.of(TimeTrackerCategoryEntity.class, TimeRecordEntity.class)) {
@@ -31,13 +40,13 @@ class TimeCategoryHierarchyTest {
         var c = new TimeTrackerCategoryEntity();
         c.setId(id); c.setUserId(owner); c.setParentId(parent);
         c.setName("分类" + id); c.setIsDeleted(0); c.setIsEnabled(1);
-        c.setSort(0); c.setTimeType(1); c.setIsTrackTime(0);
+        c.setSortOrder(0); c.setTimeType(1); c.setIsTrackTime(0);
         return c;
     }
 
     @Test
     void 父级校验拒绝三级自引用循环和不可见分类() {
-        var service = new TimeTrackerCategoryServiceImpl();
+        var service = newService();
         var tree = List.of(category(1, 0, 0L), category(2, 0, 1L), category(3, 8, 0L));
         assertDoesNotThrow(() -> service.validateParent(3L, 1L, tree));
         assertThrows(IllegalArgumentException.class, () -> service.validateParent(3L, 2L, tree));
@@ -50,23 +59,23 @@ class TimeCategoryHierarchyTest {
 
     @Test
     void 新增二级分类只接在同级排序之后() {
-        var service = spy(new TimeTrackerCategoryServiceImpl());
+        var service = spy(newService());
         doNothing().when(service).lockHierarchy();
-        var root = category(1, 0, 0L); root.setSort(900);
-        var child = category(2, 8, 1L); child.setSort(20);
+        var root = category(1, 0, 0L); root.setSortOrder(900);
+        var child = category(2, 8, 1L); child.setSortOrder(20);
         doReturn(List.of(root, child)).when(service).listUserCategories(8L);
         doReturn(List.of(root, child)).when(service).listUserVisibleCategories(8L);
         doReturn(true).when(service).save(any(TimeTrackerCategoryEntity.class));
-        var created = category(9, 8, 1L); created.setSort(null);
+        var created = category(9, 8, 1L); created.setSortOrder(null);
         service.createCategory(created, 8L);
-        assertEquals(30, created.getSort());
+        assertEquals(30, created.getSortOrder());
         assertEquals(1L, created.getParentId());
         assertNull(created.getId());
     }
 
     @Test
     void 公共覆盖继承父级并始终使用公共ID() {
-        var service = spy(new TimeTrackerCategoryServiceImpl());
+        var service = spy(newService());
         doNothing().when(service).lockHierarchy();
         var override = category(100, 8, null); override.setTemplateId(2L); override.setName("个人名称");
         doReturn(List.of(category(1, 0, 0L), category(2, 0, 1L)), List.of(override))
@@ -79,7 +88,7 @@ class TimeCategoryHierarchyTest {
 
     @Test
     void 覆盖写零可以移到一级且隐藏父级保留历史元数据() {
-        var service = spy(new TimeTrackerCategoryServiceImpl());
+        var service = spy(newService());
         doNothing().when(service).lockHierarchy();
         var override = category(100, 8, 0L); override.setTemplateId(2L);
         var hidden = category(101, 8, null); hidden.setTemplateId(1L); hidden.setIsEnabled(0);
@@ -103,7 +112,7 @@ class TimeCategoryHierarchyTest {
 
     @Test
     void 显式空值恢复公共归属并真正写入数据库NULL() {
-        var service = spy(new TimeTrackerCategoryServiceImpl());
+        var service = spy(newService());
         doNothing().when(service).lockHierarchy();
         var template = category(2, 0, 1L);
         var override = category(100, 8, 0L); override.setTemplateId(2L);
@@ -122,7 +131,7 @@ class TimeCategoryHierarchyTest {
 
     @Test
     void 管理员移动公共分类也检查用户私有子分类() {
-        var service = spy(new TimeTrackerCategoryServiceImpl());
+        var service = spy(newService());
         doNothing().when(service).lockHierarchy();
         doReturn(category(1, 0, 0L)).when(service).getById(1L);
         doReturn(List.of(category(1, 0, 0L), category(2, 0, 0L))).when(service).listAllCategories();
@@ -136,7 +145,7 @@ class TimeCategoryHierarchyTest {
 
     @Test
     void 新增公共子分类拒绝用户已将其上级移动为二级的情况() {
-        var service = spy(new TimeTrackerCategoryServiceImpl());
+        var service = spy(newService());
         doNothing().when(service).lockHierarchy();
         doReturn(List.of(category(1, 0, 0L))).when(service).listAllCategories();
         doReturn(List.of(category(9, 8, 0L))).when(service).list(any(Wrapper.class));
@@ -148,7 +157,7 @@ class TimeCategoryHierarchyTest {
 
     @Test
     void 有子分类或记录时拒绝删除() {
-        var service = spy(new TimeTrackerCategoryServiceImpl());
+        var service = spy(newService());
         doNothing().when(service).lockHierarchy();
         doReturn(category(1, 8, 0L)).when(service).getById(1L);
         doReturn(1L).when(service).count(any(Wrapper.class));
