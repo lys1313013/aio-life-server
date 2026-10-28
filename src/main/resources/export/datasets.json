@@ -61,6 +61,16 @@
         "key": "phone_verified_at",
         "label": "最近接收可信手机号验证结果的时间",
         "type": "TEXT"
+      },
+      {
+        "key": "policy_version",
+        "label": "同意的隐私政策与服务条款版本",
+        "type": "TEXT"
+      },
+      {
+        "key": "policy_accepted_at",
+        "label": "协议同意时间",
+        "type": "TEXT"
       }
     ]
   },
