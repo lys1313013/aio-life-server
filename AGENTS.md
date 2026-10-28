@@ -1,6 +1,6 @@
 # AGENTS.md
 
-- 系统尚未正式上线，应用只维护当前数据结构和接口契约，不保留旧数据格式、旧客户端、旧参数或旧缓存的兼容分支。数据库结构变更必须提供已有库可执行的增量脚本，并同步实体和两端调用方；日常开发尽量不修改全量初始化 SQL，由用户在选定时间节点统一合并此前增量。此前清理历史 SQL 仅针对已整理的旧脚本，不代表后续停止维护增量迁移。
+- 系统尚未正式上线，应用只维护当前数据结构和接口契约，不保留旧数据格式、旧客户端、旧参数或旧缓存的兼容分支。数据库结构变更必须提供已有库可执行的增量脚本，并同步实体和两端调用方；日常新增 Flyway `V` 迁移，不改写已执行脚本；由用户在选定时间节点生成完整的 `B` 基线，并保留已有环境仍需的增量。此前清理历史 SQL 仅针对已整理的旧脚本，不代表后续停止维护增量迁移。
 
 This file provides guidance to AI coding agents when working with code in this repository.
 
@@ -226,18 +226,18 @@ class MyControllerTest extends BaseIntegrationTest {
 
 ## 数据库初始化与增量升级
 
-SQL 编写必须遵守 [SQL 脚本规范](docs/SQL脚本规范.md)：表和每个字段必须有中文 COMMENT，索引和约束说明用途。结构变更必须提供可执行的增量脚本，日常开发尽量不修改全量初始化 SQL，由用户在选定时间节点统一合并；清理历史脚本不取消后续增量维护。
+SQL 编写必须遵守 [SQL 脚本规范](docs/SQL脚本规范.md)：表和每个字段必须有中文 COMMENT，索引和约束说明用途。结构、必要数据和菜单变更使用 `sql/migrations/VYYYYMMDD_NN__description.sql`，版本唯一，已执行迁移不可改写；修正另增版本。
 
-- `sql/1_init_table/2026-08-18_init_all_tables.sql`：最近一次合并的全量初始化基线；当前结构还包括尚未合并的增量。
-- `sql/migrations/`：后续已有库增量脚本，按 `YYYY-MM-DD_NN_description.sql` 命名，说明适用结构、依赖顺序、数据影响及重跑策略。
-- `sql/2_ini_data/`：业务初始化数据。
-- `sql/menu/2_ini_data/`：菜单初始化数据，先运行 `2_menu.sql`，说明见 [菜单 SQL](sql/menu/README.md)。
+- `sql/migrations/B20261028_00__baseline.sql`：冻结的空库基线，保留既有结构，不因接入 Flyway 提前合并后续增量。用户选定节点后生成新的完整 `B` 基线，保留旧 `V` 迁移供已有库升级。
+- `sql/migrations/V*.sql`：结构和种子数据共用版本序列，由 Flyway 决定执行顺序与待执行项。
+- 只维护 117 上的唯一已有业务库与隔离测试库；SQL 执行文件统一放在 `sql/migrations/`，不另设旧库兼容脚本目录。首次接入状态和剩余差异见初始化指南，不能以删除历史脚本代替实际结构对齐。
+- `tools/flyway/pom.xml`：独立 Maven/Java 21 工具；直接运行 `compile flyway:migrate`。不向应用引入 Flyway 运行依赖，不在应用启动时迁移；连接使用 `FLYWAY_URL`、`FLYWAY_USER`、`FLYWAY_PASSWORD`。
 
-初始化、增量升级和验证顺序见 [数据库初始化与验证](docs/数据库初始化与验证.md)。CI 在隔离数据库验证当前结构、种子数据和约束；结构预检仅作只读比较。
+新库使用 `migrate`；117 已有库按用户确认已登记至 `20261028.06`，该版本及之前的 SQL 不得重跑，今后只新增更高版本 V。接入状态与已知结构差异见[数据库初始化与验证](docs/数据库初始化与验证.md)。常规 `baseline` 入口仍要求匹配的 `schema.contract`；本次一次性历史接管不构成跳过预检的通用授权。禁止自动 baseline、清空重建或跳过错误。`info` 查看迁移状态，`validate` 检查迁移历史与文件一致性；实际结构由 Java `SchemaTool`（`compile exec:java -Dexec.args=preflight -Dschema.contract=<file>`）单独比较；`mvn -f tools/flyway/pom.xml verify` 用 Testcontainers 自动创建并回收隔离 MySQL 5.7/8.0，不接收业务连接。结构契约强校验只绑定 SQL、迁移配置和格式版本，工具源码摘要仅作追溯；旧库接入夹具必须停在接入版本，禁止将最新结构重新登记成旧基线。CI 使用相同迁移入口，在隔离数据库验证初始化和升级；不将历史验证记录当作本次执行结果。
 
-会员平台预设统一维护在 `sql/2_ini_data/2026-10-20_membership_providers.sql`；保留初始化的补缺、幂等语义，不覆盖管理员日常修改。
+会员平台初始预设为 `sql/migrations/V20261028_05_010__membership_providers.sql`；未来调整新增版本，保留只补缺、不覆盖管理员修改与软删除的语义。新库不再自动创建固定密码管理员。
 
-当前表结构说明见 `docs/数据库表结构.md`，随增量变更同步维护。
+当前表结构说明见 `docs/数据库表结构.md`，随增量变更同步维护。SQL 操作只维护当前规范与统一入口，不另建历史脚本执行说明或菜单迁移清单。
 
 ## Git 工作流
 

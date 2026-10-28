@@ -2168,6 +2168,31 @@
         "type": "TEXT"
       },
       {
+        "key": "source_platform",
+        "label": "来源平台",
+        "type": "TEXT"
+      },
+      {
+        "key": "source_order_id",
+        "label": "来源订单ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "source_product_id",
+        "label": "来源商品ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "source_item_id",
+        "label": "来源商品明细标识",
+        "type": "TEXT"
+      },
+      {
+        "key": "source_unit_index",
+        "label": "来源商品件序号",
+        "type": "NUMBER"
+      },
+      {
         "key": "create_time",
         "label": "创建时间",
         "type": "TEXT"
@@ -2898,6 +2923,31 @@
         "key": "user_id",
         "label": "用户ID",
         "type": "TEXT"
+      },
+      {
+        "key": "source_platform",
+        "label": "来源平台",
+        "type": "TEXT"
+      },
+      {
+        "key": "source_order_id",
+        "label": "来源订单ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "source_product_id",
+        "label": "来源商品ID",
+        "type": "TEXT"
+      },
+      {
+        "key": "source_item_id",
+        "label": "来源商品明细标识",
+        "type": "TEXT"
+      },
+      {
+        "key": "source_unit_index",
+        "label": "来源商品件序号",
+        "type": "NUMBER"
       },
       {
         "key": "create_time",

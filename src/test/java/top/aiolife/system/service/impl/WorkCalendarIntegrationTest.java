@@ -42,7 +42,7 @@ class WorkCalendarIntegrationTest {
                 + "/aio_life?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai", "root", "");
         try (var connection = dataSource.getConnection()) {
             new JdbcTemplate(dataSource).execute(CurrentSchema.table("sys_work_calendar"));
-            ScriptUtils.executeSqlScript(connection, new FileSystemResource("sql/2_ini_data/2026-09-22_sys_work_calendar_2026.sql"));
+            ScriptUtils.executeSqlScript(connection, new FileSystemResource("sql/migrations/V20261028_05_008__sys_work_calendar_2026.sql"));
         }
         var jdbc = new JdbcTemplate(dataSource);
         jdbc.execute("""

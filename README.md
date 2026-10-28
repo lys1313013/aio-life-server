@@ -36,16 +36,15 @@ mvn -version
 
 先准备 MySQL 和 Redis，再按[数据库初始化与验证](docs/数据库初始化与验证.md)创建 `aio_life` 数据库并完成结构和种子初始化。应用数据源用户名为 `aio_life`，地址变量只填 `host:port`；库名和用户名由 [application.yml](src/main/resources/application.yml)配置，不能把初始化用的 root 密码误当作应用账号密码。
 
-当前空库执行顺序：
+数据库迁移通过独立 Flyway 工具执行，需要 Maven 和 Java 21。连接通过 `FLYWAY_URL`、`FLYWAY_USER`、`FLYWAY_PASSWORD` 环境变量注入；创建好空库后，在后端仓库执行：
 
-1. `sql/1_init_table/2026-08-18_init_all_tables.sql`：全量结构基线。
-2. 尚未合并的适用增量；当前必须在种子前执行 `sql/migrations/2026-10-28_02_unify_common_fields.sql`。
-3. `sql/menu/2_ini_data/2_menu.sql`：基础菜单。
-4. 按文件名顺序执行 `sql/2_ini_data/*.sql`，再执行 `sql/menu/2_ini_data/202*.sql`。
+```bash
+mvn -f tools/flyway/pom.xml compile flyway:migrate flyway:validate
+```
 
-已纳入全量基线的增量不重复执行。已有库按实际结构选择增量，不能用重跑全量 SQL 代替升级。结构变更须交付增量脚本；日常开发尽量不改全量基线，由维护者在选定节点统一合并。具体依赖、重跑语义与验证边界以数据库文档及每份脚本头部为准。
+117 已有库已按用户确认登记至 `20261028.06`，现有 SQL 不再重跑，后续只执行更高版本 V；[接入状态与结构差异](docs/数据库初始化与验证.md#已有库首次接入)分别记录，登记不等于结构完全一致。结构预检使用 v5 契约，格式不匹配时重新生成；Java 注释或测试依赖改动不使契约失效。后续使用同一入口的 `info`、`migrate`、`validate` 管理升级；应用启动不会自动迁移数据库。
 
-种子包含默认管理员账号，首次登录后修改其密码；账号定义见 [init_user.sql](sql/2_ini_data/init_user.sql)。
+日常结构和默认数据变更新增不可改写的 `V` 迁移；维护者在选定节点生成新的完整 `B` 基线。新库不再创建固定密码管理员，先通过注册流程建立账号，再由受控管理流程授权。
 
 ### 3. 配置环境
 
@@ -114,7 +113,7 @@ java -jar target/aio-life-server-1.0.0.jar
 
 Surefire 默认使用 `test` 配置，部分集成测试仍需要已初始化的 MySQL / Redis；应指向隔离测试环境，不能因为启用 `test` profile 就认为数据访问已隔离。配置见 [application-test.yml](src/test/resources/application-test.yml)，CI 环境见 [docker-publish.yml](.github/workflows/docker-publish.yml)。数据库验证与增量测试另见[数据库初始化与验证](docs/数据库初始化与验证.md)，初始化检查通过不能替代已有库升级验证。
 
-当前 CI 的业务测试初始化仍直接执行“全量基线 → 种子”，缺少尚未合并的 `2026-10-28_02_unify_common_fields.sql`。该步骤需与上述初始化顺序对齐后再验证，不能用历史 CI 结果证明当前字段契约通过。
+CI 通过独立 Flyway Maven 工具初始化业务测试库，并运行 Java 迁移测试；迁移检查与业务测试均通过后才发布镜像。
 
 纯文档修改检查差异和链接，无需运行业务测试或构建。业务改动按影响范围验证；数据库、外部服务、真实设备及部署结果分别报告。
 
@@ -167,7 +166,7 @@ Compose 示例中的默认账号和密码仅供本地使用。镜像发布流程
 
 - 头像保存 `avatar_file_id`，资料更新使用 `avatarFileId`：不传保持，`null` 清除。当前公开头像地址由 `AIO_LIFE_SERVER_BASE_URL` 生成，路径为 `/public/images/{fileId}.{ext}`；部署需保证此 URL 可达。MinIO 桶无需改为公开；普通附件仍通过文件接口按权限访问。
 - 阅读、观影远程封面只允许配置白名单域名的 HTTPS 地址，不跟随重定向。`AIO_LIFE_DOUBAN_COVER_ALLOWED_DOMAINS` 默认 `doubanio.com`，信任其全部子域名；显式空值禁用远程下载。其他来源使用上传得到的 `fileId`。相关安全修复记录见[文件内容安全](docs/file-content-security.md)，接口行为以当前实现为准。
-- Web「系统管理 → 对象存储」仅管理员可用，按前缀和游标浏览当前业务桶，支持预览、下载及删除无业务引用的单个对象。已有 `file` 记录（含软删除）或 CBTI 引用的对象不能删除；不提供上传、批量目录删除或桶策略修改。MinIO 凭据需具备 `ListBucket` / `GetObject` / `DeleteObject` 权限；入口种子为 `sql/menu/2_ini_data/2026-10-02_storage_admin_menu.sql`。
+- Web「系统管理 → 对象存储」仅管理员可用，按前缀和游标浏览当前业务桶，支持预览、下载及删除无业务引用的单个对象。已有 `file` 记录（含软删除）或 CBTI 引用的对象不能删除；不提供上传、批量目录删除或桶策略修改。MinIO 凭据需具备 `ListBucket` / `GetObject` / `DeleteObject` 权限；入口种子为 `sql/migrations/V20261028_05_016__storage_admin_menu.sql`。
 
 ### 登录、隐私与通知
 

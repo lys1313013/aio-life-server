@@ -24,7 +24,7 @@ final class JevCalendarFixture {
         TreeMap<LocalDate, Integer> days = new TreeMap<>();
         try {
             var matches = Pattern.compile("\\('([0-9-]+)', ([0-3]),").matcher(Files.readString(
-                    Path.of("sql/2_ini_data/2026-09-22_sys_work_calendar_2026.sql")));
+                    Path.of("sql/migrations/V20261028_05_008__sys_work_calendar_2026.sql")));
             while (matches.find()) days.put(LocalDate.parse(matches.group(1)), Integer.parseInt(matches.group(2)));
         } catch (IOException e) {
             throw new UncheckedIOException(e);

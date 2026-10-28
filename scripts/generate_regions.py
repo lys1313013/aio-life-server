@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate the pinned four-level region seed; verify the source before writing."""
+"""Generate a reviewed candidate from the pinned region source; never overwrite a migration."""
 import hashlib
 import json
 from pathlib import Path
@@ -39,9 +39,10 @@ def main():
     for index in range(0, len(rows), 500):
         output += "INSERT INTO `system_region` (`id`,`code`,`parent_code`,`name`,`level`,`data_version`,`is_deleted`) VALUES\n"
         output += ",\n".join(rows[index:index + 500]) + "\nON DUPLICATE KEY UPDATE `id`=`id`;\n"
-    target = ROOT / "sql/2_ini_data/2026-10-22_system_regions.sql"
+    target = ROOT / "artifacts/generated-sql/system_regions.sql"
+    target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(output, encoding="utf-8")
-    print(f"Generated {len(rows)} regions; verify the generated seed if source changes")
+    print(f"Generated {target}: {len(rows)} regions; review the diff and add a new V migration")
 
 
 if __name__ == "__main__":

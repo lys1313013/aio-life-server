@@ -68,7 +68,7 @@ class ExportDatasetRegistryTest {
                         .matcher(
                                 Files.readString(
                                         Path.of(
-                                                "sql/1_init_table/2026-08-18_init_all_tables.sql")));
+                                                "sql/migrations/B20261028_00__baseline.sql")));
         while (matcher.find())
             assertTrue(
                     classified.contains(matcher.group(1)),
@@ -87,7 +87,7 @@ class ExportDatasetRegistryTest {
                                 Path.of("src/main/resources/export/excluded-columns.json")),
                         new TypeReference<>() {});
         String schema =
-                Files.readString(Path.of("sql/1_init_table/2026-08-18_init_all_tables.sql"));
+                Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql"));
         for (var dataset : datasets) {
             var table =
                     Pattern.compile(

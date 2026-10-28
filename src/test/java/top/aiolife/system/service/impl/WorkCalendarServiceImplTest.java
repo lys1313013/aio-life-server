@@ -34,7 +34,7 @@ class WorkCalendarServiceImplTest {
     @BeforeEach
     void setUp() throws IOException {
         var pattern = Pattern.compile("\\('([0-9-]+)', ([0-3]),");
-        var matcher = pattern.matcher(Files.readString(Path.of("sql/2_ini_data/2026-09-22_sys_work_calendar_2026.sql")));
+        var matcher = pattern.matcher(Files.readString(Path.of("sql/migrations/V20261028_05_008__sys_work_calendar_2026.sql")));
         while (matcher.find()) {
             days.put(LocalDate.parse(matcher.group(1)), Integer.parseInt(matcher.group(2)));
         }

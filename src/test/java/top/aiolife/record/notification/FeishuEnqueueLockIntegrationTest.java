@@ -46,7 +46,7 @@ class FeishuEnqueueLockIntegrationTest {
         var source = new DriverManagerDataSource(System.getenv("AIO_LOCK_TEST_MYSQL_URL"), "root", "notification_test");
         jdbc = new JdbcTemplate(source);
         jdbc.execute("DROP TABLE IF EXISTS notification_delivery");
-        String init = Files.readString(Path.of("sql/1_init_table/2026-08-18_init_all_tables.sql"));
+        String init = Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql"));
         int start = init.indexOf("CREATE TABLE IF NOT EXISTS `notification_delivery`");
         jdbc.execute(init.substring(start, init.indexOf(';', start)));
         var config = new MybatisConfiguration();

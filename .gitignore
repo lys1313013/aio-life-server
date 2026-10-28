@@ -25,6 +25,10 @@ replay_pid*
 /target/
 /artifacts/database-upgrade/
 /artifacts/database-schema/
+/artifacts/flyway-refactor/
+/artifacts/flyway-tests/
+/artifacts/generated-sql/
+/tools/flyway/target/
 /scripts/__pycache__/
 
 ### IntelliJ IDEA ###

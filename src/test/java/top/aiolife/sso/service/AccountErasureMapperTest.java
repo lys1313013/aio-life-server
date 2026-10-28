@@ -26,7 +26,7 @@ class AccountErasureMapperTest {
         var tablePattern = Pattern.compile("CREATE TABLE(?: IF NOT EXISTS)? `([^`]+)` \\((.*?)\\) ENGINE", Pattern.DOTALL);
         var columnPattern = Pattern.compile("(?m)^\\s*`([^`]+)`");
         var tables = new LinkedHashMap<String, List<String>>();
-        var matcher = tablePattern.matcher(Files.readString(Path.of("sql/1_init_table/2026-08-18_init_all_tables.sql")));
+        var matcher = tablePattern.matcher(Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql")));
         while (matcher.find()) {
             String table = matcher.group(1);
             var columns = columnPattern.matcher(matcher.group(2)).results().map(m -> m.group(1)).toList();

@@ -36,7 +36,7 @@ class BodyProfileTest {
         var ds = new JdbcDataSource();
         ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds);
-        String full = Files.readString(Path.of("sql/1_init_table/2026-08-18_init_all_tables.sql"));
+        String full = Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql"));
         int start = full.indexOf("CREATE TABLE IF NOT EXISTS `user_body_profile`");
         String ddl = full.substring(start, full.indexOf(";", start));
         jdbc.execute(ddl.substring(0, ddl.indexOf(" ENGINE=")));

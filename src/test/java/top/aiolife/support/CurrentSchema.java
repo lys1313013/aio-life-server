@@ -8,9 +8,9 @@ import java.util.regex.Pattern;
 
 /** 测试使用全量基线与未合并的字段迁移，迁移计划只维护在 SQL 中。 */
 public final class CurrentSchema {
-    private static final Path SOURCE = Path.of("sql/1_init_table/2026-08-18_init_all_tables.sql");
+    private static final Path SOURCE = Path.of("sql/migrations/B20261028_00__baseline.sql");
     private static final Path ASSET_MIGRATION =
-            Path.of("sql/migrations/2026-10-28_01_asset_purchase_source.sql");
+            Path.of("sql/migrations/V20261028_01__asset_purchase_source.sql");
     private static final String SQL_STRING = "'((?:''|[^'])*)'";
     private static final String NULLABLE_SQL_STRING = "(NULL|'(?:''|[^'])*')";
     private static final Pattern ASSET_COLUMN = Pattern.compile(
@@ -29,7 +29,7 @@ public final class CurrentSchema {
         int start = table.start();
         String sql = schema.substring(start, statementEnd(schema, start));
         sql = applyAssetColumns(name, sql);
-        String migration = Files.readString(Path.of("sql/migrations/2026-10-28_02_unify_common_fields.sql"));
+        String migration = Files.readString(Path.of("sql/migrations/V20261028_02__unify_common_fields.sql"));
         var changes = Pattern.compile("CALL aio_unify_field\\('([^']+)', '([^']+)', '([^']+)', '([^']+)', ([01]), 0\\)").matcher(migration);
         while (changes.find()) {
             if (!name.equals(changes.group(1))) continue;

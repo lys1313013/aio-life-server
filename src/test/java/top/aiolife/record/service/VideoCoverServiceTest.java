@@ -55,7 +55,7 @@ class VideoCoverServiceTest {
         var ds = new JdbcDataSource(); ds.setURL("jdbc:h2:mem:cover_"+UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds); tx = new DataSourceTransactionManager(ds);
         // 从真实全量结构截取本功能四张表，去除 H2 不支持的 MySQL 排序规则及前缀索引。
-        String schema = Files.readString(Path.of("sql/1_init_table/2026-08-18_init_all_tables.sql"));
+        String schema = Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql"));
         for (String table : List.of("b_video", "file", "storage_object", "image_import_task")) {
             int start = schema.indexOf("CREATE TABLE IF NOT EXISTS `"+table+"`");
             String sql = schema.substring(start, schema.indexOf(";",start));

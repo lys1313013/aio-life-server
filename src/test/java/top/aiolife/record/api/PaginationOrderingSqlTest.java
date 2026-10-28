@@ -60,7 +60,7 @@ class PaginationOrderingSqlTest {
         var source = new JdbcDataSource();
         source.setURL("jdbc:h2:mem:pagination_order_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(source);
-        String schema = Files.readString(Path.of("sql/1_init_table/2026-08-18_init_all_tables.sql"));
+        String schema = Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql"));
         for (String table : List.of("task", "task_column", "memo", "sys_dict_type", "sys_dict_data")) {
             jdbc.execute(CurrentSchema.table(table)
                     .replaceAll(" COLLATE [a-zA-Z0-9_]+", "")

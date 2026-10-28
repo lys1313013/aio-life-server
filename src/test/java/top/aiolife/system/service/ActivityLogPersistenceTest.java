@@ -52,7 +52,7 @@ class ActivityLogPersistenceTest {
         dataSource = ds;
         jdbc = new JdbcTemplate(ds);
         jdbc.execute("DROP TABLE IF EXISTS sys_activity_log");
-        String full = Files.readString(Path.of("sql/1_init_table/2026-08-18_init_all_tables.sql"));
+        String full = Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql"));
         int start = full.indexOf("CREATE TABLE IF NOT EXISTS `sys_activity_log`");
         String schema = full.substring(start, full.indexOf(";", start));
         if (mysql == null) schema = schema.substring(0, schema.indexOf(" ENGINE="));

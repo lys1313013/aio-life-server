@@ -25,7 +25,7 @@ class BankDictionarySeedTest {
         jdbc.execute("CREATE TABLE sys_menu(id BIGINT PRIMARY KEY,parent_id BIGINT,name VARCHAR(100),path VARCHAR(100),component VARCHAR(100),meta VARCHAR(500),sort_order INT,web_is_enabled INT,is_deleted INT,create_user BIGINT,update_user BIGINT)");
         jdbc.execute("CREATE TABLE bank_card(id BIGINT PRIMARY KEY,bank_id BIGINT)");
         try (var connection = source.getConnection()) {
-            execute(connection, "2026-09-26_bank_card.sql");
+            execute(connection, "V20261028_05_009__bank_card.sql");
             assertEquals(3132, jdbc.queryForObject("SELECT COUNT(*) FROM sys_dict_data", Integer.class));
             assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM sys_dict_type WHERE dict_type='bank'", Integer.class));
             assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM sys_menu WHERE id=1605 AND path='/finance/bank-cards'", Integer.class));
@@ -33,8 +33,8 @@ class BankDictionarySeedTest {
             jdbc.update("UPDATE sys_menu SET sort_order=99 WHERE id=1605");
             jdbc.update("UPDATE sys_dict_data SET dict_label='我的工行名称',is_enabled=0,sort_order=999 WHERE dict_value='ICBC'");
             jdbc.update("UPDATE sys_dict_data SET is_deleted=1 WHERE dict_value='ABC'");
-            execute(connection, "2026-09-26_bank_card.sql");
-            execute(connection, "2026-09-26_bank_card.sql");
+            execute(connection, "V20261028_05_009__bank_card.sql");
+            execute(connection, "V20261028_05_009__bank_card.sql");
             assertEquals(3132, jdbc.queryForObject("SELECT COUNT(*) FROM sys_dict_data", Integer.class));
             assertEquals(3117, jdbc.queryForObject("SELECT COUNT(*) FROM sys_dict_data WHERE dict_value LIKE 'NFRA_%'", Integer.class));
             assertEquals(3132, jdbc.queryForObject("SELECT COUNT(DISTINCT dict_value) FROM sys_dict_data", Integer.class));
@@ -50,9 +50,8 @@ class BankDictionarySeedTest {
     }
 
     private void execute(Connection connection, String filename) throws Exception {
-        // H2 无 MySQL USE / DROP TEMPORARY TABLE 语法，其他 DML 原样执行。
-        String sql = Files.readString(Path.of("sql/2_ini_data", filename))
-                .replace("USE `aio_life`;", "")
+        // H2 无 MySQL DROP TEMPORARY TABLE 语法，其他 DML 原样执行。
+        String sql = Files.readString(Path.of("sql/migrations", filename))
                 .replace("DROP TEMPORARY TABLE", "DROP TABLE");
         ScriptUtils.executeSqlScript(connection, new ByteArrayResource(sql.getBytes(StandardCharsets.UTF_8)));
     }

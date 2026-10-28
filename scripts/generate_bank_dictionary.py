@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""从已审阅的监管名录快照生成银行及菜单初始化 SQL；不连接数据库，不请求外部服务。"""
+"""从已审阅的监管名录快照生成待审阅 SQL；不覆盖已发布迁移，不连接数据库。"""
 import csv
 import hashlib
 import json
@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'sql/reference/banks/nfra-2025-12-31.csv'
-TARGET = ROOT / 'sql/2_ini_data/2026-09-26_bank_card.sql'
+TARGET = ROOT / 'artifacts/generated-sql/bank_dictionary.sql'
 # 兼容最初 15 家的字典键值、显示名称及排序，不改变已有 bank_card.bank_id。
 LEGACY = {
     'B0001H111000001': ('ICBC', '中国工商银行', 0),
@@ -67,12 +67,12 @@ def main():
 -- 来源：国家金融监督管理总局，截至 2025-12-31，发布于 2026-08-14。
 -- 3132 家大陆银行/农信法人机构；不是发卡资格、卡种或港澳台全量名录。
 -- 来源、哈希及筛选规则见 sql/reference/banks/README.md。
--- 包含银行字典类型、全部3132家机构和银行卡菜单；重复执行保留已有配置。
+-- 包含银行字典类型、全部3132家机构和银行卡菜单；重复执行保留已有配置和软删除状态。
+-- 已软删除银行字典类型时不恢复类型或补子项；固定 ID 与其他对象冲突直接失败。
 -- 在无并发字典维护的迁移窗口执行；主键冲突直接失败，禁止使用 INSERT IGNORE。
-USE `aio_life`;
 INSERT INTO sys_dict_type(dict_id,dict_name,dict_type,is_enabled,is_deleted,create_user,update_user)
 SELECT 92626001,'银行','bank',1,0,0,0
-WHERE NOT EXISTS(SELECT 1 FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0);
+WHERE NOT EXISTS(SELECT 1 FROM sys_dict_type WHERE dict_type='bank');
 SET @bank_dict_id = (SELECT dict_id FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0);
 DROP TEMPORARY TABLE IF EXISTS tmp_nfra_bank_dictionary;
 -- 与 sys_dict_data 保持一致，避免继承 MySQL 8 默认排序规则导致查重比较失败。
@@ -93,7 +93,7 @@ CREATE TEMPORARY TABLE tmp_nfra_bank_dictionary (
 INSERT INTO sys_dict_data(dict_code,dict_id,sort_order,dict_label,dict_value,is_enabled,is_deleted,create_user,update_user,remark)
 SELECT s.seed_id,@bank_dict_id,s.sort_order,s.label,s.bank_value,1,0,0,0,s.source_remark
 FROM tmp_nfra_bank_dictionary s
-WHERE NOT EXISTS (
+WHERE @bank_dict_id IS NOT NULL AND NOT EXISTS (
   SELECT 1 FROM sys_dict_data d WHERE d.dict_id=@bank_dict_id
   AND (d.dict_value=s.bank_value OR d.dict_label=s.label OR d.dict_label=s.full_name)
 );
@@ -101,10 +101,11 @@ DROP TEMPORARY TABLE tmp_nfra_bank_dictionary;
 
 INSERT INTO sys_menu(id,parent_id,name,path,component,meta,sort_order,web_is_enabled,is_deleted,create_user,update_user)
 SELECT 1605,1600,'bankCards','/finance/bank-cards','bank-card/index','{"icon":"lucide:credit-card","title":"银行卡","keepAlive":false}',4,1,0,0,0
-WHERE NOT EXISTS(SELECT 1 FROM sys_menu WHERE path='/finance/bank-cards' AND is_deleted=0);
+WHERE NOT EXISTS(SELECT 1 FROM sys_menu WHERE id=1605 OR name='bankCards' OR path='/finance/bank-cards');
 """
+    TARGET.parent.mkdir(parents=True, exist_ok=True)
     TARGET.write_text(header + '\n'.join(body) + footer)
-    print(f'Generated {TARGET.name}: {len(rows)} institutions and bank card menu')
+    print(f'Generated {TARGET}: {len(rows)} institutions; review the diff and add a new V migration')
 
 
 if __name__ == '__main__':

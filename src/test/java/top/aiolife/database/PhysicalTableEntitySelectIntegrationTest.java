@@ -49,6 +49,8 @@ class PhysicalTableEntitySelectIntegrationTest {
             FROM information_schema.tables
             WHERE table_schema = DATABASE()
               AND table_type = 'BASE TABLE'
+              -- Flyway 的迁移账本属于基础设施，不映射业务实体；其他物理表全部检查。
+              AND table_name <> 'flyway_schema_history'
             ORDER BY table_name
             """;
 
