@@ -20,6 +20,22 @@ import java.util.List;
  * @date 2025/10/06 23:03
  */
 public interface IBVideoMapper extends BaseMapper<BVideoEntity> {
+    /**
+     * 使用 idx_bvid 缩小范围，再按字节精确比较 BV 号，避免默认排序规则忽略大小写。
+     * 重复标记沿列表状态顺序、更新时间取首条，ID 用于同一更新时间的稳定排序。
+     */
+    @Select("""
+            SELECT * FROM b_video
+            WHERE user_id = #{userId} AND is_deleted = 0 AND bvid = #{bvid}
+              AND CAST(bvid AS BINARY(20)) = CAST(#{bvid} AS BINARY(20))
+            ORDER BY CASE status
+                WHEN 'not_started' THEN 1 WHEN 'in_progress' THEN 2
+                WHEN 'on_hold' THEN 3 WHEN 'completed' THEN 4 ELSE 0 END,
+                update_time DESC, id DESC
+            LIMIT 1
+            """)
+    BVideoEntity findOwnedByBvid(@Param("userId") long userId, @Param("bvid") String bvid);
+
     @Select("SELECT * FROM b_video WHERE id=#{id} AND user_id=#{userId} AND is_deleted=0 FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
     BVideoEntity lockOwned(long id, long userId);

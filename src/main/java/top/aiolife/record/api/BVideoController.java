@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +78,14 @@ public class BVideoController {
                 page, lambdaQueryWrapper, STATUS_ORDER_CODES);
         PageResp<BVideoEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toBVideoVOPage(objectPageResp));
+    }
+
+    /** 插件按 BV 号读取本人标记；未标记返回空，复用视频业务的二级锁。 */
+    @GetMapping("/by-bvid")
+    public ApiResponse<BVideoVO> byBvid(
+            @RequestParam @Pattern(regexp = "BV[0-9A-Za-z]{10}") String bvid) {
+        var entity = bVideoMapper.findOwnedByBvid(StpUtil.getLoginIdAsLong(), bvid);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toBVideoVO(entity));
     }
 
     /** 按本人 ID 获取完整编辑详情，复用视频业务的二级锁。 */
