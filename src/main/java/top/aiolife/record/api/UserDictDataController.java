@@ -59,8 +59,8 @@ public class UserDictDataController {
                 if (SysUtil.isNotEmpty(condition.getDictLabel())) {
                     match = item.getDictLabel() != null && item.getDictLabel().contains(condition.getDictLabel());
                 }
-                if (match && SysUtil.isNotEmpty(condition.getStatus())) {
-                    match = condition.getStatus().equals(item.getStatus());
+                if (match && SysUtil.isNotEmpty(condition.getIsEnabled())) {
+                    match = condition.getIsEnabled().equals(item.getIsEnabled());
                 }
                 return match;
             }).toList();
@@ -131,12 +131,12 @@ public class UserDictDataController {
                     UserDictDataEntity::getDictType, condition.getDictType());
             lambdaQueryWrapper.like(SysUtil.isNotEmpty(condition.getDictLabel()),
                     UserDictDataEntity::getDictLabel, condition.getDictLabel());
-            lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getStatus()),
-                    UserDictDataEntity::getStatus, condition.getStatus());
+            lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getIsEnabled()),
+                    UserDictDataEntity::getIsEnabled, condition.getIsEnabled());
         }
         lambdaQueryWrapper.orderByAsc(
                 UserDictDataEntity::getDictType,
-                UserDictDataEntity::getDictSort,
+                UserDictDataEntity::getSortOrder,
                 UserDictDataEntity::getId);
 
         Page<UserDictDataEntity> page = new Page<>(query.getPage(), query.getPageSize());

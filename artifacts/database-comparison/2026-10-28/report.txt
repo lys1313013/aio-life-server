@@ -1,0 +1,115 @@
+AIO Life 实际数据库与数据库文档核查
+日期：2026-10-28T13:06:57.381606+08:00
+目标：117 主库 / aio_life，MySQL 5.7.44-log
+方式：业务库仅执行只读查询；参考结构在独立、无网络、内存临时 MySQL 8.0.40 容器中生成。
+未修改业务库、应用代码或已有文档；仅生成本报告。
+
+结论：不完全一致。数据库存在未补齐结构和历史残留，文档也有部分遗漏。
+
+一、数量和已对齐部分
+当前文档所依托的全量基线+02：72张表、1023列。最新01增量另外定义4列，完整当前目标应为1027列。
+实际：86张表、1240列。72张业务表全部存在，额外14张表（3张已取消LLM表、11张历史备份表）。
+00空值/注释迁移的154个目标字段均符合其当前目标（已考虑02改名）。02的23个新字段全部存在，旧名和迁移暂存列均不存在。
+四张字典is_enabled均为tinyint、可空、默认1；当前非NULL值未发现0/1之外的值。这不能证明历史值转换过程。
+用户隐私/注销4个字段及对应索引存在。外键列与删除/更新语义一致；排除MySQL版本导致的NO ACTION/RESTRICT表示差别。
+
+二、优先处理的问题
+1. device和wardrobe_item分别缺少source_platform、source_order_id、source_product_id、source_item_id、source_unit_index，共10列；前6列已写入逐表文档，后4列只在最新01增量定义。相关两个capture_order索引也不存在。
+2. expense.exp_type_id和income.inc_type_id：文档bigint，实际mediumtext。分别检查4509/174行，当前均为数字字符串，且没有超出有符号bigint范围；仍需按实际业务迁移，不应仅修改文档掩盖类型差异。
+3. expense.user_id：文档NOT NULL，实际允许NULL，且3条未删除支出记录的user_id为空。
+4. user中1条记录的phone_country_code与phone未成对填写，违反文档手机字段约定。27个当前CHECK表达式只读检查中，仅此项发现不符合记录，其余26项为0；MySQL5.7不执行这些CHECK保障。
+5. login_log仍有文档未列出的password列，176行非空；mail_log仍有content列，336行非空。只统计数量，没有读取或输出字段内容。
+6. sys_dict_type.dict_type仍有文档未列出的唯一索引，可能影响同名记录重建/软删除后复用，应核对当前业务要求。
+
+三、完整结构差异（排除整数显示宽度等版本表示差异）
+缺列（按最新01定义）：
+  device.source_item_id: varchar(128), nullable=YES, default=None
+  device.source_order_id: varchar(100), nullable=YES, default=None
+  device.source_platform: varchar(16), nullable=YES, default=None
+  device.source_product_id: varchar(100), nullable=YES, default=None
+  device.source_unit_index: int, nullable=YES, default=None
+  wardrobe_item.source_item_id: varchar(128), nullable=YES, default=None
+  wardrobe_item.source_order_id: varchar(100), nullable=YES, default=None
+  wardrobe_item.source_platform: varchar(16), nullable=YES, default=None
+  wardrobe_item.source_product_id: varchar(100), nullable=YES, default=None
+  wardrobe_item.source_unit_index: int, nullable=YES, default=None
+业务表多余列（相对当前定义）：
+  login_log.password: varchar(255)
+  mail_log.content: text
+  sys_dict_data.color: varchar(20)
+  sys_dict_data.icon: varchar(100)
+  sys_dict_data.user_id: bigint(20)
+  sys_dict_type.color: varchar(20)
+  sys_dict_type.icon: varchar(100)
+  user_dict_data.css_class: varchar(100)
+  user_dict_data.list_class: varchar(100)
+  user_dict_data.sys_dict_code: bigint(20)
+14个共有列存在类型/非空/默认值/自动属性差异：
+  expense.exp_type_id: {"type": {"expected": "bigint", "actual": "mediumtext"}}
+  expense.user_id: {"nullable": {"expected": "NO", "actual": "YES"}}
+  income.amt: {"nullable": {"expected": "NO", "actual": "YES"}}
+  income.inc_type_id: {"type": {"expected": "bigint", "actual": "mediumtext"}}
+  record_article.create_time: {"default": {"expected": "CURRENT_TIMESTAMP", "actual": null}}
+  record_article.is_deleted: {"nullable": {"expected": "NO", "actual": "YES"}}
+  record_article.update_time: {"default": {"expected": "CURRENT_TIMESTAMP", "actual": null}, "extra": {"expected": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP", "actual": ""}}
+  record_article.url: {"nullable": {"expected": "YES", "actual": "NO"}}
+  record_article_annotation.create_time: {"default": {"expected": "CURRENT_TIMESTAMP", "actual": null}}
+  record_article_annotation.is_deleted: {"nullable": {"expected": "NO", "actual": "YES"}}
+  record_article_annotation.update_time: {"default": {"expected": "CURRENT_TIMESTAMP", "actual": null}, "extra": {"expected": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP", "actual": ""}}
+  user_dict_type.dict_name: {"default": {"expected": null, "actual": ""}}
+  user_dict_type.dict_type: {"default": {"expected": null, "actual": ""}}
+  user_dict_type.id: {"extra": {"expected": "", "actual": "auto_increment"}}
+缺少6个索引，额外10个索引（以下按名称和列序比较）：
+  额外 b_video.idx_last_watched(last_watched), unique=False
+  缺少 device.idx_device_capture_order(user_id,source_platform,source_order_id,is_deleted), unique=False
+  额外 goal.idx_is_deleted(is_deleted), unique=False
+  额外 goal.idx_status(status), unique=False
+  额外 goal.idx_type(type), unique=False
+  额外 goal.idx_year_month(year,month), unique=False
+  缺少 record_article_annotation.idx_article_id(article_id), unique=False
+  额外 sys_dict_type.dict_type(dict_type), unique=True
+  额外 user_dict_data.idx_dict_type(dict_type), unique=False
+  缺少 user_dict_data.idx_user_dict_template(template_id), unique=False
+  缺少 user_dict_data.idx_user_dict_type(user_id,dict_type), unique=False
+  额外 user_dict_data.idx_user_id(user_id), unique=False
+  额外 user_dict_type.idx_dict_type(dict_type), unique=False
+  缺少 user_dict_type.idx_user_dict_type_user(user_id,dict_type), unique=False
+  额外 user_dict_type.idx_user_id(user_id), unique=False
+  缺少 wardrobe_item.idx_wardrobe_item_capture_order(user_id,source_platform,source_order_id,is_deleted), unique=False
+字符集/排序规则/注释：
+  19张业务表默认排序规则为utf8mb4_general_ci，目标为utf8mb4_unicode_ci；共有字段中78处排序规则差异（其中2处来自mediumtext与bigint类型差异）。
+  73处字段注释、7处表注释与参考结构不同；30个当前业务字段注释为空。
+  这些差异不能一概视为业务错误。已有增量有意保留原表排序规则，转换需单独核对索引与比较语义。
+额外14张表：
+  chat_message
+  conversation
+  device_bak_20260623
+  device_bak_uuid_migration
+  honor_record_bak_20260623
+  honor_record_bak_uuid_migration
+  llm_key
+  movie_bak_20260623
+  movie_bak_uuid_migration
+  read_record_bak_20260623
+  read_record_bak_uuid_migration
+  sys_file_bak_uuid_migration
+  wardrobe_item_bak_20260623
+  wardrobe_item_bak_uuid_migration
+
+四、文档和初始化路径自身的问题
+  docs/数据库表结构.md:1552 — life_footprint 片段仍为 note；当前增量和实际库为 remark
+  docs/数据库表结构.md:1037 — device 未记载 source_item_id/source_unit_index；全量基线也缺失，最新01增量已定义
+  docs/数据库表结构.md:1221 — wardrobe_item 未记载 source_item_id/source_unit_index；全量基线也缺失，最新01增量已定义
+  docs/数据库表结构.md:18 — 公共审计字段统一可空的总述与逐表定义冲突
+  docs/数据库表结构.md:23 — 顶部表目录只覆盖60张，正文有72张
+  docs/数据库表结构.md:1629 — 导出表只列语义，缺少完整类型、可空、默认值和索引定义
+  scripts/check-database-schema.py:65 — 全量+02初始化路径未包含最新01新增的4列；现有预检亦使用MySQL8元数据列，不能直接用于5.7
+
+五、处理顺序建议
+先统一最新采集字段的增量、文档及新库初始化路径；发布依赖这些字段的版本前补齐目标库。
+核实3条无用户归属支出和1条手机号字段不成对记录的业务来源，再修正数据；不可随意分配用户或自动删除。
+为其余类型/可空/默认值/索引差异准备单独增量。残留敏感日志字段和取消业务表先明确保留需求、备份范围，再做清理。
+单独修正文档中的note、遗漏字段与公共字段总述。
+
+验证边界：结构比对覆盖72张当前业务表；对上述异常及27个CHECK语义做了只读计数。未逐行核对全部业务数据、未全量比较种子数据、未验证应用运行状态，也未执行任何目标库迁移。
+完整字段、注释和排序规则差异见同目录differences.json。

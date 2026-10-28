@@ -60,5 +60,5 @@ public class WardrobeItemSaveReq {
     /**
      * 备注
      */
-    private String memo;
+    private String remark;
 }

@@ -22,5 +22,5 @@ public class LifeFootprintVO {
     private BigDecimal latitude;
     private String coordinateSystem;
     private String providerUid;
-    private String note;
+    private String remark;
 }

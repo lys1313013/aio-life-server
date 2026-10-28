@@ -160,7 +160,7 @@ public class RecordMcpTools {
         entity.setIsCompleted(0);
         entity.setIsStarred(req.getIsStarred() != null ? req.getIsStarred() : 0);
         entity.setPriority(req.getPriority() != null ? req.getPriority() : 10);
-        entity.setSort(0);
+        entity.setSortOrder(0);
         taskDetailController.create(entity);
         return true;
     }

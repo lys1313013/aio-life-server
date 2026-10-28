@@ -38,7 +38,7 @@ public class AnniversaryMcpVO {
     /**
      * 备注
      */
-    private String note;
+    private String remark;
 
     /**
      * 距今天数：正数=还有 N 天，负数=已过 N 天；纪念日按「下一次发生」计算，倒数日按目标日期直接计算

@@ -4,13 +4,13 @@ USE `aio_life`;
 -- 提取自 1_init_table/wardrobe.sql（2026-08-18 合并重建时迁移）
 -- 共 20 条预设分类（5 条一级分类 + 15 条二级分类）
 
-INSERT INTO `wardrobe_category` (`id`, `name`, `icon`, `parent_id`, `sort`, `category_type`) VALUES
+INSERT INTO `wardrobe_category` (`id`, `name`, `icon`, `parent_id`, `sort_order`, `category_type`) VALUES
 (1, '上衣', 'shirt', NULL, 1, 0),
 (2, '下装', 'pants', NULL, 2, 0),
 (3, '鞋子', 'shoe', NULL, 3, 0),
 (4, '配饰', 'accessory', NULL, 4, 0),
 (5, '外套', 'jacket', NULL, 5, 0);
-INSERT INTO `wardrobe_category` (`id`, `name`, `icon`, `parent_id`, `sort`, `category_type`) VALUES
+INSERT INTO `wardrobe_category` (`id`, `name`, `icon`, `parent_id`, `sort_order`, `category_type`) VALUES
 (101, 'T恤', 'shirt', 1, 1, 0),
 (102, '衬衫', 'shirt', 1, 2, 0),
 (103, '卫衣', 'shirt', 1, 3, 0),

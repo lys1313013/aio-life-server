@@ -76,7 +76,7 @@ public class ScheduledJobRuntime {
             remaining.remove(row.getId());
             execution.recover(row.getId());
             var existing = registrations.get(row.getId());
-            if (!Boolean.TRUE.equals(row.getEnabled())) { cancel(row.getId()); continue; }
+            if (!Integer.valueOf(1).equals(row.getIsEnabled())) { cancel(row.getId()); continue; }
             if (existing != null && Objects.equals(existing.revision(), row.getRevision()) && !existing.future().isDone()) continue;
             cancel(row.getId());
             ScheduledJobRules.validateCron(row.getCron());

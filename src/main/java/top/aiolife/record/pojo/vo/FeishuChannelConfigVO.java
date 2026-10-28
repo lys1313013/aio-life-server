@@ -7,7 +7,7 @@ import lombok.Data;
 @Builder
 public class FeishuChannelConfigVO {
     private boolean configured;
-    private boolean enabled;
+    private Integer isEnabled;
     private boolean bound;
     private String appId;
     private String receiverOpenId;

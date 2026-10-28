@@ -59,7 +59,7 @@ class LifeFootprintBatchTest {
     private LifeFootprintBatchItemReq item(Long id, String name) {
         var req = new LifeFootprintBatchItemReq();
         req.setId(id); req.setStartDate("2021-07-25"); req.setEndDate("9999-12-31");
-        req.setPlaceName(name); req.setNote("备注"); req.setRegionCode("110101001");
+        req.setPlaceName(name); req.setRemark("备注"); req.setRegionCode("110101001");
         req.setLongitude(new BigDecimal("116.312345")); req.setLatitude(new BigDecimal("40.071234"));
         req.setCoordinateSystem("GCJ02");
         return req;
@@ -75,14 +75,14 @@ class LifeFootprintBatchTest {
         var first = service.create(1, item(null, "住所"));
         var removed = service.create(1, item(null, "旧地点"));
         var untouched = service.create(1, item(null, "未提交的同日期地点"));
-        var changed = item(first.getId(), "新住所"); changed.setNote(null);
+        var changed = item(first.getId(), "新住所"); changed.setRemark(null);
         changed.setEndDate("2026-01-01");
         var added = item(null, "同位置的另一条明细"); added.setEndDate("2026-01-01");
         var saved = service.saveBatch(1, batch(List.of(changed, added), removed.getId()));
         assertEquals(2, saved.size()); assertEquals(first.getId(), saved.getFirst().getId());
         assertNotEquals(first.getId(), saved.getLast().getId());
         assertEquals(LocalDate.of(2026, 1, 1), saved.getLast().getEndDate());
-        assertNull(service.get(1, first.getId()).getNote());
+        assertNull(service.get(1, first.getId()).getRemark());
         assertEquals(3, service.list(1).size());
         assertEquals("未提交的同日期地点", service.get(1, untouched.getId()).getPlaceName());
         assertThrows(ResponseStatusException.class, () -> service.get(1, removed.getId()));

@@ -30,18 +30,19 @@ public class HomeCardPreferenceService {
             var row = saved.get(definition.cardKey());
             var visual = cardVisuals.getOrDefault(definition.cardKey(), MenuVisualService.DEFAULT);
             return new HomeCardPreferenceVO(definition.cardKey(), definition.group(), definition.title(),
-                visual.icon(), visual.iconColor(), row == null ? definition.defaultEnabled() : row.getEnabled(),
+                visual.icon(), visual.iconColor(), row == null ? (definition.defaultEnabled() ? 1 : 0) : row.getIsEnabled(),
                 row == null ? index : row.getSortOrder());
         }).sorted(Comparator.comparing(HomeCardPreferenceVO::group)
             .thenComparingInt(HomeCardPreferenceVO::sortOrder)).toList();
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public List<HomeCardPreferenceVO> toggle(long userId, String key, boolean enabled) {
+    public List<HomeCardPreferenceVO> toggle(long userId, String key, int isEnabled) {
         HomeCardCatalog.require(key);
         lock(userId);
         var row = getOrCreate(userId, key, rows(userId));
-        row.setEnabled(enabled);
+        if (isEnabled != 0 && isEnabled != 1) throw new IllegalArgumentException("isEnabled 只能为 0 或 1");
+        row.setIsEnabled(isEnabled);
         persist(userId, row);
         return get(userId);
     }
@@ -85,7 +86,7 @@ public class HomeCardPreferenceService {
         var row = new HomeCardPreferenceEntity();
         row.setUserId(userId);
         row.setCardKey(key);
-        row.setEnabled(definition.defaultEnabled());
+        row.setIsEnabled(definition.defaultEnabled() ? 1 : 0);
         row.setSortOrder(HomeCardCatalog.ALL.indexOf(definition));
         return row;
     }

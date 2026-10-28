@@ -1,7 +1,7 @@
 USE `aio_life`;
 
 INSERT INTO `sys_menu`
-  (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort`, `status`, `create_time`, `update_time`, `is_deleted`)
+  (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort_order`, `web_is_enabled`, `create_time`, `update_time`, `is_deleted`)
 SELECT 1906, parent.id, 'OperationLog', '/system/operation-log', 'system/operation-log/index',
   JSON_OBJECT('icon', 'mdi:clipboard-text-clock-outline', 'title', '操作日志'),
   'admin', 5, 1, NOW(), NOW(), 0
@@ -11,7 +11,7 @@ WHERE parent.name = 'System' AND parent.parent_id = 0 AND parent.is_deleted = 0
 LIMIT 1;
 
 INSERT INTO `sys_menu`
-  (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort`, `status`, `create_time`, `update_time`, `is_deleted`)
+  (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort_order`, `web_is_enabled`, `create_time`, `update_time`, `is_deleted`)
 SELECT 1907, parent.id, 'AccessLog', '/system/access-log', 'system/access-log/index',
   JSON_OBJECT('icon', 'mdi:login-variant', 'title', '访问日志'),
   'admin', 6, 1, NOW(), NOW(), 0

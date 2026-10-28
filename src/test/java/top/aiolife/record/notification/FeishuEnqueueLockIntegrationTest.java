@@ -73,7 +73,7 @@ class FeishuEnqueueLockIntegrationTest {
         var preferences = mock(NotificationPreferenceMapper.class);
         var crypto = mock(NotificationCryptoService.class);
         var enabled = new NotificationChannelConfigEntity();
-        enabled.setEnabled(1);
+        enabled.setIsEnabled(1);
         when(configs.selectOne(any())).thenReturn(enabled);
         when(crypto.encrypt(any())).thenReturn("encrypted-payload");
         return new FeishuNotificationServiceImpl(configs, preferences, deliveries, crypto,

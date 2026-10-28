@@ -11,5 +11,5 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MenuSortUpdateReq {
     @NotNull
-    private Integer sort;
+    private Integer sortOrder;
 }

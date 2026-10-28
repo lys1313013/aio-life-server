@@ -39,13 +39,13 @@ class ScheduledJobPersistenceTest {
         service.initializeDefaults(); service.initializeDefaults();
         assertEquals(2, service.list().size());
         var row = jobs.selectOne(new LambdaQueryWrapper<ScheduledJobEntity>().eq(ScheduledJobEntity::getJobCode, ScheduledJobRegistry.CHECK));
-        var req = new ScheduledJobUpdateReq(); req.setCron("0 0 22 * * ?"); req.setEnabled(false); req.setRevision(0);
+        var req = new ScheduledJobUpdateReq(); req.setCron("0 0 22 * * ?"); req.setIsEnabled(0); req.setRevision(0);
         var saved = service.update(row.getId(), req, 1L);
-        assertFalse(saved.getEnabled()); assertEquals(1, saved.getRevision());
+        assertEquals(0, saved.getIsEnabled()); assertEquals(1, saved.getRevision());
         final Long jobId = row.getId();
         assertThrows(IllegalArgumentException.class, () -> service.update(jobId, req, 1L));
-        service.initializeDefaults(); assertFalse(service.require(row.getId()).getEnabled());
-        req.setRevision(1); req.setEnabled(true); service.update(row.getId(), req, 1L);
+        service.initializeDefaults(); assertEquals(0, service.require(row.getId()).getIsEnabled());
+        req.setRevision(1); req.setIsEnabled(1); service.update(row.getId(), req, 1L);
         row = service.require(row.getId());
         var locks = mock(DistributedLockExecutor.class);
         when(locks.tryRun(anyString(), any())).thenAnswer(call -> { call.getArgument(1, Runnable.class).run(); return true; });

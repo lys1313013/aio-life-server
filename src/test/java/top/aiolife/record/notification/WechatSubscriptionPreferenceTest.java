@@ -29,8 +29,8 @@ class WechatSubscriptionPreferenceTest {
         when(preferences.selectList(any())).thenReturn(List.of());
         var all = service.listPreferences(7L);
         var reminder = all.stream().filter(p -> p.getBizType().equals("LEETCODE_REMINDER")).findFirst().orElseThrow();
-        assertFalse(reminder.getChannels().stream().filter(c -> c.getChannel().equals("WECHAT_MINI")).findFirst().orElseThrow().isEnabled());
-        assertTrue(reminder.getChannels().stream().filter(c -> c.getChannel().equals("EMAIL")).findFirst().orElseThrow().isEnabled());
+        assertFalse(reminder.getChannels().stream().filter(c -> c.getChannel().equals("WECHAT_MINI")).findFirst().orElseThrow().getIsEnabled() == 1);
+        assertTrue(reminder.getChannels().stream().filter(c -> c.getChannel().equals("EMAIL")).findFirst().orElseThrow().getIsEnabled() == 1);
         assertTrue(all.stream().filter(p -> !p.getBizType().equals("LEETCODE_REMINDER"))
                 .noneMatch(p -> p.getChannels().stream().anyMatch(c -> c.getChannel().equals("WECHAT_MINI"))));
         assertFalse(service.isChannelEnabled(7L, "LEETCODE_REMINDER", "WECHAT_MINI"));
@@ -40,7 +40,7 @@ class WechatSubscriptionPreferenceTest {
         var item = new NotificationPreferenceUpdateReq.Item();
         item.setBizType("FEEDBACK_REPLY");
         item.setChannel("WECHAT_MINI");
-        item.setEnabled(true);
+        item.setIsEnabled(1);
         var request = new NotificationPreferenceUpdateReq();
         request.setItems(List.of(item));
         assertThrows(IllegalArgumentException.class, () -> service.updatePreferences(7L, request));

@@ -77,7 +77,7 @@ public class WardrobeCategoryServiceImpl extends ServiceImpl<WardrobeCategoryMap
                 .eq(WardrobeCategoryEntity::getCategoryType, 1)
                 .eq(WardrobeCategoryEntity::getUserId, userId)
         );
-        queryWrapper.orderByAsc(WardrobeCategoryEntity::getSort);
+        queryWrapper.orderByAsc(WardrobeCategoryEntity::getSortOrder);
 
         List<WardrobeCategoryEntity> list = this.list(queryWrapper);
         return buildTree(list);
@@ -88,7 +88,7 @@ public class WardrobeCategoryServiceImpl extends ServiceImpl<WardrobeCategoryMap
         entity.setName(req.getName());
         entity.setIcon(req.getIcon());
         entity.setParentId(req.getParentId());
-        entity.setSort(req.getSort() != null ? req.getSort() : 0);
+        entity.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : 0);
         return entity;
     }
 
@@ -116,7 +116,7 @@ public class WardrobeCategoryServiceImpl extends ServiceImpl<WardrobeCategoryMap
         vo.setName(entity.getName());
         vo.setIcon(entity.getIcon());
         vo.setParentId(entity.getParentId());
-        vo.setSort(entity.getSort());
+        vo.setSortOrder(entity.getSortOrder());
         vo.setCategoryType(entity.getCategoryType());
         return vo;
     }

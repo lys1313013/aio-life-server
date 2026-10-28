@@ -128,7 +128,7 @@ class QueryAccessHttpIntegrationTest {
                 .eq(SysMenuEntity::getPath, "/time/time-tracker"));
         if (menu == null) {
             menu = new SysMenuEntity(); menu.setPath("/time/time-tracker"); menu.setName("查询锁测试");
-            menu.setStatus(1); menu.setMobileStatus(1); menu.fillCreateCommonField(userId); menus.insert(menu);
+            menu.setWebIsEnabled(1); menu.setMobileIsEnabled(1); menu.fillCreateCommonField(userId); menus.insert(menu);
         }
         UserSecondaryLockMenuEntity lock = new UserSecondaryLockMenuEntity();
         lock.setUserId(userId); lock.setMenuId(menu.getId()); lock.fillCreateCommonField(userId); locks.insert(lock);
@@ -189,7 +189,7 @@ class QueryAccessHttpIntegrationTest {
         SysMenuEntity menu = menus.selectOne(new LambdaQueryWrapper<SysMenuEntity>().eq(SysMenuEntity::getPath,path));
         if (menu == null) {
             menu = new SysMenuEntity(); menu.setPath(path); menu.setName("查询业务锁测试");
-            menu.setStatus(1); menu.setMobileStatus(1); menu.fillCreateCommonField(userId); menus.insert(menu);
+            menu.setWebIsEnabled(1); menu.setMobileIsEnabled(1); menu.fillCreateCommonField(userId); menus.insert(menu);
         }
         var lock = new UserSecondaryLockMenuEntity(); lock.setUserId(userId); lock.setMenuId(menu.getId());
         lock.fillCreateCommonField(userId); locks.insert(lock);

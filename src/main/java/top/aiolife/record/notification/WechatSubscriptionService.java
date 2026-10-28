@@ -239,7 +239,7 @@ public class WechatSubscriptionService {
                 .eq(NotificationPreferenceEntity::getUserId, userId)
                 .eq(NotificationPreferenceEntity::getBizType, BIZ_TYPE)
                 .eq(NotificationPreferenceEntity::getChannel, CHANNEL));
-        return preference != null && Integer.valueOf(1).equals(preference.getEnabled());
+        return preference != null && Integer.valueOf(1).equals(preference.getIsEnabled());
     }
 
     private boolean isBound(UserEntity user) {

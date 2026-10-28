@@ -31,7 +31,7 @@ public class ActivityLogParameters {
             "verifycode", "authcode", "otp", "captcha", "smscode", "emailcode", "securitycode", "cvv", "cvc");
     private static final List<String> ROUTES = List.of("/tasks", "/taskDetails", "/goals", "/timeRecord", "/anniversaryRecords", "/life-footprints");
     private static final List<String> QUERY_FIELDS = List.of("id", "taskId", "columnId", "page", "pageSize", "size", "get", "type", "status", "isPinned", "startDate", "endDate");
-    private static final List<String> BODY_FIELDS = List.of("id", "taskId", "columnId", "status", "isCompleted", "priority", "sort", "sortOrder", "type", "version");
+    private static final List<String> BODY_FIELDS = List.of("id", "taskId", "columnId", "status", "isCompleted", "priority", "sortOrder", "type", "version");
     private final ObjectMapper objectMapper;
     private String instanceIp;
 

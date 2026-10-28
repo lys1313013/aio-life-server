@@ -87,14 +87,14 @@ public interface IMenuService {
      * 更新菜单启用状态。
      *
      * @param id 菜单ID
-     * @param status 状态（1启用，0禁用）
+     * @param webIsEnabled 状态（1启用，0禁用）
      * @param userId 操作人ID
      * @return 更新后的菜单节点
      * @throws Exception 参数或持久化异常
      */
-    MenuAdminVO updateStatus(long id, int status, long userId) throws Exception;
+    MenuAdminVO updateStatus(long id, int webIsEnabled, long userId) throws Exception;
 
-    MenuAdminVO updateMobileStatus(long id, int status, long userId) throws Exception;
+    MenuAdminVO updateMobileStatus(long id, int webIsEnabled, long userId) throws Exception;
 
     MenuAdminVO updateSort(long id, int sort, long userId) throws Exception;
 

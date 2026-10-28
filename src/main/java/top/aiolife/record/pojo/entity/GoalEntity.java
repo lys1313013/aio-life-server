@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 /**
  * 目标实体
  *
- * <p>支持年度目标、月度目标、日目标的多层级目标管理</p>
+ * <p>支持从日目标到人生目标的多层级目标管理</p>
  *
  * @author Lys
  * @date 2026/03/30
@@ -28,7 +28,7 @@ public class GoalEntity {
     private Integer isPinned;
 
     /** 首页固定顺序，越小越靠前。 */
-    private Integer pinnedSort;
+    private Integer pinnedSortOrder;
 
 
     /**
@@ -43,7 +43,7 @@ public class GoalEntity {
     private Long userId;
 
     /**
-     * 目标类型：1=年度目标，2=月度目标，3=日目标
+     * 目标类型：1=日目标，2=周目标，3=月度目标，4=季度目标，5=半年目标，6=年度目标，7=三年目标，8=五年目标，9=十年目标，10=人生目标
      *
      * @see GoalTypeEnum
      */

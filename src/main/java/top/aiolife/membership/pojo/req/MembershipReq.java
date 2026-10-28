@@ -56,5 +56,5 @@ public class MembershipReq {
 
     private Integer autoRenew;
 
-    private String note;
+    private String remark;
 }

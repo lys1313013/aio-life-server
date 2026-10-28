@@ -1,5 +1,7 @@
 package top.aiolife.export;
 
+import top.aiolife.support.CurrentSchema;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -93,7 +95,7 @@ class ExportDatasetRegistryTest {
                                             + dataset.table()
                                             + "`\\s*\\((.*?)\\) ENGINE",
                                     Pattern.DOTALL)
-                            .matcher(schema);
+                            .matcher(CurrentSchema.table(dataset.table()));
             assertTrue(table.find(), dataset.table());
             Set<String> actual = new HashSet<>();
             var fields = Pattern.compile("(?m)^\\s*`([^`]+)`\\s+").matcher(table.group(1));

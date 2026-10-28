@@ -2,7 +2,7 @@ USE `aio_life`;
 
 -- 复用连接器所在目录，兼容已经通过菜单管理改名或修改路径的 AI 接入目录。
 INSERT INTO `sys_menu`
-  (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort`, `status`, `mobile_status`, `create_time`, `update_time`, `is_deleted`)
+  (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort_order`, `web_is_enabled`, `mobile_is_enabled`, `create_time`, `update_time`, `is_deleted`)
 SELECT 2304, tools.parent_id, 'mcpApiKeys', '/mcp/api-keys', 'mcp/api-keys/index',
   JSON_OBJECT('icon', 'ant-design:key-outlined', 'title', 'API Key 管理'),
   NULL, 1, 1, 1, NOW(), NOW(), 0

@@ -126,7 +126,7 @@ public class LifeFootprintService {
         entity.setPlaceName(request.getPlaceName().trim());
         entity.setAddress(trim(request.getAddress()));
         entity.setCity(trim(request.getCity()));
-        entity.setNote(trim(request.getNote()));
+        entity.setRemark(trim(request.getRemark()));
         entity.setProviderUid(trim(request.getProviderUid()));
         entity.setLongitude(request.getLongitude().setScale(6, RoundingMode.HALF_UP));
         entity.setLatitude(request.getLatitude().setScale(6, RoundingMode.HALF_UP));

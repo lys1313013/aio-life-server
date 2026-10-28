@@ -1,5 +1,7 @@
 package top.aiolife.system.pojo.req;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import lombok.Data;
 
 import java.util.List;
@@ -24,6 +26,8 @@ public class QuickNavSaveReq {
 
         private Integer sortOrder;
 
-        private Integer enabled;
+        @Min(0)
+    @Max(1)
+    private Integer isEnabled;
     }
 }

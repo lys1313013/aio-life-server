@@ -98,7 +98,7 @@ public class TimeTrackerCategoryController {
         long userId = StpUtil.getLoginIdAsLong();
         for (TimeTrackerCategoryEntity entity : list) {
             TimeTrackerCategoryEntity update = new TimeTrackerCategoryEntity();
-            update.setSort(entity.getSort());
+            update.setSortOrder(entity.getSortOrder());
 
             if (entity.getTemplateId() != null) {
                 // 如果是公共分类（且可能没有覆盖记录），调用 updateCategory 创建/更新覆盖记录

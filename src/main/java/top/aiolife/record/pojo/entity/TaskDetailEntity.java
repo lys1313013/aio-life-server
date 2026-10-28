@@ -26,7 +26,7 @@ public class TaskDetailEntity extends BaseEntity {
 
     private String content;
     private Integer isCompleted;
-    private Integer sort;
+    private Integer sortOrder;
     /**
      * 优先级: 1-高, 10-中, 20-低
      */

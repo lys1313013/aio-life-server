@@ -12,5 +12,5 @@ public class UserDictDataSortVO {
 
     private Long id;
 
-    private Integer dictSort;
+    private Integer sortOrder;
 }

@@ -47,7 +47,7 @@ public class TimeTrackerCategoryUpdateReq {
     /**
      * 排序权重
      */
-    private Integer sort;
+    private Integer sortOrder;
 
     /**
      * 是否启用：1-启用，0-禁用

@@ -1,6 +1,8 @@
 package top.aiolife.record.pojo.req;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import lombok.Data;
 
 /** SysDictDataCreateReq：仅包含接口允许写入的字段。 */
@@ -16,7 +18,7 @@ public class SysDictDataCreateReq {
     /**
      * 字典排序
      */
-    private Integer dictSort;
+    private Integer sortOrder;
 
     /**
      * 字典标签
@@ -46,7 +48,9 @@ public class SysDictDataCreateReq {
     /**
      * 状态
      */
-    private String status;
+    @Min(0)
+    @Max(1)
+    private Integer isEnabled;
 
     /**
      * 备注

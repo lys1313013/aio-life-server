@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
 public class NotificationChannelConfigEntity extends BaseEntity {
     private Long userId;
     private String channel;
-    private Integer enabled;
+    private Integer isEnabled;
     private String appId;
     private String appSecretCiphertext;
     private String receiverOpenId;

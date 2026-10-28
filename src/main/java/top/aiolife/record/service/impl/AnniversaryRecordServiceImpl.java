@@ -30,7 +30,7 @@ public class AnniversaryRecordServiceImpl extends ServiceImpl<IAnniversaryRecord
         int pinned = entity.getIsPinned() == null ? 0 : entity.getIsPinned();
         validatePin(pinned);
         entity.setIsPinned(pinned);
-        entity.setPinnedSort(pinned == 1 ? nextFirstSort(userId) : 0);
+        entity.setPinnedSortOrder(pinned == 1 ? nextFirstSort(userId) : 0);
         baseMapper.insert(entity);
         return entity;
     }
@@ -85,7 +85,7 @@ public class AnniversaryRecordServiceImpl extends ServiceImpl<IAnniversaryRecord
                 .eq(AnniversaryRecordEntity::getUserId, userId).eq(AnniversaryRecordEntity::getIsDeleted, 0)
                 .in(AnniversaryRecordEntity::getId, ids)
                 .set(AnniversaryRecordEntity::getIsDeleted, 1)
-                .set(AnniversaryRecordEntity::getIsPinned, 0).set(AnniversaryRecordEntity::getPinnedSort, 0)
+                .set(AnniversaryRecordEntity::getIsPinned, 0).set(AnniversaryRecordEntity::getPinnedSortOrder, 0)
                 .set(AnniversaryRecordEntity::getUpdateUser, userId)
                 .set(AnniversaryRecordEntity::getUpdateTime, LocalDateTime.now()));
     }
@@ -113,15 +113,15 @@ public class AnniversaryRecordServiceImpl extends ServiceImpl<IAnniversaryRecord
         return baseMapper.selectList(new LambdaQueryWrapper<AnniversaryRecordEntity>()
                 .eq(AnniversaryRecordEntity::getUserId, userId).eq(AnniversaryRecordEntity::getIsDeleted, 0)
                 .eq(AnniversaryRecordEntity::getIsPinned, 1)
-                .orderByAsc(AnniversaryRecordEntity::getPinnedSort).orderByDesc(AnniversaryRecordEntity::getId));
+                .orderByAsc(AnniversaryRecordEntity::getPinnedSortOrder).orderByDesc(AnniversaryRecordEntity::getId));
     }
 
     private void applyPin(long userId, AnniversaryRecordEntity update, AnniversaryRecordEntity existing, Integer requested) {
         int value = requested == null ? existing.getIsPinned() : requested;
         validatePin(value);
         update.setIsPinned(value);
-        update.setPinnedSort(value == 0 ? 0 : Integer.valueOf(1).equals(existing.getIsPinned())
-                ? existing.getPinnedSort() : nextFirstSort(userId));
+        update.setPinnedSortOrder(value == 0 ? 0 : Integer.valueOf(1).equals(existing.getIsPinned())
+                ? existing.getPinnedSortOrder() : nextFirstSort(userId));
     }
 
     private void validatePin(int value) {
@@ -131,7 +131,7 @@ public class AnniversaryRecordServiceImpl extends ServiceImpl<IAnniversaryRecord
     private int nextFirstSort(long userId) {
         List<AnniversaryRecordEntity> records = pinned(userId);
         if (records.isEmpty()) return 0;
-        int first = records.getFirst().getPinnedSort();
+        int first = records.getFirst().getPinnedSortOrder();
         if (first == Integer.MIN_VALUE) {
             writeOrder(userId, records.stream().map(AnniversaryRecordEntity::getId).toList());
             return -1;
@@ -144,7 +144,7 @@ public class AnniversaryRecordServiceImpl extends ServiceImpl<IAnniversaryRecord
         for (int index = 0; index < ids.size(); index++) {
             baseMapper.update(null, ownedUpdate(userId, ids.get(index))
                     .eq(AnniversaryRecordEntity::getIsPinned, 1)
-                    .set(AnniversaryRecordEntity::getPinnedSort, index)
+                    .set(AnniversaryRecordEntity::getPinnedSortOrder, index)
                     .set(AnniversaryRecordEntity::getUpdateUser, userId).set(AnniversaryRecordEntity::getUpdateTime, now));
         }
     }

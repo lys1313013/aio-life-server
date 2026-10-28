@@ -46,7 +46,7 @@ class PermissionMutationTest {
     @Test
     void privateCategory_cannotBecomePublicOrAnotherUsersRecord() {
         for (long injectedOwner : List.of(0L, 22L)) {
-            var service = spy(new TimeTrackerCategoryServiceImpl());
+            var service = spy(new TimeTrackerCategoryServiceImpl(mock(TimeTrackerCategoryCache.class)));
             var existing = new TimeTrackerCategoryEntity();
             existing.setId(7L); existing.setUserId(11L);
             var updates = new TimeTrackerCategoryEntity();
@@ -80,7 +80,7 @@ class PermissionMutationTest {
 
     @Test
     void foreignParentCategory_isRejectedBeforeWriting() {
-        var service = spy(new TimeTrackerCategoryServiceImpl());
+        var service = spy(new TimeTrackerCategoryServiceImpl(mock(TimeTrackerCategoryCache.class)));
         var foreign = new TimeTrackerCategoryEntity(); foreign.setUserId(22L);
         doReturn(foreign).when(service).getById(7L);
         assertThrows(RuntimeException.class, () -> service.updateCategory(7L, new TimeTrackerCategoryEntity(), 11L));
@@ -119,12 +119,12 @@ class PermissionMutationTest {
 
             var details = mock(ITaskDetail.class);
             var detail = new TaskDetailEntity(); detail.setId(8L); detail.setUserId(22L);
-            detail.setTaskId(99L); detail.setContent("不要写入"); detail.setSort(5);
+            detail.setTaskId(99L); detail.setContent("不要写入"); detail.setSortOrder(5);
             new TaskDetailController(details, mock(ITaskService.class)).reSort(ApiRequestFixtures.requests(List.of(detail), TaskDetailSortReq.class));
             var savedDetail = ArgumentCaptor.forClass(TaskDetailEntity.class);
             verify(details).update(savedDetail.capture(), any(Wrapper.class));
             assertNull(savedDetail.getValue().getUserId()); assertNull(savedDetail.getValue().getTaskId());
-            assertNull(savedDetail.getValue().getContent()); assertEquals(5, savedDetail.getValue().getSort());
+            assertNull(savedDetail.getValue().getContent()); assertEquals(5, savedDetail.getValue().getSortOrder());
         }
     }
 

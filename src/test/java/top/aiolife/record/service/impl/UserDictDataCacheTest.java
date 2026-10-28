@@ -96,10 +96,10 @@ class UserDictDataCacheTest {
         var base = row(7L, 0L, TYPE);
         var override = row(8L, 1L, TYPE);
         override.setTemplateId(7L);
-        override.setStatus("1");
+        override.setIsEnabled(0);
         when(mapper.selectList(any(Wrapper.class))).thenReturn(List.of(base), List.of(override));
         assertTrue(service.listUserVisibleDictData(1L, TYPE).isEmpty());
-        assertEquals("1", service.listUserVisibleDictData(1L, TYPE, true).getFirst().getStatus());
+        assertEquals(0, service.listUserVisibleDictData(1L, TYPE, true).getFirst().getIsEnabled());
         assertTrue(service.listUserVisibleDictData(1L, TYPE).isEmpty());
         verify(mapper, times(2)).selectList(any(Wrapper.class));
     }
@@ -186,7 +186,7 @@ class UserDictDataCacheTest {
         doReturn(row(8L, 1L, TYPE)).when(service).getOne(any(Wrapper.class));
         doReturn(true).when(service).updateById(any(UserDictDataEntity.class));
         var updates = row(7L, 1L, TYPE);
-        updates.setStatus("1");
+        updates.setIsEnabled(0);
         service.updateDictData(7L, updates, 1L);
         assertCached(1L, TYPE, false);
         assertCached(0L, TYPE, true);
@@ -231,7 +231,7 @@ class UserDictDataCacheTest {
         warm();
         var first = row(7L, 0L, TYPE);
         var second = row(8L, 0L, TYPE);
-        second.setDictSort(10);
+        second.setSortOrder(10);
         doReturn(new ArrayList<>(List.of(first, second))).when(service).list(any(Wrapper.class));
         doReturn(true).when(service).updateBatchById(anyCollection());
         TransactionSynchronizationManager.initSynchronization();
@@ -291,7 +291,7 @@ class UserDictDataCacheTest {
     private UserDictDataEntity row(Long id, Long owner, String type) {
         var row = new UserDictDataEntity();
         row.setId(id); row.setUserId(owner); row.setDictType(type);
-        row.setDictLabel("运动"); row.setDictValue("exercise"); row.setStatus("0"); row.setDictSort(0);
+        row.setDictLabel("运动"); row.setDictValue("exercise"); row.setIsEnabled(1); row.setSortOrder(0);
         return row;
     }
 }

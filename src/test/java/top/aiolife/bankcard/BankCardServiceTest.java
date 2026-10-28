@@ -53,11 +53,11 @@ class BankCardServiceTest {
         jdbc = new JdbcTemplate(ds); tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         jdbc.execute("CREATE TABLE user(policy_version VARCHAR(32), policy_accepted_at TIMESTAMP, erasure_requested_at TIMESTAMP, erasure_retry_at TIMESTAMP, id BIGINT PRIMARY KEY,is_deleted INT DEFAULT 0)");
         jdbc.execute("INSERT INTO user(id) VALUES(1),(2)");
-        jdbc.execute("CREATE TABLE sys_dict_type(dict_id BIGINT PRIMARY KEY,dict_type VARCHAR(100),status CHAR(1),is_deleted INT DEFAULT 0)");
-        jdbc.execute("CREATE TABLE sys_dict_data(dict_code BIGINT PRIMARY KEY,dict_id BIGINT,dict_label VARCHAR(100),dict_value VARCHAR(100),dict_sort INT,status CHAR(1),is_deleted INT DEFAULT 0)");
-        jdbc.execute("INSERT INTO sys_dict_type VALUES(10,'bank','0',0),(11,'other','0',0)");
-        jdbc.execute("INSERT INTO sys_dict_data VALUES(20,10,'测试银行','TEST',0,'0',0),(21,11,'其他字典','OTHER',0,'0',0)");
-        jdbc.execute("CREATE TABLE user_dict_data(id BIGINT PRIMARY KEY,user_id BIGINT,dict_type VARCHAR(100),dict_label VARCHAR(100),dict_value VARCHAR(100),color VARCHAR(20),dict_sort INT,status CHAR(1),is_default CHAR(1),is_readonly CHAR(1),is_deleted INT DEFAULT 0,create_user BIGINT,update_user BIGINT,create_time DATETIME,update_time DATETIME)");
+        jdbc.execute("CREATE TABLE sys_dict_type(dict_id BIGINT PRIMARY KEY,dict_type VARCHAR(100),is_enabled TINYINT,is_deleted INT DEFAULT 0)");
+        jdbc.execute("CREATE TABLE sys_dict_data(dict_code BIGINT PRIMARY KEY,dict_id BIGINT,dict_label VARCHAR(100),dict_value VARCHAR(100),sort_order INT,is_enabled TINYINT,is_deleted INT DEFAULT 0)");
+        jdbc.execute("INSERT INTO sys_dict_type VALUES(10,'bank',1,0),(11,'other',1,0)");
+        jdbc.execute("INSERT INTO sys_dict_data VALUES(20,10,'测试银行','TEST',0,1,0),(21,11,'其他字典','OTHER',0,1,0)");
+        jdbc.execute("CREATE TABLE user_dict_data(id BIGINT PRIMARY KEY,user_id BIGINT,dict_type VARCHAR(100),dict_label VARCHAR(100),dict_value VARCHAR(100),color VARCHAR(20),sort_order INT,is_enabled TINYINT,is_default CHAR(1),is_readonly CHAR(1),is_deleted INT DEFAULT 0,create_user BIGINT,update_user BIGINT,create_time DATETIME,update_time DATETIME)");
         jdbc.execute("CREATE TABLE file(id VARCHAR(32) PRIMARY KEY,biz_type VARCHAR(50),biz_id BIGINT,create_user BIGINT,update_user BIGINT,is_deleted INT DEFAULT 0,is_public INT DEFAULT 0,update_time DATETIME)");
         for (String table : List.of("bank_card", "bank_card_tag_rel", "bank_card_cover_template")) {
             jdbc.execute(CurrentSchema.h2Table(table));
@@ -222,7 +222,7 @@ class BankCardServiceTest {
         req.setBankId(null);req.setCustomBankName("我的银行");
         assertNull(tx.execute(s->service.save(1,id,req)).getBankId());
         assertNull(jdbc.queryForObject("SELECT bank_id FROM bank_card WHERE id=?",Long.class,id));
-        jdbc.update("UPDATE sys_dict_data SET status='1' WHERE dict_code=20");
+        jdbc.update("UPDATE sys_dict_data SET is_enabled=0 WHERE dict_code=20");
         req.setBankId(20L);req.setCustomBankName(null);
         assertThrows(IllegalArgumentException.class,()->tx.execute(s->service.save(1,id,req)));
         assertEquals("我的银行",service.detail(1,id).getBankName());
@@ -263,12 +263,12 @@ class BankCardServiceTest {
         assertTrue(service.detail(1,id).getCoverFileIds().isEmpty());assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM file WHERE id=?",Integer.class,FILE_A));
     }
     @Test void tagsArePrivateRenamableAndRemovedWithRelations() {
-        var tag=tx.execute(s->service.saveTag(1,null,new BankCardTagReq("工资卡","#64748b","0")));
-        assertThrows(IllegalArgumentException.class,()->tx.execute(s->service.saveTag(1,null,new BankCardTagReq(" 工资卡 ",null,"0"))));
+        var tag=tx.execute(s->service.saveTag(1,null,new BankCardTagReq("工资卡","#64748b",1)));
+        assertThrows(IllegalArgumentException.class,()->tx.execute(s->service.saveTag(1,null,new BankCardTagReq(" 工资卡 ",null,1))));
         var req=request();req.setTagIds(List.of(Long.valueOf(tag.id())));
         assertThrows(IllegalArgumentException.class,()->create(2,req));
         var card=create(1,req);
-        tx.execute(s->service.saveTag(1,Long.valueOf(tag.id()),new BankCardTagReq("日常",null,"1")));
+        tx.execute(s->service.saveTag(1,Long.valueOf(tag.id()),new BankCardTagReq("日常",null,0)));
         assertEquals("日常",service.list(1).getFirst().getTags().getFirst().name());
         req.setCardNo(null);tx.execute(s->service.save(1,Long.valueOf(card.getId()),req));
         tx.executeWithoutResult(s->service.deleteTag(1,Long.parseLong(tag.id())));
@@ -277,7 +277,7 @@ class BankCardServiceTest {
     }
     @Test void bankDictionaryTypeAvailabilityAndDeletionGuard() {
         var wrong=request();wrong.setBankId(21L);assertThrows(IllegalArgumentException.class,()->create(1,wrong));
-        var card=create(1,request());jdbc.update("UPDATE sys_dict_data SET status='1' WHERE dict_code=20");
+        var card=create(1,request());jdbc.update("UPDATE sys_dict_data SET is_enabled=0 WHERE dict_code=20");
         assertThrows(IllegalArgumentException.class,()->create(2,request()));
         var edit=request();edit.setCardNo(null);edit.setAlias("仍可编辑");
         assertEquals("仍可编辑",tx.execute(s->service.save(1,Long.valueOf(card.getId()),edit)).getAlias());
@@ -389,7 +389,7 @@ class BankCardServiceTest {
     }
     @Test void 银行停用后禁止新选用且既有银行卡可继续编辑() {
         long id=template();var req=request();req.setCoverTemplateId(id);var card=create(1,req);
-        jdbc.update("UPDATE sys_dict_data SET status='1' WHERE dict_code=20");
+        jdbc.update("UPDATE sys_dict_data SET is_enabled=0 WHERE dict_code=20");
         assertTrue(templates().options(20,"debit").isEmpty());
         assertThrows(IllegalArgumentException.class,()->create(2,req));
         assertEquals(FILE_A,tx.execute(s->service.save(1,Long.valueOf(card.getId()),req)).getCoverTemplateFileId());
@@ -445,8 +445,8 @@ class BankCardServiceTest {
         tx.execute(status -> templates().save(1, id, req));
         req.setSourceUrl(null);
         assertNull(tx.execute(status -> templates().save(1, id, req)).sourceUrl());
-        var tag = tx.execute(status -> service.saveTag(1, null, new BankCardTagReq("颜色", "#abcdef", "0")));
-        tx.execute(status -> service.saveTag(1, Long.valueOf(tag.id()), new BankCardTagReq("颜色", null, "0")));
+        var tag = tx.execute(status -> service.saveTag(1, null, new BankCardTagReq("颜色", "#abcdef",1)));
+        tx.execute(status -> service.saveTag(1, Long.valueOf(tag.id()), new BankCardTagReq("颜色", null,1)));
         assertNull(service.tags(1).getFirst().color());
     }
 

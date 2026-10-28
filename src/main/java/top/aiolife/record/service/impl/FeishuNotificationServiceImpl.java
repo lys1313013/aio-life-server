@@ -70,7 +70,7 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
                 && StringUtils.hasText(entity.getAppSecretCiphertext());
         return FeishuChannelConfigVO.builder()
                 .configured(configured)
-                .enabled(configured && Integer.valueOf(1).equals(entity.getEnabled()))
+                .isEnabled(configured && Integer.valueOf(1).equals(entity.getIsEnabled()) ? 1 : 0)
                 .bound(entity != null && StringUtils.hasText(entity.getReceiverOpenId()))
                 .appId(entity == null ? null : entity.getAppId())
                 .receiverOpenId(entity == null ? null : entity.getReceiverOpenId())
@@ -145,15 +145,15 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
         }
 
         if (bindingChanged) {
-            entity.setEnabled(1);
+            entity.setIsEnabled(1);
         } else if (creating || credentialsChanged) {
             // 新应用存在多个/零个可见用户时先保存凭证，待用户选择接收人后再启用。
-            entity.setEnabled(0);
+            entity.setIsEnabled(0);
         } else {
-            if (Boolean.TRUE.equals(req.getEnabled()) && !StringUtils.hasText(entity.getReceiverOpenId())) {
+            if (Integer.valueOf(1).equals(req.getIsEnabled()) && !StringUtils.hasText(entity.getReceiverOpenId())) {
                 throw new IllegalArgumentException("请选择飞书通知接收人");
             }
-            entity.setEnabled(Boolean.TRUE.equals(req.getEnabled()) ? 1 : 0);
+            entity.setIsEnabled(Integer.valueOf(1).equals(req.getIsEnabled()) ? 1 : 0);
         }
         if (creating) {
             configMapper.insert(entity);
@@ -237,11 +237,11 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
                             .map(ch -> {
                                 String key = type.name() + ":" + ch;
                                 boolean enabled = saved.containsKey(key)
-                                        ? Integer.valueOf(1).equals(saved.get(key).getEnabled())
+                                        ? Integer.valueOf(1).equals(saved.get(key).getIsEnabled())
                                         : !NotificationChannel.WECHAT_MINI.equals(ch);
                                 return NotificationPreferenceVO.ChannelState.builder()
                                         .channel(ch)
-                                        .enabled(enabled)
+                                        .isEnabled(enabled ? 1 : 0)
                                         .build();
                             })
                             .toList();
@@ -276,11 +276,11 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
                 entity.setUserId(userId);
                 entity.setBizType(item.getBizType());
                 entity.setChannel(item.getChannel());
-                entity.setEnabled(Boolean.TRUE.equals(item.getEnabled()) ? 1 : 0);
+                entity.setIsEnabled(Integer.valueOf(1).equals(item.getIsEnabled()) ? 1 : 0);
                 entity.fillCreateCommonField(userId);
                 preferenceMapper.insert(entity);
             } else {
-                existing.setEnabled(Boolean.TRUE.equals(item.getEnabled()) ? 1 : 0);
+                existing.setIsEnabled(Integer.valueOf(1).equals(item.getIsEnabled()) ? 1 : 0);
                 existing.fillUpdateCommonField(userId);
                 preferenceMapper.updateById(existing);
             }
@@ -306,23 +306,23 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
         NotificationBizType.fromName(bizType);
         if (NotificationChannel.FEISHU.equals(channel)) {
             NotificationChannelConfigEntity config = findConfig(userId);
-            if (config == null || !Integer.valueOf(1).equals(config.getEnabled())) {
+            if (config == null || !Integer.valueOf(1).equals(config.getIsEnabled())) {
                 return false;
             }
         }
         NotificationPreferenceEntity preference = findPreference(userId, bizType, channel);
         return preference == null ? !NotificationChannel.WECHAT_MINI.equals(channel)
-                : Integer.valueOf(1).equals(preference.getEnabled());
+                : Integer.valueOf(1).equals(preference.getIsEnabled());
     }
 
     private void doSendIfEnabled(NotificationRequest request) {
         validateNotification(request);
         NotificationChannelConfigEntity config = findConfig(request.receiverUserId());
-        if (config == null || !Integer.valueOf(1).equals(config.getEnabled())) {
+        if (config == null || !Integer.valueOf(1).equals(config.getIsEnabled())) {
             return;
         }
         NotificationPreferenceEntity preference = findPreference(request.receiverUserId(), request.bizType(), CHANNEL);
-        if (preference != null && !Integer.valueOf(1).equals(preference.getEnabled())) {
+        if (preference != null && !Integer.valueOf(1).equals(preference.getIsEnabled())) {
             return;
         }
 
@@ -359,7 +359,7 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
         for (NotificationDeliveryEntity delivery : deliveries) {
             try {
                 NotificationChannelConfigEntity config = findConfig(delivery.getUserId());
-                if (config == null || !Integer.valueOf(1).equals(config.getEnabled())) {
+                if (config == null || !Integer.valueOf(1).equals(config.getIsEnabled())) {
                     markFailed(delivery, "CHANNEL_DISABLED", "飞书渠道已关闭");
                     continue;
                 }
@@ -422,7 +422,7 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
         if (requireBinding && !StringUtils.hasText(config.getReceiverOpenId())) {
             throw new IllegalArgumentException("请先选择飞书通知接收人");
         }
-        if (requireEnabled && !Integer.valueOf(1).equals(config.getEnabled())) {
+        if (requireEnabled && !Integer.valueOf(1).equals(config.getIsEnabled())) {
             throw new IllegalArgumentException("请先启用飞书通知");
         }
         return config;
@@ -502,7 +502,7 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
     private void clearBinding(NotificationChannelConfigEntity entity) {
         entity.setReceiverOpenId(null);
         entity.setReceiverName(null);
-        entity.setEnabled(0);
+        entity.setIsEnabled(0);
     }
 
     private void bindRecipient(NotificationChannelConfigEntity entity, String openId, String name) {

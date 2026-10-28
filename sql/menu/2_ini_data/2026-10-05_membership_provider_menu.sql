@@ -2,7 +2,7 @@ USE `aio_life`;
 
 -- 会员平台管理菜单；平台预设在 2026-10-20_membership_providers.sql 中维护。
 INSERT INTO `sys_menu`
-    (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort`, `status`, `mobile_status`, `create_time`, `update_time`, `is_deleted`)
+    (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort_order`, `web_is_enabled`, `mobile_is_enabled`, `create_time`, `update_time`, `is_deleted`)
 SELECT 1911, parent.id, 'MembershipProviderAdmin', '/system/membership-providers', 'system/membership-providers/index',
     JSON_OBJECT('icon', 'lucide:crown', 'title', '会员平台', 'authority', JSON_ARRAY('admin')),
     'admin', 10, 1, 1, NOW(), NOW(), 0

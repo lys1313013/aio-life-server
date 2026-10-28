@@ -12,6 +12,6 @@ import top.aiolife.core.pojo.entity.BaseEntity;
 public class HomeCardPreferenceEntity extends BaseEntity {
     private Long userId;
     private String cardKey;
-    private Boolean enabled;
+    private Integer isEnabled;
     private Integer sortOrder;
 }

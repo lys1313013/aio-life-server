@@ -68,7 +68,7 @@ public class GoalController {
             queryWrapper.eq(GoalEntity::getIsPinned, isPinned);
         }
         if (Integer.valueOf(1).equals(isPinned)) {
-            queryWrapper.orderByAsc(GoalEntity::getPinnedSort).orderByDesc(GoalEntity::getId);
+            queryWrapper.orderByAsc(GoalEntity::getPinnedSortOrder).orderByDesc(GoalEntity::getId);
         } else {
             queryWrapper.orderByDesc(GoalEntity::getCreateTime).orderByDesc(GoalEntity::getId);
         }

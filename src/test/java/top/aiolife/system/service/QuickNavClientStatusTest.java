@@ -27,12 +27,12 @@ class QuickNavClientStatusTest {
         var req = new QuickNavSaveReq();
         req.setItems(IntStream.rangeClosed(1, 15).mapToObj(i -> {
             var item = new QuickNavSaveReq.Item();
-            item.setMenuId((long) i); item.setSortOrder(i - 1); item.setEnabled(1);
+            item.setMenuId((long) i); item.setSortOrder(i - 1); item.setIsEnabled(1);
             return item;
         }).toList());
         assertDoesNotThrow(() -> service.saveMy(7L, List.of("user"), req, MenuClient.MOBILE));
         verify(rows, times(15)).insert(any(UserQuickNavEntity.class));
-        var extra = new QuickNavSaveReq.Item(); extra.setMenuId(16L); extra.setSortOrder(15); extra.setEnabled(1);
+        var extra = new QuickNavSaveReq.Item(); extra.setMenuId(16L); extra.setSortOrder(15); extra.setIsEnabled(1);
         req.setItems(java.util.stream.Stream.concat(req.getItems().stream(), java.util.stream.Stream.of(extra)).toList());
         assertThrows(IllegalArgumentException.class, () -> service.saveMy(7L, List.of("user"), req, MenuClient.MOBILE));
     }
@@ -41,8 +41,8 @@ class QuickNavClientStatusTest {
         var menus = mock(ISysMenuMapper.class);
         var access = mock(IMenuService.class);
         var service = new QuickNavServiceImpl(rows, menus, access, new ObjectMapper());
-        var webRow = new UserQuickNavEntity(); webRow.setMenuId(1L); webRow.setEnabled(1); webRow.setSortOrder(0);
-        var mobileRow = new UserQuickNavEntity(); mobileRow.setMenuId(2L); mobileRow.setEnabled(1); mobileRow.setSortOrder(1);
+        var webRow = new UserQuickNavEntity(); webRow.setMenuId(1L); webRow.setIsEnabled(1); webRow.setSortOrder(0);
+        var mobileRow = new UserQuickNavEntity(); mobileRow.setMenuId(2L); mobileRow.setIsEnabled(1); mobileRow.setSortOrder(1);
         when(rows.selectList(any())).thenReturn(List.of(webRow, mobileRow));
         var webMenu = new SysMenuEntity(); webMenu.setId(1L); webMenu.setPath("/web");
         var mobileMenu = new SysMenuEntity(); mobileMenu.setId(2L); mobileMenu.setPath("/mobile");
@@ -57,7 +57,7 @@ class QuickNavClientStatusTest {
         verify(rows).insert(inserted.capture());
         assertEquals(1L, inserted.getValue().getMenuId());
         assertEquals(7L, inserted.getValue().getUserId());
-        var invalid = new QuickNavSaveReq.Item(); invalid.setMenuId(1L); invalid.setSortOrder(0); invalid.setEnabled(1);
+        var invalid = new QuickNavSaveReq.Item(); invalid.setMenuId(1L); invalid.setSortOrder(0); invalid.setIsEnabled(1);
         req.setItems(List.of(invalid));
         assertThrows(IllegalArgumentException.class, () -> service.saveMy(7L, List.of("user"), req, MenuClient.MOBILE));
     }

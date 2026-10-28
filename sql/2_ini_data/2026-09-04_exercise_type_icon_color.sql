@@ -79,7 +79,7 @@ WHERE `user_id` = 0
 COMMIT;
 
 -- 执行后应返回 18 条，且 icon/color 均不为空。
-SELECT `id`, `dict_label`, `icon`, `color`, `dict_sort`
+SELECT `id`, `dict_label`, `icon`, `color`, `sort_order`
 FROM `user_dict_data`
 WHERE `user_id` = 0
   AND `dict_type` = 'exercise_type'
@@ -104,4 +104,4 @@ WHERE `user_id` = 0
       2063252204773797970,
       2082125147607764994
   )
-ORDER BY `dict_sort`, `id`;
+ORDER BY `sort_order`, `id`;

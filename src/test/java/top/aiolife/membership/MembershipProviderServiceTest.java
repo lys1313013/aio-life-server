@@ -49,7 +49,7 @@ class MembershipProviderServiceTest {
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         String audit = ",create_user BIGINT,create_time DATETIME,update_user BIGINT,update_time DATETIME,is_deleted INT DEFAULT 0";
         jdbc.execute("CREATE TABLE membership_provider(id BIGINT PRIMARY KEY,name VARCHAR(100),code VARCHAR(50),category VARCHAR(50),icon_key VARCHAR(64),sort_order INT,is_enabled INT" + audit + ")");
-        jdbc.execute("CREATE TABLE membership_record(id BIGINT PRIMARY KEY,user_id BIGINT,name VARCHAR(100),category VARCHAR(50),provider_id BIGINT,provider VARCHAR(100),icon VARCHAR(50),color VARCHAR(50),start_date DATE,expiry_date DATE,price DECIMAL(10,2),billing_cycle VARCHAR(20),monthly_amount DECIMAL(10,2),auto_renew INT,note VARCHAR(500)" + audit + ")");
+        jdbc.execute("CREATE TABLE membership_record(id BIGINT PRIMARY KEY,user_id BIGINT,name VARCHAR(100),category VARCHAR(50),provider_id BIGINT,provider VARCHAR(100),icon VARCHAR(50),color VARCHAR(50),start_date DATE,expiry_date DATE,price DECIMAL(10,2),billing_cycle VARCHAR(20),monthly_amount DECIMAL(10,2),auto_renew INT,remark VARCHAR(500)" + audit + ")");
         jdbc.update("INSERT INTO membership_provider(id,name,code,category,icon_key,sort_order,is_enabled) VALUES(10,'平台A','a','video','bilibili',0,1),(20,'平台B','b','music',NULL,1,0)");
         var config = new MybatisConfiguration();
         config.setMapUnderscoreToCamelCase(true);

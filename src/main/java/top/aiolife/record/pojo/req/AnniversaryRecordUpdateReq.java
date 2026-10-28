@@ -28,7 +28,7 @@ public class AnniversaryRecordUpdateReq {
 
     private String type;
 
-    private String note;
+    private String remark;
 
     private String color;
 

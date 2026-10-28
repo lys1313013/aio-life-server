@@ -71,7 +71,7 @@ public class AnniversaryMcpTools {
         vo.setTitle(entity.getTitle());
         vo.setType(TYPE_LABELS.getOrDefault(entity.getType(), entity.getType()));
         vo.setTargetDate(entity.getTargetDate());
-        vo.setNote(entity.getNote());
+        vo.setRemark(entity.getRemark());
         vo.setDaysRemaining(computeDaysRemaining(entity, today));
         return vo;
     }

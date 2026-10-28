@@ -31,5 +31,5 @@ public class LifeFootprintEntity extends BaseEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String providerUid;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
-    private String note;
+    private String remark;
 }

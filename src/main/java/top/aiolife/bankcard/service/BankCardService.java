@@ -149,7 +149,7 @@ public class BankCardService {
         tags(userId).forEach(t -> allowedTags.put(Long.valueOf(t.id()),t));
         for (Long tagId : tagIds) {
             var tag = allowedTags.get(tagId);
-            if (tag==null || (!"0".equals(tag.status()) && !oldTags.contains(tagId))) throw new IllegalArgumentException("标签不存在、已停用或不属于当前用户");
+            if (tag==null || (!Integer.valueOf(1).equals(tag.isEnabled()) && !oldTags.contains(tagId))) throw new IllegalArgumentException("标签不存在、已停用或不属于当前用户");
         }
         if (req.getCoverFileIds().isEmpty()) card.setCoverSourceUrl(null);
         cardMapper.save(card,existing==null);
@@ -201,16 +201,16 @@ public class BankCardService {
             tag.setDictLabel(name);
             tag.setDictValue(Long.toString(tagId));
             tag.setColor(req.color());
-            tag.setDictSort(0);
-            tag.setStatus(req.status());
+            tag.setSortOrder(0);
+            tag.setIsEnabled(req.isEnabled());
             tag.setIsDefault("N");
             tag.setIsReadonly("N");
             tag.fillCreateCommonField(userId);
             tagMapper.insert(tag);
         } else {
-            tagMapper.updateTag(userId, tagId, name, req.color(), req.status());
+            tagMapper.updateTag(userId, tagId, name, req.color(), req.isEnabled());
         }
-        return new BankCardVO.Tag(Long.toString(tagId),name,req.color(),req.status());
+        return new BankCardVO.Tag(Long.toString(tagId),name,req.color(),req.isEnabled());
     }
     @Transactional(rollbackFor = Exception.class)
     public void deleteTag(long userId,long id) {

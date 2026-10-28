@@ -3,7 +3,7 @@ USE `aio_life`;
 -- 仅新增记录目录下的一个页面，不新增看板/书架/笔记子菜单。
 -- 通过现有目录名称/路径解析父菜单，重复执行不重复插入。
 INSERT INTO `sys_menu`
-  (`id`, `parent_id`, `name`, `path`, `component`, `redirect`, `meta`, `roles`, `sort`, `status`, `create_time`, `update_time`, `is_deleted`)
+  (`id`, `parent_id`, `name`, `path`, `component`, `redirect`, `meta`, `roles`, `sort_order`, `web_is_enabled`, `create_time`, `update_time`, `is_deleted`)
 SELECT 2056010094796967939, parent.id, 'Weread', '/record/weread', 'my-hub/weread/index', NULL,
   JSON_OBJECT('icon', 'mdi:book-open-variant', 'title', '微信读书', 'backTop', false),
   NULL, 9, 1, NOW(), NOW(), 0

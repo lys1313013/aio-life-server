@@ -40,7 +40,7 @@ public class AnniversaryRecordController {
             queryWrapper.eq(AnniversaryRecordEntity::getIsPinned, isPinned);
         }
         if (Integer.valueOf(1).equals(isPinned)) {
-            queryWrapper.orderByAsc(AnniversaryRecordEntity::getPinnedSort).orderByDesc(AnniversaryRecordEntity::getId);
+            queryWrapper.orderByAsc(AnniversaryRecordEntity::getPinnedSortOrder).orderByDesc(AnniversaryRecordEntity::getId);
         } else {
             queryWrapper.orderByDesc(AnniversaryRecordEntity::getCreateTime).orderByDesc(AnniversaryRecordEntity::getId);
         }

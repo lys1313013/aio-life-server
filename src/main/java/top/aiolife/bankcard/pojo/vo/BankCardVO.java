@@ -42,6 +42,6 @@ public class BankCardVO {
     private String remark;
     private List<Tag> tags = List.of();
     private List<String> coverFileIds = List.of();
-    public record Tag(String id, String name, String color, String status) {}
-    public record Bank(String id, String name, String code, boolean enabled) {}
+    public record Tag(String id, String name, String color, Integer isEnabled) {}
+    public record Bank(String id, String name, String code, Integer isEnabled) {}
 }

@@ -19,7 +19,7 @@ public class UserDictDataQuery {
     private String dictLabel;
 
     /**
-     * 状态（0正常 1停用）
+     * 是否启用：1=启用，0=停用
      */
-    private String status;
+    private Integer isEnabled;
 }

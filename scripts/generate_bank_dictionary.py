@@ -70,8 +70,8 @@ def main():
 -- 包含银行字典类型、全部3132家机构和银行卡菜单；重复执行保留已有配置。
 -- 在无并发字典维护的迁移窗口执行；主键冲突直接失败，禁止使用 INSERT IGNORE。
 USE `aio_life`;
-INSERT INTO sys_dict_type(dict_id,dict_name,dict_type,status,is_deleted,create_user,update_user)
-SELECT 92626001,'银行','bank','0',0,0,0
+INSERT INTO sys_dict_type(dict_id,dict_name,dict_type,is_enabled,is_deleted,create_user,update_user)
+SELECT 92626001,'银行','bank',1,0,0,0
 WHERE NOT EXISTS(SELECT 1 FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0);
 SET @bank_dict_id = (SELECT dict_id FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0);
 DROP TEMPORARY TABLE IF EXISTS tmp_nfra_bank_dictionary;
@@ -90,8 +90,8 @@ CREATE TEMPORARY TABLE tmp_nfra_bank_dictionary (
         body.append('INSERT INTO tmp_nfra_bank_dictionary(seed_id,sort_order,label,bank_value,full_name,source_remark) VALUES\n'
                     + ',\n'.join(records[start:start + 200]) + ';\n')
     footer = """
-INSERT INTO sys_dict_data(dict_code,dict_id,dict_sort,dict_label,dict_value,status,is_deleted,create_user,update_user,remark)
-SELECT s.seed_id,@bank_dict_id,s.sort_order,s.label,s.bank_value,'0',0,0,0,s.source_remark
+INSERT INTO sys_dict_data(dict_code,dict_id,sort_order,dict_label,dict_value,is_enabled,is_deleted,create_user,update_user,remark)
+SELECT s.seed_id,@bank_dict_id,s.sort_order,s.label,s.bank_value,1,0,0,0,s.source_remark
 FROM tmp_nfra_bank_dictionary s
 WHERE NOT EXISTS (
   SELECT 1 FROM sys_dict_data d WHERE d.dict_id=@bank_dict_id
@@ -99,7 +99,7 @@ WHERE NOT EXISTS (
 );
 DROP TEMPORARY TABLE tmp_nfra_bank_dictionary;
 
-INSERT INTO sys_menu(id,parent_id,name,path,component,meta,sort,status,is_deleted,create_user,update_user)
+INSERT INTO sys_menu(id,parent_id,name,path,component,meta,sort_order,web_is_enabled,is_deleted,create_user,update_user)
 SELECT 1605,1600,'bankCards','/finance/bank-cards','bank-card/index','{"icon":"lucide:credit-card","title":"银行卡","keepAlive":false}',4,1,0,0,0
 WHERE NOT EXISTS(SELECT 1 FROM sys_menu WHERE path='/finance/bank-cards' AND is_deleted=0);
 """

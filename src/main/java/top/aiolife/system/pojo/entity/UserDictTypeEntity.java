@@ -23,7 +23,7 @@ public class UserDictTypeEntity extends BaseEntity {
 
     private String color;
 
-    private String status;
+    private Integer isEnabled;
 
     private String remark;
 }

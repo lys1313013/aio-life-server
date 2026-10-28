@@ -31,7 +31,7 @@ public class TaskDetailUpdateReq {
     @Max(value = 1, message = "状态值必须为0或1")
     private Integer isCompleted;
 
-    private Integer sort;
+    private Integer sortOrder;
 
     private Integer priority;
 

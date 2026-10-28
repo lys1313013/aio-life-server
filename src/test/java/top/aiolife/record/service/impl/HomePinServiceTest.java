@@ -150,7 +150,7 @@ class HomePinServiceTest {
             LambdaUpdateWrapper<?> wrapper = (LambdaUpdateWrapper<?>) update.args()[1];
             assertScope(wrapper, i == 0 ? 2L : 1L);
             assertTrue(sql(wrapper).contains("is_pinned = 1"));
-            assertTrue(setSql(wrapper).contains("pinned_sort=" + i));
+            assertTrue(setSql(wrapper).contains("pinned_sort_order=" + i));
         }
         f.assertPinnedQuery();
         f.assertLockFirst();
@@ -165,8 +165,8 @@ class HomePinServiceTest {
         f.call("createForUser", USER, entity);
         assertPin(entity, 1, -1);
         assertEquals(2, f.updates().size());
-        assertTrue(setSql((LambdaUpdateWrapper<?>) f.updates().get(0).args()[1]).contains("pinned_sort=0"));
-        assertTrue(setSql((LambdaUpdateWrapper<?>) f.updates().get(1).args()[1]).contains("pinned_sort=1"));
+        assertTrue(setSql((LambdaUpdateWrapper<?>) f.updates().get(0).args()[1]).contains("pinned_sort_order=0"));
+        assertTrue(setSql((LambdaUpdateWrapper<?>) f.updates().get(1).args()[1]).contains("pinned_sort_order=1"));
         assertEquals("insert", f.names().getLast());
         f.assertLockFirst();
     }
@@ -185,7 +185,7 @@ class HomePinServiceTest {
         String changes = setSql(wrapper);
         assertTrue(changes.contains("is_deleted=1"));
         assertTrue(changes.contains("is_pinned=0"));
-        assertTrue(changes.contains("pinned_sort=0"));
+        assertTrue(changes.contains("pinned_sort_order=0"));
         assertTrue(changes.contains("update_user=42"));
         f.assertLockFirst();
     }
@@ -200,9 +200,9 @@ class HomePinServiceTest {
         f.assertLockFirst();
     }
 
-    private static void assertPin(Object entity, int pin, int sort) {
+    private static void assertPin(Object entity, int pin, int sort_order) {
         assertEquals(pin, field(entity, "isPinned"));
-        assertEquals(sort, field(entity, "pinnedSort"));
+        assertEquals(sort_order, field(entity, "pinnedSortOrder"));
     }
 
     private static Object field(Object entity, String name) {
@@ -274,12 +274,12 @@ class HomePinServiceTest {
             ReflectionTestUtils.setField(service, "baseMapper", mapper);
         }
 
-        Object entity(Long id, Integer pin, Integer sort) {
+        Object entity(Long id, Integer pin, Integer sort_order) {
             Object entity = instantiate(kind.entity);
             ReflectionTestUtils.setField(entity, "id", id);
             ReflectionTestUtils.setField(entity, "userId", USER);
             ReflectionTestUtils.setField(entity, "isPinned", pin);
-            ReflectionTestUtils.setField(entity, "pinnedSort", sort);
+            ReflectionTestUtils.setField(entity, "pinnedSortOrder", sort_order);
             return entity;
         }
 
@@ -317,7 +317,7 @@ class HomePinServiceTest {
             assertTrue(condition.contains("user_id = 42"), condition);
             assertTrue(condition.contains("is_deleted = 0"), condition);
             assertTrue(condition.contains("is_pinned = 1"), condition);
-            assertTrue(condition.contains("ORDER BY pinned_sort ASC,id DESC"), condition);
+            assertTrue(condition.contains("ORDER BY pinned_sort_order ASC,id DESC"), condition);
         }
 
         private static Object instantiate(Class<?> type) {

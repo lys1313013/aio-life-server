@@ -29,7 +29,6 @@ import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
-import top.aiolife.record.pojo.entity.UserDictTypeEntity;
 import top.aiolife.record.pojo.query.BVideoQuery;
 import top.aiolife.record.pojo.query.DeviceQuery;
 import top.aiolife.record.pojo.query.ExerciseRecordQuery;
@@ -126,7 +125,6 @@ import top.aiolife.record.pojo.vo.TimeRecordRecommendationVO;
 import top.aiolife.record.pojo.vo.TimeTrackerCategoryVO;
 import top.aiolife.record.pojo.vo.UserBindVO;
 import top.aiolife.record.pojo.vo.UserDictDataVO;
-import top.aiolife.record.pojo.vo.UserDictTypeVO;
 
 /** 接口模型与持久化模型的显式转换，响应仅暴露 VO 声明的字段。 */
 @Mapper(builder = @Builder(disableBuilder = true), unmappedTargetPolicy = ReportingPolicy.ERROR)
@@ -531,7 +529,6 @@ public interface RecordApiConvertor {
     }
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
     ReadRecordReq fromReadRecordCreateReq(ReadRecordCreateReq request);
-    UserDictTypeVO toUserDictTypeVO(UserDictTypeEntity entity);
     TimeRecordRecommendationVO toTimeRecordRecommendationVO(RecommendNextVO result);
     TimeRecordSaveReq toTimeRecordSaveReq(TimeRecordReq request);
     TimeRecordExerciseReq toTimeRecordExerciseReq(ExerciseRecordReq request);

@@ -15,7 +15,7 @@ public class GoalVO {
     private Integer isPinned;
 
     /** 首页固定顺序，越小越靠前。 */
-    private Integer pinnedSort;
+    private Integer pinnedSortOrder;
 
 
     private Long id;

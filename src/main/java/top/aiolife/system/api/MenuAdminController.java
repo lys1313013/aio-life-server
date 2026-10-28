@@ -84,26 +84,26 @@ public class MenuAdminController {
      * 更新菜单启用状态。
      *
      * @param id 菜单ID
-     * @param body 请求体，包含 status（0禁用，1启用）
+     * @param body 请求体，包含 webIsEnabled（0禁用，1启用）
      * @return 统一返回结构，data 为更新后的菜单节点
      */
     @PutMapping("/{id}/status")
     public ApiResponse<MenuAdminVO> updateStatus(@PathVariable long id, @Valid @RequestBody MenuStatusUpdateReq body) throws Exception {
         long userId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(menuService.updateStatus(id, body.getStatus(), userId));
+        return ApiResponse.success(menuService.updateStatus(id, body.getIsEnabled(), userId));
     }
 
     /** 更新移动端启用状态，与 Web 端独立。 */
     @PutMapping("/{id}/mobile-status")
     public ApiResponse<MenuAdminVO> updateMobileStatus(@PathVariable long id, @Valid @RequestBody MenuStatusUpdateReq body) throws Exception {
-        return ApiResponse.success(menuService.updateMobileStatus(id, body.getStatus(), StpUtil.getLoginIdAsLong()));
+        return ApiResponse.success(menuService.updateMobileStatus(id, body.getIsEnabled(), StpUtil.getLoginIdAsLong()));
     }
 
     /** 更新菜单排序。 */
     @PutMapping("/{id}/sort")
     public ApiResponse<MenuAdminVO> updateSort(@PathVariable long id, @Valid @RequestBody MenuSortUpdateReq body) throws Exception {
         long userId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(menuService.updateSort(id, body.getSort(), userId));
+        return ApiResponse.success(menuService.updateSort(id, body.getSortOrder(), userId));
     }
 
     /**

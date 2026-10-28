@@ -39,7 +39,7 @@ class SysDictTypeControllerIntegrationTest extends BaseIntegrationTest {
         entity.setDictId(dictId);
         entity.setDictName("测试字典");
         entity.setDictType(dictType);
-        entity.setStatus("0");
+        entity.setIsEnabled(1);
         return entity;
     }
 }

@@ -54,7 +54,7 @@ public class ActivityLogRecorder {
         if (pagePath == null || !pagePath.startsWith("/")) return fallback;
         if (System.currentTimeMillis() >= menusExpireAt) {
             menus = menuMapper.selectList(new LambdaQueryWrapper<SysMenuEntity>()
-                    .eq(SysMenuEntity::getStatus, 1)).stream()
+                    .eq(SysMenuEntity::getWebIsEnabled, 1)).stream()
                     .filter(menu -> menu.getPath() != null && menu.getComponent() != null
                             && !"BasicLayout".equals(menu.getComponent()))
                     .sorted(Comparator.comparingInt((SysMenuEntity menu) -> menu.getPath().length()).reversed()).toList();

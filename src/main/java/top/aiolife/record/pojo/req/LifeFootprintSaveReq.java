@@ -34,5 +34,5 @@ public class LifeFootprintSaveReq {
     @Size(max = 128)
     private String providerUid;
     @Size(max = 5000)
-    private String note;
+    private String remark;
 }

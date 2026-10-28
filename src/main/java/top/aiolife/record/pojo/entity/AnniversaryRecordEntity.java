@@ -21,7 +21,7 @@ public class AnniversaryRecordEntity extends BaseEntity {
     private Integer isPinned;
 
     /** 首页固定顺序，越小越靠前。 */
-    private Integer pinnedSort;
+    private Integer pinnedSortOrder;
 
 
     private Long userId;
@@ -36,7 +36,7 @@ public class AnniversaryRecordEntity extends BaseEntity {
      */
     private String type;
 
-    private String note;
+    private String remark;
 
     private String color;
 

@@ -45,7 +45,7 @@ public class SysDictDataEntity extends AuditEntity {
     /**
      * 字典排序
      */
-    private Integer dictSort;
+    private Integer sortOrder;
 
     /**
      * 字典标签
@@ -75,7 +75,7 @@ public class SysDictDataEntity extends AuditEntity {
     /**
      * 状态
      */
-    private String status;
+    private Integer isEnabled;
 
     /**
      * 备注

@@ -28,7 +28,7 @@ public class ScheduledJobExecutionService {
     public void execute(ScheduledJobEntity expected, Instant scheduled, Long operator) {
         boolean acquired = locks.tryRun(lockKey(expected.getId()), () -> {
             var current = jobs.require(expected.getId());
-            if (scheduled != null && (!Boolean.TRUE.equals(current.getEnabled())
+            if (scheduled != null && (!Integer.valueOf(1).equals(current.getIsEnabled())
                     || !Objects.equals(expected.getRevision(), current.getRevision()))) return;
             recoverLocked(current.getId());
             var entry = entry(current, scheduled, operator);

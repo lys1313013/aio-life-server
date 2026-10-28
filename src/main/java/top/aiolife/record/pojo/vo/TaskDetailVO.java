@@ -17,7 +17,7 @@ public class TaskDetailVO {
 
     private Integer isCompleted;
 
-    private Integer sort;
+    private Integer sortOrder;
 
     private Integer priority;
 

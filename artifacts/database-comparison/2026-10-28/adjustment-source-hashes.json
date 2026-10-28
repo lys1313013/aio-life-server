@@ -1,0 +1,5 @@
+{
+  "sql/migrations/2026-10-28_01_asset_purchase_source.sql": "8937cfae329eea0241164e4750366226fe07969d0366a66a04ceab35cfa4054c",
+  "sql/migrations/2026-10-28_03_schema_alignment.sql": "ca779ce792c4b3144ca283be8a10a4250192eac89ddeafe483d6f14df8f3767d",
+  "sql/migrations/2026-10-28_04_schema_comments.sql": "615f1db0cf7ed9728c344196d348c18897352c2b1da8cc314b99bd4feaa9ea9a"
+}

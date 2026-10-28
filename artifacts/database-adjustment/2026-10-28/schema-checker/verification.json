@@ -1,0 +1,29 @@
+{
+  "result": "passed",
+  "python_unit_tests": 16,
+  "mysql80_full_initialization": {
+    "tables": 72,
+    "columns": 1027,
+    "initialization_files": 29,
+    "checks": 27,
+    "source_manifest_matches_current_files": true
+  },
+  "mysql57_preflight_fixture": {
+    "expected_exit_code": 1,
+    "actual_exit_code": 1,
+    "explicit_check_platform_gap": true,
+    "other_schema_differences_reported": true,
+    "unsupported_metadata_errors": false
+  },
+  "mysql57_and_mysql80_metadata_fixture": {
+    "result": "passed",
+    "equivalent_schema_issues": [
+      "platform: MySQL 5.7.44 cannot enforce 1 expected CHECK constraints; requires MySQL 8.0.16 or newer."
+    ],
+    "comment_change_issues": [
+      "columns: missing/different [\"fixture\", \"label\", \"varchar(30)\", \"YES\", \"CURRENT_TIMESTAMP\", \"\", \"\", \"utf8mb4\", \"utf8mb4_unicode_ci\", \"文本默认值\"]",
+      "columns: unexpected/different [\"fixture\", \"label\", \"varchar(30)\", \"YES\", \"CURRENT_TIMESTAMP\", \"\", \"\", \"utf8mb4\", \"utf8mb4_unicode_ci\", \"修改后的说明\"]",
+      "platform: MySQL 5.7.44 cannot enforce 1 expected CHECK constraints; requires MySQL 8.0.16 or newer."
+    ]
+  }
+}

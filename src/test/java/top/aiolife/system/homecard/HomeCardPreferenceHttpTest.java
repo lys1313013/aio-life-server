@@ -18,14 +18,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class HomeCardPreferenceHttpTest {
     @Test void identity_忽略客户端用户字段并始终使用登录态() throws Exception {
         var service = mock(HomeCardPreferenceService.class);
-        when(service.toggle(anyLong(), anyString(), anyBoolean())).thenReturn(List.of());
+        when(service.toggle(anyLong(), anyString(), anyInt())).thenReturn(List.of());
         var mvc = MockMvcBuilders.standaloneSetup(new HomeCardPreferenceController(service)).build();
         try (MockedStatic<StpUtil> login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
             mvc.perform(put("/home/cards/section.goal").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"enabled\":false,\"userId\":8}"))
+                .content("{\"isEnabled\":0,\"userId\":8}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
-            verify(service).toggle(7, "section.goal", false);
+            verify(service).toggle(7, "section.goal", 0);
             mvc.perform(get("/home/cards")).andExpect(status().isOk());
             verify(service).get(7);
             mvc.perform(delete("/home/cards")).andExpect(status().isOk());

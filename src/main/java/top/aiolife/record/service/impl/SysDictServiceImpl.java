@@ -35,7 +35,7 @@ public class SysDictServiceImpl implements ISysDictService {
         }
         LambdaQueryWrapper<SysDictDataEntity> typeQueryWrapper = new LambdaQueryWrapper<>();
         typeQueryWrapper.eq(SysDictDataEntity::getDictId, sysDictTypeEntity.getDictId());
-        typeQueryWrapper.orderByAsc(SysDictDataEntity::getDictSort);
+        typeQueryWrapper.orderByAsc(SysDictDataEntity::getSortOrder);
         return sysDictDataMapper.selectList(typeQueryWrapper);
     }
 }

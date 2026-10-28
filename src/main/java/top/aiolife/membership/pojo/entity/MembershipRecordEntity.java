@@ -52,5 +52,5 @@ public class MembershipRecordEntity extends BaseEntity {
 
     private Integer autoRenew;
 
-    private String note;
+    private String remark;
 }

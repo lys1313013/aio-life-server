@@ -2,7 +2,7 @@ USE `aio_life`;
 
 -- 身体数据作为「记录」下的独立业务菜单，两端均可见；重复执行保留已有菜单配置。
 INSERT INTO `sys_menu`
-    (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort`, `status`, `mobile_status`, `create_time`, `update_time`, `is_deleted`)
+    (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort_order`, `web_is_enabled`, `mobile_is_enabled`, `create_time`, `update_time`, `is_deleted`)
 SELECT 1511, parent.id, 'BodyProfile', '/record/body-profile', 'my-hub/body-profile/index',
     JSON_OBJECT('icon', 'mdi:human-handsup', 'title', '身体数据', 'backTop', FALSE),
     NULL, 1, 1, 1, NOW(), NOW(), 0

@@ -15,5 +15,5 @@ public class TaskDetailSortReq {
     private Long id;
 
     @NotNull
-    private Integer sort;
+    private Integer sortOrder;
 }

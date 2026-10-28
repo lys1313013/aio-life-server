@@ -72,7 +72,7 @@ class TaskDetailControllerIntegrationTest extends BaseIntegrationTest {
         detail.setContent("关注明细");
         detail.setIsCompleted(0);
         detail.setIsStarred(1);
-        detail.setSort(0);
+        detail.setSortOrder(0);
         detail.setPriority(20);
         detail.fillCreateCommonField(TEST_USER_ID);
         taskDetailService.save(detail);

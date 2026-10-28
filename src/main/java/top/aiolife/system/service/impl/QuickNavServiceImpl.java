@@ -106,7 +106,7 @@ public class QuickNavServiceImpl implements IQuickNavService {
             if (accessible.contains(row.getMenuId())) continue;
             QuickNavSaveReq.Item retained = new QuickNavSaveReq.Item();
             retained.setMenuId(row.getMenuId());
-            retained.setEnabled(row.getEnabled());
+            retained.setIsEnabled(row.getIsEnabled());
             retained.setSortOrder(nextOrder++);
             merged.add(retained);
         }
@@ -123,7 +123,7 @@ public class QuickNavServiceImpl implements IQuickNavService {
                 entity.setUserId(userId);
                 entity.setMenuId(item.getMenuId());
                 entity.setSortOrder(item.getSortOrder());
-                entity.setEnabled(item.getEnabled());
+                entity.setIsEnabled(item.getIsEnabled());
                 entity.fillCreateCommonField(userId);
                 userQuickNavMapper.insert(entity);
             }
@@ -163,7 +163,7 @@ public class QuickNavServiceImpl implements IQuickNavService {
         QuickNavItemVO vo = new QuickNavItemVO();
         vo.setMenuId(row.getMenuId());
         vo.setSortOrder(row.getSortOrder());
-        vo.setEnabled(row.getEnabled());
+        vo.setIsEnabled(row.getIsEnabled());
         vo.setTitle(str(meta, "title"));
         vo.setIcon(str(meta, "icon"));
         vo.setColor(menu.getIconColor());
@@ -182,10 +182,10 @@ public class QuickNavServiceImpl implements IQuickNavService {
         Set<Long> seenMenu = new HashSet<>();
         Set<Integer> seenOrder = new HashSet<>();
         for (QuickNavSaveReq.Item item : items) {
-            if (item.getMenuId() == null || item.getSortOrder() == null || item.getEnabled() == null) {
+            if (item.getMenuId() == null || item.getSortOrder() == null || item.getIsEnabled() == null) {
                 throw new IllegalArgumentException("快捷导航项字段不完整");
             }
-            if (item.getEnabled() != 0 && item.getEnabled() != 1) {
+            if (item.getIsEnabled() != 0 && item.getIsEnabled() != 1) {
                 throw new IllegalArgumentException("enabled 只能为 0 或 1");
             }
             if (!seenMenu.add(item.getMenuId())) {

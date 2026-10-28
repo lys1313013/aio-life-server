@@ -1,7 +1,7 @@
 USE `aio_life`;
 
 INSERT INTO `sys_menu`
-  (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort`, `status`, `create_time`, `update_time`, `is_deleted`)
+  (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort_order`, `web_is_enabled`, `create_time`, `update_time`, `is_deleted`)
 SELECT 1909, parent.id, 'BankCardCoverAdmin', '/system/bank-card-covers', 'system/bank-card-covers/index',
   JSON_OBJECT('icon', 'lucide:credit-card', 'title', '银行卡卡面', 'authority', JSON_ARRAY('admin')),
   'admin', 8, 1, NOW(), NOW(), 0

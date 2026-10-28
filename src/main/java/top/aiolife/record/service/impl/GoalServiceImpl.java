@@ -30,7 +30,7 @@ public class GoalServiceImpl extends ServiceImpl<IGoalMapper, GoalEntity> implem
         int pinned = entity.getIsPinned() == null ? 0 : entity.getIsPinned();
         validatePin(pinned);
         entity.setIsPinned(pinned);
-        entity.setPinnedSort(pinned == 1 ? nextFirstSort(userId) : 0);
+        entity.setPinnedSortOrder(pinned == 1 ? nextFirstSort(userId) : 0);
         baseMapper.insert(entity);
         return entity;
     }
@@ -85,7 +85,7 @@ public class GoalServiceImpl extends ServiceImpl<IGoalMapper, GoalEntity> implem
                 .eq(GoalEntity::getUserId, userId).eq(GoalEntity::getIsDeleted, 0)
                 .in(GoalEntity::getId, ids)
                 .set(GoalEntity::getIsDeleted, 1)
-                .set(GoalEntity::getIsPinned, 0).set(GoalEntity::getPinnedSort, 0)
+                .set(GoalEntity::getIsPinned, 0).set(GoalEntity::getPinnedSortOrder, 0)
                 .set(GoalEntity::getUpdateUser, userId)
                 .set(GoalEntity::getUpdateTime, LocalDateTime.now()));
     }
@@ -113,15 +113,15 @@ public class GoalServiceImpl extends ServiceImpl<IGoalMapper, GoalEntity> implem
         return baseMapper.selectList(new LambdaQueryWrapper<GoalEntity>()
                 .eq(GoalEntity::getUserId, userId).eq(GoalEntity::getIsDeleted, 0)
                 .eq(GoalEntity::getIsPinned, 1)
-                .orderByAsc(GoalEntity::getPinnedSort).orderByDesc(GoalEntity::getId));
+                .orderByAsc(GoalEntity::getPinnedSortOrder).orderByDesc(GoalEntity::getId));
     }
 
     private void applyPin(long userId, GoalEntity update, GoalEntity existing, Integer requested) {
         int value = requested == null ? existing.getIsPinned() : requested;
         validatePin(value);
         update.setIsPinned(value);
-        update.setPinnedSort(value == 0 ? 0 : Integer.valueOf(1).equals(existing.getIsPinned())
-                ? existing.getPinnedSort() : nextFirstSort(userId));
+        update.setPinnedSortOrder(value == 0 ? 0 : Integer.valueOf(1).equals(existing.getIsPinned())
+                ? existing.getPinnedSortOrder() : nextFirstSort(userId));
     }
 
     private void validatePin(int value) {
@@ -131,7 +131,7 @@ public class GoalServiceImpl extends ServiceImpl<IGoalMapper, GoalEntity> implem
     private int nextFirstSort(long userId) {
         List<GoalEntity> records = pinned(userId);
         if (records.isEmpty()) return 0;
-        int first = records.getFirst().getPinnedSort();
+        int first = records.getFirst().getPinnedSortOrder();
         if (first == Integer.MIN_VALUE) {
             writeOrder(userId, records.stream().map(GoalEntity::getId).toList());
             return -1;
@@ -144,7 +144,7 @@ public class GoalServiceImpl extends ServiceImpl<IGoalMapper, GoalEntity> implem
         for (int index = 0; index < ids.size(); index++) {
             baseMapper.update(null, ownedUpdate(userId, ids.get(index))
                     .eq(GoalEntity::getIsPinned, 1)
-                    .set(GoalEntity::getPinnedSort, index)
+                    .set(GoalEntity::getPinnedSortOrder, index)
                     .set(GoalEntity::getUpdateUser, userId).set(GoalEntity::getUpdateTime, now));
         }
     }

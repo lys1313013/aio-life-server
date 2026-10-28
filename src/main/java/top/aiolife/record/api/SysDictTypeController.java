@@ -60,7 +60,7 @@ public class SysDictTypeController {
 
         LambdaQueryWrapper<SysDictDataEntity> typeQueryWrapper = new LambdaQueryWrapper<>();
         typeQueryWrapper.eq(SysDictDataEntity::getDictId, sysDictTypeEntity.getDictId());
-        typeQueryWrapper.orderByAsc(SysDictDataEntity::getDictSort);
+        typeQueryWrapper.orderByAsc(SysDictDataEntity::getSortOrder);
         List<SysDictDataEntity> sysDictDataEntityList = sysDictDataMapper.selectList(typeQueryWrapper);
         SysDictTypeDetailVO sysDictTypeDetailVO = new SysDictTypeDetailVO();
         sysDictTypeDetailVO.setSysDictTypeEntity(RecordApiConvertor.INSTANCE.toSysDictTypeVO(sysDictTypeEntity));

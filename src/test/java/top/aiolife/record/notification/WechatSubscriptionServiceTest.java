@@ -51,7 +51,7 @@ class WechatSubscriptionServiceTest {
         user.setId(7L);
         user.setIsDeleted(0);
         user.setWechatOpenid("fixture-openid");
-        preference.setEnabled(1);
+        preference.setIsEnabled(1);
         when(client.enabled()).thenReturn(true);
         when(users.selectById(7L)).thenReturn(user);
         when(preferences.selectOne(any())).thenReturn(preference);
@@ -161,11 +161,11 @@ class WechatSubscriptionServiceTest {
 
     @Test void 入队后关闭偏好或跨日的提醒不再发送() {
         service.sendIfEnabled(request);
-        preference.setEnabled(0);
+        preference.setIsEnabled(0);
         service.deliverPending();
         assertEquals("FAILED", row.getStatus());
         row.setStatus("PENDING");
-        preference.setEnabled(1);
+        preference.setIsEnabled(1);
         row.setCreateTime(LocalDateTime.now().minusDays(1));
         service.deliverPending();
         assertEquals("EXPIRED", row.getProviderCode());

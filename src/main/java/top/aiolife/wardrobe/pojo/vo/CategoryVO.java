@@ -18,7 +18,7 @@ public class CategoryVO {
 
     private Long parentId;
 
-    private Integer sort;
+    private Integer sortOrder;
 
     private Integer categoryType;
 

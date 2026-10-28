@@ -25,5 +25,5 @@ public class UserQuickNavEntity extends BaseEntity {
 
     private Integer sortOrder;
 
-    private Integer enabled;
+    private Integer isEnabled;
 }

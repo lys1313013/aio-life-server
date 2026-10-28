@@ -230,7 +230,7 @@
         "type": "TEXT"
       },
       {
-        "key": "enabled",
+        "key": "is_enabled",
         "label": "是否启用",
         "type": "NUMBER"
       },
@@ -280,7 +280,7 @@
         "type": "NUMBER"
       },
       {
-        "key": "enabled",
+        "key": "is_enabled",
         "label": "是否启用（1启用 / 0隐藏）",
         "type": "NUMBER"
       },
@@ -410,9 +410,9 @@
         "type": "TEXT"
       },
       {
-        "key": "status",
-        "label": "状态（0正常 1停用）",
-        "type": "TEXT"
+        "key": "is_enabled",
+        "label": "是否启用（1启用、0停用）",
+        "type": "NUMBER"
       },
       {
         "key": "create_time",
@@ -460,7 +460,7 @@
         "type": "TEXT"
       },
       {
-        "key": "dict_sort",
+        "key": "sort_order",
         "label": "字典排序",
         "type": "NUMBER"
       },
@@ -495,9 +495,9 @@
         "type": "TEXT"
       },
       {
-        "key": "status",
-        "label": "状态（0正常 1停用）",
-        "type": "TEXT"
+        "key": "is_enabled",
+        "label": "是否启用（1启用、0停用）",
+        "type": "NUMBER"
       },
       {
         "key": "is_readonly",
@@ -627,7 +627,7 @@
         "type": "TEXT"
       },
       {
-        "key": "enabled",
+        "key": "is_enabled",
         "label": "是否启用",
         "type": "NUMBER"
       },
@@ -677,7 +677,7 @@
         "type": "TEXT"
       },
       {
-        "key": "enabled",
+        "key": "is_enabled",
         "label": "是否启用",
         "type": "NUMBER"
       },
@@ -796,7 +796,7 @@
         "type": "NUMBER"
       },
       {
-        "key": "sort",
+        "key": "sort_order",
         "label": "排序权重",
         "type": "NUMBER"
       },
@@ -1061,7 +1061,7 @@
         "type": "NUMBER"
       },
       {
-        "key": "sort",
+        "key": "sort_order",
         "label": "排序权重",
         "type": "NUMBER"
       },
@@ -1203,7 +1203,7 @@
         "type": "NUMBER"
       },
       {
-        "key": "pinned_sort",
+        "key": "pinned_sort_order",
         "label": "首页固定排序",
         "type": "NUMBER"
       },
@@ -1399,7 +1399,7 @@
         "type": "TEXT"
       },
       {
-        "key": "note",
+        "key": "remark",
         "label": "备注",
         "type": "TEXT"
       },
@@ -1419,7 +1419,7 @@
         "type": "NUMBER"
       },
       {
-        "key": "pinned_sort",
+        "key": "pinned_sort_order",
         "label": "首页固定排序",
         "type": "NUMBER"
       },
@@ -2756,7 +2756,7 @@
         "type": "NUMBER"
       },
       {
-        "key": "note",
+        "key": "remark",
         "label": "备注",
         "type": "TEXT"
       },
@@ -2803,7 +2803,7 @@
         "type": "TEXT"
       },
       {
-        "key": "sort",
+        "key": "sort_order",
         "label": "排序",
         "type": "NUMBER"
       },
@@ -2890,7 +2890,7 @@
         "type": "TEXT"
       },
       {
-        "key": "memo",
+        "key": "remark",
         "label": "备注",
         "type": "TEXT"
       },
@@ -3087,7 +3087,7 @@
         "type": "TEXT"
       },
       {
-        "key": "note",
+        "key": "remark",
         "label": "备注",
         "type": "TEXT"
       },

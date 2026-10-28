@@ -44,7 +44,7 @@ public class MembershipVO {
 
     private Integer autoRenew;
 
-    private String note;
+    private String remark;
 
     /**
      * active-生效中 expiring-即将到期 expired-已过期

@@ -55,33 +55,33 @@ class HomeCardPreferenceServiceTest {
     @Test void defaults_读取不写库且两类卡片独立注册() {
         var cards = service.get(7);
         assertEquals(23, cards.size());
-        assertEquals(0, cards.stream().filter(card -> !card.enabled()).count());
+        assertEquals(0, cards.stream().filter(card -> card.isEnabled() == 0).count());
         assertTrue(cards.stream().filter(card -> List.of("section.memo", "section.finance", "section.income", "section.expense", "section.video", "section.device")
-                .contains(card.cardKey())).allMatch(card -> card.enabled()));
+                .contains(card.cardKey())).allMatch(card -> card.isEnabled() == 1));
         assertEquals(5, cards.stream().filter(card -> card.group().equals("overview")).count());
-        assertEquals(23, cards.stream().filter(card -> card.enabled()).count());
+        assertEquals(23, cards.stream().filter(card -> card.isEnabled() == 1).count());
         verify(mapper, never()).insert(any(HomeCardPreferenceEntity.class));
     }
     @Test void toggle_用户隔离且不会连带隐藏同业务详情卡() {
-        service.toggle(7, "overview.github", false);
-        assertFalse(service.get(7).stream().filter(card -> card.cardKey().equals("overview.github")).findFirst().orElseThrow().enabled());
-        assertTrue(service.get(7).stream().filter(card -> card.cardKey().equals("section.github")).findFirst().orElseThrow().enabled());
-        assertEquals(23, service.get(8).stream().filter(card -> card.enabled()).count());
+        service.toggle(7, "overview.github", 0);
+        assertFalse(service.get(7).stream().filter(card -> card.cardKey().equals("overview.github")).findFirst().orElseThrow().isEnabled() == 1);
+        assertTrue(service.get(7).stream().filter(card -> card.cardKey().equals("section.github")).findFirst().orElseThrow().isEnabled() == 1);
+        assertEquals(23, service.get(8).stream().filter(card -> card.isEnabled() == 1).count());
         var order = inOrder(mapper); order.verify(mapper).lockUser(7); order.verify(mapper).selectList(any()); order.verify(mapper).insert(any(HomeCardPreferenceEntity.class));
     }
     @Test void reorder_完整分组排序保留开关且不改另一组() {
-        service.toggle(7, "overview.github", false);
+        service.toggle(7, "overview.github", 0);
         var keys = new ArrayList<>(HomeCardCatalog.ALL.stream().filter(card -> card.group().equals("overview")).map(HomeCardCatalog.Definition::cardKey).toList());
         Collections.reverse(keys);
         var result = service.reorder(7, "overview", keys);
         assertEquals(keys, result.stream().filter(card -> card.group().equals("overview")).map(card -> card.cardKey()).toList());
-        assertFalse(result.stream().filter(card -> card.cardKey().equals("overview.github")).findFirst().orElseThrow().enabled());
+        assertFalse(result.stream().filter(card -> card.cardKey().equals("overview.github")).findFirst().orElseThrow().isEnabled() == 1);
         assertEquals(HomeCardCatalog.ALL.stream().filter(card -> card.group().equals("section")).map(HomeCardCatalog.Definition::cardKey).toList(), result.stream().filter(card -> card.group().equals("section")).map(card -> card.cardKey()).toList());
-        service.toggle(7, "overview.github", true);
+        service.toggle(7, "overview.github", 1);
         assertEquals(keys, service.get(7).stream().filter(card -> card.group().equals("overview")).map(card -> card.cardKey()).toList());
     }
     @Test void invalid_未知重复遗漏跨组排序在写入前拒绝() {
-        assertThrows(IllegalArgumentException.class, () -> service.toggle(7, "custom.sql", true));
+        assertThrows(IllegalArgumentException.class, () -> service.toggle(7, "custom.sql", 1));
         assertThrows(IllegalArgumentException.class, () -> service.reorder(7, "unknown", List.of()));
         assertThrows(IllegalArgumentException.class, () -> service.reorder(7, "overview", List.of("overview.github")));
         assertThrows(IllegalArgumentException.class, () -> service.reorder(7, "overview", Collections.nCopies(5, "overview.github")));
@@ -89,19 +89,19 @@ class HomeCardPreferenceServiceTest {
         verify(mapper, never()).lockUser(anyLong());
     }
     @Test void reset_仅恢复当前用户且重复恢复后可再保存() {
-        service.toggle(7, "section.goal", false); service.toggle(8, "section.goal", false);
-        service.reset(7); service.reset(7); service.toggle(7, "section.reading", false);
-        assertFalse(service.get(8).stream().filter(card -> card.cardKey().equals("section.goal")).findFirst().orElseThrow().enabled());
-        assertTrue(service.get(7).stream().filter(card -> card.cardKey().equals("section.goal")).findFirst().orElseThrow().enabled());
+        service.toggle(7, "section.goal", 0); service.toggle(8, "section.goal", 0);
+        service.reset(7); service.reset(7); service.toggle(7, "section.reading", 0);
+        assertFalse(service.get(8).stream().filter(card -> card.cardKey().equals("section.goal")).findFirst().orElseThrow().isEnabled() == 1);
+        assertTrue(service.get(7).stream().filter(card -> card.cardKey().equals("section.goal")).findFirst().orElseThrow().isEnabled() == 1);
         assertEquals(2, rows.size());
-        service.toggle(7, "section.memo", false);
-        assertFalse(service.get(7).stream().filter(card -> card.cardKey().equals("section.memo")).findFirst().orElseThrow().enabled());
-        assertTrue(service.get(7).stream().filter(card -> card.cardKey().equals("section.finance")).findFirst().orElseThrow().enabled());
-        assertTrue(service.reset(7).stream().allMatch(card -> card.enabled()));
+        service.toggle(7, "section.memo", 0);
+        assertFalse(service.get(7).stream().filter(card -> card.cardKey().equals("section.memo")).findFirst().orElseThrow().isEnabled() == 1);
+        assertTrue(service.get(7).stream().filter(card -> card.cardKey().equals("section.finance")).findFirst().orElseThrow().isEnabled() == 1);
+        assertTrue(service.reset(7).stream().allMatch(card -> card.isEnabled() == 1));
     }
     @Test void deletedUser_不能修改配置() {
         when(mapper.lockUser(9)).thenReturn(null);
-        assertThrows(IllegalArgumentException.class, () -> service.toggle(9, "section.goal", true));
+        assertThrows(IllegalArgumentException.class, () -> service.toggle(9, "section.goal", 1));
         verify(mapper, never()).insert(any(HomeCardPreferenceEntity.class));
     }
 }

@@ -18,7 +18,7 @@ import top.aiolife.record.pojo.entity.UserDictDataEntity;
 @Service
 @Slf4j
 public class UserDictDataCache {
-    public static final String CACHE_NAME = "userDictData:v1";
+    public static final String CACHE_NAME = "userDictData:v2";
 
     private final UserDictDataMapper mapper;
     private final CacheManager cacheManager;

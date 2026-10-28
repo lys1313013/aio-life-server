@@ -13,5 +13,5 @@ public class NotificationPreferenceEntity extends BaseEntity {
     private Long userId;
     private String bizType;
     private String channel;
-    private Integer enabled;
+    private Integer isEnabled;
 }

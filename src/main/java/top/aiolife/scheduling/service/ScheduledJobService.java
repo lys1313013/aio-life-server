@@ -50,7 +50,7 @@ public class ScheduledJobService {
         row.setJobCode(code); row.setName(name);
         row.setCron("-".equals(cron) ? (ScheduledJobRegistry.CHECK.equals(code) ? "0 30 23 * * ?" : "0 0 7 * * ?")
                 : ScheduledJobRules.validateCron(cron));
-        row.setZoneId(ScheduledJobRules.ZONE.getId()); row.setEnabled(!"-".equals(cron)); row.setRevision(0);
+        row.setZoneId(ScheduledJobRules.ZONE.getId()); row.setIsEnabled(!"-".equals(cron) ? 1 : 0); row.setRevision(0);
         row.fillCreateCommonField(null);
         try { jobs.insert(row); } catch (DuplicateKeyException ignored) { /* 多实例首次启动或软删除记录不覆盖。 */ }
     }
@@ -72,12 +72,12 @@ public class ScheduledJobService {
     public ScheduledJobVO update(Long id, ScheduledJobUpdateReq req, Long operator) {
         require(id);
         String cron = ScheduledJobRules.validateCron(req.getCron());
-        if (req.getEnabled() == null || req.getRevision() == null || req.getRevision() < 0) {
+        if (req.getIsEnabled() == null || req.getRevision() == null || req.getRevision() < 0) {
             throw new IllegalArgumentException("启用状态和配置版本必填");
         }
         int changed = jobs.update(null, new LambdaUpdateWrapper<ScheduledJobEntity>()
                 .eq(ScheduledJobEntity::getId, id).eq(ScheduledJobEntity::getRevision, req.getRevision())
-                .set(ScheduledJobEntity::getCron, cron).set(ScheduledJobEntity::getEnabled, req.getEnabled())
+                .set(ScheduledJobEntity::getCron, cron).set(ScheduledJobEntity::getIsEnabled, req.getIsEnabled())
                 .set(ScheduledJobEntity::getRevision, Math.addExact(req.getRevision(), 1))
                 .set(ScheduledJobEntity::getUpdateUser, operator)
                 .set(ScheduledJobEntity::getUpdateTime, LocalDateTime.now(ScheduledJobRules.ZONE)));
@@ -98,7 +98,7 @@ public class ScheduledJobService {
     private ScheduledJobVO toVO(ScheduledJobEntity row) {
         var vo = ScheduledJobConvertor.INSTANCE.toVO(row);
         vo.setSchedulerEnabled(schedulerEnabled);
-        if (schedulerEnabled && Boolean.TRUE.equals(row.getEnabled())) {
+        if (schedulerEnabled && Integer.valueOf(1).equals(row.getIsEnabled())) {
             var next = CronExpression.parse(row.getCron()).next(ZonedDateTime.now(ScheduledJobRules.ZONE));
             vo.setNextExecutionTime(next == null ? null : next.toLocalDateTime());
         }

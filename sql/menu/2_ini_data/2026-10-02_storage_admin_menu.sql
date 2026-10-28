@@ -1,7 +1,7 @@
 USE `aio_life`;
 
 INSERT INTO `sys_menu`
-  (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort`, `status`, `create_time`, `update_time`, `is_deleted`)
+  (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort_order`, `web_is_enabled`, `create_time`, `update_time`, `is_deleted`)
 SELECT 1908, parent.id, 'StorageAdmin', '/system/storage', 'system/storage/index',
   JSON_OBJECT('icon', 'lucide:folder', 'title', '对象存储', 'authority', JSON_ARRAY('admin')),
   'admin', 7, 1, NOW(), NOW(), 0

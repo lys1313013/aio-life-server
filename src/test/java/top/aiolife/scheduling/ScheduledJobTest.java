@@ -44,7 +44,7 @@ class ScheduledJobTest {
         TableInfoHelper.initTableInfo(assistant, ScheduledJobEntity.class);
         TableInfoHelper.initTableInfo(assistant, ScheduledJobLogEntity.class);
         row = new ScheduledJobEntity(); row.setId(9007199254740993L); row.setJobCode(ScheduledJobRegistry.CHECK);
-        row.setCron("0 30 23 * * ?"); row.setZoneId("Asia/Shanghai"); row.setEnabled(true); row.setRevision(0);
+        row.setCron("0 30 23 * * ?"); row.setZoneId("Asia/Shanghai"); row.setIsEnabled(1); row.setRevision(0);
         when(jobs.selectById(row.getId())).thenReturn(row);
         ReflectionTestUtils.setField(service, "schedulerEnabled", true);
     }
@@ -59,7 +59,7 @@ class ScheduledJobTest {
     }
 
     @Test void 保存并发冲突不得发布调度事件() {
-        var req = new ScheduledJobUpdateReq(); req.setCron(row.getCron()); req.setEnabled(false); req.setRevision(0);
+        var req = new ScheduledJobUpdateReq(); req.setCron(row.getCron()); req.setIsEnabled(0); req.setRevision(0);
         when(jobs.update(isNull(), any(Wrapper.class))).thenReturn(0);
         assertThrows(IllegalArgumentException.class, () -> service.update(row.getId(), req, 1L));
         verifyNoInteractions(events);
@@ -74,7 +74,7 @@ class ScheduledJobTest {
         when(jobs.selectCount(any())).thenReturn(0L);
         service.initializeDefaults();
         verify(jobs).insert(argThat((ScheduledJobEntity j) -> j.getJobCode().equals(ScheduledJobRegistry.CHECK) && j.getCron().equals("0 0 22 * * ?")));
-        verify(jobs).insert(argThat((ScheduledJobEntity j) -> j.getJobCode().equals(ScheduledJobRegistry.DAILY) && !j.getEnabled()));
+        verify(jobs).insert(argThat((ScheduledJobEntity j) -> j.getJobCode().equals(ScheduledJobRegistry.DAILY) && j.getIsEnabled() == 0));
         clearInvocations(jobs);
         when(jobs.selectCount(any())).thenReturn(1L);
         service.initializeDefaults();
@@ -106,7 +106,7 @@ class ScheduledJobTest {
         var old = new ScheduledJobEntity(); old.setId(row.getId()); old.setRevision(0);
         row.setRevision(1);
         execution.execute(old, Instant.now(), null);
-        row.setEnabled(false);
+        row.setIsEnabled(0);
         execution.execute(row, Instant.now(), null);
         verifyNoInteractions(leetcode);
         execution.execute(row, null, 1L);
@@ -143,7 +143,7 @@ class ScheduledJobTest {
             runtime.refresh(); assertSame(first, registrations.get(row.getId()));
             row.setRevision(1); row.setCron("0 0 7 * * ?");
             runtime.refresh(); assertNotSame(first, registrations.get(row.getId()));
-            row.setEnabled(false); runtime.refresh(); assertTrue(registrations.isEmpty());
+            row.setIsEnabled(0); runtime.refresh(); assertTrue(registrations.isEmpty());
         } finally { runtime.close(); }
     }
 

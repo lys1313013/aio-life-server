@@ -1,7 +1,7 @@
 USE `aio_life`;
 
 INSERT INTO `sys_menu`
-    (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort`, `status`, `mobile_status`, `create_time`, `update_time`, `is_deleted`)
+    (`id`, `parent_id`, `name`, `path`, `component`, `meta`, `roles`, `sort_order`, `web_is_enabled`, `mobile_is_enabled`, `create_time`, `update_time`, `is_deleted`)
 SELECT 1512, parent.id, 'LifeFootprints', '/record/life-footprints', 'my-hub/life-footprints/index',
     JSON_OBJECT('icon', 'mdi:map-marker-path', 'title', '生活足迹', 'backTop', FALSE),
     NULL, 2, 1, 1, NOW(), NOW(), 0

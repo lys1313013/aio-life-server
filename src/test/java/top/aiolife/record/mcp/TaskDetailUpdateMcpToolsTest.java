@@ -45,7 +45,7 @@ class TaskDetailUpdateMcpToolsTest {
         assertEquals(0, actual.getIsCompleted());
         assertNull(actual.getContent());
         assertNull(actual.getTaskId());
-        assertNull(actual.getSort());
+        assertNull(actual.getSortOrder());
         assertNull(actual.getStartTime());
         assertNull(actual.getEndTime());
     }

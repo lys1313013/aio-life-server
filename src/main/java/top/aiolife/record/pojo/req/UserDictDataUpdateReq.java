@@ -2,6 +2,8 @@ package top.aiolife.record.pojo.req;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import lombok.Data;
 
 /** UserDictDataUpdateReq：仅包含接口允许写入的字段。 */
@@ -25,7 +27,7 @@ public class UserDictDataUpdateReq {
     /**
      * 字典排序
      */
-    private Integer dictSort;
+    private Integer sortOrder;
 
     /**
      * 字典标签(分类名称)
@@ -58,9 +60,11 @@ public class UserDictDataUpdateReq {
     private String isDefault;
 
     /**
-     * 状态（0正常 1停用）
+     * 是否启用：1=启用，0=停用
      */
-    private String status;
+    @Min(0)
+    @Max(1)
+    private Integer isEnabled;
 
     /**
      * 是否只读（Y是 N否），用于限制普通用户修改公共分类

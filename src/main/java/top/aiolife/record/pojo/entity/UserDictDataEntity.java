@@ -35,7 +35,7 @@ public class UserDictDataEntity extends BaseEntity {
     /**
      * 字典排序
      */
-    private Integer dictSort;
+    private Integer sortOrder;
 
     /**
      * 字典标签(分类名称)
@@ -68,9 +68,9 @@ public class UserDictDataEntity extends BaseEntity {
     private String isDefault;
 
     /**
-     * 状态（0正常 1停用）
+     * 是否启用：1=启用，0=停用
      */
-    private String status;
+    private Integer isEnabled;
 
     /**
      * 是否只读（Y是 N否），用于限制普通用户修改公共分类

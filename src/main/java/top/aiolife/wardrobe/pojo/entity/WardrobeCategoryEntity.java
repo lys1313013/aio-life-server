@@ -31,7 +31,7 @@ public class WardrobeCategoryEntity extends BaseEntity {
     /**
      * 排序
      */
-    private Integer sort;
+    private Integer sortOrder;
 
     /**
      * 分类类型: 0=系统预设 1=用户自定义

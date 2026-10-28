@@ -35,7 +35,7 @@ public class WardrobeItemVO {
 
     private String size;
 
-    private String memo;
+    private String remark;
 
     private LocalDateTime createTime;
 }

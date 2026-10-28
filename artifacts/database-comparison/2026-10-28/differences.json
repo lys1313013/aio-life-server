@@ -1,0 +1,3233 @@
+{
+  "source": [
+    [
+      "5.7.44-log",
+      "aio_life",
+      "<redacted-database-account>",
+      "2026-10-28 13:01:40.000000"
+    ]
+  ],
+  "counts": {
+    "expected_tables": 72,
+    "actual_tables": 86,
+    "expected_columns": 1023,
+    "actual_columns": 1240,
+    "expected_columns_with_latest_asset_migration": 1027
+  },
+  "missing_tables": [],
+  "extra_tables": [
+    [
+      "chat_message",
+      "InnoDB",
+      "utf8mb4_unicode_ci",
+      "AI对话消息表",
+      121
+    ],
+    [
+      "conversation",
+      "InnoDB",
+      "utf8mb4_unicode_ci",
+      "AI对话会话表",
+      59
+    ],
+    [
+      "device_bak_20260623",
+      "InnoDB",
+      "utf8mb4_general_ci",
+      "",
+      32
+    ],
+    [
+      "device_bak_uuid_migration",
+      "InnoDB",
+      "utf8mb4_general_ci",
+      "",
+      32
+    ],
+    [
+      "honor_record_bak_20260623",
+      "InnoDB",
+      "utf8mb4_general_ci",
+      "",
+      0
+    ],
+    [
+      "honor_record_bak_uuid_migration",
+      "InnoDB",
+      "utf8mb4_general_ci",
+      "",
+      0
+    ],
+    [
+      "llm_key",
+      "InnoDB",
+      "utf8mb4_general_ci",
+      "大模型密钥表",
+      3
+    ],
+    [
+      "movie_bak_20260623",
+      "InnoDB",
+      "utf8mb4_general_ci",
+      "",
+      3
+    ],
+    [
+      "movie_bak_uuid_migration",
+      "InnoDB",
+      "utf8mb4_general_ci",
+      "",
+      3
+    ],
+    [
+      "read_record_bak_20260623",
+      "InnoDB",
+      "utf8mb4_general_ci",
+      "",
+      7
+    ],
+    [
+      "read_record_bak_uuid_migration",
+      "InnoDB",
+      "utf8mb4_general_ci",
+      "",
+      7
+    ],
+    [
+      "sys_file_bak_uuid_migration",
+      "InnoDB",
+      "utf8mb4_general_ci",
+      "",
+      54
+    ],
+    [
+      "wardrobe_item_bak_20260623",
+      "InnoDB",
+      "utf8mb4_general_ci",
+      "",
+      2
+    ],
+    [
+      "wardrobe_item_bak_uuid_migration",
+      "InnoDB",
+      "utf8mb4_general_ci",
+      "",
+      2
+    ]
+  ],
+  "missing_columns": [
+    [
+      "device",
+      "source_order_id",
+      "varchar(100)",
+      "YES",
+      null,
+      "",
+      "",
+      "ascii",
+      "ascii_bin",
+      "来源订单ID，原始字符串；无采集来源时为NULL",
+      15
+    ],
+    [
+      "device",
+      "source_platform",
+      "varchar(16)",
+      "YES",
+      null,
+      "",
+      "",
+      "ascii",
+      "ascii_bin",
+      "采集平台：jd=京东、taobao=淘宝；手工录入或历史记录为NULL",
+      14
+    ],
+    [
+      "device",
+      "source_product_id",
+      "varchar(100)",
+      "YES",
+      null,
+      "",
+      "",
+      "ascii",
+      "ascii_bin",
+      "来源商品ID，采集行sku原始字符串；无采集来源时为NULL",
+      16
+    ],
+    [
+      "wardrobe_item",
+      "source_order_id",
+      "varchar(100)",
+      "YES",
+      null,
+      "",
+      "",
+      "ascii",
+      "ascii_bin",
+      "来源订单ID，原始字符串；无采集来源时为NULL",
+      14
+    ],
+    [
+      "wardrobe_item",
+      "source_platform",
+      "varchar(16)",
+      "YES",
+      null,
+      "",
+      "",
+      "ascii",
+      "ascii_bin",
+      "采集平台：jd=京东、taobao=淘宝；手工录入或历史记录为NULL",
+      13
+    ],
+    [
+      "wardrobe_item",
+      "source_product_id",
+      "varchar(100)",
+      "YES",
+      null,
+      "",
+      "",
+      "ascii",
+      "ascii_bin",
+      "来源商品ID，采集行sku原始字符串；无采集来源时为NULL",
+      15
+    ]
+  ],
+  "extra_columns": [
+    [
+      "login_log",
+      "password",
+      "varchar(255)",
+      "YES",
+      null,
+      "",
+      "",
+      "utf8mb4",
+      "utf8mb4_general_ci",
+      "密码 密码错误时存储",
+      4
+    ],
+    [
+      "mail_log",
+      "content",
+      "text",
+      "YES",
+      null,
+      "",
+      "",
+      "utf8mb4",
+      "utf8mb4_unicode_ci",
+      "邮件内容",
+      4
+    ],
+    [
+      "sys_dict_data",
+      "color",
+      "varchar(20)",
+      "YES",
+      null,
+      "",
+      "",
+      "utf8mb4",
+      "utf8mb4_general_ci",
+      "字典项颜色(Hex)",
+      18
+    ],
+    [
+      "sys_dict_data",
+      "icon",
+      "varchar(100)",
+      "YES",
+      null,
+      "",
+      "",
+      "utf8mb4",
+      "utf8mb4_general_ci",
+      "字典项图标(Iconify格式)",
+      17
+    ],
+    [
+      "sys_dict_data",
+      "user_id",
+      "bigint(20)",
+      "YES",
+      "0",
+      "",
+      "",
+      null,
+      null,
+      "用户ID (0:系统全局, >0:用户私有)",
+      16
+    ],
+    [
+      "sys_dict_type",
+      "color",
+      "varchar(20)",
+      "YES",
+      null,
+      "",
+      "",
+      "utf8mb4",
+      "utf8mb4_general_ci",
+      "字典类型颜色(Hex)",
+      11
+    ],
+    [
+      "sys_dict_type",
+      "icon",
+      "varchar(100)",
+      "YES",
+      null,
+      "",
+      "",
+      "utf8mb4",
+      "utf8mb4_general_ci",
+      "字典类型图标(Iconify格式)",
+      10
+    ],
+    [
+      "user_dict_data",
+      "css_class",
+      "varchar(100)",
+      "YES",
+      null,
+      "",
+      "",
+      "utf8mb4",
+      "utf8mb4_unicode_ci",
+      "样式属性（其他样式扩展）",
+      12
+    ],
+    [
+      "user_dict_data",
+      "list_class",
+      "varchar(100)",
+      "YES",
+      null,
+      "",
+      "",
+      "utf8mb4",
+      "utf8mb4_unicode_ci",
+      "表格回显样式",
+      13
+    ],
+    [
+      "user_dict_data",
+      "sys_dict_code",
+      "bigint(20)",
+      "YES",
+      null,
+      "",
+      "",
+      null,
+      null,
+      "系统字典项Code，用于覆盖/隐藏系统字典项",
+      4
+    ]
+  ],
+  "table_differences": [
+    {
+      "table": "enum_type",
+      "expected": [
+        "enum_type",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "枚举类型表"
+      ],
+      "actual": [
+        "enum_type",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "枚举类型表"
+      ]
+    },
+    {
+      "table": "file",
+      "expected": [
+        "file",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "系统文件表"
+      ],
+      "actual": [
+        "file",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "文件表"
+      ]
+    },
+    {
+      "table": "honor_category",
+      "expected": [
+        "honor_category",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "荣誉分类表"
+      ],
+      "actual": [
+        "honor_category",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "荣誉分类表"
+      ]
+    },
+    {
+      "table": "income",
+      "expected": [
+        "income",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "收入表"
+      ],
+      "actual": [
+        "income",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "收入表"
+      ]
+    },
+    {
+      "table": "login_log",
+      "expected": [
+        "login_log",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "登录日志"
+      ],
+      "actual": [
+        "login_log",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "登录日志"
+      ]
+    },
+    {
+      "table": "memo",
+      "expected": [
+        "memo",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "备忘录表"
+      ],
+      "actual": [
+        "memo",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "备忘录表"
+      ]
+    },
+    {
+      "table": "message",
+      "expected": [
+        "message",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "消息表"
+      ],
+      "actual": [
+        "message",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "站内信表"
+      ]
+    },
+    {
+      "table": "milestone",
+      "expected": [
+        "milestone",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "里程碑表"
+      ],
+      "actual": [
+        "milestone",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "里程碑表"
+      ]
+    },
+    {
+      "table": "password_vault",
+      "expected": [
+        "password_vault",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "密码库表（加解密在前端完成，后端仅透传存储密文）"
+      ],
+      "actual": [
+        "password_vault",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "密码库表"
+      ]
+    },
+    {
+      "table": "performance",
+      "expected": [
+        "performance",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "演出表"
+      ],
+      "actual": [
+        "performance",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "演出表"
+      ]
+    },
+    {
+      "table": "record_article",
+      "expected": [
+        "record_article",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "收藏文章表"
+      ],
+      "actual": [
+        "record_article",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "外部文章表"
+      ]
+    },
+    {
+      "table": "record_article_annotation",
+      "expected": [
+        "record_article_annotation",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "文章标注表"
+      ],
+      "actual": [
+        "record_article_annotation",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "文章批注表"
+      ]
+    },
+    {
+      "table": "sys_activity_log",
+      "expected": [
+        "sys_activity_log",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "操作和访问日志"
+      ],
+      "actual": [
+        "sys_activity_log",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "操作和访问日志"
+      ]
+    },
+    {
+      "table": "sys_dict_data",
+      "expected": [
+        "sys_dict_data",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "字典数据表"
+      ],
+      "actual": [
+        "sys_dict_data",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "字典数据表"
+      ]
+    },
+    {
+      "table": "sys_dict_type",
+      "expected": [
+        "sys_dict_type",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "字典类型表"
+      ],
+      "actual": [
+        "sys_dict_type",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "字典类型表"
+      ]
+    },
+    {
+      "table": "task",
+      "expected": [
+        "task",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "任务表"
+      ],
+      "actual": [
+        "task",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "任务表"
+      ]
+    },
+    {
+      "table": "task_column",
+      "expected": [
+        "task_column",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "任务列表"
+      ],
+      "actual": [
+        "task_column",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "任务列表"
+      ]
+    },
+    {
+      "table": "task_detail",
+      "expected": [
+        "task_detail",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "任务明细表"
+      ],
+      "actual": [
+        "task_detail",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "任务明细表"
+      ]
+    },
+    {
+      "table": "thought",
+      "expected": [
+        "thought",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "思考表"
+      ],
+      "actual": [
+        "thought",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "思考表"
+      ]
+    },
+    {
+      "table": "thought_rela_event",
+      "expected": [
+        "thought_rela_event",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "思考关联事件表"
+      ],
+      "actual": [
+        "thought_rela_event",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "思考关联表"
+      ]
+    },
+    {
+      "table": "user",
+      "expected": [
+        "user",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "用户表"
+      ],
+      "actual": [
+        "user",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "用户表"
+      ]
+    },
+    {
+      "table": "user_bind",
+      "expected": [
+        "user_bind",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "用户第三方账号绑定表"
+      ],
+      "actual": [
+        "user_bind",
+        "InnoDB",
+        "utf8mb4_general_ci",
+        "用户第三方账号绑定表"
+      ]
+    },
+    {
+      "table": "user_dict_data",
+      "expected": [
+        "user_dict_data",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "用户字典数据表"
+      ],
+      "actual": [
+        "user_dict_data",
+        "InnoDB",
+        "utf8mb4_unicode_ci",
+        "用户字典明细表"
+      ]
+    }
+  ],
+  "column_differences": [
+    {
+      "table": "b_video",
+      "column": "last_watched",
+      "differences": {
+        "comment": {
+          "expected": "最后观看时间（syncProgress 同步时写入）",
+          "actual": "最后观看时间"
+        }
+      }
+    },
+    {
+      "table": "device",
+      "column": "spec",
+      "differences": {
+        "comment": {
+          "expected": "设备规格",
+          "actual": "设备规格（如：内存大小、CPU等）"
+        }
+      }
+    },
+    {
+      "table": "enum_type",
+      "column": "description",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "enum_type",
+      "column": "type_name",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "expense",
+      "column": "exp_type_id",
+      "differences": {
+        "type": {
+          "expected": "bigint",
+          "actual": "mediumtext"
+        },
+        "charset": {
+          "expected": null,
+          "actual": "utf8mb4"
+        },
+        "collation": {
+          "expected": null,
+          "actual": "utf8mb4_unicode_ci"
+        }
+      }
+    },
+    {
+      "table": "expense",
+      "column": "user_id",
+      "differences": {
+        "nullable": {
+          "expected": "NO",
+          "actual": "YES"
+        }
+      }
+    },
+    {
+      "table": "file",
+      "column": "file_name",
+      "differences": {
+        "comment": {
+          "expected": "MinIO完整对象键",
+          "actual": "文件原名"
+        }
+      }
+    },
+    {
+      "table": "goal",
+      "column": "type",
+      "differences": {
+        "comment": {
+          "expected": "目标类型：1=年度目标，2=月度目标，3=日目标",
+          "actual": "目标类型：1=日目标，2=周目标，3=月度目标，4=季度目标，5=半年目标，6=年度目标，7=三年目标，8=五年目标，9=十年目标，10=人生目标"
+        }
+      }
+    },
+    {
+      "table": "honor_category",
+      "column": "color",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "honor_category",
+      "column": "icon",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "honor_category",
+      "column": "name",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "income",
+      "column": "amt",
+      "differences": {
+        "nullable": {
+          "expected": "NO",
+          "actual": "YES"
+        }
+      }
+    },
+    {
+      "table": "income",
+      "column": "inc_type_id",
+      "differences": {
+        "type": {
+          "expected": "bigint",
+          "actual": "mediumtext"
+        },
+        "charset": {
+          "expected": null,
+          "actual": "utf8mb4"
+        },
+        "collation": {
+          "expected": null,
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "income",
+      "column": "remark",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "life_footprint",
+      "column": "region_code",
+      "differences": {
+        "comment": {
+          "expected": "所选最深层地区编码，可停在省市区县或乡镇，未选时为空",
+          "actual": "所选最深层地区编码，可停在省市区县或乡镇，未选及历史记录为空"
+        }
+      }
+    },
+    {
+      "table": "login_log",
+      "column": "ip_address",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "IP地址",
+          "actual": "ip地址"
+        }
+      }
+    },
+    {
+      "table": "login_log",
+      "column": "username",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "membership_provider",
+      "column": "category",
+      "differences": {
+        "comment": {
+          "expected": "默认分类:video/music/shopping/cloud/study/game/AI/other",
+          "actual": "默认分类:video/music/shopping/cloud/study/game/other"
+        }
+      }
+    },
+    {
+      "table": "membership_record",
+      "column": "category",
+      "differences": {
+        "comment": {
+          "expected": "分类:video/music/shopping/cloud/study/game/AI/other",
+          "actual": "分类:video/music/shopping/cloud/study/game/other"
+        }
+      }
+    },
+    {
+      "table": "membership_record",
+      "column": "provider_id",
+      "differences": {
+        "comment": {
+          "expected": "会员平台ID，未关联平台时可为空",
+          "actual": "会员平台ID，旧记录或自定义平台可为空"
+        }
+      }
+    },
+    {
+      "table": "memo",
+      "column": "content",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "memo",
+      "column": "title",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "milestone",
+      "column": "description",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "milestone",
+      "column": "title",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "milestone",
+      "column": "type",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "password_vault",
+      "column": "password",
+      "differences": {
+        "comment": {
+          "expected": "密码密文（前端SM4-GCM加密，密钥由用户主密码PBKDF2派生，后端仅存密文）",
+          "actual": "密码（SM4加密存储）"
+        }
+      }
+    },
+    {
+      "table": "password_vault",
+      "column": "remark",
+      "differences": {
+        "comment": {
+          "expected": "备注密文（前端SM4-GCM加密，同password）",
+          "actual": "备注（SM4加密存储）"
+        }
+      }
+    },
+    {
+      "table": "password_vault",
+      "column": "salt",
+      "differences": {
+        "comment": {
+          "expected": "PBKDF2盐值，每条记录唯一（前端生成）",
+          "actual": "PBKDF2盐值，每条记录唯一"
+        }
+      }
+    },
+    {
+      "table": "password_vault",
+      "column": "username",
+      "differences": {
+        "comment": {
+          "expected": "账号（明文存储，便于展示）",
+          "actual": "账号（SM4加密存储）"
+        }
+      }
+    },
+    {
+      "table": "performance",
+      "column": "city",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "performance",
+      "column": "order_number",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "performance",
+      "column": "performance_name",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "performance",
+      "column": "performance_type",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "performance",
+      "column": "performer",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "performance",
+      "column": "purchase_platform",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "performance",
+      "column": "review",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "performance",
+      "column": "seat_info",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "performance",
+      "column": "venue",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "read_record",
+      "column": "finish_time",
+      "differences": {
+        "comment": {
+          "expected": "完成时间",
+          "actual": "读完时间"
+        }
+      }
+    },
+    {
+      "table": "record_article",
+      "column": "author",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "record_article",
+      "column": "category",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "record_article",
+      "column": "content_html",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "文章HTML内容",
+          "actual": "抓取的HTML正文"
+        }
+      }
+    },
+    {
+      "table": "record_article",
+      "column": "create_time",
+      "differences": {
+        "default": {
+          "expected": "CURRENT_TIMESTAMP",
+          "actual": null
+        },
+        "comment": {
+          "expected": "创建时间",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "record_article",
+      "column": "create_user",
+      "differences": {
+        "comment": {
+          "expected": "创建人",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "record_article",
+      "column": "id",
+      "differences": {
+        "comment": {
+          "expected": "文章ID",
+          "actual": "主键"
+        }
+      }
+    },
+    {
+      "table": "record_article",
+      "column": "is_deleted",
+      "differences": {
+        "nullable": {
+          "expected": "NO",
+          "actual": "YES"
+        },
+        "comment": {
+          "expected": "是否删除",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "record_article",
+      "column": "tags",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "record_article",
+      "column": "title",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "record_article",
+      "column": "update_time",
+      "differences": {
+        "default": {
+          "expected": "CURRENT_TIMESTAMP",
+          "actual": null
+        },
+        "extra": {
+          "expected": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
+          "actual": ""
+        },
+        "comment": {
+          "expected": "更新时间",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "record_article",
+      "column": "update_user",
+      "differences": {
+        "comment": {
+          "expected": "更新人",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "record_article",
+      "column": "url",
+      "differences": {
+        "nullable": {
+          "expected": "YES",
+          "actual": "NO"
+        },
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "原文链接",
+          "actual": "文章链接"
+        }
+      }
+    },
+    {
+      "table": "record_article_annotation",
+      "column": "color",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "标注颜色",
+          "actual": "高亮颜色"
+        }
+      }
+    },
+    {
+      "table": "record_article_annotation",
+      "column": "create_time",
+      "differences": {
+        "default": {
+          "expected": "CURRENT_TIMESTAMP",
+          "actual": null
+        },
+        "comment": {
+          "expected": "创建时间",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "record_article_annotation",
+      "column": "create_user",
+      "differences": {
+        "comment": {
+          "expected": "创建人",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "record_article_annotation",
+      "column": "end_container_path",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "结束容器路径",
+          "actual": "终点DOM路径"
+        }
+      }
+    },
+    {
+      "table": "record_article_annotation",
+      "column": "end_offset",
+      "differences": {
+        "comment": {
+          "expected": "结束偏移量",
+          "actual": "终点偏移量"
+        }
+      }
+    },
+    {
+      "table": "record_article_annotation",
+      "column": "id",
+      "differences": {
+        "comment": {
+          "expected": "标注ID",
+          "actual": "主键"
+        }
+      }
+    },
+    {
+      "table": "record_article_annotation",
+      "column": "is_deleted",
+      "differences": {
+        "nullable": {
+          "expected": "NO",
+          "actual": "YES"
+        },
+        "comment": {
+          "expected": "是否删除",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "record_article_annotation",
+      "column": "note_content",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "标注内容",
+          "actual": "批注内容"
+        }
+      }
+    },
+    {
+      "table": "record_article_annotation",
+      "column": "selected_text",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "选中文本",
+          "actual": "高亮原文"
+        }
+      }
+    },
+    {
+      "table": "record_article_annotation",
+      "column": "start_container_path",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "起始容器路径",
+          "actual": "起点DOM路径"
+        }
+      }
+    },
+    {
+      "table": "record_article_annotation",
+      "column": "start_offset",
+      "differences": {
+        "comment": {
+          "expected": "起始偏移量",
+          "actual": "起点偏移量"
+        }
+      }
+    },
+    {
+      "table": "record_article_annotation",
+      "column": "update_time",
+      "differences": {
+        "default": {
+          "expected": "CURRENT_TIMESTAMP",
+          "actual": null
+        },
+        "extra": {
+          "expected": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
+          "actual": ""
+        },
+        "comment": {
+          "expected": "更新时间",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "record_article_annotation",
+      "column": "update_user",
+      "differences": {
+        "comment": {
+          "expected": "更新人",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "access_type",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "访问类型",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "browser",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "浏览器",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "create_time",
+      "differences": {
+        "comment": {
+          "expected": "创建时间",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "create_user",
+      "differences": {
+        "comment": {
+          "expected": "创建人",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "duration_ms",
+      "differences": {
+        "comment": {
+          "expected": "处理耗时毫秒，非负，0有效，NULL未采集",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "function_item",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "功能项",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "function_name",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "功能名称",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "id",
+      "differences": {
+        "comment": {
+          "expected": "主键ID",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "ip_address",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "IP 地址",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "is_deleted",
+      "differences": {
+        "comment": {
+          "expected": "是否删除(0-否,1-是)",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "log_type",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "nickname",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "昵称",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "request_method",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "HTTP方法，未采集时为NULL",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "request_params",
+      "differences": {
+        "comment": {
+          "expected": "白名单脱敏参数，应用限制32KiB",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "request_path",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "request_time",
+      "differences": {
+        "comment": {
+          "expected": "服务端请求接收时间，Asia/Shanghai",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "server_ip",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "处理请求的后端实例IPv4或IPv6",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "success",
+      "differences": {
+        "comment": {
+          "expected": "是否成功",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "update_time",
+      "differences": {
+        "comment": {
+          "expected": "更新时间",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "update_user",
+      "differences": {
+        "comment": {
+          "expected": "更新人",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "user_id",
+      "differences": {
+        "comment": {
+          "expected": "操作用户ID",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_activity_log",
+      "column": "username",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "用户名",
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "sys_dict_data",
+      "column": "css_class",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "sys_dict_data",
+      "column": "dict_label",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "sys_dict_data",
+      "column": "dict_type",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "sys_dict_data",
+      "column": "dict_value",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "sys_dict_data",
+      "column": "is_default",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "sys_dict_data",
+      "column": "list_class",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "sys_dict_data",
+      "column": "remark",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "sys_dict_type",
+      "column": "dict_name",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "sys_dict_type",
+      "column": "dict_type",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "sys_dict_type",
+      "column": "remark",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "task",
+      "column": "content",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "task",
+      "column": "detail",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "task_column",
+      "column": "bg_color",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "task_column",
+      "column": "title",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "task_detail",
+      "column": "content",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "task_detail",
+      "column": "priority",
+      "differences": {
+        "comment": {
+          "expected": "优先级: 1-高, 10-中, 20-低",
+          "actual": "优先级: 1-非常重要, 10-重要, 20-普通"
+        }
+      }
+    },
+    {
+      "table": "thought",
+      "column": "content",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "thought_rela_event",
+      "column": "content",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user",
+      "column": "email",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user",
+      "column": "introduction",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user",
+      "column": "nickname",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user",
+      "column": "password",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user",
+      "column": "password_salt",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user",
+      "column": "phone",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user",
+      "column": "phone_country_code",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user",
+      "column": "policy_version",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user",
+      "column": "role",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user",
+      "column": "secondary_password",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user",
+      "column": "secondary_password_salt",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user",
+      "column": "username",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user_bind",
+      "column": "access_token",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user_bind",
+      "column": "platform",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        },
+        "comment": {
+          "expected": "平台类型：github, leetcode, csdn, shanbay, douban, weread",
+          "actual": "平台类型：github, leetcode, shanbay"
+        }
+      }
+    },
+    {
+      "table": "user_bind",
+      "column": "platform_username",
+      "differences": {
+        "collation": {
+          "expected": "utf8mb4_unicode_ci",
+          "actual": "utf8mb4_general_ci"
+        }
+      }
+    },
+    {
+      "table": "user_dict_data",
+      "column": "color",
+      "differences": {
+        "comment": {
+          "expected": "颜色值(Hex)",
+          "actual": "字典项颜色(Hex)"
+        }
+      }
+    },
+    {
+      "table": "user_dict_data",
+      "column": "create_user",
+      "differences": {
+        "comment": {
+          "expected": "创建人ID",
+          "actual": "创建者"
+        }
+      }
+    },
+    {
+      "table": "user_dict_data",
+      "column": "dict_label",
+      "differences": {
+        "comment": {
+          "expected": "字典标签(分类名称)",
+          "actual": "字典标签"
+        }
+      }
+    },
+    {
+      "table": "user_dict_data",
+      "column": "dict_value",
+      "differences": {
+        "comment": {
+          "expected": "字典键值(分类标识)",
+          "actual": "字典键值"
+        }
+      }
+    },
+    {
+      "table": "user_dict_data",
+      "column": "icon",
+      "differences": {
+        "comment": {
+          "expected": "图标名称(Iconify格式)",
+          "actual": "字典项图标(Iconify格式)"
+        }
+      }
+    },
+    {
+      "table": "user_dict_data",
+      "column": "id",
+      "differences": {
+        "comment": {
+          "expected": "字典主键",
+          "actual": "主键ID"
+        }
+      }
+    },
+    {
+      "table": "user_dict_data",
+      "column": "is_deleted",
+      "differences": {
+        "comment": {
+          "expected": "是否删除 0-未删除 1-已删除",
+          "actual": "是否删除：1-删除，0-未删除"
+        }
+      }
+    },
+    {
+      "table": "user_dict_data",
+      "column": "update_user",
+      "differences": {
+        "comment": {
+          "expected": "更新人ID",
+          "actual": "更新者"
+        }
+      }
+    },
+    {
+      "table": "user_dict_data",
+      "column": "user_id",
+      "differences": {
+        "comment": {
+          "expected": "所属用户ID",
+          "actual": "用户ID"
+        }
+      }
+    },
+    {
+      "table": "user_dict_type",
+      "column": "color",
+      "differences": {
+        "comment": {
+          "expected": "颜色",
+          "actual": "字典类型颜色(Hex)"
+        }
+      }
+    },
+    {
+      "table": "user_dict_type",
+      "column": "create_user",
+      "differences": {
+        "comment": {
+          "expected": "创建人",
+          "actual": "创建者"
+        }
+      }
+    },
+    {
+      "table": "user_dict_type",
+      "column": "dict_name",
+      "differences": {
+        "default": {
+          "expected": null,
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "user_dict_type",
+      "column": "dict_type",
+      "differences": {
+        "default": {
+          "expected": null,
+          "actual": ""
+        }
+      }
+    },
+    {
+      "table": "user_dict_type",
+      "column": "icon",
+      "differences": {
+        "comment": {
+          "expected": "图标",
+          "actual": "字典类型图标(Iconify格式)"
+        }
+      }
+    },
+    {
+      "table": "user_dict_type",
+      "column": "id",
+      "differences": {
+        "extra": {
+          "expected": "",
+          "actual": "auto_increment"
+        }
+      }
+    },
+    {
+      "table": "user_dict_type",
+      "column": "is_deleted",
+      "differences": {
+        "comment": {
+          "expected": "是否删除",
+          "actual": "是否删除：1-删除，0-未删除"
+        }
+      }
+    },
+    {
+      "table": "user_dict_type",
+      "column": "sys_dict_id",
+      "differences": {
+        "comment": {
+          "expected": "关联的系统字典类型ID",
+          "actual": "系统字典ID，用于覆盖/隐藏系统字典类型"
+        }
+      }
+    },
+    {
+      "table": "user_dict_type",
+      "column": "update_user",
+      "differences": {
+        "comment": {
+          "expected": "更新人",
+          "actual": "更新者"
+        }
+      }
+    },
+    {
+      "table": "user_dict_type",
+      "column": "user_id",
+      "differences": {
+        "comment": {
+          "expected": "所属用户ID",
+          "actual": "用户ID"
+        }
+      }
+    }
+  ],
+  "index_differences": [
+    {
+      "table": "b_video",
+      "index": "idx_last_watched",
+      "expected": null,
+      "actual": [
+        [
+          "b_video",
+          "idx_last_watched",
+          1,
+          1,
+          "last_watched",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ]
+    },
+    {
+      "table": "device",
+      "index": "idx_device_capture_order",
+      "expected": [
+        [
+          "device",
+          "idx_device_capture_order",
+          1,
+          1,
+          "user_id",
+          null,
+          "BTREE",
+          "A"
+        ],
+        [
+          "device",
+          "idx_device_capture_order",
+          1,
+          2,
+          "source_platform",
+          null,
+          "BTREE",
+          "A"
+        ],
+        [
+          "device",
+          "idx_device_capture_order",
+          1,
+          3,
+          "source_order_id",
+          null,
+          "BTREE",
+          "A"
+        ],
+        [
+          "device",
+          "idx_device_capture_order",
+          1,
+          4,
+          "is_deleted",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ],
+      "actual": null
+    },
+    {
+      "table": "goal",
+      "index": "idx_is_deleted",
+      "expected": null,
+      "actual": [
+        [
+          "goal",
+          "idx_is_deleted",
+          1,
+          1,
+          "is_deleted",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ]
+    },
+    {
+      "table": "goal",
+      "index": "idx_status",
+      "expected": null,
+      "actual": [
+        [
+          "goal",
+          "idx_status",
+          1,
+          1,
+          "status",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ]
+    },
+    {
+      "table": "goal",
+      "index": "idx_type",
+      "expected": null,
+      "actual": [
+        [
+          "goal",
+          "idx_type",
+          1,
+          1,
+          "type",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ]
+    },
+    {
+      "table": "goal",
+      "index": "idx_year_month",
+      "expected": null,
+      "actual": [
+        [
+          "goal",
+          "idx_year_month",
+          1,
+          1,
+          "year",
+          null,
+          "BTREE",
+          "A"
+        ],
+        [
+          "goal",
+          "idx_year_month",
+          1,
+          2,
+          "month",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ]
+    },
+    {
+      "table": "record_article_annotation",
+      "index": "idx_article_id",
+      "expected": [
+        [
+          "record_article_annotation",
+          "idx_article_id",
+          1,
+          1,
+          "article_id",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ],
+      "actual": null
+    },
+    {
+      "table": "sys_dict_type",
+      "index": "dict_type",
+      "expected": null,
+      "actual": [
+        [
+          "sys_dict_type",
+          "dict_type",
+          0,
+          1,
+          "dict_type",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ]
+    },
+    {
+      "table": "user_dict_data",
+      "index": "idx_dict_type",
+      "expected": null,
+      "actual": [
+        [
+          "user_dict_data",
+          "idx_dict_type",
+          1,
+          1,
+          "dict_type",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ]
+    },
+    {
+      "table": "user_dict_data",
+      "index": "idx_user_dict_template",
+      "expected": [
+        [
+          "user_dict_data",
+          "idx_user_dict_template",
+          1,
+          1,
+          "template_id",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ],
+      "actual": null
+    },
+    {
+      "table": "user_dict_data",
+      "index": "idx_user_dict_type",
+      "expected": [
+        [
+          "user_dict_data",
+          "idx_user_dict_type",
+          1,
+          1,
+          "user_id",
+          null,
+          "BTREE",
+          "A"
+        ],
+        [
+          "user_dict_data",
+          "idx_user_dict_type",
+          1,
+          2,
+          "dict_type",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ],
+      "actual": null
+    },
+    {
+      "table": "user_dict_data",
+      "index": "idx_user_id",
+      "expected": null,
+      "actual": [
+        [
+          "user_dict_data",
+          "idx_user_id",
+          1,
+          1,
+          "user_id",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ]
+    },
+    {
+      "table": "user_dict_type",
+      "index": "idx_dict_type",
+      "expected": null,
+      "actual": [
+        [
+          "user_dict_type",
+          "idx_dict_type",
+          1,
+          1,
+          "dict_type",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ]
+    },
+    {
+      "table": "user_dict_type",
+      "index": "idx_user_dict_type_user",
+      "expected": [
+        [
+          "user_dict_type",
+          "idx_user_dict_type_user",
+          1,
+          1,
+          "user_id",
+          null,
+          "BTREE",
+          "A"
+        ],
+        [
+          "user_dict_type",
+          "idx_user_dict_type_user",
+          1,
+          2,
+          "dict_type",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ],
+      "actual": null
+    },
+    {
+      "table": "user_dict_type",
+      "index": "idx_user_id",
+      "expected": null,
+      "actual": [
+        [
+          "user_dict_type",
+          "idx_user_id",
+          1,
+          1,
+          "user_id",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ]
+    },
+    {
+      "table": "wardrobe_item",
+      "index": "idx_wardrobe_item_capture_order",
+      "expected": [
+        [
+          "wardrobe_item",
+          "idx_wardrobe_item_capture_order",
+          1,
+          1,
+          "user_id",
+          null,
+          "BTREE",
+          "A"
+        ],
+        [
+          "wardrobe_item",
+          "idx_wardrobe_item_capture_order",
+          1,
+          2,
+          "source_platform",
+          null,
+          "BTREE",
+          "A"
+        ],
+        [
+          "wardrobe_item",
+          "idx_wardrobe_item_capture_order",
+          1,
+          3,
+          "source_order_id",
+          null,
+          "BTREE",
+          "A"
+        ],
+        [
+          "wardrobe_item",
+          "idx_wardrobe_item_capture_order",
+          1,
+          4,
+          "is_deleted",
+          null,
+          "BTREE",
+          "A"
+        ]
+      ],
+      "actual": null
+    }
+  ],
+  "foreign_keys_match": false,
+  "expected_checks": [
+    [
+      "bank_card",
+      "chk_bank_card_bank_source",
+      "(((`bank_id` is not null) and (`custom_bank_name` is null)) or ((`bank_id` is null) and (`custom_bank_name` is not null) and (char_length(trim(`custom_bank_name`)) > 0)))",
+      "YES"
+    ],
+    [
+      "bank_card_cover_template",
+      "chk_cover_template_enabled",
+      "(`is_enabled` in (0,1))",
+      "YES"
+    ],
+    [
+      "bank_card_cover_template",
+      "chk_cover_template_type",
+      "(`card_type` in (_utf8mb4\\'debit\\',_utf8mb4\\'credit\\'))",
+      "YES"
+    ],
+    [
+      "life_footprint",
+      "ck_footprint_coordinate",
+      "(`coordinate_system` = _utf8mb4\\'GCJ02\\')",
+      "YES"
+    ],
+    [
+      "life_footprint",
+      "ck_footprint_end",
+      "(`end_date` >= `start_date`)",
+      "YES"
+    ],
+    [
+      "life_footprint",
+      "ck_footprint_lat",
+      "(`latitude` between -(90) and 90)",
+      "YES"
+    ],
+    [
+      "life_footprint",
+      "ck_footprint_lng",
+      "(`longitude` between -(180) and 180)",
+      "YES"
+    ],
+    [
+      "sys_work_calendar",
+      "chk_sys_work_calendar_day_type",
+      "(`day_type` in (0,1,2,3))",
+      "YES"
+    ],
+    [
+      "system_region",
+      "ck_system_region_level",
+      "(`level` between 1 and 4)",
+      "YES"
+    ],
+    [
+      "user",
+      "ck_user_phone_pair",
+      "(((`phone_country_code` is null) and (`phone` is null)) or ((`phone_country_code` is not null) and (`phone` is not null) and regexp_like(`phone_country_code`,_utf8mb4\\'^[1-9][0-9]{0,2}$\\') and regexp_like(`phone`,_utf8mb4\\'^[0-9]{4,14}$\\') and ((char_length(`phone_country_code`) + char_length(`phone`)) <= 15)))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_arm_state",
+      "(`arm_state` in (_utf8mb4\\'relaxed\\',_utf8mb4\\'flexed\\'))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_body_fat_percent",
+      "((`body_fat_percent` > 0) and (`body_fat_percent` <= 99.9))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_calf_cm",
+      "((`calf_cm` > 0) and (`calf_cm` <= 999.9))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_chest_cm",
+      "((`chest_cm` > 0) and (`chest_cm` <= 999.9))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_forearm_cm",
+      "((`forearm_cm` > 0) and (`forearm_cm` <= 999.9))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_gender",
+      "(`gender` in (_utf8mb4\\'male\\',_utf8mb4\\'female\\'))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_height_cm",
+      "((`height_cm` > 0) and (`height_cm` <= 999.9))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_hip_cm",
+      "((`hip_cm` > 0) and (`hip_cm` <= 999.9))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_inseam_cm",
+      "((`inseam_cm` > 0) and (`inseam_cm` <= 999.9))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_shoe_system",
+      "(`shoe_system` in (_utf8mb4\\'EU\\',_utf8mb4\\'CN\\',_utf8mb4\\'US\\',_utf8mb4\\'UK\\'))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_shoulder_width_cm",
+      "((`shoulder_width_cm` > 0) and (`shoulder_width_cm` <= 999.9))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_side",
+      "(`measurement_side` in (_utf8mb4\\'left\\',_utf8mb4\\'right\\'))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_thigh_cm",
+      "((`thigh_cm` > 0) and (`thigh_cm` <= 999.9))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_upper_arm_cm",
+      "((`upper_arm_cm` > 0) and (`upper_arm_cm` <= 999.9))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_version",
+      "(`version` > 0)",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_waist_cm",
+      "((`waist_cm` > 0) and (`waist_cm` <= 999.9))",
+      "YES"
+    ],
+    [
+      "user_body_profile",
+      "ck_body_profile_weight_kg",
+      "((`weight_kg` > 0) and (`weight_kg` <= 999.9))",
+      "YES"
+    ]
+  ],
+  "actual_check_count": 0,
+  "scope": {
+    "target": "117 主库 / aio_life",
+    "mysql_version": "5.7.44-log",
+    "checked_at": "2026-10-28T13:06:57.381606+08:00",
+    "read_only": true,
+    "baseline_reference": "full SQL + 2026-10-28_02",
+    "full_reference": "full SQL + current 01 asset definitions + 02; reconstructed only in isolated local empty database",
+    "normalization": [
+      "integer display width",
+      "CURRENT_TIMESTAMP syntax",
+      "DEFAULT_GENERATED metadata",
+      "CASE expression parentheses/whitespace",
+      "InnoDB FK NO ACTION and RESTRICT equivalent"
+    ]
+  },
+  "missing_columns_with_latest_asset_migration": [
+    [
+      "device",
+      "source_item_id",
+      "varchar(128)",
+      "YES",
+      null,
+      "",
+      "",
+      "utf8mb4",
+      "utf8mb4_bin",
+      "订单内稳定商品明细标识，区分同商品的规格或多行；无采集来源时为NULL",
+      17
+    ],
+    [
+      "device",
+      "source_order_id",
+      "varchar(100)",
+      "YES",
+      null,
+      "",
+      "",
+      "ascii",
+      "ascii_bin",
+      "来源订单ID，原始字符串；无采集来源时为NULL",
+      15
+    ],
+    [
+      "device",
+      "source_platform",
+      "varchar(16)",
+      "YES",
+      null,
+      "",
+      "",
+      "ascii",
+      "ascii_bin",
+      "采集平台：jd=京东、taobao=淘宝；手工录入或历史记录为NULL",
+      14
+    ],
+    [
+      "device",
+      "source_product_id",
+      "varchar(100)",
+      "YES",
+      null,
+      "",
+      "",
+      "ascii",
+      "ascii_bin",
+      "来源商品ID，采集行sku原始字符串；无采集来源时为NULL",
+      16
+    ],
+    [
+      "device",
+      "source_unit_index",
+      "int",
+      "YES",
+      null,
+      "",
+      "",
+      null,
+      null,
+      "来源商品行内件序号，从1开始；无采集来源时为NULL",
+      18
+    ],
+    [
+      "wardrobe_item",
+      "source_item_id",
+      "varchar(128)",
+      "YES",
+      null,
+      "",
+      "",
+      "utf8mb4",
+      "utf8mb4_bin",
+      "订单内稳定商品明细标识，区分同商品的规格或多行；无采集来源时为NULL",
+      16
+    ],
+    [
+      "wardrobe_item",
+      "source_order_id",
+      "varchar(100)",
+      "YES",
+      null,
+      "",
+      "",
+      "ascii",
+      "ascii_bin",
+      "来源订单ID，原始字符串；无采集来源时为NULL",
+      14
+    ],
+    [
+      "wardrobe_item",
+      "source_platform",
+      "varchar(16)",
+      "YES",
+      null,
+      "",
+      "",
+      "ascii",
+      "ascii_bin",
+      "采集平台：jd=京东、taobao=淘宝；手工录入或历史记录为NULL",
+      13
+    ],
+    [
+      "wardrobe_item",
+      "source_product_id",
+      "varchar(100)",
+      "YES",
+      null,
+      "",
+      "",
+      "ascii",
+      "ascii_bin",
+      "来源商品ID，采集行sku原始字符串；无采集来源时为NULL",
+      15
+    ],
+    [
+      "wardrobe_item",
+      "source_unit_index",
+      "int",
+      "YES",
+      null,
+      "",
+      "",
+      null,
+      null,
+      "来源商品行内件序号，从1开始；无采集来源时为NULL",
+      17
+    ]
+  ],
+  "foreign_keys_semantically_match": true,
+  "data_checks": {
+    "nullable_conflicts": {
+      "rows": [
+        [
+          "expense.user_id",
+          3
+        ],
+        [
+          "income.amt",
+          0
+        ],
+        [
+          "record_article.is_deleted",
+          0
+        ],
+        [
+          "record_article_annotation.is_deleted",
+          0
+        ]
+      ]
+    },
+    "id_type_values": {
+      "rows": [
+        [
+          "expense.exp_type_id",
+          4509,
+          0,
+          19
+        ],
+        [
+          "income.inc_type_id",
+          174,
+          0,
+          19
+        ]
+      ]
+    },
+    "legacy_sensitive_counts": {
+      "rows": [
+        [
+          "login_log.password nonempty",
+          176
+        ],
+        [
+          "mail_log.content nonempty",
+          336
+        ]
+      ]
+    },
+    "legacy_dictionary_values": {
+      "rows": [
+        [
+          "user_dict_data.sys_dict_code nonnull",
+          0
+        ],
+        [
+          "user_dict_data.template_id nonnull",
+          18
+        ],
+        [
+          "user_dict_data mapping conflict",
+          0
+        ]
+      ]
+    },
+    "enum_values": {
+      "rows": [
+        [
+          "sys_dict_type.is_enabled invalid",
+          0
+        ],
+        [
+          "sys_dict_data.is_enabled invalid",
+          0
+        ],
+        [
+          "user_dict_type.is_enabled invalid",
+          0
+        ],
+        [
+          "user_dict_data.is_enabled invalid",
+          0
+        ]
+      ]
+    },
+    "check_chk_bank_card_bank_source": {
+      "rows": [
+        [
+          "bank_card.chk_bank_card_bank_source",
+          0
+        ]
+      ]
+    },
+    "check_chk_cover_template_enabled": {
+      "rows": [
+        [
+          "bank_card_cover_template.chk_cover_template_enabled",
+          0
+        ]
+      ]
+    },
+    "check_chk_cover_template_type": {
+      "rows": [
+        [
+          "bank_card_cover_template.chk_cover_template_type",
+          0
+        ]
+      ]
+    },
+    "check_ck_footprint_coordinate": {
+      "rows": [
+        [
+          "life_footprint.ck_footprint_coordinate",
+          0
+        ]
+      ]
+    },
+    "check_ck_footprint_end": {
+      "rows": [
+        [
+          "life_footprint.ck_footprint_end",
+          0
+        ]
+      ]
+    },
+    "check_ck_footprint_lat": {
+      "rows": [
+        [
+          "life_footprint.ck_footprint_lat",
+          0
+        ]
+      ]
+    },
+    "check_ck_footprint_lng": {
+      "rows": [
+        [
+          "life_footprint.ck_footprint_lng",
+          0
+        ]
+      ]
+    },
+    "check_chk_sys_work_calendar_day_type": {
+      "rows": [
+        [
+          "sys_work_calendar.chk_sys_work_calendar_day_type",
+          0
+        ]
+      ]
+    },
+    "check_ck_system_region_level": {
+      "rows": [
+        [
+          "system_region.ck_system_region_level",
+          0
+        ]
+      ]
+    },
+    "check_ck_user_phone_pair": {
+      "rows": [
+        [
+          "user.ck_user_phone_pair",
+          1
+        ]
+      ]
+    },
+    "check_ck_body_profile_arm_state": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_arm_state",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_body_fat_percent": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_body_fat_percent",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_calf_cm": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_calf_cm",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_chest_cm": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_chest_cm",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_forearm_cm": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_forearm_cm",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_gender": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_gender",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_height_cm": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_height_cm",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_hip_cm": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_hip_cm",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_inseam_cm": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_inseam_cm",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_shoe_system": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_shoe_system",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_shoulder_width_cm": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_shoulder_width_cm",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_side": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_side",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_thigh_cm": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_thigh_cm",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_upper_arm_cm": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_upper_arm_cm",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_version": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_version",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_waist_cm": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_waist_cm",
+          0
+        ]
+      ]
+    },
+    "check_ck_body_profile_weight_kg": {
+      "rows": [
+        [
+          "user_body_profile.ck_body_profile_weight_kg",
+          0
+        ]
+      ]
+    }
+  },
+  "data_followup": [
+    [
+      "expense.null_owner_by_deleted",
+      0,
+      3
+    ],
+    [
+      "user.phone_null_mismatch",
+      1
+    ],
+    [
+      "user.phone_empty",
+      0
+    ],
+    [
+      "user.phone_bad_format_nonempty",
+      0
+    ],
+    [
+      "expense.type_signed_bigint_overflow",
+      0
+    ],
+    [
+      "income.type_signed_bigint_overflow",
+      0
+    ]
+  ],
+  "source_hashes": {
+    "sql/1_init_table/2026-08-18_init_all_tables.sql": "c9d60129eafd23c6fa923ad9f6e539a7ed88940327c66da0fb6c6e98a7aa1d77",
+    "sql/migrations/2026-10-28_02_unify_common_fields.sql": "6d1db126aaf637c7e171503172c0249fed00034e4e5490baf299896776c63a63",
+    "sql/migrations/2026-10-28_01_asset_purchase_source.sql": "7491c544e2edf611fee286c1bef1dc41ca5ec0e514c300f19b411d6e5d242c08"
+  },
+  "document_issues": [
+    {
+      "path": "docs/数据库表结构.md",
+      "line": 1552,
+      "issue": "life_footprint 片段仍为 note；当前增量和实际库为 remark"
+    },
+    {
+      "path": "docs/数据库表结构.md",
+      "line": 1037,
+      "issue": "device 未记载 source_item_id/source_unit_index；全量基线也缺失，最新01增量已定义"
+    },
+    {
+      "path": "docs/数据库表结构.md",
+      "line": 1221,
+      "issue": "wardrobe_item 未记载 source_item_id/source_unit_index；全量基线也缺失，最新01增量已定义"
+    },
+    {
+      "path": "docs/数据库表结构.md",
+      "line": 18,
+      "issue": "公共审计字段统一可空的总述与逐表定义冲突"
+    },
+    {
+      "path": "docs/数据库表结构.md",
+      "line": 23,
+      "issue": "顶部表目录只覆盖60张，正文有72张"
+    },
+    {
+      "path": "docs/数据库表结构.md",
+      "line": 1629,
+      "issue": "导出表只列语义，缺少完整类型、可空、默认值和索引定义"
+    },
+    {
+      "path": "scripts/check-database-schema.py",
+      "line": 65,
+      "issue": "全量+02初始化路径未包含最新01新增的4列；现有预检亦使用MySQL8元数据列，不能直接用于5.7"
+    }
+  ],
+  "_redaction": "source 中的数据库账号标识已匿名化；数据库版本、结构差异及核验结论保留。"
+}

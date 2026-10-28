@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import top.aiolife.support.CurrentSchema;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
@@ -60,8 +62,7 @@ class PaginationOrderingSqlTest {
         jdbc = new JdbcTemplate(source);
         String schema = Files.readString(Path.of("sql/1_init_table/2026-08-18_init_all_tables.sql"));
         for (String table : List.of("task", "task_column", "memo", "sys_dict_type", "sys_dict_data")) {
-            int start = schema.indexOf("CREATE TABLE IF NOT EXISTS `" + table + "`");
-            jdbc.execute(schema.substring(start, schema.indexOf(';', start))
+            jdbc.execute(CurrentSchema.table(table)
                     .replaceAll(" COLLATE [a-zA-Z0-9_]+", "")
                     .replaceAll(" CHARACTER SET [a-zA-Z0-9_]+", "")
                     .replace("KEY `idx_", "KEY `" + table + "_idx_"));
@@ -78,7 +79,7 @@ class PaginationOrderingSqlTest {
             jdbc.update("INSERT INTO task_column(id,user_id,title,sort_order) VALUES (?,7,'任务栏',0)", id);
             jdbc.update("INSERT INTO memo(id,user_id,title,update_time) VALUES (?,7,'笔记','2026-10-22 10:00:00')", id);
             jdbc.update("INSERT INTO sys_dict_type(dict_id,dict_name,dict_type) VALUES (?,'分类',?)", id, "type-" + id);
-            jdbc.update("INSERT INTO sys_dict_data(dict_code,dict_id,dict_sort,dict_label) VALUES (?,1,0,'字典')", id);
+            jdbc.update("INSERT INTO sys_dict_data(dict_code,dict_id,sort_order,dict_label) VALUES (?,1,0,'字典')", id);
         }
     }
 
@@ -143,8 +144,8 @@ class PaginationOrderingSqlTest {
         for (long id : List.of(5L, 3L, 1L, 4L, 2L)) {
             UserDictDataEntity entry = new UserDictDataEntity();
             entry.setId(id);
-            entry.setDictSort(0);
-            entry.setStatus("0");
+            entry.setSortOrder(0);
+            entry.setIsEnabled(1);
             entries.add(entry);
         }
         when(cache.list(0L, null)).thenReturn(entries.subList(0, 3));

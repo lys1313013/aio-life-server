@@ -29,7 +29,7 @@ public class HomeCardPreferenceController {
     }
     @PutMapping("/{key}")
     public ApiResponse<List<HomeCardPreferenceVO>> toggle(@PathVariable String key, @Valid @RequestBody HomeCardToggleReq request) {
-        return ApiResponse.success(service.toggle(StpUtil.getLoginIdAsLong(), key, request.enabled()));
+        return ApiResponse.success(service.toggle(StpUtil.getLoginIdAsLong(), key, request.isEnabled()));
     }
     @DeleteMapping
     public ApiResponse<List<HomeCardPreferenceVO>> reset() {

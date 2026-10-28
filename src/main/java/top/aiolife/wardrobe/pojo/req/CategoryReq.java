@@ -28,5 +28,5 @@ public class CategoryReq {
     /**
      * 排序
      */
-    private Integer sort;
+    private Integer sortOrder;
 }

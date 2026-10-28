@@ -51,7 +51,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
 
             if (overrideRecord != null) {
                 // 业务页（includeDisabled=false）：如果覆盖记录标记为停用，则隐藏该公共分类
-                if (!includeDisabled && "1".equals(overrideRecord.getStatus())) {
+                if (!includeDisabled && Integer.valueOf(0).equals(overrideRecord.getIsEnabled())) {
                     continue;
                 }
                 // 应用覆盖属性
@@ -67,14 +67,14 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
                 merged.setColor((!readonly && overrideRecord.getColor() != null) ? overrideRecord.getColor() : publicCategory.getColor());
                 merged.setIcon((!readonly && overrideRecord.getIcon() != null) ? overrideRecord.getIcon() : publicCategory.getIcon());
                 merged.setExtData((!readonly && overrideRecord.getExtData() != null) ? overrideRecord.getExtData() : publicCategory.getExtData());
-                merged.setDictSort((!readonly && overrideRecord.getDictSort() != null) ? overrideRecord.getDictSort() : publicCategory.getDictSort());
-                // 保留真实状态：覆盖记录的 status 优先；管理页需要看到停用项
-                merged.setStatus(overrideRecord.getStatus() != null ? overrideRecord.getStatus() : publicCategory.getStatus());
+                merged.setSortOrder((!readonly && overrideRecord.getSortOrder() != null) ? overrideRecord.getSortOrder() : publicCategory.getSortOrder());
+                // 保留真实状态：覆盖记录的 isEnabled 优先；管理页需要看到停用项
+                merged.setIsEnabled(overrideRecord.getIsEnabled() != null ? overrideRecord.getIsEnabled() : publicCategory.getIsEnabled());
                 merged.setIsReadonly(publicCategory.getIsReadonly());
                 result.add(merged);
             } else {
                 // 没有覆盖记录
-                if (!includeDisabled && "1".equals(publicCategory.getStatus())) {
+                if (!includeDisabled && Integer.valueOf(0).equals(publicCategory.getIsEnabled())) {
                     continue;
                 }
                 // 原样展示公共分类
@@ -85,12 +85,12 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
         // 4. 添加用户纯原创的私有分类
         List<UserDictDataEntity> privateCategories = userRecords.stream()
                 .filter(record -> record.getTemplateId() == null
-                        && (includeDisabled || "0".equals(record.getStatus())))
+                        && (includeDisabled || Integer.valueOf(1).equals(record.getIsEnabled())))
                 .collect(Collectors.toList());
         result.addAll(privateCategories);
 
         // 5. 以 ID 打破相同 sort 的并列，确保内存分页在缓存返回顺序变化时仍稳定。
-        result.sort(Comparator.comparing(UserDictDataEntity::getDictSort, Comparator.nullsLast(Integer::compareTo))
+        result.sort(Comparator.comparing(UserDictDataEntity::getSortOrder, Comparator.nullsLast(Integer::compareTo))
                 .thenComparing(UserDictDataEntity::getId, Comparator.nullsLast(Long::compareTo)));
 
         return result;
@@ -131,7 +131,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
             if ("Y".equals(target.getIsReadonly())) {
                 // 如果是只读的，只允许用户修改状态，清空其他属性的修改
                 UserDictDataEntity onlyStatusUpdate = new UserDictDataEntity();
-                onlyStatusUpdate.setStatus(updates.getStatus());
+                onlyStatusUpdate.setIsEnabled(updates.getIsEnabled());
                 updates = onlyStatusUpdate;
             }
 
@@ -191,10 +191,10 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
                     .last("LIMIT 1"));
 
             if (existingOverride != null) {
-                // 更新已有覆盖记录的状态为停用 ("1")
+                // 更新已有覆盖记录的启用标记为 0（停用）
                 UserDictDataEntity update = new UserDictDataEntity();
                 update.setId(existingOverride.getId());
-                update.setStatus("1");
+                update.setIsEnabled(0);
                 update.fillUpdateCommonField(userId);
                 this.updateById(update);
             } else {
@@ -207,7 +207,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
                 hideRecord.setDictValue(target.getDictValue());
                 hideRecord.setColor(target.getColor());
                 hideRecord.setIcon(target.getIcon());
-                hideRecord.setStatus("1"); // 停用（隐藏）
+                hideRecord.setIsEnabled(0); // 停用（隐藏）
                 hideRecord.fillCreateCommonField(userId);
                 this.save(hideRecord);
             }
@@ -273,7 +273,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
                 new LambdaQueryWrapper<UserDictDataEntity>()
                         .eq(UserDictDataEntity::getUserId, 0L)
                         .eq(UserDictDataEntity::getDictType, dictType)
-                        .orderByAsc(UserDictDataEntity::getDictSort, UserDictDataEntity::getId)
+                        .orderByAsc(UserDictDataEntity::getSortOrder, UserDictDataEntity::getId)
                         .last("FOR UPDATE"));
 
         UserDictDataEntity draggedItem = dictDataList.stream()
@@ -294,14 +294,14 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
         for (int index = 0; index < dictDataList.size(); index++) {
             UserDictDataEntity item = dictDataList.get(index);
             int nextSort = index * 10;
-            if (!Objects.equals(item.getDictSort(), nextSort)) {
+            if (!Objects.equals(item.getSortOrder(), nextSort)) {
                 UserDictDataEntity update = new UserDictDataEntity();
                 update.setId(item.getId());
-                update.setDictSort(nextSort);
+                update.setSortOrder(nextSort);
                 update.fillUpdateCommonField(0L);
                 updates.add(update);
             }
-            item.setDictSort(nextSort);
+            item.setSortOrder(nextSort);
         }
 
         if (!updates.isEmpty() && !this.updateBatchById(updates)) {
@@ -310,7 +310,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
 
         dictDataCache.evictAfterCommit(0L, dictType);
         return dictDataList.stream()
-                .map(item -> new UserDictDataSortVO(item.getId(), item.getDictSort()))
+                .map(item -> new UserDictDataSortVO(item.getId(), item.getSortOrder()))
                 .toList();
     }
 }

@@ -57,7 +57,7 @@ public class SysDictDataController {
     public ApiResponse<PageResp<SysDictDataRecordVO>> query(
             @QueryParams CommonQuery<SysDictTypeQuery> query) {
         LambdaQueryWrapper<SysDictDataEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.orderByAsc(SysDictDataEntity::getDictId, SysDictDataEntity::getDictSort, SysDictDataEntity::getDictCode);
+        lambdaQueryWrapper.orderByAsc(SysDictDataEntity::getDictId, SysDictDataEntity::getSortOrder, SysDictDataEntity::getDictCode);
 
         SysDictTypeQuery condition = query.getCondition();
         if (condition != null && SysUtil.isNotEmpty(condition.getDictLabel())) {

@@ -17,7 +17,7 @@ public class QuickNavItemVO {
 
     private Integer sortOrder;
 
-    private Integer enabled;
+    private Integer isEnabled;
 
     private String title;
 

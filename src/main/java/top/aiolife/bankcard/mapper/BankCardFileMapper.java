@@ -15,7 +15,7 @@ public interface BankCardFileMapper {
         JOIN sys_dict_data d ON d.dict_code=t.bank_id
         JOIN sys_dict_type dt ON dt.dict_id=d.dict_id
         WHERE t.id=#{templateId} AND t.is_deleted=0 AND (
-          (t.is_enabled=1 AND d.status='0' AND d.is_deleted=0 AND dt.status='0' AND dt.is_deleted=0 AND dt.dict_type='bank')
+          (t.is_enabled=1 AND d.is_enabled=1 AND d.is_deleted=0 AND dt.is_enabled=1 AND dt.is_deleted=0 AND dt.dict_type='bank')
           OR EXISTS(SELECT 1 FROM bank_card c WHERE c.cover_template_id=t.id AND c.user_id=#{userId} AND c.is_deleted=0))
         """)
     long countVisibleTemplate(@Param("templateId") long templateId, @Param("userId") long userId);

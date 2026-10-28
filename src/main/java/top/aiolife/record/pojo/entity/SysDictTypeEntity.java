@@ -38,7 +38,7 @@ public class SysDictTypeEntity extends AuditEntity {
     /**
      * 状态
      */
-    private String status;
+    private Integer isEnabled;
 
     /**
      * 备注

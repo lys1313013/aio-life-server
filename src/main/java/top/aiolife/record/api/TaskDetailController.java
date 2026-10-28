@@ -50,7 +50,7 @@ public class TaskDetailController {
         queryWrapper.eq(TaskDetailEntity::getUserId, userId);
         queryWrapper.orderByAsc(TaskDetailEntity::getIsCompleted);
         queryWrapper.orderByAsc(TaskDetailEntity::getPriority);
-        queryWrapper.orderByAsc(TaskDetailEntity::getSort, TaskDetailEntity::getId);
+        queryWrapper.orderByAsc(TaskDetailEntity::getSortOrder, TaskDetailEntity::getId);
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVOList(taskDetailService.list(queryWrapper)));
     }
 
@@ -65,7 +65,7 @@ public class TaskDetailController {
         Long userId = StpUtil.getLoginIdAsLong();
         for (TaskDetailEntity entity : list) {
             TaskDetailEntity update = new TaskDetailEntity();
-            update.setSort(entity.getSort());
+            update.setSortOrder(entity.getSortOrder());
             update.fillUpdateCommonField(userId);
             LambdaQueryWrapper<TaskDetailEntity> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(TaskDetailEntity::getId, entity.getId());
@@ -177,7 +177,7 @@ public class TaskDetailController {
         queryWrapper.eq(TaskDetailEntity::getIsStarred, 1);
         queryWrapper.eq(TaskDetailEntity::getIsCompleted, 0);
         queryWrapper.orderByAsc(TaskDetailEntity::getPriority);
-        queryWrapper.orderByAsc(TaskDetailEntity::getSort, TaskDetailEntity::getId);
+        queryWrapper.orderByAsc(TaskDetailEntity::getSortOrder, TaskDetailEntity::getId);
         List<TaskDetailEntity> list = taskDetailService.list(queryWrapper);
 
         if (!list.isEmpty()) {

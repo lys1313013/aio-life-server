@@ -20,5 +20,5 @@ public class TimeTrackerCategorySortReq {
      * 排序权重
      */
     @NotNull
-    private Integer sort;
+    private Integer sortOrder;
 }

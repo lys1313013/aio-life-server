@@ -38,7 +38,7 @@ class TaskDetailUpdateMcpIntegrationTest extends BaseIntegrationTest {
         assertEquals(detail.getIsCompleted(), updated.getIsCompleted());
         assertEquals(detail.getContent(), updated.getContent());
         assertEquals(detail.getTaskId(), updated.getTaskId());
-        assertEquals(detail.getSort(), updated.getSort());
+        assertEquals(detail.getSortOrder(), updated.getSortOrder());
         assertEquals(detail.getStartTime(), updated.getStartTime());
         assertEquals(detail.getEndTime(), updated.getEndTime());
         assertEquals(detail.getCreateUser(), updated.getCreateUser());
@@ -125,7 +125,7 @@ class TaskDetailUpdateMcpIntegrationTest extends BaseIntegrationTest {
         detail.setIsCompleted(0);
         detail.setIsStarred(0);
         detail.setPriority(10);
-        detail.setSort(7);
+        detail.setSortOrder(7);
         detail.setStartTime(LocalDateTime.of(2026, 10, 20, 9, 0));
         detail.setEndTime(LocalDateTime.of(2026, 10, 20, 10, 0));
         detail.fillCreateCommonField(userId);

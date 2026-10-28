@@ -33,13 +33,13 @@ public class MenuAdminVO {
 
     private String roles;
 
-    private Integer sort;
+    private Integer sortOrder;
 
     /** Web 端启用状态。 */
-    private Integer status;
+    private Integer webIsEnabled;
 
     /** 移动端启用状态。 */
-    private Integer mobileStatus;
+    private Integer mobileIsEnabled;
 
     private List<MenuAdminVO> children;
 }

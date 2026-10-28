@@ -1,0 +1,10 @@
+{
+  "deleted_expense_ids_remaining": 0,
+  "expense_null_user_remaining": 0,
+  "target_user_phone_country_code": "86",
+  "phone_pair_mismatch_remaining": 0,
+  "login_log_nonempty_password_remaining": 0,
+  "mail_log_nonempty_content_remaining": 0,
+  "asset_source_columns_currently_present": 0,
+  "_redaction": "真实用户标识已匿名化；操作数量和核验结论保留。"
+}

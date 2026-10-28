@@ -10,7 +10,7 @@ public class ScheduledJobVO {
     private String name;
     private String cron;
     private String zoneId;
-    private Boolean enabled;
+    private Integer isEnabled;
     private Integer revision;
     private boolean schedulerEnabled;
     private LocalDateTime nextExecutionTime;

@@ -97,7 +97,7 @@ class ScheduledJobHttpTest {
             mvc.perform(get("/system/scheduled-jobs/1/logs").header("Authorization", token)).andExpect(jsonPath("$.code").value(not(0)));
             mvc.perform(post("/system/scheduled-jobs/1/run").header("Authorization", token)).andExpect(jsonPath("$.code").value(not(0)));
             mvc.perform(put("/system/scheduled-jobs/1").header("Authorization", token).contentType("application/json")
-                    .content("{\"cron\":\"0 0 7 * * ?\",\"enabled\":true,\"revision\":0}")).andExpect(jsonPath("$.code").value(not(0)));
+                    .content("{\"cron\":\"0 0 7 * * ?\",\"isEnabled\":1,\"revision\":0}")).andExpect(jsonPath("$.code").value(not(0)));
         }
         verifyNoInteractions(service, runtime);
     }

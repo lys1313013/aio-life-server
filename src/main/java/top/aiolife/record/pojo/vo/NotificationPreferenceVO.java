@@ -17,6 +17,6 @@ public class NotificationPreferenceVO {
     @Builder
     public static class ChannelState {
         private String channel;
-        private boolean enabled;
+        private Integer isEnabled;
     }
 }
