@@ -10,35 +10,32 @@ class FlywayIT {
     @Test void 新库与旧库从接入版本升级到当前版本() throws Exception {
         Path report = Path.of(System.getProperty("schema.reportDirectory"));
         Files.createDirectories(report);
-        Path adoption = report.resolve("adoption-contract.json");
-        Path current = report.resolve("schema-contract.json");
-        try (var mysql = new IsolatedMysql("mysql:8.0.40")) {
-            String fresh = verifyFreshAndUpgrade(mysql, adoption, current);
-            constraints(mysql, fresh);
-        }
-        try (var mysql = new IsolatedMysql("mysql:5.7.44")) {
-            String fresh = mysql.database();
-            assertThrows(Exception.class, () -> mysql.flyway(fresh).migrate());
-            assertTrue(mysql.snapshot(fresh).sections().get("tables").isEmpty());
-            String old = mysql.database();
-            mysql.baselineFixture(old);
-            // 合成已存在的旧库，仅夹具登记原始基线；随后按 Flyway target 升至接入版本。
-            mysql.configuration(old).callbacks(new org.flywaydb.core.api.callback.Callback[0])
-                    .baselineVersion("20261028.00").load().baseline();
-            mysql.configuration(old).target(System.getProperty("adoption.version")).load().migrate();
-            mysql.sql(old, "DROP TABLE flyway_schema_history");
-            System.setProperty("schema.contract", adoption.toString());
-            try {
-                assertThrows(Exception.class, () -> mysql.flyway(old).baseline());
-                System.setProperty("schema.acceptMissingChecks", "true");
-                mysql.sql(old, "ALTER TABLE device ADD COLUMN unexpected INT");
-                assertThrows(Exception.class, () -> mysql.flyway(old).baseline());
-                mysql.sql(old, "ALTER TABLE device DROP COLUMN unexpected");
-                mysql.flyway(old).baseline(); mysql.flyway(old).migrate();
-                assertEquals(0, mysql.flyway(old).migrate().migrationsExecuted);
-                assertMenus(mysql, old);
-                try (var connection = mysql.connect(old)) { SchemaContract.read(current, mysql.root).check(connection, true); }
-            } finally { System.clearProperty("schema.contract"); System.clearProperty("schema.acceptMissingChecks"); }
+        SchemaSnapshot reference = null;
+        for (String image : List.of("mysql:8.0.40", "mysql:5.7.44", "mysql:8.4.2")) {
+            String suffix = image.contains("5.7") ? "-mysql57" : image.contains("8.4") ? "-mysql84" : "";
+            Path adoption = report.resolve("adoption-contract" + suffix + ".json");
+            Path current = report.resolve("schema-contract" + suffix + ".json");
+            try (var mysql = new IsolatedMysql(image)) {
+                String fresh = verifyFreshAndUpgrade(mysql, adoption, current);
+                assertEquals("20261028.00.001", mysql.scalar(fresh,
+                        "SELECT version FROM flyway_schema_history WHERE type='SQL_BASELINE'"));
+                var snapshot = mysql.snapshot(fresh);
+                try (var connection = mysql.connect(fresh)) {
+                    if (reference == null) reference = snapshot;
+                    assertTrue(reference.differences(snapshot, SchemaSnapshot.version(connection), true).isEmpty(),
+                            "Only unsupported CHECK constraints may differ across MySQL versions");
+                }
+                if (mysql.mysql57) assertTrue(snapshot.sections().get("checks").isEmpty());
+                else assertEquals(27, snapshot.sections().get("checks").size());
+                constraints(mysql, fresh);
+                if (image.equals("mysql:8.0.40")) {
+                    String original = mysql.database(), compatible = mysql.database();
+                    mysql.script(original, mysql.source("B20261028_00__baseline.sql"));
+                    mysql.baselineFixture(compatible);
+                    assertEquals(mysql.snapshot(original), mysql.snapshot(compatible),
+                            "Compatible baseline must retain the original schema and named CHECK constraints on MySQL 8");
+                }
+            }
         }
     }
     @Test void 追加结构迁移仍可完成新库和旧库升级(@TempDir Path temporary) throws Exception {
@@ -101,7 +98,7 @@ class FlywayIT {
         mysql.sql(db, "INSERT INTO user(id,username,nickname,phone_country_code,phone,wechat_openid) VALUES(-900002,'fixture','fixture','86','13800138000','fixture-openid')");
         assertSqlError(mysql, db, 1062, "INSERT INTO user(id,username,nickname,phone_country_code,phone) VALUES(-900003,'duplicate','fixture','86','13800138000')");
         assertSqlError(mysql, db, 1062, "INSERT INTO user(id,username,nickname,wechat_openid) VALUES(-900003,'duplicate','fixture','fixture-openid')");
-        assertSqlError(mysql, db, 3819, "INSERT INTO user(id,username,nickname,phone_country_code) VALUES(-900003,'invalid','fixture','86')");
+        if (!mysql.mysql57) assertSqlError(mysql, db, 3819, "INSERT INTO user(id,username,nickname,phone_country_code) VALUES(-900003,'invalid','fixture','86')");
         mysql.sql(db, "UPDATE user SET is_deleted=1 WHERE id=-900002; INSERT INTO user(id,username,nickname,phone_country_code,phone,wechat_openid) VALUES(-900003,'reused','fixture','86','13800138000','fixture-openid'); INSERT INTO bank_card(id,user_id,custom_bank_name,card_type,create_user,update_user) VALUES(-900001,-900003,'fixture','debit',-900003,-900003)");
         mysql.sql(db, "INSERT INTO file(id,file_name,biz_type,is_public,create_user,create_time,update_time) VALUES('fixture_avatar','fixture.png','avatar',1,-900003,NOW(),NOW()); UPDATE user SET avatar_file_id='fixture_avatar' WHERE id=-900003");
         assertSqlError(mysql, db, 1451, "DELETE FROM file WHERE id='fixture_avatar'");

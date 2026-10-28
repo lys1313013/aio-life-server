@@ -12,7 +12,7 @@ This file provides guidance to AI coding agents when working with code in this r
 
 - **Java 21** + **Spring Boot 3.5.16**
 - **MyBatis Plus 3.5.11** + **Druid 1.2.24** (ORM + 连接池)
-- **MySQL**（117 主数据库为 5.7.44，2026-10-22 核验；CI 使用 8.0，版本兼容要求见 [SQL 脚本规范](docs/SQL脚本规范.md)）
+- **MySQL**（117 主数据库为 5.7.44，2026-10-22 核验；CI 覆盖 5.7.44 / 8.0.40 / 8.4.2，版本兼容要求见 [SQL 脚本规范](docs/SQL脚本规范.md)）
 - **Redis** (分布式缓存、Session、Sa-Token 存储)
 - **Caffeine** (本地内存缓存，配合 Spring Cache 作为二级缓存)
 - **Sa-Token 1.40.0** (认证授权，JWT 模式)
@@ -228,12 +228,12 @@ class MyControllerTest extends BaseIntegrationTest {
 
 SQL 编写必须遵守 [SQL 脚本规范](docs/SQL脚本规范.md)：表和每个字段必须有中文 COMMENT，索引和约束说明用途。结构、必要数据和菜单变更使用 `sql/migrations/VYYYYMMDD_NN__description.sql`，版本唯一，已执行迁移不可改写；修正另增版本。
 
-- `sql/migrations/B20261028_00__baseline.sql`：冻结的空库基线，保留既有结构，不因接入 Flyway 提前合并后续增量。用户选定节点后生成新的完整 `B` 基线，保留旧 `V` 迁移供已有库升级。
+- `sql/migrations/B20261028_00_001__mysql_compatible_baseline.sql`：新库使用的 MySQL 5.7/8.x 兼容基线，只调整 CHECK 命名语法，保留旧 B 及所有 V，不提前合并业务增量。用户选定节点后生成新的完整 `B` 基线，保留旧 `V` 迁移供已有库升级。
 - `sql/migrations/V*.sql`：结构和种子数据共用版本序列，由 Flyway 决定执行顺序与待执行项。
 - 只维护 117 上的唯一已有业务库与隔离测试库；SQL 执行文件统一放在 `sql/migrations/`，不另设旧库兼容脚本目录。首次接入状态和剩余差异见初始化指南，不能以删除历史脚本代替实际结构对齐。
 - `tools/flyway/pom.xml`：独立 Maven/Java 21 工具；直接运行 `compile flyway:migrate`。不向应用引入 Flyway 运行依赖，不在应用启动时迁移；连接使用 `FLYWAY_URL`、`FLYWAY_USER`、`FLYWAY_PASSWORD`。
 
-新库使用 `migrate`；117 已有库按用户确认已登记至 `20261028.06`，该版本及之前的 SQL 不得重跑，今后只新增更高版本 V。接入状态与已知结构差异见[数据库初始化与验证](docs/数据库初始化与验证.md)。常规 `baseline` 入口仍要求匹配的 `schema.contract`；本次一次性历史接管不构成跳过预检的通用授权。禁止自动 baseline、清空重建或跳过错误。`info` 查看迁移状态，`validate` 检查迁移历史与文件一致性；实际结构由 Java `SchemaTool`（`compile exec:java -Dexec.args=preflight -Dschema.contract=<file>`）单独比较；`mvn -f tools/flyway/pom.xml verify` 用 Testcontainers 自动创建并回收隔离 MySQL 5.7/8.0，不接收业务连接。结构契约强校验只绑定 SQL、迁移配置和格式版本，工具源码摘要仅作追溯；旧库接入夹具必须停在接入版本，禁止将最新结构重新登记成旧基线。CI 使用相同迁移入口，在隔离数据库验证初始化和升级；不将历史验证记录当作本次执行结果。
+新库使用 `migrate`；117 已有库按用户确认已登记至 `20261028.06`，该版本及之前的 SQL 不得重跑，今后只新增更高版本 V。接入状态与已知结构差异见[数据库初始化与验证](docs/数据库初始化与验证.md)。常规 `baseline` 入口仍要求匹配的 `schema.contract`；本次一次性历史接管不构成跳过预检的通用授权。禁止自动 baseline、清空重建或跳过错误。`info` 查看迁移状态，`validate` 检查迁移历史与文件一致性；实际结构由 Java `SchemaTool`（`compile exec:java -Dexec.args=preflight -Dschema.contract=<file>`）单独比较；`mvn -f tools/flyway/pom.xml verify` 用 Testcontainers 自动创建并回收隔离 MySQL 5.7.44 / 8.0.40 / 8.4.2，不接收业务连接。结构契约强校验只绑定 SQL、迁移配置和格式版本，工具源码摘要仅作追溯；旧库接入夹具必须停在接入版本，禁止将最新结构重新登记成旧基线。CI 使用相同迁移入口，在隔离数据库验证初始化和升级；不将历史验证记录当作本次执行结果。
 
 会员平台初始预设为 `sql/migrations/V20261028_05_010__membership_providers.sql`；未来调整新增版本，保留只补缺、不覆盖管理员修改与软删除的语义。新库不再自动创建固定密码管理员。
 

@@ -22,7 +22,9 @@ public record SchemaSnapshot(Map<String, List<List<String>>> sections) {
             if (!match.find() || value.toLowerCase(Locale.ROOT).contains("mariadb"))
                 throw new IllegalArgumentException("Expected MySQL server, got " + value);
             var version = new Version(Integer.parseInt(match.group(1)), Integer.parseInt(match.group(2)), Integer.parseInt(match.group(3)));
-            if (version.compareTo(new Version(5, 7, 8)) < 0) throw new IllegalArgumentException("Requires MySQL 5.7.8+");
+            boolean mysql57 = version.major == 5 && version.minor == 7 && version.patch >= 44;
+            boolean mysql8 = version.major == 8 && version.compareTo(new Version(8, 0, 16)) >= 0;
+            if (!mysql57 && !mysql8) throw new IllegalArgumentException("Requires MySQL 5.7.44+ or MySQL 8.x (8.0.16+)");
             return version;
         }
         public int compareTo(Version other) {

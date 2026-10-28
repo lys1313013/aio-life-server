@@ -8,7 +8,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class SchemaTest {
     @Test void versionBoundaries() {
         assertFalse(SchemaSnapshot.Version.parse("5.7.44-log").enforcesChecks());
-        assertFalse(SchemaSnapshot.Version.parse("8.0.15").enforcesChecks());
+        assertThrows(IllegalArgumentException.class, () -> SchemaSnapshot.Version.parse("8.0.15"));
+        assertThrows(IllegalArgumentException.class, () -> SchemaSnapshot.Version.parse("5.7.43"));
+        assertThrows(IllegalArgumentException.class, () -> SchemaSnapshot.Version.parse("5.6.51"));
+        assertThrows(IllegalArgumentException.class, () -> SchemaSnapshot.Version.parse("9.0.0"));
+        assertTrue(SchemaSnapshot.Version.parse("8.4.2").enforcesChecks());
         assertTrue(SchemaSnapshot.Version.parse("8.0.16").enforcesChecks());
         assertThrows(IllegalArgumentException.class, () -> SchemaSnapshot.Version.parse("10.6.0-MariaDB"));
     }

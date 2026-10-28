@@ -19,8 +19,7 @@ public record SchemaContract(int format, String schemaVersion, String mysqlVersi
         contract.schema.validate();
         if (!MigrationProject.sources(root).equals(contract.sources))
             throw new IllegalArgumentException("Schema contract SQL or migration settings hashes differ; run Maven verify on this revision");
-        if (!SchemaSnapshot.Version.parse(contract.mysqlVersion).enforcesChecks())
-            throw new IllegalArgumentException("Reference contract requires MySQL 8.0.16+");
+        SchemaSnapshot.Version.parse(contract.mysqlVersion);
         return contract;
     }
     public static void write(Path file, Path root, String version, Connection connection) throws Exception {

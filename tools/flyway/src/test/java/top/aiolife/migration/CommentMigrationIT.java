@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static top.aiolife.migration.IncrementalMigrationIT.*;
 
 class CommentMigrationIT {
-    @ParameterizedTest @ValueSource(strings = {"mysql:5.7.44", "mysql:8.0.40"})
+    @ParameterizedTest @ValueSource(strings = {"mysql:5.7.44", "mysql:8.0.40", "mysql:8.4.2"})
     void preservesAttributesDataAndRejectsBeforeAlter(String image) throws Exception {
         try (var mysql = new IsolatedMysql(image)) {
             String db = mysql.database(); mysql.baselineFixture(db);

@@ -58,9 +58,7 @@ final class IsolatedMysql implements AutoCloseable {
     Flyway flyway(String db) { return configuration(db).load(); }
     String source(String file) throws Exception { return Files.readString(root.resolve("sql/migrations/" + file)); }
     void baselineFixture(String db) throws Exception {
-        String ddl = source("B20261028_00__baseline.sql");
-        if (mysql57) ddl = ddl.replaceAll("(?i)CONSTRAINT\\s+`[^`]+`\\s+CHECK", "CHECK");
-        script(db, ddl);
+        script(db, source("B20261028_00_001__mysql_compatible_baseline.sql"));
     }
     void migration(String db, String filename) throws Exception { script(db, source(filename)); }
     void script(String db, String sql) throws Exception {

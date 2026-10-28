@@ -27,6 +27,7 @@ public final class MigrationGuard implements Callback {
             checkConfiguration(config);
             var root = MigrationProject.root(config);
             var connection = context.getConnection();
+            SchemaSnapshot.version(connection); // 两条 MySQL 系列均在执行任何 DDL 前检查版本下限。
             if (event == Event.BEFORE_BASELINE) {
                 String file = System.getProperty("schema.contract");
                 if (file == null || file.isBlank()) throw new IllegalArgumentException("baseline requires -Dschema.contract=<adoption-contract.json>");
@@ -38,9 +39,6 @@ public final class MigrationGuard implements Callback {
                 var tables = SchemaSnapshot.rows(connection, "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE()");
                 boolean history = tables.stream().anyMatch(row -> SchemaSnapshot.HISTORY.equals(row.getFirst()));
                 if (!history && !tables.isEmpty()) throw new IllegalArgumentException("Nonempty database requires verified explicit baseline");
-                boolean initialized = history && !SchemaSnapshot.rows(connection, "SELECT installed_rank FROM flyway_schema_history WHERE version IS NOT NULL AND success=1 LIMIT 1").isEmpty();
-                if (!initialized && !SchemaSnapshot.version(connection).enforcesChecks())
-                    throw new IllegalArgumentException("Fresh initialization requires MySQL 8.0.16+");
             }
         } catch (Exception error) {
             throw new FlywayException("Migration guard: " + error.getMessage(), error);

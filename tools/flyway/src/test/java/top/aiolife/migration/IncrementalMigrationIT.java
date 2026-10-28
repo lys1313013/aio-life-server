@@ -11,7 +11,7 @@ class IncrementalMigrationIT {
     static final String FIELDS = "V20261028_02__unify_common_fields.sql";
     static final String ALIGN = "V20261028_03__schema_alignment.sql";
     static final String COMMENTS = "V20261028_04__schema_comments.sql";
-    @ParameterizedTest @ValueSource(strings = {"mysql:5.7.44", "mysql:8.0.40"})
+    @ParameterizedTest @ValueSource(strings = {"mysql:5.7.44", "mysql:8.0.40", "mysql:8.4.2"})
     void assetAndAlignment(String image) throws Exception {
         try (var mysql = new IsolatedMysql(image)) {
             String db = mysql.database(); mysql.baselineFixture(db);
@@ -46,7 +46,7 @@ class IncrementalMigrationIT {
             mysql.migration(db, ALIGN); assertEquals(aligned, mysql.snapshot(db));
         }
     }
-    @ParameterizedTest @ValueSource(strings = {"mysql:5.7.44", "mysql:8.0.40"})
+    @ParameterizedTest @ValueSource(strings = {"mysql:5.7.44", "mysql:8.0.40", "mysql:8.4.2"})
     void commonFieldDataAndRecovery(String image) throws Exception {
         try (var mysql = new IsolatedMysql(image)) {
             String db = mysql.database(); mysql.baselineFixture(db);

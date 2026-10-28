@@ -3,13 +3,15 @@ package top.aiolife.migration;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** 真正调用交付的 Maven 入口，防止只测试 Flyway API 而遗漏插件类路径和参数问题。 */
 class MavenEntrypointIT {
-    @Test void loadsCallbackAndRunsReadOnlyPreflight() throws Exception {
-        try (var mysql = new IsolatedMysql("mysql:8.0.40")) {
+    @ParameterizedTest @ValueSource(strings = {"mysql:5.7.44", "mysql:8.0.40", "mysql:8.4.2"})
+    void loadsCallbackAndRunsReadOnlyPreflight(String image) throws Exception {
+        try (var mysql = new IsolatedMysql(image)) {
             String db = mysql.database();
             assertEquals(0, maven(mysql, db, "compile", "flyway:migrate", "flyway:validate"));
             Path contract = Files.createTempFile("aio-maven-contract-", ".json");

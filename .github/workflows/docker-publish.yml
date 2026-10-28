@@ -20,7 +20,7 @@ env:
 
 jobs:
   flyway-migrations:
-    name: Verify Flyway and existing-database upgrades
+    name: Verify Flyway on MySQL 5.7, 8.0 and 8.4
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -48,8 +48,12 @@ jobs:
           retention-days: 30
 
   test:
-    name: Test
+    name: Test (MySQL ${{ matrix.mysql }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mysql: ['5.7.44', '8.0.40', '8.4.2']
     timeout-minutes: 15
     permissions:
       contents: read
@@ -64,7 +68,7 @@ jobs:
       SPRING_PROFILES_ACTIVE: test
     services:
       mysql:
-        image: mysql:8.0
+        image: mysql:${{ matrix.mysql }}
         env:
           MYSQL_DATABASE: aio_life
           MYSQL_USER: aio_life
@@ -108,6 +112,7 @@ jobs:
         run: mvn package -B -ntp
 
       - name: Upload application JAR
+        if: matrix.mysql == '8.0.40'
         uses: actions/upload-artifact@v6
         with:
           name: application-jar
@@ -120,7 +125,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: surefire-reports-${{ github.run_number }}
+          name: surefire-reports-mysql-${{ matrix.mysql }}-${{ github.run_number }}
           path: target/surefire-reports/
           if-no-files-found: ignore
           retention-days: 7

@@ -8,15 +8,10 @@ import static org.junit.jupiter.api.Assertions.*;
 /** 固定历史种子区间的回归，未来业务数据迁移不应被强制要求“不改任何数据”。 */
 class SeedMigrationIT {
     private static final String FIX = "V20261028_06__restore_scheduled_jobs_menu.sql";
-    @ParameterizedTest @ValueSource(strings = {"mysql:5.7.44", "mysql:8.0.40"})
+    @ParameterizedTest @ValueSource(strings = {"mysql:5.7.44", "mysql:8.0.40", "mysql:8.4.2"})
     void 修复菜单并保留历史种子的人工配置与软删除(String image) throws Exception {
         try (var mysql = new IsolatedMysql(image)) {
             String db = mysql.database();
-            if (mysql.mysql57) {
-                mysql.baselineFixture(db);
-                mysql.configuration(db).callbacks(new org.flywaydb.core.api.callback.Callback[0])
-                        .baselineVersion("20261028.00").load().baseline();
-            }
             mysql.configuration(db).target("20261028.05.023").load().migrate();
             assertEquals("0", mysql.scalar(db, "SELECT COUNT(*) FROM sys_menu WHERE name='ScheduledJobAdmin'"));
             mysql.sql(db, "UPDATE sys_menu SET meta=JSON_OBJECT('title','自定义菜单'),web_is_enabled=0,sort_order=700 WHERE id=1001; UPDATE system_config SET config_value='[42]',is_deleted=1 WHERE config_key='feedback.notify_admin_ids'; UPDATE membership_provider SET name='custom provider',is_enabled=0,sort_order=700 WHERE id=195001; UPDATE membership_provider SET name='deleted provider',is_enabled=0,sort_order=701,is_deleted=1 WHERE id=195002; UPDATE cbti_personality SET name='custom personality',is_deleted=1 WHERE code='SUDO'; UPDATE honor_category SET name='custom honor',is_deleted=1 WHERE id=1; UPDATE wardrobe_category SET name='custom wardrobe',is_deleted=1 WHERE id=1; UPDATE user_dict_data SET dict_label='custom payment',is_enabled=0,is_deleted=1 WHERE user_id=0 AND dict_type='pay_type' AND dict_value='1'; UPDATE sys_dict_type SET is_deleted=1 WHERE dict_type='bank'; INSERT INTO user_dict_data(id,user_id,dict_type,dict_label,dict_value,is_enabled,icon,color,update_time) VALUES(2095833545677201409,0,'exercise_type','custom exercise','custom',0,'custom-icon','#abcdef','2026-01-02 03:04:05')");

@@ -2,7 +2,7 @@
 
 当前执行方式统一见[数据库初始化与验证](../docs/数据库初始化与验证.md)，编写规则见[SQL 脚本规范](../docs/SQL脚本规范.md)。
 
-- `migrations/B*.sql`：冻结的新库基线；其后的 `V*.sql` 补齐结构和必要数据，由 Flyway 决定执行顺序。
+- `migrations/B*.sql`：冻结的新库基线，当前新库自动采用 `B20261028_00_001__mysql_compatible_baseline.sql`，兼容 MySQL 5.7.44 和 8.x（8.0.16+）；其后的 `V*.sql` 补齐结构和必要数据，由 Flyway 决定执行顺序。
 - `migrations/V*.sql`：已有库的版本迁移。日常变更新增版本，不修改、重排或删除已执行文件。
 - `reference/`：原始资料与来源说明，不是执行目录。
 
