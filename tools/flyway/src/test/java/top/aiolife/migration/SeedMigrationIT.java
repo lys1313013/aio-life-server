@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /** 固定历史种子区间的回归，未来业务数据迁移不应被强制要求“不改任何数据”。 */
 class SeedMigrationIT {
     private static final String FIX = "V20261028_06__restore_scheduled_jobs_menu.sql";
-    @ParameterizedTest @ValueSource(strings = {"mysql:5.7.44", "mysql:8.0.40", "mysql:8.4.2"})
+    @ParameterizedTest @ValueSource(strings = {"mysql:8.0.40", "mysql:8.4.2"})
     void 修复菜单并保留历史种子的人工配置与软删除(String image) throws Exception {
         try (var mysql = new IsolatedMysql(image)) {
             String db = mysql.database();

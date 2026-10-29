@@ -28,11 +28,8 @@ public record SchemaContract(int format, String schemaVersion, String mysqlVersi
                 SchemaSnapshot.rows(connection, "SELECT VERSION()").getFirst().getFirst(),
                 MigrationProject.sources(root), SchemaSnapshot.read(connection), MigrationProject.toolSources(root)));
     }
-    public void check(Connection connection, boolean acceptMissingChecks) throws Exception {
-        var version = SchemaSnapshot.version(connection);
-        var issues = schema.differences(SchemaSnapshot.read(connection), version, acceptMissingChecks);
+    public void check(Connection connection) throws Exception {
+        var issues = schema.differences(SchemaSnapshot.read(connection));
         if (!issues.isEmpty()) throw new IllegalStateException("Schema preflight failed:\n" + String.join("\n", issues));
-        if (!version.enforcesChecks() && !schema.sections().get("checks").isEmpty())
-            System.err.println("Explicitly accepted missing CHECK enforcement on MySQL 5.7; other schema checks passed.");
     }
 }

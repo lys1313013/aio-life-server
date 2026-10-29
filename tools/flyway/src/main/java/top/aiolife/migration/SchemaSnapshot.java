@@ -22,9 +22,8 @@ public record SchemaSnapshot(Map<String, List<List<String>>> sections) {
             if (!match.find() || value.toLowerCase(Locale.ROOT).contains("mariadb"))
                 throw new IllegalArgumentException("Expected MySQL server, got " + value);
             var version = new Version(Integer.parseInt(match.group(1)), Integer.parseInt(match.group(2)), Integer.parseInt(match.group(3)));
-            boolean mysql57 = version.major == 5 && version.minor == 7 && version.patch >= 44;
             boolean mysql8 = version.major == 8 && version.compareTo(new Version(8, 0, 16)) >= 0;
-            if (!mysql57 && !mysql8) throw new IllegalArgumentException("Requires MySQL 5.7.44+ or MySQL 8.x (8.0.16+)");
+            if (!mysql8) throw new IllegalArgumentException("Requires MySQL 8.x (8.0.16+)");
             return version;
         }
         public int compareTo(Version other) {
@@ -32,26 +31,23 @@ public record SchemaSnapshot(Map<String, List<List<String>>> sections) {
             if (result == 0) result = Integer.compare(minor, other.minor);
             return result == 0 ? Integer.compare(patch, other.patch) : result;
         }
-        public boolean enforcesChecks() { return compareTo(new Version(8, 0, 16)) >= 0; }
     }
     public static Version version(Connection connection) throws SQLException {
         return Version.parse(rows(connection, "SELECT VERSION()").getFirst().getFirst());
     }
-    public static Map<String, String> queries(Version version) {
+    public static Map<String, String> queries() {
         Map<String, String> queries = new LinkedHashMap<>();
         queries.put("tables", "SELECT table_name,engine,table_collation,table_comment FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE' ORDER BY table_name");
         queries.put("columns", "SELECT table_name,column_name,column_type,is_nullable,column_default,extra,generation_expression,character_set_name,collation_name,column_comment FROM information_schema.columns WHERE table_schema=DATABASE() ORDER BY table_name,column_name");
-        String indexAttributes = version.compareTo(new Version(8, 0, 13)) >= 0 ? "is_visible,expression" : version.major() >= 8 ? "is_visible,NULL" : "'YES',NULL";
-        queries.put("indexes", "SELECT table_name,index_name,non_unique,seq_in_index,column_name,sub_part,index_type,collation," + indexAttributes + " FROM information_schema.statistics WHERE table_schema=DATABASE() ORDER BY table_name,index_name,seq_in_index");
-        queries.put("checks", version.enforcesChecks()
-                ? "SELECT t.table_name,t.constraint_name,c.check_clause,t.enforced FROM information_schema.table_constraints t JOIN information_schema.check_constraints c ON t.constraint_schema=c.constraint_schema AND t.constraint_name=c.constraint_name WHERE t.constraint_schema=DATABASE() AND t.constraint_type='CHECK' ORDER BY t.table_name,t.constraint_name"
-                : "SELECT NULL,NULL,NULL,NULL FROM DUAL WHERE 1=0");
+        queries.put("indexes", "SELECT table_name,index_name,non_unique,seq_in_index,column_name,sub_part,index_type,collation,is_visible,expression FROM information_schema.statistics WHERE table_schema=DATABASE() ORDER BY table_name,index_name,seq_in_index");
+        queries.put("checks", "SELECT t.table_name,t.constraint_name,c.check_clause,t.enforced FROM information_schema.table_constraints t JOIN information_schema.check_constraints c ON t.constraint_schema=c.constraint_schema AND t.constraint_name=c.constraint_name WHERE t.constraint_schema=DATABASE() AND t.constraint_type='CHECK' ORDER BY t.table_name,t.constraint_name");
         queries.put("foreign_keys", "SELECT k.table_name,k.constraint_name,k.column_name,k.ordinal_position,k.referenced_table_name,k.referenced_column_name,r.update_rule,r.delete_rule FROM information_schema.key_column_usage k JOIN information_schema.referential_constraints r ON k.constraint_schema=r.constraint_schema AND k.constraint_name=r.constraint_name WHERE k.constraint_schema=DATABASE() AND k.referenced_table_name IS NOT NULL ORDER BY k.table_name,k.constraint_name,k.ordinal_position");
         return queries;
     }
     public static SchemaSnapshot read(Connection connection) throws SQLException {
         Map<String, List<List<String>>> result = new LinkedHashMap<>();
-        for (var query : queries(version(connection)).entrySet()) {
+        version(connection);
+        for (var query : queries().entrySet()) {
             result.put(query.getKey(), rows(connection, query.getValue()).stream().filter(row -> !HISTORY.equals(row.getFirst())).toList());
         }
         return new SchemaSnapshot(result);
@@ -75,13 +71,9 @@ public record SchemaSnapshot(Map<String, List<List<String>>> sections) {
         }
         if (sections.get("tables").isEmpty()) throw new IllegalArgumentException("Empty schema contract is not a baseline");
     }
-    public List<String> differences(SchemaSnapshot actual, Version actualVersion, boolean acceptMissingChecks) {
+    public List<String> differences(SchemaSnapshot actual) {
         List<String> issues = new ArrayList<>();
         for (String section : WIDTHS.keySet()) {
-            if (section.equals("checks") && !actualVersion.enforcesChecks() && !sections.get(section).isEmpty()) {
-                if (!acceptMissingChecks) issues.add("platform: MySQL cannot enforce " + sections.get(section).size() + " CHECK constraints; requires 8.0.16+");
-                continue;
-            }
             var left = normalized(section, sections.get(section));
             var right = normalized(section, actual.sections.get(section));
             left.stream().filter(row -> !right.contains(row)).forEach(row -> issues.add(section + ": missing/different " + row));

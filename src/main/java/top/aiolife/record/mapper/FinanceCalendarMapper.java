@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import top.aiolife.record.pojo.vo.FinanceCalendarVO;
 
-/** 在数据库聚合，不加载或分页扫描账目；兼容 MySQL 5.7。 */
+/** 在数据库聚合，不加载或分页扫描账目。 */
 public interface FinanceCalendarMapper {
     @Select("""
         <script>

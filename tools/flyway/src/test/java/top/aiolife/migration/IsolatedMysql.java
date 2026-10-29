@@ -15,14 +15,12 @@ import org.testcontainers.containers.wait.strategy.Wait;
 final class IsolatedMysql implements AutoCloseable {
     final String password = UUID.randomUUID().toString();
     final GenericContainer<?> container;
-    final boolean mysql57;
     final Path root;
     IsolatedMysql(String image) {
         this(image, MigrationProject.root());
     }
     IsolatedMysql(String image, Path root) {
         this.root = root;
-        mysql57 = image.contains(":5.7");
         container = new GenericContainer<>(image).withEnv("MYSQL_ROOT_PASSWORD", password)
                 .withEnv("MYSQL_ROOT_HOST", "%").withExposedPorts(3306)
                 .waitingFor(Wait.forListeningPort()).withStartupTimeout(Duration.ofMinutes(3));

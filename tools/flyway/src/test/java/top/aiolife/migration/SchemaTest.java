@@ -7,13 +7,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SchemaTest {
     @Test void versionBoundaries() {
-        assertFalse(SchemaSnapshot.Version.parse("5.7.44-log").enforcesChecks());
         assertThrows(IllegalArgumentException.class, () -> SchemaSnapshot.Version.parse("8.0.15"));
-        assertThrows(IllegalArgumentException.class, () -> SchemaSnapshot.Version.parse("5.7.43"));
-        assertThrows(IllegalArgumentException.class, () -> SchemaSnapshot.Version.parse("5.6.51"));
         assertThrows(IllegalArgumentException.class, () -> SchemaSnapshot.Version.parse("9.0.0"));
-        assertTrue(SchemaSnapshot.Version.parse("8.4.2").enforcesChecks());
-        assertTrue(SchemaSnapshot.Version.parse("8.0.16").enforcesChecks());
+        assertEquals(new SchemaSnapshot.Version(8, 4, 2), SchemaSnapshot.Version.parse("8.4.2"));
+        assertEquals(new SchemaSnapshot.Version(8, 0, 16), SchemaSnapshot.Version.parse("8.0.16-log"));
         assertThrows(IllegalArgumentException.class, () -> SchemaSnapshot.Version.parse("10.6.0-MariaDB"));
     }
     @Test void expressionsPreserveStringsAndGrouping() {
@@ -21,10 +18,10 @@ class SchemaTest {
         assertNotEquals(SchemaSnapshot.expression("(a+b)*c"), SchemaSnapshot.expression("a+b*c"));
         assertNotEquals(SchemaSnapshot.expression("x='A B'"), SchemaSnapshot.expression("x='ab'"));
     }
-    @Test void metadataUsesCompatibleColumns() {
-        assertFalse(SchemaSnapshot.queries(SchemaSnapshot.Version.parse("5.7.44")).get("indexes").contains("is_visible"));
-        assertFalse(SchemaSnapshot.queries(SchemaSnapshot.Version.parse("5.7.44")).get("checks").contains("check_constraints"));
-        assertTrue(SchemaSnapshot.queries(SchemaSnapshot.Version.parse("8.0.40")).get("indexes").contains("expression"));
+    @Test void metadataIncludesIndexAttributesAndEnforcedChecks() {
+        assertTrue(SchemaSnapshot.queries().get("indexes").contains("is_visible,expression"));
+        assertTrue(SchemaSnapshot.queries().get("checks").contains("check_constraints"));
+        assertTrue(SchemaSnapshot.queries().get("checks").contains("t.enforced"));
     }
     @Test void normalizationRetainsMeaningfulAttributes() {
         var row = Arrays.asList("t", "c", "bigint(20)", "YES", null, "", "", null, null, "中文");

@@ -7,7 +7,7 @@ import top.aiolife.record.pojo.entity.BVideoEntity;
 import top.aiolife.record.pojo.entity.DeviceEntity;
 import top.aiolife.record.pojo.entity.MemoEntity;
 
-/** 有界首页查询；归属、逻辑删除和筛选在数据库执行，兼容 MySQL 5.7。 */
+/** 有界首页查询；归属、逻辑删除和筛选在数据库执行。 */
 public interface HomeSectionMapper {
     @Select("""
         SELECT id, title, hidden_content, update_time FROM memo

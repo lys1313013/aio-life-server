@@ -14,7 +14,7 @@ public final class SchemaTool {
         var contract = SchemaContract.read(Path.of(file), MigrationProject.root());
         try (var connection = DriverManager.getConnection(required("FLYWAY_URL"), required("FLYWAY_USER"), required("FLYWAY_PASSWORD"))) {
             connection.setReadOnly(true);
-            contract.check(connection, Boolean.getBoolean("schema.acceptMissingChecks"));
+            contract.check(connection);
             System.out.println("Schema preflight passed for version " + contract.schemaVersion());
         }
     }

@@ -20,15 +20,7 @@ class SchemaContractTest {
     @ParameterizedTest @ValueSource(strings = {"tables", "columns", "indexes", "checks", "foreign_keys"})
     void 任何结构分区差异均被报告(String section) {
         var expected = fixture(); var changed = new HashMap<>(expected.sections()); changed.put(section, List.of());
-        assertFalse(expected.differences(new SchemaSnapshot(changed), SchemaSnapshot.Version.parse("8.0.40"), false).isEmpty());
-    }
-    @Test void 低版本豁免只跳过检查约束() {
-        var expected = fixture(); var changed = new HashMap<>(expected.sections()); changed.put("checks", List.of());
-        var version = SchemaSnapshot.Version.parse("5.7.44");
-        assertFalse(expected.differences(new SchemaSnapshot(changed), version, false).isEmpty());
-        assertTrue(expected.differences(new SchemaSnapshot(changed), version, true).isEmpty());
-        changed.put("indexes", List.of());
-        assertFalse(expected.differences(new SchemaSnapshot(changed), version, true).isEmpty());
+        assertFalse(expected.differences(new SchemaSnapshot(changed)).isEmpty());
     }
     @Test void 拒绝旧格式和过期源码摘要() throws Exception {
         Path file = Files.createTempFile("aio-contract-", ".json");

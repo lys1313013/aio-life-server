@@ -27,14 +27,14 @@ public final class MigrationGuard implements Callback {
             checkConfiguration(config);
             var root = MigrationProject.root(config);
             var connection = context.getConnection();
-            SchemaSnapshot.version(connection); // 两条 MySQL 系列均在执行任何 DDL 前检查版本下限。
+            SchemaSnapshot.version(connection); // 执行任何 DDL 前检查 MySQL 8.x 版本下限。
             if (event == Event.BEFORE_BASELINE) {
                 String file = System.getProperty("schema.contract");
                 if (file == null || file.isBlank()) throw new IllegalArgumentException("baseline requires -Dschema.contract=<adoption-contract.json>");
                 var contract = SchemaContract.read(Path.of(file), root);
                 if (!org.flywaydb.core.api.MigrationVersion.fromVersion(contract.schemaVersion()).equals(config.getBaselineVersion()))
                     throw new IllegalArgumentException("Contract version differs from baselineVersion");
-                contract.check(connection, Boolean.getBoolean("schema.acceptMissingChecks"));
+                contract.check(connection);
             } else {
                 var tables = SchemaSnapshot.rows(connection, "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE()");
                 boolean history = tables.stream().anyMatch(row -> SchemaSnapshot.HISTORY.equals(row.getFirst()));

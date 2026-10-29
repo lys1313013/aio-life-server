@@ -22,7 +22,7 @@ class AdoptionIT {
                 if (scriptVersion.compareTo(MigrationVersion.fromVersion(version)) > 0) Files.delete(script);
             }
         }
-        for (String image : List.of("mysql:5.7.44", "mysql:8.0.40")) {
+        for (String image : List.of("mysql:8.0.40", "mysql:8.4.2")) {
             try (var mysql = new IsolatedMysql(image, root)) {
                 String db = mysql.database();
                 // 故意不使用新库结构，任何历史脚本误执行都会失败或改变快照。

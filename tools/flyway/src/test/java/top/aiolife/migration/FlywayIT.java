@@ -11,8 +11,8 @@ class FlywayIT {
         Path report = Path.of(System.getProperty("schema.reportDirectory"));
         Files.createDirectories(report);
         SchemaSnapshot reference = null;
-        for (String image : List.of("mysql:8.0.40", "mysql:5.7.44", "mysql:8.4.2")) {
-            String suffix = image.contains("5.7") ? "-mysql57" : image.contains("8.4") ? "-mysql84" : "";
+        for (String image : List.of("mysql:8.0.40", "mysql:8.4.2")) {
+            String suffix = image.contains("8.4") ? "-mysql84" : "";
             Path adoption = report.resolve("adoption-contract" + suffix + ".json");
             Path current = report.resolve("schema-contract" + suffix + ".json");
             try (var mysql = new IsolatedMysql(image)) {
@@ -20,21 +20,11 @@ class FlywayIT {
                 assertEquals("20261028.00.001", mysql.scalar(fresh,
                         "SELECT version FROM flyway_schema_history WHERE type='SQL_BASELINE'"));
                 var snapshot = mysql.snapshot(fresh);
-                try (var connection = mysql.connect(fresh)) {
-                    if (reference == null) reference = snapshot;
-                    assertTrue(reference.differences(snapshot, SchemaSnapshot.version(connection), true).isEmpty(),
-                            "Only unsupported CHECK constraints may differ across MySQL versions");
-                }
-                if (mysql.mysql57) assertTrue(snapshot.sections().get("checks").isEmpty());
-                else assertEquals(27, snapshot.sections().get("checks").size());
+                if (reference == null) reference = snapshot;
+                assertTrue(reference.differences(snapshot).isEmpty(),
+                        "Schema must match across supported MySQL versions");
+                assertEquals(27, snapshot.sections().get("checks").size());
                 constraints(mysql, fresh);
-                if (image.equals("mysql:8.0.40")) {
-                    String original = mysql.database(), compatible = mysql.database();
-                    mysql.script(original, mysql.source("B20261028_00__baseline.sql"));
-                    mysql.baselineFixture(compatible);
-                    assertEquals(mysql.snapshot(original), mysql.snapshot(compatible),
-                            "Compatible baseline must retain the original schema and named CHECK constraints on MySQL 8");
-                }
             }
         }
     }
@@ -66,7 +56,7 @@ class FlywayIT {
         assertEquals(data, mysql.data(fresh));
         try (var connection = mysql.connect(fresh)) {
             SchemaContract.write(current, mysql.root, flyway.info().current().getVersion().toString(), connection);
-            SchemaContract.read(current, mysql.root).check(connection, false);
+            SchemaContract.read(current, mysql.root).check(connection);
         }
         mysql.sql(fresh, "UPDATE flyway_schema_history SET checksum=checksum+1 WHERE version='20261028.01'");
         assertThrows(Exception.class, flyway::migrate);
@@ -98,7 +88,7 @@ class FlywayIT {
         mysql.sql(db, "INSERT INTO user(id,username,nickname,phone_country_code,phone,wechat_openid) VALUES(-900002,'fixture','fixture','86','13800138000','fixture-openid')");
         assertSqlError(mysql, db, 1062, "INSERT INTO user(id,username,nickname,phone_country_code,phone) VALUES(-900003,'duplicate','fixture','86','13800138000')");
         assertSqlError(mysql, db, 1062, "INSERT INTO user(id,username,nickname,wechat_openid) VALUES(-900003,'duplicate','fixture','fixture-openid')");
-        if (!mysql.mysql57) assertSqlError(mysql, db, 3819, "INSERT INTO user(id,username,nickname,phone_country_code) VALUES(-900003,'invalid','fixture','86')");
+        assertSqlError(mysql, db, 3819, "INSERT INTO user(id,username,nickname,phone_country_code) VALUES(-900003,'invalid','fixture','86')");
         mysql.sql(db, "UPDATE user SET is_deleted=1 WHERE id=-900002; INSERT INTO user(id,username,nickname,phone_country_code,phone,wechat_openid) VALUES(-900003,'reused','fixture','86','13800138000','fixture-openid'); INSERT INTO bank_card(id,user_id,custom_bank_name,card_type,create_user,update_user) VALUES(-900001,-900003,'fixture','debit',-900003,-900003)");
         mysql.sql(db, "INSERT INTO file(id,file_name,biz_type,is_public,create_user,create_time,update_time) VALUES('fixture_avatar','fixture.png','avatar',1,-900003,NOW(),NOW()); UPDATE user SET avatar_file_id='fixture_avatar' WHERE id=-900003");
         assertSqlError(mysql, db, 1451, "DELETE FROM file WHERE id='fixture_avatar'");

@@ -12,7 +12,7 @@ class AssetSourceRepairIT {
     private static final List<String> TABLES = List.of("device", "wardrobe_item");
 
     @ParameterizedTest
-    @ValueSource(strings = {"mysql:5.7.44", "mysql:8.0.40", "mysql:8.4.2"})
+    @ValueSource(strings = {"mysql:8.0.40", "mysql:8.4.2"})
     void 已登记基线的缺列库补齐且保留数据并拒绝冲突(String image) throws Exception {
         try (var mysql = new IsolatedMysql(image)) {
             String db = mysql.database();
