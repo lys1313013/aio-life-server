@@ -57,7 +57,7 @@ public class ExportWorker {
                 job = jobs.claim();
             } catch (RuntimeException unavailable) {
                 localSlots.release();
-                log.error("导出任务领取失败");
+                log.error("导出任务领取失败", unavailable);
                 return;
             }
             if (job == null) {
@@ -88,7 +88,7 @@ public class ExportWorker {
                                         ExportTime.now(),
                                         ExportTime.now().plusSeconds(90));
                             } catch (RuntimeException unavailable) {
-                                log.error("导出任务续租失败，jobId={}", job.getId());
+                                log.error("导出任务续租失败，jobId={}", job.getId(), unavailable);
                             }
                         },
                         20,
@@ -119,6 +119,7 @@ public class ExportWorker {
                     artifact.summary());
             published = true;
         } catch (Exception failure) {
+            log.error("导出任务执行失败，jobId={}", job.getId(), failure);
             String code =
                     failure instanceof ExportException error
                             ? error.getErrorCode()
@@ -126,15 +127,15 @@ public class ExportWorker {
             try {
                 jobs.fail(job, code);
             } catch (RuntimeException unavailable) {
-                log.error("导出任务终态未落库，等待租约恢复，jobId={}", job.getId());
+                log.error("导出任务终态未落库，等待租约恢复，jobId={}", job.getId(), unavailable);
             }
         } finally {
             beat.cancel(false);
             if (!published)
                 try {
                     store.delete(objectKey);
-                } catch (Exception ignored) {
-                    log.error("导出临时对象待清理，jobId={}", job.getId());
+                } catch (Exception unavailable) {
+                    log.error("导出临时对象待清理，jobId={}", job.getId(), unavailable);
                 }
         }
     }
@@ -178,6 +179,7 @@ public class ExportWorker {
                                     .set(ExportJobEntity::getObjectKey, null));
                     audit.independent(job.getUserId(), job.getId(), "ARTIFACT_DELETED", "OK", null);
                 } catch (Exception unavailable) {
+                    log.error("导出文件清理失败，jobId={}", job.getId(), unavailable);
                     audit.independent(
                             job.getUserId(),
                             job.getId(),
@@ -188,7 +190,7 @@ public class ExportWorker {
             }
             cleanOrphans();
         } catch (Exception unavailable) {
-            log.error("导出文件清理暂不可用");
+            log.error("导出文件清理暂不可用", unavailable);
         }
     }
 
