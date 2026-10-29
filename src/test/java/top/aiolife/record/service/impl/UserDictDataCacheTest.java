@@ -258,12 +258,12 @@ class UserDictDataCacheTest {
     }
 
     @Test
-    void testRedisConfiguration_五分钟过期且大整数日期空列表可往返() {
+    void testRedisConfiguration_六十分钟过期且大整数日期空列表可往返() {
         var json = new JsonConfig().jacksonObjectMapper(Jackson2ObjectMapperBuilder.json());
         var manager = new RedisConfig().cacheManager(mock(RedisConnectionFactory.class), json);
         manager.afterPropertiesSet();
         var config = manager.getCacheConfigurations().get(UserDictDataCache.CACHE_NAME);
-        assertEquals(Duration.ofMinutes(5), config.getTtl());
+        assertEquals(Duration.ofMinutes(60), config.getTtl());
         var item = row(9223372036854775806L, 1L, TYPE);
         item.setTemplateId(9223372036854775805L);
         item.setCreateTime(LocalDateTime.of(2026, 10, 4, 12, 30));

@@ -54,7 +54,7 @@ public class RedisConfig implements CachingConfigurer {
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(daySerializer));
         var dictSerializer = new Jackson2JsonRedisSerializer<List<UserDictDataEntity>>(objectMapper,
                 objectMapper.getTypeFactory().constructCollectionType(List.class, UserDictDataEntity.class));
-        var dictConfiguration = cacheConfiguration.entryTtl(Duration.ofMinutes(5))
+        var dictConfiguration = cacheConfiguration.entryTtl(Duration.ofMinutes(60))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(dictSerializer));
         var categorySerializer = new Jackson2JsonRedisSerializer<List<TimeTrackerCategoryEntity>>(objectMapper,
                 objectMapper.getTypeFactory().constructCollectionType(List.class, TimeTrackerCategoryEntity.class));

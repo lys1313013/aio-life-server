@@ -64,6 +64,10 @@ Web 首页、日视图和日统计，以及独立移动端已同步适配；前�
 尚未实测目标环境历史单日最大条数和响应体大小；发布前应在目标数据库只读测量。
 契约回归使用 151 条模拟记录，验证超过旧分页上限时完整返回，不据此声称真实数据量上限。
 
+## 用户字典缓存
+
+`GET /userDictType/getByDictType` 通过 `userDictData:v2:{userId}:{dictType}` 缓存原始字典记录，TTL 为 60 分钟；`userId=0` 保存公共字典，个人记录独立缓存，每次读取后合并。空列表也缓存。新增、修改、删除字典后清除对应缓存，有事务时在提交后清除；事务内查询和 `bank_card_tag` 不使用此缓存。Redis 读写故障回源数据库。直接 SQL 修改不触发失效；并发慢查询可能在失效后回填旧值，TTL 不构成强一致性保证。
+
 ## 时迹分类缓存（2026-10-28）
 
 `GET /timeTrackerCategory/list` 和 `/timeTrackerCategory/all` 共用 Redis 原始分类缓存：
