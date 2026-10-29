@@ -39,6 +39,7 @@ class CategoryOwnershipTest {
         var service = spy(new TimeRecordServiceImpl(null, null, null, null, null, null, null,
                 categories, mock(SecondaryLockGuard.class)));
         var req = new TimeRecordReq(); req.setCategoryId("22");
+        req.setStartTime(60); req.setEndTime(119);
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
             assertThrows(IllegalArgumentException.class, () -> service.saveTimeRecord(req));
@@ -63,6 +64,7 @@ class CategoryOwnershipTest {
             assertEquals(11L, entity.getUserId()); entity.setId("7"); return true;
         }).when(service).save(any(TimeRecordEntity.class));
         var req = new TimeRecordReq(); req.setCategoryId("22");
+        req.setStartTime(60); req.setEndTime(119);
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
             assertEquals("7", service.saveTimeRecord(req));
