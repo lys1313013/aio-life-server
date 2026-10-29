@@ -86,7 +86,7 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
         goalMapper.insert(goal);
 
         GoalProgressUpdateMcpReq req = new GoalProgressUpdateMcpReq();
-        req.setGoalId(goalId);
+        req.setGoalId(String.valueOf(goalId));
         req.setCurrentValue(7);
         String message = goalMcpTools.goal_progress_update(req);
 
@@ -107,8 +107,8 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
         goalMapper.insert(goal);
 
         GoalProgressUpdateMcpReq req = new GoalProgressUpdateMcpReq();
-        req.setGoalId(goalId);
-        req.setStatus("已完成");
+        req.setGoalId(String.valueOf(goalId));
+        req.setStatus("completed");
         String message = goalMcpTools.goal_progress_update(req);
 
         assertTrue(message.contains("状态已变更为：已完成"));
@@ -127,8 +127,8 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
         goalMapper.insert(goal);
 
         GoalProgressUpdateMcpReq req = new GoalProgressUpdateMcpReq();
-        req.setGoalId(goalId);
-        req.setStatus("搁置");
+        req.setGoalId(String.valueOf(goalId));
+        req.setStatus("on_hold");
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> goalMcpTools.goal_progress_update(req));
@@ -140,7 +140,7 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
         GoalProgressUpdateMcpReq req = new GoalProgressUpdateMcpReq();
         assertThrows(IllegalArgumentException.class, () -> goalMcpTools.goal_progress_update(req));
 
-        req.setGoalId(1L);
+        req.setGoalId(String.valueOf(1L));
         assertThrows(IllegalArgumentException.class, () -> goalMcpTools.goal_progress_update(req));
 
         req.setCurrentValue(1);

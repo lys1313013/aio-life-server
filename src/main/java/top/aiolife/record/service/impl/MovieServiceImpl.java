@@ -63,11 +63,6 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         }
         if (query.getStatuses() != null && !query.getStatuses().isEmpty()) {
             wrapper.in(MovieEntity::getStatus, query.getStatuses());
-        } else if (query.getStatus() != null) {
-            wrapper.eq(MovieEntity::getStatus, query.getStatus());
-        } else if (Boolean.TRUE.equals(query.getActiveOnly())) {
-            wrapper.in(MovieEntity::getStatus,
-                    ProgressStatusEnum.NOT_STARTED, ProgressStatusEnum.IN_PROGRESS);
         }
         if (StrUtil.isNotBlank(query.getTitle())) {
             wrapper.and(condition -> condition

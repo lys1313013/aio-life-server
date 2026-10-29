@@ -361,6 +361,37 @@ class OpenApiIntegrationTest {
         }
     }
 
+    @Test
+    void 常用中文业务词能发现新增和查询且详情契约准确() throws Exception {
+        for (var entry : Map.of("待办", "post_tasks", "闪念", "post_thought", "时迹", "post_timeRecord", "阅读", "get_read_record_page").entrySet()) {
+            assertTrue(discovery("/docs/operations?keyword=" + entry.getKey() + "&pageSize=100")
+                    .path("items").toString().contains(entry.getValue()));
+        }
+        JsonNode api = document("/v3/api-docs");
+        JsonNode goalType = parameters(api.at("/paths/~1goals/get")).get("type").path("schema");
+        assertEquals("integer", goalType.path("type").asText());
+        assertEquals(10, goalType.path("enum").size());
+        assertEquals(6, goalType.path("enum").get(5).asInt());
+        assertTrue(goalType.path("description").asText().contains("6=年度目标"));
+        for (String path : List.of("/read-record/page", "/movie/page")) {
+            JsonNode operation = api.path("paths").path(path).path("get");
+            assertFalse(parameters(operation).get("page").path("required").asBoolean());
+            assertFalse(parameters(operation).get("pageSize").path("required").asBoolean());
+            assertEquals("array", parameters(operation).get("statuses").path("schema").path("type").asText());
+            for (JsonNode param : operation.path("parameters")) {
+                assertFalse(List.of("status", "activeOnly").contains(param.path("name").asText()));
+            }
+        }
+        JsonNode schemas = api.at("/components/schemas");
+        assertTrue(schemas.path("TimeRecordSaveReq").path("required").toString().contains("startTime"));
+        assertTrue(schemas.path("TimeRecordSaveReq").path("required").toString().contains("endTime"));
+        assertFalse(schemas.path("TimeRecordUpdateReq").path("required").toString().contains("startTime"));
+        assertEquals(1439, schemas.at("/TimeRecordSaveReq/properties/endTime/maximum").asInt());
+        assertTrue(schemas.at("/ReadRecordCreateReq/properties/totalProgress/description").asText().contains("单位"));
+        assertTrue(schemas.at("/TaskDetailCreateReq/properties/taskId/description").asText().contains("/tasks"));
+        assertTrue(schemas.path("ReadRecordCreateReq").path("required").toString().contains("title"));
+    }
+
     private JsonNode discovery(String path) throws Exception {
         JsonNode response = document(path);
         assertEquals(0, response.path("code").intValue(), response.toString());

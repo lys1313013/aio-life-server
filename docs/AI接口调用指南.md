@@ -4,7 +4,7 @@
 
 ## 渐进式读取（推荐）
 
-文档接口均可匿名访问，无需 API Key。先查目录和摘要，只在选中接口后读取详情，避免把整个模块的 Schema 放入 AI 上下文。
+文档接口均可匿名访问，无需 API Key。首次可查模块目录；已知业务关键词时可直接搜索摘要，只在选中接口后读取详情，避免把整个模块的 Schema 放入 AI 上下文。
 
 | 层级 | URL（默认本地地址） | `data` 返回内容 |
 | --- | --- | --- |
@@ -76,7 +76,7 @@ curl --fail-with-body --silent --show-error --get \
 
 ## 可交给 AI 的调用规则
 
-1. 优先读取 `/docs/catalog`，通过 `/docs/operations` 搜索，再按返回的 `operationId` 读取详情中的 `definition`。需要批量导入工具时再读取完整或模块文档。按 `paths`、HTTP 方法、`operationId`、`parameters`、`requestBody` 和响应 Schema 构造请求。解析 `#/components/schemas/...` 引用，不猜测缺失的业务字段。
+1. 按需读取 `/docs/catalog`，已知业务词时直接通过 `/docs/operations` 搜索，再按返回的 `operationId` 读取详情中的 `definition`。需要批量导入工具时再读取完整或模块文档。按 `paths`、HTTP 方法、`operationId`、`parameters`、`requestBody` 和响应 Schema 构造请求。解析 `#/components/schemas/...` 引用，不猜测缺失的业务字段。
 2. 使用实际部署地址。文档的 `servers` 通常已包含 `/api`，`paths` 不含该前缀，拼接时不要重复添加。反向代理环境应核对实际外部地址。
 3. 文档本身公开可读，文档中的 `security` 描述的是业务接口的鉴权要求。业务调用凭据由运行环境提供，不写入提示词、导出的文档或代码库。登录、注册和验证码等匿名接口标记 `security: []`；其他接口通常继承 Bearer 鉴权。文件接口即使支持匿名，也只对公开资源有效。
 4. 普通 JSON 返回 `{ "code": 0, "message": null, "data": ... }`。只有 `code == 0` 表示业务成功，HTTP 200 本身不足以判断。文件和流式接口按各自协议处理。
@@ -84,6 +84,19 @@ curl --fail-with-body --silent --show-error --get \
 6. `Long/long` 默认在 JSON 响应中为字符串，ID 必须保留原字符串，不转换为可能丢失精度的 JavaScript Number；`PageResp.total` 使用字段级序列化器输出 JSON 整数（可空）。枚举传 Schema 中的真实值，如 `in_progress`。
 7. GET 查询不发送请求体。分页和条件平铺，例如 `?page=1&pageSize=50&startDate=2026-09-01&endDate=2026-09-29`，不使用 `condition.startDate` 或 `condition={...}`。数组用重复键，例如 `statuses=in_progress&statuses=on_hold`。
 8. 日期和时间按字段说明发送。带 `@JsonFormat` 的本地时间通常为 `yyyy-MM-dd HH:mm:ss`；未定制的 `LocalDateTime` 使用 ISO 本地时间，如 `2026-09-29T10:30:00`。不要自行补时区或改成时间戳。
+
+## 常用最小请求
+
+以下是当前接口的最小请求形态；ID 必须先查询真实对象，省略可选字段不代表提交 null。
+
+- 新增闪念：`POST /thought`，`{"content":"记录想法"}`。
+- 新增待办明细：`POST /taskDetails`，`{"taskId":"真实主任务ID","content":"待办内容"}`。
+- 新增时迹：`POST /timeRecord`，`{"startTime":600,"endTime":659}`；日期省略为服务端今天，区间包含两个端点，时长为 60 分钟。
+- 更新时迹：`PUT /timeRecord/{id}`，可仅提交 `{"title":"更新标题"}`，起止分钟省略时保留原值。
+- 查询在读记录：`GET /read-record/page?statuses=in_progress`；默认分页可省略，多状态用重复 `statuses` 键。阅读／观影不再接受 `status/activeOnly` 查询参数。
+- 新增阅读：`POST /read-record`，`{"title":"书名","type":1}`；成功 data 为新增或已有豆瓣条目的字符串 ID。
+
+搜索“待办”“闪念”“时迹”“阅读”等业务词可以发现对应 Controller 的查询和写入操作。调用前仍需读取单接口详情确认字段、约束和副作用。
 
 ## 维护方式与当前边界
 

@@ -1,5 +1,7 @@
 package top.aiolife.record.pojo.req;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -24,6 +26,7 @@ public class GoalCreateReq {
      *
      * @see GoalTypeEnum
      */
+    @Schema(implementation = GoalTypeEnum.class)
     private Integer type;
 
     /**

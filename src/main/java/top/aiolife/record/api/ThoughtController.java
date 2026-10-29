@@ -1,5 +1,8 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+
 import top.aiolife.record.service.ThoughtCreationService;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -43,6 +46,7 @@ import top.aiolife.record.pojo.vo.ThoughtRecordVO;
  * @date 2025-11-16 17:01
  */
 @Slf4j
+@Tag(name = "闪念 想法")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/thought")
@@ -57,6 +61,7 @@ public class ThoughtController {
     }
 
     @GetMapping("/query")
+    @Operation(summary = "分页查询闪念")
     public ApiResponse<PageResp<ThoughtRecordVO>> query(
             @QueryParams CommonQuery<ThoughtQuery> requestQuery) {
         CommonQuery<ThoughtEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromThoughtQuery);
@@ -97,6 +102,7 @@ public class ThoughtController {
     }
 
     @PostMapping
+    @Operation(summary = "新增闪念")
     public ApiResponse<Boolean> save(@Valid @RequestBody ThoughtSaveReq req) {
         thoughtCreationService.create(StpUtil.getLoginIdAsLong(), req);
         return ApiResponse.success(true);
@@ -104,6 +110,7 @@ public class ThoughtController {
 
     @PutMapping("/{id}")
     @Transactional(rollbackFor = Exception.class)
+    @Operation(summary = "更新闪念")
     public ApiResponse<Boolean> update(@PathVariable("id") Long id, @Valid @RequestBody ThoughtUpdateReq entityReq) {
         ThoughtEntity entity = RecordApiConvertor.INSTANCE.fromThoughtUpdateReq(entityReq);
         Long userId = StpUtil.getLoginIdAsLong();

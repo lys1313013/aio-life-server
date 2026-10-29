@@ -87,6 +87,7 @@ import top.aiolife.record.pojo.req.TimeRecordDeleteByDateReq;
 import top.aiolife.record.pojo.req.TimeRecordExerciseReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.req.TimeRecordSaveReq;
+import top.aiolife.record.pojo.req.TimeRecordUpdateReq;
 import top.aiolife.record.pojo.req.TimeTrackerCategoryAdminCreateReq;
 import top.aiolife.record.pojo.req.TimeTrackerCategoryAdminUpdateReq;
 import top.aiolife.record.pojo.req.TimeTrackerCategoryCreateReq;
@@ -518,6 +519,9 @@ public interface RecordApiConvertor {
 
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
     TimeRecordReq fromTimeRecordSaveReq(TimeRecordSaveReq request);
+
+    @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
+    TimeRecordReq fromTimeRecordUpdateReq(TimeRecordUpdateReq request);
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
     ExerciseRecordReq fromTimeRecordExerciseReq(TimeRecordExerciseReq request);
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)

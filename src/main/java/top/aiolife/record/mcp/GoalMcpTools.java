@@ -65,7 +65,7 @@ public class GoalMcpTools {
         queryWrapper.orderByDesc(GoalEntity::getCreateTime);
 
         int pageNo = req.getPage() == null ? 1 : req.getPage();
-        int size = req.getSize() == null ? 10 : Math.min(req.getSize(), 100);
+        int size = req.getPageSize() == null ? 10 : Math.min(req.getPageSize(), 100);
         Page<GoalEntity> page = goalService.page(new Page<>(pageNo, size), queryWrapper);
 
         // 批量统计当前页各目标的子目标完成情况
@@ -92,7 +92,7 @@ public class GoalMcpTools {
                 .build();
     }
 
-    @Tool("更新目标进展：修改当前进度值和/或状态（进行中/已完成/搁置），目标须属于当前用户；已完成时自动记录完成时间并补齐进度，进行中时清除完成时间")
+    @Tool("更新目标进展：修改当前进度值和/或状态（in_progress/completed/on_hold），目标须属于当前用户；已完成时自动记录完成时间并补齐进度，进行中时清除完成时间")
     public String goal_progress_update(GoalProgressUpdateMcpReq req) {
         if (req.getGoalId() == null) {
             throw new IllegalArgumentException("目标ID不能为空");
@@ -192,11 +192,11 @@ public class GoalMcpTools {
         // 本工具仅允许流转到 进行中 / 已完成 / 搁置，不支持回退为未开始
         for (ProgressStatusEnum value : new ProgressStatusEnum[]{
                 ProgressStatusEnum.IN_PROGRESS, ProgressStatusEnum.COMPLETED, ProgressStatusEnum.ON_HOLD}) {
-            if (value.getDesc().equals(label)) {
+            if (value.getCode().equals(label)) {
                 return value;
             }
         }
-        throw new IllegalArgumentException("状态仅支持：进行中 / 已完成 / 搁置");
+        throw new IllegalArgumentException("状态仅支持：in_progress / completed / on_hold");
     }
 
     private String typeLabel(Integer code) {

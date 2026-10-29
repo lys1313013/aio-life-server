@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +15,7 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.pojo.entity.GoalEntity;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
+import top.aiolife.record.pojo.enums.GoalTypeEnum;
 import top.aiolife.record.pojo.req.CommonReq;
 import top.aiolife.record.pojo.req.GoalCreateReq;
 import top.aiolife.record.pojo.req.GoalUpdateReq;
@@ -27,6 +30,7 @@ import top.aiolife.record.service.IGoalService;
  * @author Lys
  * @date 2026-04-05
  */
+@Tag(name = "目标 计划")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/goals")
@@ -37,7 +41,7 @@ public class GoalController {
     @GetMapping
     @Operation(summary = "查询当前用户的目标", description = "返回目标列表，支持目标类型、进度状态及关键词筛选，按创建时间倒序。")
     public ApiResponse<List<GoalVO>> queryGoals(
-            @Parameter(description = "目标类型：1=年度、2=月度、3=日目标", schema = @Schema(allowableValues = {"1", "2", "3"}))
+            @Parameter(description = "目标周期类型", schema = @Schema(implementation = GoalTypeEnum.class))
             @RequestParam(required = false) Integer type,
             @Parameter(description = "进度状态", schema = @Schema(allowableValues = {"not_started", "in_progress", "completed", "on_hold"}))
             @RequestParam(required = false) String status,

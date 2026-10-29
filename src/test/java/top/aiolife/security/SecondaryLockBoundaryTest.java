@@ -149,7 +149,7 @@ class SecondaryLockBoundaryTest {
     void mcpDenial_happensBeforeToolInvocation() throws Exception {
         var guard = mock(SecondaryLockGuard.class);
         doThrow(new SecondaryLockRequiredException("/task/todo")).when(guard).checkTool("task_list");
-        var invoker = new McpToolInvoker(new ObjectMapper(), guard);
+        var invoker = new McpToolInvoker(new ObjectMapper(), mock(jakarta.validation.Validator.class), guard);
         var target = new DummyTool();
         var tool = new McpToolRegistry.RegisteredMcpTool("task_list", "dummy", target,
                 DummyTool.class.getMethod("run"), null, null, null);

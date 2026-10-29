@@ -49,7 +49,7 @@ public class BVideoMcpTools {
         queryWrapper.orderByDesc(BVideoEntity::getLastWatched);
 
         int pageNo = req.getPage() == null ? 1 : req.getPage();
-        int size = req.getSize() == null ? 10 : Math.min(req.getSize(), 100);
+        int size = req.getPageSize() == null ? 10 : Math.min(req.getPageSize(), 100);
         Page<BVideoEntity> page = bVideoMapper.selectPage(new Page<>(pageNo, size), queryWrapper);
 
         List<BVideoMcpVO> records = page.getRecords().stream()

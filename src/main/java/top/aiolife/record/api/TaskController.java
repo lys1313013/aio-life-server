@@ -1,5 +1,8 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -34,6 +37,7 @@ import top.aiolife.record.service.ITaskService;
  * @date 2025/04/12 14:46
  */
 @Slf4j
+@Tag(name = "待办 主任务 任务列表")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/tasks")
@@ -50,6 +54,7 @@ public class TaskController {
     }
 
     @GetMapping()
+    @Operation(summary = "分页查询待办主任务")
     public ApiResponse<PageResp<TaskVO>> queryPage(@QueryParams TaskPageQuery query) {
         query.validatePagination();
         return query(query.getTaskId(), query.getPage(), query.getPageSize());
@@ -86,6 +91,7 @@ public class TaskController {
      * @param entity
      */
     @PostMapping
+    @Operation(summary = "新增待办主任务")
     public ApiResponse<TaskVO> save(@Valid @RequestBody TaskCreateReq entityReq) {
         TaskEntity entity = RecordApiConvertor.INSTANCE.fromTaskCreateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
@@ -102,6 +108,7 @@ public class TaskController {
      * @param entity
      */
     @PutMapping("/{id}")
+    @Operation(summary = "更新待办主任务")
     public ApiResponse<Boolean> update(@PathVariable("id") Long id, @Valid @RequestBody TaskUpdateReq entityReq) {
         TaskEntity entity = RecordApiConvertor.INSTANCE.fromTaskUpdateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();

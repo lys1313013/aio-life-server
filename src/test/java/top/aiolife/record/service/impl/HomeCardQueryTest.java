@@ -35,7 +35,7 @@ class HomeCardQueryTest {
         try (var identity = mockStatic(StpUtil.class)) {
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(88L);
             var query = new ReadRecordQuery();
-            query.setActiveOnly(true);
+            query.setStatuses(List.of(ProgressStatusEnum.NOT_STARTED, ProgressStatusEnum.IN_PROGRESS));
             query.setInProgressFirst(true);
             query.setPage(3);
             query.setPageSize(20);
@@ -56,7 +56,7 @@ class HomeCardQueryTest {
         try (var identity = mockStatic(StpUtil.class)) {
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(88L);
             var query = new MovieQuery();
-            query.setActiveOnly(true);
+            query.setStatuses(List.of(ProgressStatusEnum.NOT_STARTED, ProgressStatusEnum.IN_PROGRESS));
             query.setInProgressFirst(true);
             query.setPage(3);
             query.setPageSize(20);

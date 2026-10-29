@@ -1,10 +1,14 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.validation.Valid;
 import java.util.Collections;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +34,7 @@ import top.aiolife.record.pojo.query.TimeWeekQuery;
 import top.aiolife.record.pojo.req.TimeRecordDeleteByDateReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.req.TimeRecordSaveReq;
+import top.aiolife.record.pojo.req.TimeRecordUpdateReq;
 import top.aiolife.record.pojo.vo.RecommendNextVO;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
 import top.aiolife.record.pojo.vo.TimeRecordExerciseVO;
@@ -50,6 +55,7 @@ import top.aiolife.sso.util.RequestLoginContext;
  * @date 2025/10/25 23:16
  */
 @Slf4j
+@Tag(name = "时迹 时间记录 时间块")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/timeRecord")
@@ -263,14 +269,17 @@ public class TimeRecordController {
     }
 
     @PostMapping
+    @Operation(summary = "新增时迹时间记录")
     public ApiResponse<String> save(@Valid @RequestBody TimeRecordSaveReq request) {
+        if (request.getDate() == null) request.setDate(LocalDate.now());
         TimeRecordReq timeRecordReq = RecordApiConvertor.INSTANCE.fromTimeRecordSaveReq(request);
         return ApiResponse.success(timeRecordService.saveTimeRecord(timeRecordReq));
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<Boolean> update(@PathVariable("id") String id, @Valid @RequestBody TimeRecordSaveReq request) {
-        TimeRecordReq timeRecordReq = RecordApiConvertor.INSTANCE.fromTimeRecordSaveReq(request);
+    @Operation(summary = "更新时迹时间记录")
+    public ApiResponse<Boolean> update(@PathVariable("id") String id, @Valid @RequestBody TimeRecordUpdateReq request) {
+        TimeRecordReq timeRecordReq = RecordApiConvertor.INSTANCE.fromTimeRecordUpdateReq(request);
         timeRecordReq.setId(id);
         timeRecordService.updateTimeRecord(timeRecordReq);
         return ApiResponse.success();

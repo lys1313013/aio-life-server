@@ -30,6 +30,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import top.aiolife.core.json.CountSerializer;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
+import top.aiolife.record.pojo.enums.GoalTypeEnum;
 import top.aiolife.sso.api.WechatAuthController;
 import top.aiolife.sso.api.WechatWebLoginController;
 
@@ -39,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /** OpenAPI 描述与实际 Jackson、查询参数及认证契约保持一致。 */
 @Configuration(proxyBeanMethods = false)
@@ -54,6 +56,10 @@ public class OpenApiConfig {
     static {
         // Long/long 默认输出字符串；CountSerializer 标注的计数字段在属性定制器中覆盖。
         SpringDocUtils.getConfig()
+                .replaceWithSchema(GoalTypeEnum.class, new IntegerSchema()
+                        ._enum(Arrays.stream(GoalTypeEnum.values()).<Number>map(GoalTypeEnum::getCode).toList())
+                        .description(Arrays.stream(GoalTypeEnum.values())
+                                .map(value -> value.getCode() + "=" + value.getDesc()).collect(Collectors.joining("，"))))
                 .replaceWithSchema(Long.class, new StringSchema().pattern("^-?[0-9]+$"))
                 .replaceWithSchema(long.class, new StringSchema().pattern("^-?[0-9]+$"));
     }
@@ -84,12 +90,17 @@ public class OpenApiConfig {
     @Bean
     public GlobalOperationCustomizer queryParamsOpenApiCustomizer() {
         return (operation, handlerMethod) -> {
+            boolean queryParams = Arrays.stream(handlerMethod.getMethodParameters())
+                    .anyMatch(parameter -> parameter.hasParameterAnnotation(QueryParams.class));
             boolean commonQuery = Arrays.stream(handlerMethod.getMethodParameters())
                     .anyMatch(parameter -> parameter.hasParameterAnnotation(QueryParams.class)
                             && CommonQuery.class.isAssignableFrom(parameter.getParameterType()));
             if (operation.getParameters() != null) {
                 for (Parameter parameter : operation.getParameters()) {
                     if (!"query".equals(parameter.getIn())) continue;
+                    if (queryParams && parameter.getSchema() != null && parameter.getSchema().getDefault() != null) {
+                        parameter.setRequired(false);
+                    }
                     if (commonQuery && parameter.getName().startsWith("condition.")) {
                         parameter.setName(parameter.getName().substring("condition.".length()));
                     }
@@ -167,6 +178,11 @@ public class OpenApiConfig {
     public PropertyCustomizer countOpenApiPropertyCustomizer() {
         return (schema, type) -> {
             if (schema == null || type.getCtxAnnotations() == null) return schema;
+            // Global type replacements must not discard field-level business descriptions.
+            for (var annotation : type.getCtxAnnotations()) {
+                if (annotation instanceof io.swagger.v3.oas.annotations.media.Schema declared
+                        && !declared.description().isBlank()) schema.setDescription(declared.description());
+            }
             for (var annotation : type.getCtxAnnotations()) {
                 if (annotation instanceof JsonSerialize serializer && serializer.using() == CountSerializer.class) {
                     return new IntegerSchema().format("int64")

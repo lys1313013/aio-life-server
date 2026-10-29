@@ -14,9 +14,8 @@ import java.util.List;
 public class ReadRecordQuery implements PaginationRequest {
     private String title;
     private Integer type;
-    private ProgressStatusEnum status;
+    @Schema(description = "状态集合，重复键传递；省略或空集合表示全部状态。首页使用 not_started 与 in_progress。")
     private List<ProgressStatusEnum> statuses;
-    private Boolean activeOnly;
     /** 时迹关联选择时，优先展示在读记录。 */
     private Boolean inProgressFirst;
     @NotNull @Min(1)

@@ -24,6 +24,7 @@ public interface TimeRecordConvertor {
     TimeRecordConvertor INSTANCE = Mappers.getMapper(TimeRecordConvertor.class);
 
     @Mapping(target = "categoryId", qualifiedByName = "stringToLongNullable")
+    @Mapping(target = "duration", ignore = true)
     TimeRecordEntity Req2Entity(TimeRecordReq timeRecordReq);
 
     @Named("stringToLongNullable")

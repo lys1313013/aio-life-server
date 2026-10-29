@@ -1,5 +1,8 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.validation.Valid;
@@ -28,6 +31,7 @@ import top.aiolife.record.service.ITaskService;
  * @author Lys
  * @date 2026-02-07 23:50
  */
+@Tag(name = "待办 任务明细 子任务")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/taskDetails")

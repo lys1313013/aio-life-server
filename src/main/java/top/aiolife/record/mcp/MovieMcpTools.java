@@ -38,10 +38,10 @@ public class MovieMcpTools {
         query.setTitle(req.getTitle());
         query.setDirector(req.getDirector());
         if (req.getStatus() != null) {
-            query.setStatus(ProgressStatusEnum.fromCode(req.getStatus()));
+            query.setStatuses(List.of(ProgressStatusEnum.fromCode(req.getStatus())));
         }
         query.setPage(req.getPage() == null ? 1 : req.getPage());
-        int size = req.getSize() == null ? 10 : req.getSize();
+        int size = req.getPageSize() == null ? 10 : req.getPageSize();
         if (size > 100) {
             size = 100;
         }

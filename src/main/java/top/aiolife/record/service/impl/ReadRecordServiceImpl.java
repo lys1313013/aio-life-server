@@ -55,11 +55,6 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         }
         if (query.getStatuses() != null && !query.getStatuses().isEmpty()) {
             wrapper.in(ReadRecordEntity::getStatus, query.getStatuses());
-        } else if (query.getStatus() != null) {
-            wrapper.eq(ReadRecordEntity::getStatus, query.getStatus());
-        } else if (Boolean.TRUE.equals(query.getActiveOnly())) {
-            wrapper.in(ReadRecordEntity::getStatus,
-                    ProgressStatusEnum.NOT_STARTED, ProgressStatusEnum.IN_PROGRESS);
         }
         if (StrUtil.isNotBlank(query.getTitle())) {
             wrapper.and(condition -> condition

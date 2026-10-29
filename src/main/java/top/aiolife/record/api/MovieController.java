@@ -1,5 +1,8 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+
 import java.util.List;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +27,7 @@ import top.aiolife.record.service.IMovieService;
  * @author Trae
  * @date 2026/06/18
  */
+@Tag(name = "观影 电影 电视剧")
 @RestController
 @RequestMapping("/movie")
 @RequiredArgsConstructor
@@ -35,12 +39,14 @@ public class MovieController {
     private final IDoubanMovieImportService doubanMovieImportService;
 
     @GetMapping("/page")
+    @Operation(summary = "分页查询观影记录")
     public ApiResponse<PageResp<MovieVO>> pageList(@QueryParams MovieQuery query) {
         var page = movieService.pageList(query);
         return ApiResponse.success(PageResp.of(page.getRecords(), page.getTotal()));
     }
 
     @PostMapping
+    @Operation(summary = "新增观影记录")
     public ApiResponse<Void> save(@RequestBody MovieCreateReq request) {
         MovieReq req = RecordApiConvertor.INSTANCE.fromMovieCreateReq(request);
         movieService.saveRecord(req);
@@ -48,6 +54,7 @@ public class MovieController {
     }
 
     @PutMapping
+    @Operation(summary = "更新观影记录")
     public ApiResponse<Void> update(@RequestBody MovieReq req) {
         movieService.updateRecord(req);
         return ApiResponse.success();

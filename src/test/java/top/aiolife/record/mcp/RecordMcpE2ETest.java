@@ -284,6 +284,31 @@ public class RecordMcpE2ETest {
     }
 
     @Test
+    void toolSchemaAndValidationRejectMissingContentAndInvalidPriority() {
+        mcpClient.initialize();
+        var tools = mcpClient.listTools().tools();
+        for (String name : List.of("goal_progress_update", "task_detail_save", "task_detail_update")) {
+            var tool = tools.stream().filter(value -> value.name().equals(name)).findFirst().orElseThrow();
+            String id = name.equals("goal_progress_update") ? "goalId" : name.equals("task_detail_save") ? "taskId" : "id";
+            assertTrue(tool.inputSchema().required().contains(id));
+            Map<?, ?> schema = (Map<?, ?>) tool.inputSchema().properties().get(id);
+            assertEquals("string", schema.get("type"));
+            assertEquals("^[1-9][0-9]*$", schema.get("pattern"));
+        }
+        var thought = mcpClient.callTool(new McpSchema.CallToolRequest("thought_save", Map.of()));
+        assertTrue(thought.isError());
+        assertTrue(((McpSchema.TextContent) thought.content().getFirst()).text().contains("content"));
+        var priority = mcpClient.callTool(new McpSchema.CallToolRequest("task_detail_save",
+                Map.of("taskId", "9007199254740993", "content", "模拟待办", "priority", 2)));
+        assertTrue(priority.isError());
+        assertTrue(((McpSchema.TextContent) priority.content().getFirst()).text().contains("priority"));
+        var numericId = mcpClient.callTool(new McpSchema.CallToolRequest("task_detail_update",
+                Map.of("id", 9007199254740993L, "isCompleted", 1)));
+        assertTrue(numericId.isError());
+        Mockito.verifyNoInteractions(taskDetailController);
+    }
+
+    @Test
     void testTaskDetailUpdate_协议调用保留大整数和零值() {
         Mockito.when(taskDetailController.update(Mockito.any())).thenReturn(ApiResponse.success(true));
         mcpClient.initialize();
@@ -318,7 +343,7 @@ public class RecordMcpE2ETest {
 
         McpSchema.CallToolResult result = mcpClient.callTool(new McpSchema.CallToolRequest(
                 "time_record_save",
-                Map.of("date", "2026-05-21", "title", "Test")
+                Map.of("date", "2026-05-21", "title", "Test", "startTime", 600, "endTime", 659)
         ));
 
         assertNotNull(result);

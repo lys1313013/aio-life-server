@@ -1,5 +1,8 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
@@ -23,6 +26,7 @@ import top.aiolife.record.service.ITimeTrackerCategoryService;
  * @author Lys1313013
  * @since 2026-03-07
  */
+@Tag(name = "时迹分类 时间分类")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/timeTrackerCategory")

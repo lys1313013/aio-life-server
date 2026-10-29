@@ -183,13 +183,12 @@ class QueryHttpContractTest {
         for (String[] codes : new String[][]{{"in_progress"}, {"in_progress", "on_hold"}}) {
             MovieController controller = mock(MovieController.class);
             mvc(controller).perform(get("/movie/page").param("statuses", codes)
-                            .param("activeOnly", "false").param("page", "3"))
+                            .param("page", "3"))
                     .andExpect(status().isOk());
             ArgumentCaptor<MovieQuery> captor = ArgumentCaptor.forClass(MovieQuery.class);
             verify(controller).pageList(captor.capture());
             assertEquals(codes.length, captor.getValue().getStatuses().size());
             assertEquals(ProgressStatusEnum.IN_PROGRESS, captor.getValue().getStatuses().getFirst());
-            assertFalse(captor.getValue().getActiveOnly());
             assertEquals(3, captor.getValue().getPage());
         }
     }

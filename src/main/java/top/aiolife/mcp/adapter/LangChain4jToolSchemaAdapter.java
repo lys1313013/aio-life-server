@@ -4,6 +4,13 @@ import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.model.output.structured.Description;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.stereotype.Component;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
@@ -125,8 +132,28 @@ public class LangChain4jToolSchemaAdapter {
             if (desc != null && desc.value().length > 0) {
                 fieldSchema.put("description", String.join("\n", desc.value()));
             }
+            Schema declared = field.getAnnotation(Schema.class);
+            if (declared != null) {
+                if (!declared.description().isBlank() && !fieldSchema.containsKey("description")) fieldSchema.put("description", declared.description());
+                if (declared.allowableValues().length > 0) {
+                    fieldSchema.put("enum", java.util.Arrays.stream(declared.allowableValues())
+                            .map(value -> "integer".equals(fieldSchema.get("type")) ? (Object) Integer.valueOf(value) : value).toList());
+                }
+                if (!declared.defaultValue().isBlank() && !"##default".equals(declared.defaultValue())) fieldSchema.put("default",
+                        "integer".equals(fieldSchema.get("type")) ? Integer.valueOf(declared.defaultValue()) : declared.defaultValue());
+            }
+            if (field.isAnnotationPresent(Min.class)) fieldSchema.put("minimum", field.getAnnotation(Min.class).value());
+            if (field.isAnnotationPresent(Max.class)) fieldSchema.put("maximum", field.getAnnotation(Max.class).value());
+            if (field.isAnnotationPresent(Pattern.class)) fieldSchema.put("pattern", field.getAnnotation(Pattern.class).regexp());
+            if (field.isAnnotationPresent(NotBlank.class)) {
+                fieldSchema.put("minLength", 1);
+                fieldSchema.putIfAbsent("pattern", "\\S");
+            }
+            if (field.getType() == LocalDate.class) fieldSchema.put("format", "date");
             properties.put(field.getName(), fieldSchema);
-            if (field.getType().isPrimitive()) {
+            if (!fieldSchema.containsKey("default") && (field.getType().isPrimitive()
+                    || field.isAnnotationPresent(NotNull.class) || field.isAnnotationPresent(NotBlank.class)
+                    || field.isAnnotationPresent(NotEmpty.class))) {
                 required.add(field.getName());
             }
         }

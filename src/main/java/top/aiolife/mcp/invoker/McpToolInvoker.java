@@ -1,5 +1,6 @@
 package top.aiolife.mcp.invoker;
 
+import jakarta.validation.Validator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -23,6 +24,7 @@ import java.util.Map;
 public class McpToolInvoker {
 
     private final ObjectMapper objectMapper;
+    private final Validator validator;
     private final SecondaryLockGuard secondaryLockGuard;
 
     public McpSchema.CallToolResult invoke(McpToolRegistry.RegisteredMcpTool tool,
@@ -52,7 +54,23 @@ public class McpToolInvoker {
         if (tool.method().getParameterCount() == 0) {
             return tool.method().invoke(tool.bean());
         }
-        Object input = objectMapper.convertValue(arguments, tool.inputType());
+        if (arguments != null && !tool.mcpTool().inputSchema().properties().keySet().containsAll(arguments.keySet())) {
+            throw new IllegalArgumentException("包含未知工具参数，请重新读取 inputSchema");
+        }
+        if (arguments != null) {
+            for (var entry : arguments.entrySet()) {
+                Object definition = tool.mcpTool().inputSchema().properties().get(entry.getKey());
+                if (definition instanceof Map<?, ?> schema && "string".equals(schema.get("type"))
+                        && entry.getValue() != null && !(entry.getValue() instanceof String)) {
+                    throw new IllegalArgumentException(entry.getKey() + " 必须使用字符串，不接受数字自动转换");
+                }
+            }
+        }
+        Object input = objectMapper.convertValue(arguments == null ? Map.of() : arguments, tool.inputType());
+        var violations = validator.validate(input);
+        if (!violations.isEmpty()) throw new IllegalArgumentException(violations.stream()
+                .map(value -> value.getPropertyPath() + ": " + value.getMessage()).sorted()
+                .collect(java.util.stream.Collectors.joining("; ")));
         return tool.method().invoke(tool.bean(), input);
     }
 

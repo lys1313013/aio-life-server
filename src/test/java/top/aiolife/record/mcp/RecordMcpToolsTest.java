@@ -19,6 +19,7 @@ import top.aiolife.record.api.*;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mapper.ITaskMapper;
 import top.aiolife.record.mcp.req.TaskDetailSaveMcpReq;
+import top.aiolife.record.mcp.req.TaskListMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordSaveMcpReq;
 import top.aiolife.record.mcp.vo.TaskMcpVO;
@@ -52,6 +53,8 @@ class RecordMcpToolsTest {
     private TimeRecordReq savedTimeRecord = null;
     private TaskDetailEntity savedTaskDetail = null;
     private StpLogic originalStpLogic;
+    private int requestedTaskPage;
+    private int requestedTaskPageSize;
 
     @BeforeEach
     void setUp() {
@@ -150,12 +153,15 @@ class RecordMcpToolsTest {
 
         TaskController taskController = new TaskController(null, null, null) {
             @Override
-            public ApiResponse<PageResp<TaskVO>> query(Long taskId, int get, int pageSize) {
+            public ApiResponse<PageResp<TaskVO>> query(Long taskId, int page, int pageSize) {
+                requestedTaskPage = page;
+                requestedTaskPageSize = pageSize;
                 TaskEntity task = new TaskEntity();
                 task.setId(1L);
                 task.setContent("Task1");
                 PageResp<TaskEntity> pageResp = new PageResp<>();
                 pageResp.setItems(Collections.singletonList(task));
+                pageResp.setTotal(205L);
                 return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskVOPage(pageResp));
             }
 
@@ -226,6 +232,22 @@ class RecordMcpToolsTest {
     }
 
     @Test
+    void historicalTimeRequiresExplicitEndpointsAndPreservesInclusiveMinutes() {
+        var request = new TimeRecordSaveMcpReq();
+        request.setDate(LocalDate.of(2026, 1, 1));
+        assertThrows(IllegalArgumentException.class, () -> recordMcpTools.time_record_save(request));
+        request.setStartTime(600);
+        assertThrows(IllegalArgumentException.class, () -> recordMcpTools.time_record_save(request));
+        request.setEndTime(659);
+        recordMcpTools.time_record_save(request);
+        assertEquals(600, savedTimeRecord.getStartTime());
+        assertEquals(659, savedTimeRecord.getEndTime());
+        assertEquals(LocalDate.of(2026, 1, 1), savedTimeRecord.getDate());
+        request.setEndTime(599);
+        assertThrows(IllegalArgumentException.class, () -> recordMcpTools.time_record_save(request));
+    }
+
+    @Test
     void testThoughtSave() {
         // 测试保存想法
         ThoughtSaveReq req = new ThoughtSaveReq();
@@ -249,7 +271,7 @@ class RecordMcpToolsTest {
     @Test
     void testTaskList() {
         // 测试查询任务列表
-        List<TaskMcpVO> result = recordMcpTools.task_list();
+        List<TaskMcpVO> result = recordMcpTools.task_list(new TaskListMcpReq()).getItems();
 
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -259,13 +281,31 @@ class RecordMcpToolsTest {
         assertEquals("Detail1", result.get(0).getDetails().get(0).getContent());
         assertEquals(10, result.get(0).getDetails().get(0).getPriority());
         assertEquals(1, result.get(0).getDetails().get(0).getIsStarred());
+        assertEquals(1, requestedTaskPage);
+        assertEquals(10, requestedTaskPageSize);
+    }
+
+    @Test
+    void taskListPropagatesPageAndPreservesTotal() {
+        TaskListMcpReq request = new TaskListMcpReq();
+        request.setPage(2);
+        request.setPageSize(100);
+
+        PageResp<TaskMcpVO> result = recordMcpTools.task_list(request);
+
+        assertEquals(2, requestedTaskPage);
+        assertEquals(100, requestedTaskPageSize);
+        assertEquals(205L, result.getTotal());
+        assertEquals("Detail1", result.getItems().get(0).getDetails().get(0).getContent());
+        request.setPageSize(101);
+        assertThrows(IllegalArgumentException.class, () -> recordMcpTools.task_list(request));
     }
 
     @Test
     void testTaskDetailSave() {
         // 测试保存任务详情
         TaskDetailSaveMcpReq req = new TaskDetailSaveMcpReq();
-        req.setTaskId(1L);
+        req.setTaskId("1");
         req.setContent("New Detail");
 
         boolean result = recordMcpTools.task_detail_save(req);

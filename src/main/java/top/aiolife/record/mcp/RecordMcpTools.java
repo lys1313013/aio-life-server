@@ -17,6 +17,9 @@ import top.aiolife.record.api.TimeRecordController;
 import top.aiolife.record.api.TimeTrackerCategoryController;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mcp.req.TaskDetailSaveMcpReq;
+import top.aiolife.record.mcp.req.TaskListMcpReq;
+import top.aiolife.core.resq.PageResp;
+import top.aiolife.core.query.PaginationRequest;
 import top.aiolife.record.mcp.req.TaskDetailUpdateMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordSaveMcpReq;
@@ -54,7 +57,7 @@ public class RecordMcpTools {
         return timeRecordController.queryByDateRangeForAI(req).getData();
     }
 
-    @Tool("保存时间记录")
+    @Tool("新增时迹；省略起止分钟时追加今天末条记录之后至当前时刻。补记历史日期或指定时段须同时提供 startTime/endTime（0–1439，闭区间）")
     public String time_record_save(TimeRecordSaveMcpReq req) {
         TimeRecordReq actualReq = new TimeRecordReq();
         BeanUtil.copyProperties(req, actualReq);
@@ -62,30 +65,39 @@ public class RecordMcpTools {
         long userId = StpUtil.getLoginIdAsLong();
         LocalDate date = req.getDate() != null ? req.getDate() : LocalDate.now();
 
-        // 开始时间自动从数据库中查询，最后一条 + 1
-        TimeRecordEntity lastRecord = timeRecordService.lambdaQuery()
-                .eq(TimeRecordEntity::getUserId, userId)
-                .eq(TimeRecordEntity::getDate, date)
-                .orderByDesc(TimeRecordEntity::getEndTime)
-                .last("limit 1")
-                .one();
-
-        int startTime = 0;
-        if (lastRecord != null && lastRecord.getEndTime() != null) {
-            startTime = lastRecord.getEndTime() + 1;
+        if ((req.getStartTime() == null) != (req.getEndTime() == null)) {
+            throw new IllegalArgumentException("startTime 与 endTime 必须同时提供");
         }
-
-        // 结束时间为当前时间
-        LocalTime now = LocalTime.now();
-        int endTime = now.getHour() * 60 + now.getMinute();
-
-        if (endTime < startTime) {
-            endTime = startTime;
+        if (req.getStartTime() == null && !date.equals(LocalDate.now())) {
+            throw new IllegalArgumentException("非今天的记录必须提供 startTime/endTime");
         }
+        // 显式时间直接保存，省略时按今天的最后一段追加。
+        int startTime;
+        int endTime;
+        if (req.getStartTime() != null) {
+            startTime = req.getStartTime();
+            endTime = req.getEndTime();
+        } else {
+            // 开始时间自动从数据库中查询，最后一条 + 1
+            TimeRecordEntity lastRecord = timeRecordService.lambdaQuery()
+                    .eq(TimeRecordEntity::getUserId, userId)
+                    .eq(TimeRecordEntity::getDate, date)
+                    .orderByDesc(TimeRecordEntity::getEndTime)
+                    .last("limit 1")
+                    .one();
 
-        // 限制最大值为 1439
-        if (startTime > 1439) startTime = 1439;
-        if (endTime > 1439) endTime = 1439;
+            startTime = 0;
+            if (lastRecord != null && lastRecord.getEndTime() != null) {
+                startTime = lastRecord.getEndTime() + 1;
+            }
+
+            // 结束时间为当前时间
+            LocalTime now = LocalTime.now();
+            endTime = now.getHour() * 60 + now.getMinute();
+        }
+        if (startTime < 0 || endTime > 1439 || startTime > endTime) {
+            throw new IllegalArgumentException("时间范围无效或今天已无可追加时段；起止须在 0–1439 且结束不早于开始");
+        }
 
         actualReq.setStartTime(startTime);
         actualReq.setEndTime(endTime);
@@ -122,13 +134,14 @@ public class RecordMcpTools {
                 .toList();
     }
 
-    @Tool("查询所有任务列表，用于获取任务ID以便后续操作")
-    public List<TaskMcpVO> task_list() {
-        List<TaskVO> items = taskController.query(null, 1, 100).getData().getItems();
-        if (items == null) {
-            return List.of();
-        }
-        return items.stream()
+    @Tool("分页查询待办主任务及明细，用于取得真实 ID；返回 items/total，根据 total 继续翻页")
+    public PageResp<TaskMcpVO> task_list(TaskListMcpReq req) {
+        int page = req.getPage() == null ? 1 : req.getPage();
+        int pageSize = req.getPageSize() == null ? 10 : req.getPageSize();
+        PaginationRequest.validate(page, pageSize, 100);
+        var result = taskController.query(null, page, pageSize).getData();
+        List<TaskVO> items = result.getItems() == null ? List.of() : result.getItems();
+        List<TaskMcpVO> records = items.stream()
                 .map(t -> {
                     List<TaskDetailVO> detailEntities = taskDetailController.list(t.getId()).getData();
                     List<TaskDetailMcpVO> details = detailEntities == null ? List.of() : detailEntities.stream()
@@ -138,6 +151,7 @@ public class RecordMcpTools {
                     return new TaskMcpVO(t.getId(), t.getContent(), details);
                 })
                 .toList();
+        return PageResp.of(records, result.getTotal());
     }
 
     @Tool("录入任务明细")
@@ -154,7 +168,7 @@ public class RecordMcpTools {
         }
 
         TaskDetailCreateReq entity = new TaskDetailCreateReq();
-        entity.setTaskId(req.getTaskId());
+        entity.setTaskId(Long.valueOf(req.getTaskId()));
         entity.setContent(req.getContent());
         // 设置默认值，避免数据库报错或逻辑异常
         entity.setIsCompleted(0);

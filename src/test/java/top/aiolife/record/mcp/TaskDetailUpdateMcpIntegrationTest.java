@@ -1,5 +1,6 @@
 package top.aiolife.record.mcp;
 
+import top.aiolife.record.mcp.req.TaskListMcpReq;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +47,7 @@ class TaskDetailUpdateMcpIntegrationTest extends BaseIntegrationTest {
         assertEquals(TEST_USER_ID, updated.getUpdateUser());
         assertTrue(updated.getUpdateTime().isAfter(detail.getUpdateTime()));
 
-        var queried = tools.task_list().stream().filter(task -> task.getId().equals(detail.getTaskId()))
+        var queried = tools.task_list(new TaskListMcpReq()).getItems().stream().filter(task -> task.getId().equals(detail.getTaskId()))
                 .flatMap(task -> task.getDetails().stream()).filter(item -> item.getId().equals(detail.getId()))
                 .findFirst().orElseThrow();
         assertEquals(1, queried.getIsStarred());

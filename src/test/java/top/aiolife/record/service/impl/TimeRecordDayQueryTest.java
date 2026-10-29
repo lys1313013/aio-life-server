@@ -120,7 +120,7 @@ class TimeRecordDayQueryTest {
     @Test
     void testUpdate_事务提交后清理新旧两天且不影响其他用户() {
         warm(1L, date); warm(1L, date.plusDays(1)); warm(2L, date);
-        doReturn(record("7", date)).when(service).getById("7");
+        when(mapper.lockOwned("7", 1L)).thenReturn(record("7", date));
         doReturn(true).when(service).updateById(any(TimeRecordEntity.class));
         TransactionSynchronizationManager.initSynchronization();
         service.updateTimeRecord(request("7", date.plusDays(1)));

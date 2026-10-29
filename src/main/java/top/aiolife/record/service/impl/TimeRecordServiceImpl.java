@@ -163,13 +163,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         entity.setUpdateTime(LocalDateTime.now());
         entity.setIsDeleted(0);
 
-        // 限制时间最大值为 1439 (23:59)
-        if (entity.getStartTime() != null && entity.getStartTime() > 1439) entity.setStartTime(1439);
-        if (entity.getEndTime() != null && entity.getEndTime() > 1439) entity.setEndTime(1439);
-
-        if (entity.getStartTime() != null && entity.getEndTime() != null) {
-            entity.setDuration(entity.getEndTime() - entity.getStartTime() + 1);
-        }
+        calculateDuration(entity);
 
         if (!this.save(entity)) {
             throw new IllegalStateException("保存时间记录失败");
@@ -208,8 +202,8 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         List<ExerciseRecordReq> exerciseRecordReqs = timeRecordReq.getExercises();
 
         long userId = StpUtil.getLoginIdAsLong();
-        TimeRecordEntity existing = this.getById(entity.getId());
-        if (existing == null || existing.getUserId() == null || existing.getUserId() != userId) {
+        TimeRecordEntity existing = timeRecordMapper.lockOwned(entity.getId(), userId);
+        if (existing == null) {
             throw new RuntimeException("记录不存在或无权限");
         }
         validateCategory(entity.getCategoryId(), userId, Objects.equals(entity.getCategoryId(), existing.getCategoryId()));
@@ -218,13 +212,10 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         entity.setUpdateUser(userId);
         entity.setUpdateTime(LocalDateTime.now());
 
-        // 限制时间最大值为 1439 (23:59)
-        if (entity.getStartTime() != null && entity.getStartTime() > 1439) entity.setStartTime(1439);
-        if (entity.getEndTime() != null && entity.getEndTime() > 1439) entity.setEndTime(1439);
-
-        if (entity.getStartTime() != null && entity.getEndTime() != null) {
-            entity.setDuration(entity.getEndTime() - entity.getStartTime() + 1);
-        }
+        // 起止时间和时长作为一个整体保存；未提交的端点取锁定后的当前值。
+        if (entity.getStartTime() == null) entity.setStartTime(existing.getStartTime());
+        if (entity.getEndTime() == null) entity.setEndTime(existing.getEndTime());
+        calculateDuration(entity);
 
         if (!this.updateById(entity)) throw new IllegalStateException("更新时间记录失败");
         updateRelateStatusIfNecessary(entity, userId);
@@ -232,6 +223,22 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         syncExercises(userId, entity.getId(),
                 entity.getDate() == null ? existing.getDate() : entity.getDate(), exerciseRecordReqs);
         invalidateDayCache(userId, existing.getDate(), entity.getDate());
+    }
+
+    /** 分钟采用闭区间；时长只由有效起止时间计算，不能由请求独立写入。 */
+    private void calculateDuration(TimeRecordEntity entity) {
+        Integer start = entity.getStartTime();
+        Integer end = entity.getEndTime();
+        if (start == null || end == null) {
+            throw new IllegalArgumentException("开始时间和结束时间不能为空");
+        }
+        if (start < 0 || start > 1439 || end < 0 || end > 1439) {
+            throw new IllegalArgumentException("开始时间和结束时间必须在 0 到 1439 之间");
+        }
+        if (end < start) {
+            throw new IllegalArgumentException("结束时间不能早于开始时间");
+        }
+        entity.setDuration(end - start + 1);
     }
 
     /** 按完整明细列表同步：已有 ID 原位更新，无 ID 新增，未提交的旧明细逻辑删除。 */

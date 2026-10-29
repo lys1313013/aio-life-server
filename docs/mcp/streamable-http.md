@@ -14,6 +14,8 @@
 
 API Key 同样放在 `Authorization: Bearer <api-key>`，不是另一个未指明的自定义头。`tools/call` 检查 `isError` 及 `content` 中的业务结果；MCP 不使用 REST 的统一响应外壳。会话 ID 不能代替 Bearer 身份。
 
+可选参数没有显式默认值时保持省略，不将枚举第一项当作默认值。分页使用 `page/pageSize`；所有 ID 入参为字符串。`task_list` 返回 `items/total`，应按总数继续翻页。新增时迹补记历史日期时需同时提供起止分钟。详细业务规则以工具说明和 `inputSchema` 为准。
+
 ## 调试示例
 
 建议使用支持 Streamable HTTP 的 MCP 客户端。手动 curl 时先调用 `initialize`，按实际响应协商协议；若响应含 `Mcp-Session-Id`，后续请求必须携带该头和协商的 `MCP-Protocol-Version`，并发送 `notifications/initialized`。下方正文仅展示各请求形态，按服务返回补齐会话头；不要照搬独立 Query 服务的无会话假设。
