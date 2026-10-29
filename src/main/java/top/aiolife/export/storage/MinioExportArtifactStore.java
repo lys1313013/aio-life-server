@@ -4,6 +4,7 @@ import io.minio.BucketExistsArgs;
 import io.minio.GetBucketPolicyArgs;
 import io.minio.GetObjectArgs;
 import io.minio.ListObjectsArgs;
+import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
 import io.minio.StatObjectArgs;
@@ -25,7 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 独立预配置私有桶：不自动修改现有桶策略，不注册到通用 file 表。 */
+/** 独立私有桶：缺失时自动创建，不修改现有桶策略，不注册到通用 file 表。 */
 @Component
 @RequiredArgsConstructor
 public class MinioExportArtifactStore implements ExportArtifactStore {
@@ -36,10 +37,16 @@ public class MinioExportArtifactStore implements ExportArtifactStore {
 
     public void verifyPrivateStorage() throws Exception {
         String bucket = properties.getBucket();
-        if (bucket.equals(common.getBucketName())
-                || bucket.equals(cbti.getBucketName())
-                || !minio.bucketExists(BucketExistsArgs.builder().bucket(bucket).build()))
+        if (bucket.equals(common.getBucketName()) || bucket.equals(cbti.getBucketName()))
             throw ExportException.unavailable();
+        if (!minio.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
+            try {
+                minio.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+            } catch (ErrorResponseException error) {
+                // 多实例可能同时补建；仅接受当前身份已拥有的桶，随后仍校验策略。
+                if (!"BucketAlreadyOwnedByYou".equals(error.errorResponse().code())) throw error;
+            }
+        }
         try {
             String policy =
                     minio.getBucketPolicy(GetBucketPolicyArgs.builder().bucket(bucket).build());

@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.minio.BucketExistsArgs;
 import io.minio.DeleteBucketPolicyArgs;
-import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
+import io.minio.RemoveBucketArgs;
 import io.minio.SetBucketPolicyArgs;
 
 import org.junit.jupiter.api.Test;
@@ -20,6 +20,7 @@ import top.aiolife.export.storage.MinioExportArtifactStore;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 
 /** 只连接显式启用的本机临时 MinIO，使用公开的测试凭据。 */
 @EnabledIfEnvironmentVariable(
@@ -35,10 +36,8 @@ class ExportStorageIntegrationTest {
                         .endpoint(System.getenv("AIO_EXPORT_TEST_MINIO_ENDPOINT"))
                         .credentials("export-fixture", "export-fixture-local-only")
                         .build();
-        String bucket = "export-fixture-private";
-        if (!minio.bucketExists(BucketExistsArgs.builder().bucket(bucket).build()))
-            minio.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
-        minio.deleteBucketPolicy(DeleteBucketPolicyArgs.builder().bucket(bucket).build());
+        String bucket = "export-fixture-" + UUID.randomUUID();
+        assertFalse(minio.bucketExists(BucketExistsArgs.builder().bucket(bucket).build()));
         var properties = new ExportProperties();
         properties.setBucket(bucket);
         var common = new MinioConfig();
@@ -50,6 +49,7 @@ class ExportStorageIntegrationTest {
         byte[] expected = "synthetic-private-fixture".getBytes();
         Files.write(file, expected);
         store.verifyPrivateStorage();
+        assertTrue(minio.bucketExists(BucketExistsArgs.builder().bucket(bucket).build()));
         store.put("exports/fixture/object", file, "application/octet-stream");
         try (var input = store.open("exports/fixture/object")) {
             assertArrayEquals(expected, input.readAllBytes());
@@ -71,7 +71,8 @@ class ExportStorageIntegrationTest {
         } finally {
             minio.deleteBucketPolicy(DeleteBucketPolicyArgs.builder().bucket(bucket).build());
             store.delete("exports/fixture/object");
+            assertTrue(store.scan(null).isEmpty());
+            minio.removeBucket(RemoveBucketArgs.builder().bucket(bucket).build());
         }
-        assertTrue(store.scan(null).isEmpty());
     }
 }
