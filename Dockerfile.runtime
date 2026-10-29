@@ -1,4 +1,7 @@
 # CI 使用测试任务生成的 JAR；两个目标架构共用同一份 Java 字节码。
+# 与 Dockerfile 同步固定 Agent 版本和多架构镜像摘要。
+FROM apache/skywalking-java-agent:9.8.0-alpine@sha256:805086f04157b5e9046854fe385f73928e802a16be7606e67eb6d6e602941d2a AS skywalking-agent
+
 FROM amazoncorretto:21.0.13-alpine3.24@sha256:d942d2e3e0f480c076ec10d03deac7444dc717bc25bb3e2bc5373676b7b6c406
 
 RUN apk add --no-cache tzdata fontconfig ttf-dejavu \
@@ -13,11 +16,14 @@ RUN addgroup -g 1001 -S appgroup \
     && adduser -u 1001 -S appuser -G appgroup
 
 COPY --chown=appuser:appgroup app.jar app.jar
+COPY --from=skywalking-agent --chown=appuser:appgroup /skywalking/agent/ /opt/skywalking-agent/
 
 USER appuser
 
 EXPOSE 45678
 
 ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
+# Agent 默认不加载；部署时通过 JAVA_TOOL_OPTIONS 添加 -javaagent。
+ENV SW_LOGGING_OUTPUT=CONSOLE
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

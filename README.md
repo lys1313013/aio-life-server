@@ -150,6 +150,28 @@ docker run -d --name aio-life-server \
 
 [Dockerfile](Dockerfile)分阶段构建并以非 root 用户运行，构建阶段跳过测试。`JAVA_OPTS` 可覆盖 JVM 参数。示例只发布业务端口；管理端口 45679 按监控网络需要单独开放。
 
+### SkyWalking Java Agent
+
+[Dockerfile](Dockerfile)（源码构建）和 [Dockerfile.runtime](Dockerfile.runtime)（CI 已测试 JAR）均从固定版本及镜像摘要的 `apache/skywalking-java-agent:9.8.0-alpine` 复制完整 Agent 到 `/opt/skywalking-agent`，包含 `plugins`、`activations` 和配置。升级时同步修改两份文件中的版本及摘要。最终镜像继续使用原 Java 21 基础镜像、非 root 用户和 JVM 内存参数；Agent 默认不加载。
+
+运行容器时设置以下变量启用，已有 `JAVA_TOOL_OPTIONS` 时追加 Agent 参数：
+
+```dotenv
+JAVA_TOOL_OPTIONS=-javaagent:/opt/skywalking-agent/skywalking-agent.jar
+SW_AGENT_NAME=aio-life-server
+SW_AGENT_COLLECTOR_BACKEND_SERVICES=skywalking-oap:11800
+SW_AGENT_SAMPLE=-1
+SW_LOGGING_OUTPUT=CONSOLE
+```
+
+`SW_AGENT_SAMPLE=-1` 表示不限制采样数量，需配合 OAP 的 100% 采样策略；数据保留期在存储端配置。Agent 日志默认输出控制台，可通过 `docker logs` 查看。容器须能解析并连接 OAP 地址，容器内 `127.0.0.1` 指向自身。主仓库提供可选的 [SkyWalking Compose 叠加配置](https://github.com/lys1313013/aio-life/blob/main/docker-compose.skywalking.yml)，将后端同时接入业务网络和 SkyWalking 网络，不需要挂载宿主机 Agent 目录。
+
+发布新镜像后重建后端容器才会生效。验收时先检查 Agent 加载及连接日志，再请求一个只读业务接口，确认 SkyWalking 中出现服务、接口链路和 JVM 指标，并检查业务接口响应。基础镜像验证应分别运行未启用和启用 Agent 的 Java 冒烟程序，检查非 root 身份、JVM 参数及 Agent 加载日志；业务链路另行验证。
+
+现有日志 `traceId` / `spanId` 仍来自 Micrometer/Brave，与 SkyWalking Trace ID 不同。本改动仅提供 Agent 接入能力；日志关联需另外集成 Log4j2 Toolkit 并输出完整 SkyWalking Trace ID，不修改现有日志与追踪行为。官方参考：[容器接入](https://skywalking.apache.org/docs/skywalking-java/latest/en/setup/service-agent/java-agent/containerization/)、[Agent 配置](https://skywalking.apache.org/docs/skywalking-java/latest/en/setup/service-agent/java-agent/configurations/)。
+
+### 其他容器编排
+
 仓库中的 Compose 文件各自独立，不是一键启动整套业务的入口：
 
 | 文件 | 内容与前提 |

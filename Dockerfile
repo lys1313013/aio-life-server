@@ -1,3 +1,6 @@
+# 与 Dockerfile.runtime 同步固定 Agent 版本和多架构镜像摘要；仅复制文件，不继承其 JVM 配置。
+FROM apache/skywalking-java-agent:9.8.0-alpine@sha256:805086f04157b5e9046854fe385f73928e802a16be7606e67eb6d6e602941d2a AS skywalking-agent
+
 # ================================
 # Stage 1: Build
 # ================================
@@ -33,6 +36,7 @@ RUN addgroup -g 1001 -S appgroup \
     && adduser -u 1001 -S appuser -G appgroup
 
 COPY --from=builder /app/target/*.jar app.jar
+COPY --from=skywalking-agent --chown=appuser:appgroup /skywalking/agent/ /opt/skywalking-agent/
 
 RUN chown -R appuser:appgroup /app
 
@@ -41,5 +45,7 @@ USER appuser
 EXPOSE 45678
 
 ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
+# Agent 默认不加载；部署时通过 JAVA_TOOL_OPTIONS 添加 -javaagent。
+ENV SW_LOGGING_OUTPUT=CONSOLE
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
