@@ -106,7 +106,12 @@ jobs:
           FLYWAY_URL: 'jdbc:mariadb://127.0.0.1:3306/aio_life?sslMode=disable&allowPublicKeyRetrieval=true'
           FLYWAY_USER: root
           FLYWAY_PASSWORD: root_password
-        run: mvn -B -ntp -f tools/flyway/pom.xml compile flyway:migrate flyway:validate
+        run: |
+          # MySQL 5.7 镜像默认使用 latin1；存储过程局部字符串继承数据库字符集。
+          # 在空的 CI 测试库中先设置项目字符集，与隔离迁移测试的建库方式一致。
+          docker exec -e MYSQL_PWD=root_password "${{ job.services.mysql.id }}" \
+            mysql -uroot -e 'ALTER DATABASE aio_life CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+          mvn -B -ntp -f tools/flyway/pom.xml compile flyway:migrate flyway:validate
 
       - name: Test and package
         run: mvn package -B -ntp
