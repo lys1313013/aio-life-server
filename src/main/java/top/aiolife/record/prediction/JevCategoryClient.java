@@ -68,13 +68,14 @@ public class JevCategoryClient {
     }
 
     private record Outcome(Long categoryId, String reason, Integer httpStatus,
-                           String responseModel, Double confidence, String errorType) {
+                           String responseModel, Double confidence, String modelCategoryId,
+                           String modelCategoryName, String errorType) {
         static Outcome fallback(String reason, Integer status, Throwable error) {
             Throwable cause = error;
             while (cause != null && cause.getCause() != null && cause.getCause() != cause) {
                 cause = cause.getCause();
             }
-            return new Outcome(null, reason, status, null, null,
+            return new Outcome(null, reason, status, null, null, null, null,
                     cause == null ? null : cause.getClass().getSimpleName());
         }
     }
@@ -127,9 +128,11 @@ public class JevCategoryClient {
     // 仅等待方打印最终结果，保留 HTTP 线程的 traceId/spanId；超时后的迟到响应不再打印成功。
     private Long finish(String callId, long started, int requestTimeoutMs, Outcome outcome) {
         String template = "Jev 分类调用完成：调用ID={}, 结果={}, 原因={}, HTTP状态={}, "
-                + "响应模型={}, 置信度={}, 分类ID={}, 耗时毫秒={}, 超时毫秒={}, 错误类型={}";
+                + "响应模型={}, 模型原始分类ID={}, 模型原始分类名称={}, 置信度={}, 置信度门槛={}, "
+                + "采用分类ID={}, 耗时毫秒={}, 超时毫秒={}, 错误类型={}";
         Object[] fields = {callId, outcome.categoryId() == null ? "FALLBACK" : "ACCEPTED", outcome.reason(),
-                outcome.httpStatus(), outcome.responseModel(), outcome.confidence(), outcome.categoryId(),
+                outcome.httpStatus(), outcome.responseModel(), outcome.modelCategoryId(), outcome.modelCategoryName(),
+                outcome.confidence(), JevCategoryProtocol.MIN_CONFIDENCE, outcome.categoryId(),
                 (System.nanoTime() - started) / 1_000_000, requestTimeoutMs, outcome.errorType()};
         if (outcome.categoryId() == null) log.warn(template, fields);
         else log.info(template, fields);
@@ -145,14 +148,20 @@ public class JevCategoryClient {
                     .retrieve().toEntity(JsonNode.class);
             status = entity.getStatusCode().value();
             JsonNode response = entity.getBody();
-            var decision = JevCategoryProtocol.decision(response,
-                    request.path("questions").path("current_category").path("criteria"));
-            JsonNode confidence = response == null ? null
-                    : response.path("answers").path("current_category").path("confidence");
+            JsonNode criteria = request.path("questions").path("current_category").path("criteria");
+            var decision = JevCategoryProtocol.decision(response, criteria);
+            JsonNode answer = response == null ? null : response.path("answers").path("current_category");
+            JsonNode confidence = answer == null ? null : answer.path("confidence");
+            // 原始选择仅用于诊断，独立于校验后的采用结果；分类名称从本次请求的候选项中读取。
+            String modelCategoryId = answer != null && answer.path("choice").isTextual()
+                    ? answer.path("choice").asText() : null;
+            String modelCategoryName = modelCategoryId != null && criteria.has(modelCategoryId)
+                    ? criteria.path(modelCategoryId).asText() : null;
             return new Outcome(decision.categoryId() == null ? null : Long.valueOf(decision.categoryId()),
                     decision.reason(), status, response == null ? null : safeLogValue(response.path("model").asText()),
                     confidence != null && confidence.isNumber() && Double.isFinite(confidence.asDouble())
-                            ? confidence.asDouble() : null, null);
+                            ? confidence.asDouble() : null, safeLogValue(modelCategoryId),
+                    safeLogCategoryName(modelCategoryName), null);
         } catch (RestClientResponseException e) {
             return Outcome.fallback("HTTP_ERROR", e.getStatusCode().value(), e);
         } catch (RestClientException | IllegalArgumentException e) {
@@ -164,6 +173,11 @@ public class JevCategoryClient {
     private static String safeLogValue(String value) {
         if (value == null) return null;
         return value.substring(0, Math.min(value.length(), 96)).replaceAll("[^a-zA-Z0-9._:/-]", "_");
+    }
+
+    private static String safeLogCategoryName(String value) {
+        if (value == null) return null;
+        return value.substring(0, Math.min(value.length(), 96)).replaceAll("[\\p{Cntrl}\\p{Zl}\\p{Zp}]", "_");
     }
 
     @PreDestroy

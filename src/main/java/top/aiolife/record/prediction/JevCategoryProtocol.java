@@ -16,7 +16,7 @@ import java.util.Locale;
 public final class JevCategoryProtocol {
     private JevCategoryProtocol() {}
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final double MIN_CONFIDENCE = 0.65;
+    static final double MIN_CONFIDENCE = 0.65;
     private static final DateTimeFormatter CLOCK_TIME = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT);
     public record Decision(String categoryId, String reason) {}
 

@@ -126,7 +126,10 @@ class JevCategoryClientTest {
         String logs = logs();
         assertTrue(logs.contains("结果=ACCEPTED, 原因=PREDICTED, HTTP状态=200"));
         assertTrue(logs.contains("响应模型=jev-1.13.0"));
-        assertTrue(logs.contains("分类ID=104"));
+        assertTrue(logs.contains("模型原始分类ID=104"));
+        assertTrue(logs.contains("模型原始分类名称="
+                + request.path("questions").path("current_category").path("criteria").path("104").asText()));
+        assertTrue(logs.contains("采用分类ID=104"));
         assertTrue(logs.matches("(?s).*耗时毫秒=\\d+.*"));
         assertEquals(2, events.size());
         assertTrue(events.stream().allMatch(event -> "jev-test-trace".equals(event.getContextData().getValue("traceId"))));
@@ -141,13 +144,16 @@ class JevCategoryClientTest {
 
     @Test
     void testPredict_低置信度回退() {
-        ((ObjectNode) response.path("answers").path("current_category")).put("confidence", 0.64);
+        ((ObjectNode) response.path("answers").path("current_category")).put("confidence", 0.41);
         server.expect(requestTo(JevCategoryClient.ENDPOINT))
                 .andRespond(withSuccess(response.toString(), MediaType.APPLICATION_JSON));
         assertNull(client.predict(request));
         server.verify();
         assertTrue(logs().contains("结果=FALLBACK, 原因=LOW_CONFIDENCE, HTTP状态=200"));
-        assertTrue(logs().contains("置信度=0.64"));
+        assertTrue(logs().contains("模型原始分类ID=104"));
+        assertTrue(logs().contains("模型原始分类名称="
+                + request.path("questions").path("current_category").path("criteria").path("104").asText()));
+        assertTrue(logs().contains("置信度=0.41, 置信度门槛=0.65, 采用分类ID=null"));
     }
 
     @Test
