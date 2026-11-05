@@ -12,14 +12,22 @@ import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.record.mapper.IGoalMapper;
 import top.aiolife.record.pojo.entity.GoalEntity;
 import top.aiolife.record.service.IGoalService;
+import top.aiolife.record.service.GoalProgressEvaluator;
+import lombok.RequiredArgsConstructor;
 
 /** 目标服务：固定顺序与业务写操作在同一用户锁和事务内保存。 */
 @Service
+@RequiredArgsConstructor
 public class GoalServiceImpl extends ServiceImpl<IGoalMapper, GoalEntity> implements IGoalService {
+
+    private final GoalProgressEvaluator progress;
 
     @Override
     @Transactional
     public GoalEntity createForUser(long userId, GoalEntity entity) {
+        progress.validate(entity);
+        entity.setProgressVersion(0L);
+        if ("graphql".equals(entity.getProgressMode())) entity.setCurrentValue(null);
         lockOwner(userId);
         entity.setUserId(userId);
         entity.setIsDeleted(0);
@@ -40,11 +48,42 @@ public class GoalServiceImpl extends ServiceImpl<IGoalMapper, GoalEntity> implem
     public GoalEntity updateForUser(long userId, GoalEntity entity) {
         lockOwner(userId);
         GoalEntity existing = owned(userId, entity.getId());
+        // 部分更新保留已保存配置；显式切回手动时清除查询，不留隐式旧配置。
+        if (entity.getProgressMode() == null) entity.setProgressMode(existing.getProgressMode());
+        if (entity.getTargetOperator() == null) entity.setTargetOperator(existing.getTargetOperator());
+        if (entity.getTargetValue() == null) entity.setTargetValue(existing.getTargetValue());
+        if (entity.getProgressQuery() == null) entity.setProgressQuery(existing.getProgressQuery());
+        if (entity.getProgressVariables() == null) entity.setProgressVariables(existing.getProgressVariables());
+        if (entity.getProgressVariableBindings() == null) entity.setProgressVariableBindings(existing.getProgressVariableBindings());
+        if (entity.getProgressValuePath() == null) entity.setProgressValuePath(existing.getProgressValuePath());
+        if (entity.getStartDate() == null) entity.setStartDate(existing.getStartDate());
+        if (entity.getEndDate() == null) entity.setEndDate(existing.getEndDate());
+        progress.validate(entity);
+        entity.setProgressVersion(existing.getProgressVersion() + 1);
         applyPin(userId, entity, existing, entity.getIsPinned());
         entity.setUserId(null);
         entity.setUpdateUser(userId);
         entity.setUpdateTime(LocalDateTime.now());
-        baseMapper.update(entity, ownedUpdate(userId, entity.getId()));
+        var update = ownedUpdate(userId, entity.getId()).set(GoalEntity::getProgressRefreshId, null);
+        if ("graphql".equals(entity.getProgressMode())) {
+            entity.setCurrentValue(null);
+            boolean changed = !"graphql".equals(existing.getProgressMode())
+                    || !Objects.equals(entity.getProgressQuery(), existing.getProgressQuery())
+                    || !Objects.equals(entity.getProgressVariables(), existing.getProgressVariables())
+                    || !Objects.equals(entity.getProgressVariableBindings(), existing.getProgressVariableBindings())
+                    || !Objects.equals(entity.getProgressValuePath(), existing.getProgressValuePath())
+                    || !Objects.equals(entity.getStartDate(), existing.getStartDate())
+                    || !Objects.equals(entity.getEndDate(), existing.getEndDate());
+            if (changed) update.set(GoalEntity::getCurrentValue, null).set(GoalEntity::getProgressCheckedAt, null)
+                    .set(GoalEntity::getProgressError, "尚未计算");
+        } else {
+            update.set(GoalEntity::getProgressQuery, null).set(GoalEntity::getProgressVariables, null)
+                    .set(GoalEntity::getProgressVariableBindings, null).set(GoalEntity::getProgressValuePath, null)
+                    .set(GoalEntity::getProgressCheckedAt, null).set(GoalEntity::getProgressError, null);
+            entity.setProgressQuery(null); entity.setProgressVariables(null);
+            entity.setProgressVariableBindings(null); entity.setProgressValuePath(null);
+        }
+        baseMapper.update(entity, update);
         return owned(userId, entity.getId());
     }
 

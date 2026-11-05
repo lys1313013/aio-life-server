@@ -17,8 +17,10 @@ import top.aiolife.record.pojo.entity.GoalEntity;
 import top.aiolife.record.pojo.enums.GoalTypeEnum;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.service.IGoalService;
+import top.aiolife.record.service.GoalProgressEvaluator;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -111,6 +113,9 @@ public class GoalMcpTools {
             throw new IllegalArgumentException("目标不存在或无权限访问该目标");
         }
 
+        if ("graphql".equals(goal.getProgressMode())) {
+            throw new IllegalArgumentException("自动查询目标请使用目标进度刷新接口，不允许手动覆盖计算值");
+        }
         ProgressStatusEnum targetStatus = null;
         if (StringUtils.hasText(req.getStatus())) {
             targetStatus = parseStatus(req.getStatus());
@@ -125,10 +130,14 @@ public class GoalMcpTools {
         LambdaUpdateWrapper<GoalEntity> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(GoalEntity::getId, goal.getId());
         updateWrapper.eq(GoalEntity::getUserId, userId);
+        updateWrapper.eq(GoalEntity::getIsDeleted, 0);
+        updateWrapper.eq(GoalEntity::getProgressMode, "manual");
+        updateWrapper.eq(GoalEntity::getProgressVersion, goal.getProgressVersion());
         updateWrapper.set(GoalEntity::getUpdateTime, LocalDateTime.now());
         updateWrapper.set(GoalEntity::getUpdateUser, userId);
 
-        Integer currentValue = req.getCurrentValue();
+        BigDecimal currentValue = req.getCurrentValue();
+        GoalProgressEvaluator.validateNumber(currentValue);
         if (targetStatus == ProgressStatusEnum.COMPLETED) {
             updateWrapper.set(GoalEntity::getCompletedAt, LocalDateTime.now());
             if (currentValue == null && goal.getTargetValue() != null) {
@@ -143,7 +152,7 @@ public class GoalMcpTools {
         if (targetStatus != null) {
             updateWrapper.set(GoalEntity::getStatus, targetStatus);
         }
-        goalService.update(updateWrapper);
+        if (!goalService.update(updateWrapper)) throw new IllegalArgumentException("目标配置已变化，请重新加载");
 
         StringBuilder message = new StringBuilder("目标「").append(goal.getTitle()).append("」");
         if (currentValue != null) {
@@ -170,6 +179,10 @@ public class GoalMcpTools {
         vo.setStatus(statusLabel(entity.getStatus()));
         vo.setTargetValue(entity.getTargetValue());
         vo.setCurrentValue(entity.getCurrentValue());
+        vo.setProgressMode(entity.getProgressMode());
+        vo.setTargetOperator(entity.getTargetOperator());
+        vo.setProgressCheckedAt(entity.getProgressCheckedAt());
+        vo.setProgressError(entity.getProgressError());
         vo.setYear(entity.getYear());
         vo.setMonth(entity.getMonth());
         vo.setDay(entity.getDay());

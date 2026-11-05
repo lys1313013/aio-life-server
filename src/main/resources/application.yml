@@ -167,6 +167,8 @@ aio:
     neo4j:
       enabled: ${AIO_LIFE_NEO4J_ENABLED:false}
     server:
+      goal-progress:
+        query-url: ${AIO_LIFE_GOAL_QUERY_URL:http://127.0.0.1:45680/graphql}
       footprints:
         # AK 和请求超时由管理员在 system_config（footprints.baidu）维护；后台未配置超时时使用以下默认值。
         timeout-ms: ${AIO_LIFE_MAP_TIMEOUT_MS:5000}

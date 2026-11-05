@@ -81,18 +81,18 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
     void testGoalProgressUpdate_仅更新进度() {
         Long goalId = System.currentTimeMillis() % 1000000 + 900000L;
         GoalEntity goal = createGoal(goalId, "MCP测试目标-进度");
-        goal.setTargetValue(12);
+        goal.setTargetValue(java.math.BigDecimal.valueOf(12));
         goal.setStatus(ProgressStatusEnum.IN_PROGRESS);
         goalMapper.insert(goal);
 
         GoalProgressUpdateMcpReq req = new GoalProgressUpdateMcpReq();
         req.setGoalId(String.valueOf(goalId));
-        req.setCurrentValue(7);
+        req.setCurrentValue(java.math.BigDecimal.valueOf(7));
         String message = goalMcpTools.goal_progress_update(req);
 
         assertTrue(message.contains("进度已更新：7/12"));
         GoalEntity updated = goalMapper.selectById(goalId);
-        assertEquals(7, updated.getCurrentValue());
+        assertEquals(0, java.math.BigDecimal.valueOf(7).compareTo(updated.getCurrentValue()));
         assertEquals(ProgressStatusEnum.IN_PROGRESS, updated.getStatus());
         assertNull(updated.getCompletedAt());
     }
@@ -101,8 +101,8 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
     void testGoalProgressUpdate_标记完成_自动补齐进度与完成时间() {
         Long goalId = System.currentTimeMillis() % 1000000 + 900000L;
         GoalEntity goal = createGoal(goalId, "MCP测试目标-完成");
-        goal.setTargetValue(12);
-        goal.setCurrentValue(7);
+        goal.setTargetValue(java.math.BigDecimal.valueOf(12));
+        goal.setCurrentValue(java.math.BigDecimal.valueOf(7));
         goal.setStatus(ProgressStatusEnum.IN_PROGRESS);
         goalMapper.insert(goal);
 
@@ -114,7 +114,7 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
         assertTrue(message.contains("状态已变更为：已完成"));
         GoalEntity updated = goalMapper.selectById(goalId);
         assertEquals(ProgressStatusEnum.COMPLETED, updated.getStatus());
-        assertEquals(12, updated.getCurrentValue());
+        assertEquals(0, java.math.BigDecimal.valueOf(12).compareTo(updated.getCurrentValue()));
         assertNotNull(updated.getCompletedAt());
     }
 
@@ -143,7 +143,7 @@ class GoalMcpToolsIntegrationTest extends BaseIntegrationTest {
         req.setGoalId(String.valueOf(1L));
         assertThrows(IllegalArgumentException.class, () -> goalMcpTools.goal_progress_update(req));
 
-        req.setCurrentValue(1);
+        req.setCurrentValue(java.math.BigDecimal.valueOf(1));
         req.setStatus("待开始");
         assertThrows(IllegalArgumentException.class, () -> goalMcpTools.goal_progress_update(req));
     }

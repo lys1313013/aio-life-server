@@ -2,6 +2,7 @@ package top.aiolife.record.mcp.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import java.math.BigDecimal;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,12 +44,19 @@ public class GoalMcpVO {
     /**
      * 目标值（可为空，表示无量化目标）
      */
-    private Integer targetValue;
+    private BigDecimal targetValue;
 
     /**
      * 当前值
      */
-    private Integer currentValue;
+    private BigDecimal currentValue;
+
+    /** 进度来源；自动模式 currentValue 是最近成功快照。 */
+    private String progressMode;
+    private String targetOperator;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime progressCheckedAt;
+    private String progressError;
 
     /**
      * 所属年份

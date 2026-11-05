@@ -23,6 +23,11 @@ import top.aiolife.record.pojo.req.HomePinReq;
 import top.aiolife.record.pojo.req.HomePinnedOrderReq;
 import top.aiolife.record.pojo.vo.GoalVO;
 import top.aiolife.record.service.IGoalService;
+import top.aiolife.record.service.GoalProgressEvaluator;
+import top.aiolife.record.service.GoalProgressService;
+import top.aiolife.record.pojo.req.GoalProgressPreviewReq;
+import top.aiolife.record.pojo.req.GoalProgressRefreshReq;
+import top.aiolife.record.pojo.vo.GoalProgressPreviewVO;
 
 /**
  * 目标管理控制器
@@ -37,6 +42,8 @@ import top.aiolife.record.service.IGoalService;
 public class GoalController {
 
     private final IGoalService goalService;
+    private final GoalProgressEvaluator progressEvaluator;
+    private final GoalProgressService progressService;
 
     @GetMapping
     @Operation(summary = "查询当前用户的目标", description = "返回目标列表，支持目标类型、进度状态及关键词筛选，按创建时间倒序。")
@@ -96,6 +103,19 @@ public class GoalController {
         goalEntity = goalService.updateForUser(userId, goalEntity);
 
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toGoalVO(goalEntity));
+    }
+
+    @PostMapping("/progress/preview")
+    @Operation(summary = "预览自定义 GraphQL 目标进度", description = "使用当前用户凭据执行查询，返回数值、达标结果与绑定后的变量，不保存目标。")
+    public ApiResponse<GoalProgressPreviewVO> previewProgress(@Valid @RequestBody GoalProgressPreviewReq request) {
+        return ApiResponse.success(progressEvaluator.evaluate(RecordApiConvertor.INSTANCE.fromGoalCreateReq(request), StpUtil.getTokenValue()));
+    }
+
+    @PostMapping("/progress/refresh")
+    @Operation(summary = "刷新目标查询进度", description = "单批最多十个目标；每项查询失败保留成功快照并返回 progressError，配置变化时丢弃过期结果。")
+    public ApiResponse<List<GoalVO>> refreshProgress(@Valid @RequestBody GoalProgressRefreshReq request) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toGoalVOList(
+                progressService.refresh(StpUtil.getLoginIdAsLong(), request.getIds(), StpUtil.getTokenValue())));
     }
 
     @PostMapping("/batchDelete")

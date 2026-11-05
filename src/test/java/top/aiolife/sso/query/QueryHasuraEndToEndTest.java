@@ -128,7 +128,7 @@ class QueryHasuraEndToEndTest {
     }
     private HttpResponse<String> query(String token, String operation) throws Exception {
         return call("POST", gatewayUrl + "/api/v1/queries/execute", token,
-                Map.of("domain", "time", "schemaVersion", "time-record-v3", "policyVersion", "time-record-v3", "operationName", "Q", "query", operation));
+                Map.of("domain", "time", "schemaVersion", "time-record-v4", "policyVersion", "time-record-v4", "operationName", "Q", "query", operation));
     }
     private JsonNode result(String token, String operation) throws Exception {
         var response = query(token, operation); assertEquals(200, response.statusCode(), response.body());
@@ -172,8 +172,8 @@ class QueryHasuraEndToEndTest {
         assertEquals("aio-life-query", initialized.at("/result/serverInfo/name").asText());
         var listed = rpc(tokenA, "tools/list", Map.of()).at("/result/tools"); assertEquals(4, listed.size());
         var described = tool(tokenA, "aio_query_describe_dataset", Map.of("name", "time_record"));
-        assertEquals("time-record-v3", described.at("/data/schemaVersion").asText());
-        var args = Map.<String, Object>of("domain", "time", "schemaVersion", "time-record-v3", "policyVersion", "time-record-v3",
+        assertEquals("time-record-v4", described.at("/data/schemaVersion").asText());
+        var args = Map.<String, Object>of("domain", "time", "schemaVersion", "time-record-v4", "policyVersion", "time-record-v4",
                 "operationName", "Q", "query", details);
         assertTrue(tool(tokenA, "aio_query_validate", args).at("/data/allowed").asBoolean());
         assertEquals(2, tool(tokenA, "aio_query_execute", args).at("/data/result/timeRecords").size());
@@ -196,11 +196,11 @@ class QueryHasuraEndToEndTest {
 
     @ParameterizedTest
     @CsvSource({
-        "exercise_record,exercise,exercise-record-v2,exerciseRecords,exerciseRecordStats,exerciseDate,exerciseCount,30",
-        "read_record,reading,read-record-v2,readRecords,readRecordStats,createdAt,,",
-        "movie,movie,movie-v2,movies,movieStats,createdAt,,",
-        "b_video,video,b-video-v2,bVideos,bVideoStats,createdAt,watchedDurationSeconds,120",
-        "performance,performance,performance-v2,performances,performanceStats,performanceDate,ticketPrice,40.01"})
+        "exercise_record,exercise,exercise-record-v3,exerciseRecords,exerciseRecordStats,exerciseDate,exerciseCount,30",
+        "read_record,reading,read-record-v3,readRecords,readRecordStats,createdAt,,",
+        "movie,movie,movie-v3,movies,movieStats,createdAt,,",
+        "b_video,video,b-video-v3,bVideos,bVideoStats,createdAt,watchedDurationSeconds,120",
+        "performance,performance,performance-v3,performances,performanceStats,performanceDate,ticketPrice,40.01"})
     void 新数据集真实REST及MCP明细统计分页和隔离(String dataset,String domain,String version,String root,String statsRoot,String date,String numeric,String expectedSum) throws Exception {
         var catalog=call("GET",gatewayUrl+"/api/v1/datasets/"+dataset,tokenA,null);
         assertEquals(200,catalog.statusCode(),catalog.body());

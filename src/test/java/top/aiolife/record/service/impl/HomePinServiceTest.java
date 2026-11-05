@@ -280,6 +280,7 @@ class HomePinServiceTest {
             ReflectionTestUtils.setField(entity, "userId", USER);
             ReflectionTestUtils.setField(entity, "isPinned", pin);
             ReflectionTestUtils.setField(entity, "pinnedSortOrder", sort_order);
+            if (entity instanceof GoalEntity goal) goal.setProgressVersion(0L);
             return entity;
         }
 
@@ -322,6 +323,8 @@ class HomePinServiceTest {
 
         private static Object instantiate(Class<?> type) {
             try {
+                if (type == GoalServiceImpl.class) return new GoalServiceImpl(new top.aiolife.record.service.GoalProgressEvaluator(
+                        new com.fasterxml.jackson.databind.ObjectMapper(), mock(top.aiolife.record.client.GoalQueryClient.class)));
                 return type.getDeclaredConstructor().newInstance();
             } catch (ReflectiveOperationException e) {
                 throw new AssertionError(e);

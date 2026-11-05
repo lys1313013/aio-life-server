@@ -106,6 +106,7 @@ public class QueryAccessService {
             case "read_record" -> new DatasetPolicy("ai_reading_reader", "reading.read", "/mcp/tools", "/record/read");
             case "movie" -> new DatasetPolicy("ai_movie_reader", "movie.read", "/mcp/tools", "/record/movie");
             case "b_video" -> new DatasetPolicy("ai_video_reader", "video.read", "/mcp/tools", "/record/videoWatch");
+            case "income_month" -> new DatasetPolicy("ai_income_reader", "income.read", "/mcp/tools", "/finance/income");
             case "performance" -> new DatasetPolicy("ai_performance_reader", "performance.read", "/mcp/tools", "/record/performance");
             default -> throw denied();
         };

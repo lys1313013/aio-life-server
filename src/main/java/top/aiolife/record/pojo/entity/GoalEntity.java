@@ -10,6 +10,7 @@ import top.aiolife.record.pojo.enums.GoalTypeEnum;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 /**
  * 目标实体
@@ -24,6 +25,20 @@ import java.time.LocalDateTime;
 @Data
 @TableName("goal")
 public class GoalEntity {
+
+    /** 进度来源：manual 手动，graphql 自定义只读查询。 */
+    private String progressMode;
+    /** 自定义 GraphQL 查询文本。 */
+    private String progressQuery;
+    /** GraphQL 固定变量，JSON 对象文本。 */
+    private String progressVariables;
+    /** 变量到目标上下文的绑定，JSON 对象文本。 */
+    private String progressVariableBindings;
+    /** 相对于 GraphQL data 的数值路径，支持对象字段和数组下标。 */
+    private String progressValuePath;
+    /** 达标比较：gte 达到，gt 超过。 */
+    private String targetOperator;
+
     /** 是否固定到首页：0=否，1=是。 */
     private Integer isPinned;
 
@@ -74,12 +89,12 @@ public class GoalEntity {
     /**
      * 目标值（如：100本书）
      */
-    private Integer targetValue;
+    private BigDecimal targetValue;
 
     /**
      * 当前值（如：已完成50本）
      */
-    private Integer currentValue;
+    private BigDecimal currentValue;
 
     /**
      * 年份（用于年度目标筛选）
@@ -163,4 +178,13 @@ public class GoalEntity {
      */
     @TableField(exist = false)
     private Integer totalCount;
+    /** 最近成功计算时间；失败时保留上次成功值和时间。 */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime progressCheckedAt;
+    /** 最近计算错误；NULL 表示无错误。 */
+    private String progressError;
+    /** 目标配置修订号，用于拒绝编辑期间过期的计算结果。 */
+    private Long progressVersion;
+    /** 最近一次刷新请求标识；只供并发快照回写校验，不向客户端暴露。 */
+    private String progressRefreshId;
 }
