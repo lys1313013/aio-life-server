@@ -262,6 +262,15 @@ public class WereadServiceImpl implements IWereadService {
         return cachedCall(connection, "/readdata/detail", Map.of("mode", mode, "baseTime", "overall".equals(mode) ? 0L : baseTime));
     }
 
+    @Override
+    public JsonNode statsForUser(long userId, String mode, long baseTime) {
+        validateMode(mode);
+        if (baseTime < 0) throw new IllegalArgumentException("统计日期不能小于 0");
+        var connection = find(userId);
+        if (connection == null || !StringUtils.hasText(connection.getAccessToken())) return null;
+        return cachedCall(connection, "/readdata/detail", Map.of("mode", mode, "baseTime", baseTime));
+    }
+
     private JsonNode notebooks(String key) {
         ArrayNode books = JsonNodeFactory.instance.arrayNode();
         Set<String> ids = new HashSet<>();

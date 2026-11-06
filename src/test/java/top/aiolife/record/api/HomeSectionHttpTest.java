@@ -17,6 +17,8 @@ import top.aiolife.record.mapper.HomeSectionMapper;
 import top.aiolife.record.service.HomeSectionAccessGuard;
 import org.springframework.test.web.servlet.MockMvc;
 import top.aiolife.record.service.HomeSectionService;
+import top.aiolife.record.service.WereadStatsService;
+import top.aiolife.core.query.QueryParamsArgumentResolver;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -32,7 +34,7 @@ class HomeSectionHttpTest {
         memo.setUpdateTime(LocalDateTime.of(2026, 10, 22, 12, 0));
         when(service.memos(7L)).thenReturn(new HomeSectionVO.Items<>(List.of(memo), 300));
         var json = new JsonConfig().jacksonObjectMapper(new Jackson2ObjectMapperBuilder());
-        var mvc = MockMvcBuilders.standaloneSetup(new HomeSectionController(service))
+        var mvc = MockMvcBuilders.standaloneSetup(new HomeSectionController(service, mock(WereadStatsService.class)))
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
@@ -81,8 +83,9 @@ class HomeSectionHttpTest {
 
     private MockMvc mvc(HomeSectionService service) {
         var json = new JsonConfig().jacksonObjectMapper(new Jackson2ObjectMapperBuilder());
-        return MockMvcBuilders.standaloneSetup(new HomeSectionController(service))
+        return MockMvcBuilders.standaloneSetup(new HomeSectionController(service, mock(WereadStatsService.class)))
                 .setControllerAdvice(new ExceptionHandle())
+                .setCustomArgumentResolvers(new QueryParamsArgumentResolver(json))
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
     }
 

@@ -54,19 +54,19 @@ class HomeCardPreferenceServiceTest {
 
     @Test void defaults_读取不写库且两类卡片独立注册() {
         var cards = service.get(7);
-        assertEquals(23, cards.size());
+        assertEquals(HomeCardCatalog.ALL.size(), cards.size());
         assertEquals(0, cards.stream().filter(card -> card.isEnabled() == 0).count());
         assertTrue(cards.stream().filter(card -> List.of("section.memo", "section.finance", "section.income", "section.expense", "section.video", "section.device")
                 .contains(card.cardKey())).allMatch(card -> card.isEnabled() == 1));
         assertEquals(5, cards.stream().filter(card -> card.group().equals("overview")).count());
-        assertEquals(23, cards.stream().filter(card -> card.isEnabled() == 1).count());
+        assertEquals(HomeCardCatalog.ALL.size(), cards.stream().filter(card -> card.isEnabled() == 1).count());
         verify(mapper, never()).insert(any(HomeCardPreferenceEntity.class));
     }
     @Test void toggle_用户隔离且不会连带隐藏同业务详情卡() {
         service.toggle(7, "overview.github", 0);
         assertFalse(service.get(7).stream().filter(card -> card.cardKey().equals("overview.github")).findFirst().orElseThrow().isEnabled() == 1);
         assertTrue(service.get(7).stream().filter(card -> card.cardKey().equals("section.github")).findFirst().orElseThrow().isEnabled() == 1);
-        assertEquals(23, service.get(8).stream().filter(card -> card.isEnabled() == 1).count());
+        assertEquals(HomeCardCatalog.ALL.size(), service.get(8).stream().filter(card -> card.isEnabled() == 1).count());
         var order = inOrder(mapper); order.verify(mapper).lockUser(7); order.verify(mapper).selectList(any()); order.verify(mapper).insert(any(HomeCardPreferenceEntity.class));
     }
     @Test void reorder_完整分组排序保留开关且不改另一组() {

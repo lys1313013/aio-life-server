@@ -27,7 +27,7 @@ public final class SecondaryLockPolicy {
             Map.entry("/my-hub/honor", List.of("/honorRecords", "/honorCategories")),
             Map.entry("/record/movie", List.of("/movie")),
             Map.entry("/record/read", List.of("/read-record")),
-            Map.entry("/record/weread", List.of("/weread", "/dashboard/card/READ")),
+            Map.entry("/record/weread", List.of("/weread", "/dashboard/card/READ", "/home/sections/weread-stats")),
             Map.entry("/relationship/graph", List.of("/relationships")),
             Map.entry("/my-hub/feedback", List.of("/feedback")),
             Map.entry("/finance/bank-cards", List.of("/bank-cards")),

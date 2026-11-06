@@ -75,6 +75,25 @@ class WereadServiceTest {
     }
 
     @Test
+    void statsForUser_未连接返回null且不请求上游() {
+        when(mapper.selectOne(any())).thenReturn(null);
+        assertNull(service.statsForUser(42L, "weekly", 1735689600L));
+        verifyNoInteractions(client);
+    }
+
+    @Test
+    void statsForUser_使用指定用户连接读取统计() {
+        when(mapper.selectOne(any())).thenReturn(connection());
+        when(client.call(anyString(), eq("/readdata/detail"), anyMap())).thenReturn(json.createObjectNode());
+
+        assertNotNull(service.statsForUser(42L, "weekly", 1735689600L));
+        verify(client).call("wrk-test", "/readdata/detail",
+                Map.of("mode", "weekly", "baseTime", 1735689600L));
+        assertThrows(IllegalArgumentException.class,
+                () -> service.statsForUser(42L, "wrong", 1735689600L));
+    }
+
+    @Test
     void credentials_请求日志和响应均不暴露明文() throws Exception {
         var request = new WereadConnectionReq();
         request.setApiKey("wrk-test-secret");

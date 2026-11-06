@@ -33,6 +33,7 @@ public final class HomeCardCatalog {
         section("exercise", "运动", "exercise"),
         section("github", "GitHub 最近提交", "github"),
         new Definition("section.weread", "section", "微信读书", "weread", true),
+        new Definition("section.weread-stats", "section", "阅读统计", "weread", true),
         section("memo", "最近笔记", "memo"),
         section("finance", "收支概览", "finance"),
         section("income", "收入", "income"),

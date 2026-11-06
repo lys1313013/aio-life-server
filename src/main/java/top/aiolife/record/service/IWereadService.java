@@ -13,6 +13,9 @@ public interface IWereadService {
     JsonNode sync(String mode, long baseTime);
     default JsonNode stats(String mode) { return stats(mode, 0); }
     JsonNode stats(String mode, long baseTime);
+
+    /** 首页卡片使用：按当前用户连接读取指定周期的统计，未连接返回 null。 */
+    JsonNode statsForUser(long userId, String mode, long baseTime);
     JsonNode notes(String bookId);
     JsonNode progress(String bookId);
     WereadBookLinkVO bookLink(String bookId);
