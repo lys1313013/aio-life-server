@@ -146,7 +146,7 @@ public class RelationshipController {
      * 更新关系
      */
     @PutMapping("/{id}")
-    public ApiResponse<RelationshipVO> updateRelationship(@PathVariable Long id, @RequestBody RelationshipUpdateReq req) {
+    public ApiResponse<RelationshipVO> updateRelationship(@PathVariable String id, @RequestBody RelationshipUpdateReq req) {
         long userId = StpUtil.getLoginIdAsLong();
         RelatesToRelationship relationship = new RelatesToRelationship();
         relationship.setRelationType(req.getRelationType());

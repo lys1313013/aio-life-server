@@ -1,6 +1,7 @@
 package top.aiolife.record.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -170,6 +171,7 @@ public class MbtiResultServiceImpl extends ServiceImpl<IMbtiResultMapper, MbtiRe
         MbtiResultEntity existing = this.getOne(queryWrapper);
         if (existing != null) {
             result.setId(existing.getId());
+            result.fillUpdateCommonField(result.getUserId());
             this.updateById(result);
             log.info("更新MBTI测试结果: userId={}, testId={}", result.getUserId(), result.getTestId());
             return;
@@ -182,7 +184,7 @@ public class MbtiResultServiceImpl extends ServiceImpl<IMbtiResultMapper, MbtiRe
     public List<MbtiResultEntity> getUserHistory(Long userId) {
         LambdaQueryWrapper<MbtiResultEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(MbtiResultEntity::getUserId, userId);
-        queryWrapper.orderByDesc(MbtiResultEntity::getCreateTime);
+        QueryOrder.descNullsLast(queryWrapper, MbtiResultEntity::getCreateTime, MbtiResultEntity::getId);
         return this.list(queryWrapper);
     }
 

@@ -109,7 +109,10 @@ class ActivityLogPersistenceTest {
     @Test void 业务事务回滚后独立日志事务仍保留() {
         var transactions = new DataSourceTransactionManager(dataSource);
         var proxy = new ProxyFactory(new ActivityLogRecorder(mapper, mock(UserMapper.class), mock(ISysMenuMapper.class), new ObjectMapper()));
-        proxy.addAdvice(new TransactionInterceptor(transactions, new AnnotationTransactionAttributeSource()));
+        var interceptor = new TransactionInterceptor();
+        interceptor.setTransactionManager(transactions);
+        interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
+        proxy.addAdvice(interceptor);
         var recorder = (ActivityLogRecorder) proxy.getProxy();
         var log = new ActivityLogEntity(); log.fillCreateCommonField(13L); log.setId(100L);
         log.setLogType("OPERATION"); log.setSuccess(false); log.setRequestPath("/tasks");

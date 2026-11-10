@@ -1,16 +1,16 @@
 package top.aiolife.record.pojo.entity;
 
-import top.aiolife.core.pojo.entity.BaseEntity;
-import top.aiolife.record.pojo.vo.FileVO;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.BaseEntity;
+import top.aiolife.record.pojo.vo.FileVO;
 
 /**
  * 荣誉记录实体
@@ -18,7 +18,9 @@ import java.util.List;
  * @author Lys
  * @date 2026/04/11
  */
-@Data
+@Getter
+@Setter
+@ToString
 @TableName("honor_record")
 public class HonorRecordEntity extends BaseEntity {
 

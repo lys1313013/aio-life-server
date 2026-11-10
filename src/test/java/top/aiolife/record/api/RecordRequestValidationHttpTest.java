@@ -111,7 +111,7 @@ class RecordRequestValidationHttpTest {
                             .content("{\"dueDate\":\"2026-10-22 10:30:00\"}"))
                     .andExpect(jsonPath("$.code").value(0));
             var task = ArgumentCaptor.forClass(TaskEntity.class);
-            verify(tasks).update(task.capture(), any(Wrapper.class));
+            verify(tasks).update(task.capture(), any());
             assertEquals(9007199254740993L, task.getValue().getId());
             assertEquals(LocalDateTime.of(2026, 10, 22, 10, 30), task.getValue().getDueDate());
 
@@ -119,7 +119,7 @@ class RecordRequestValidationHttpTest {
                             .content("{\"id\":\"9007199254740993\",\"startTime\":\"2026-10-22 10:30:00\",\"endTime\":\"2026-10-22 10:30:00\"}"))
                     .andExpect(jsonPath("$.code").value(0));
             var detail = ArgumentCaptor.forClass(TaskDetailEntity.class);
-            verify(details).update(detail.capture(), any(Wrapper.class));
+            verify(details).update(detail.capture(), any());
             assertEquals(detail.getValue().getStartTime(), detail.getValue().getEndTime());
         }
     }

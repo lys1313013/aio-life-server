@@ -1,6 +1,7 @@
 package top.aiolife.record.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import top.aiolife.record.mapper.ISysDictDataMapper;
 import top.aiolife.record.mapper.ISysDictTypeMapper;
 import top.aiolife.record.pojo.entity.SysDictDataEntity;
@@ -35,7 +36,7 @@ public class SysDictServiceImpl implements ISysDictService {
         }
         LambdaQueryWrapper<SysDictDataEntity> typeQueryWrapper = new LambdaQueryWrapper<>();
         typeQueryWrapper.eq(SysDictDataEntity::getDictId, sysDictTypeEntity.getDictId());
-        typeQueryWrapper.orderByAsc(SysDictDataEntity::getSortOrder);
+        QueryOrder.ascNullsFirst(typeQueryWrapper, SysDictDataEntity::getSortOrder);
         return sysDictDataMapper.selectList(typeQueryWrapper);
     }
 }

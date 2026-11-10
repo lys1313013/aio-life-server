@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.IdentityEntity;
 
 /**
  * 邮件发送记录表
@@ -14,9 +16,11 @@ import java.time.LocalDateTime;
  * @author Lys
  * @date 2026/03/01
  */
-@Data
+@Getter
+@Setter
+@ToString
 @TableName("mail_log")
-public class MailLogEntity {
+public class MailLogEntity extends IdentityEntity {
 
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
@@ -57,4 +61,9 @@ public class MailLogEntity {
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
+
+    @Override
+    protected Object identityKey() {
+        return id;
+    }
 }

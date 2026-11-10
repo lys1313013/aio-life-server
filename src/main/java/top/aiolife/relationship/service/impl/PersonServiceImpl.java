@@ -174,7 +174,7 @@ public class PersonServiceImpl implements IPersonService {
                 var other = relRecord.get("other").asNode();
 
                 PersonWithRelationships.RelationshipDetail rd = new PersonWithRelationships.RelationshipDetail();
-                rd.setId(rel.id());
+                rd.setId(rel.elementId());
                 rd.setRelationType(toString(rel.get("relationType")));
                 rd.setDirection(toString(rel.get("direction")));
                 rd.setDescription(toString(rel.get("description")));

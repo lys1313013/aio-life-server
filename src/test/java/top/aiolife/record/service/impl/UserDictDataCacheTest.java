@@ -1,5 +1,6 @@
 package top.aiolife.record.service.impl;
 
+import static top.aiolife.support.MockMatchers.anyWrapper;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -67,7 +68,7 @@ class UserDictDataCacheTest {
         dictionaries = context.getBean(UserDictDataCache.class);
         caches = context.getBean("cacheManager", CacheManager.class);
         service = spy(new UserDictDataServiceImpl(dictionaries));
-        when(mapper.selectList(any(Wrapper.class))).thenReturn(List.of());
+        when(mapper.selectList(anyWrapper())).thenReturn(List.of());
     }
 
     @AfterEach
@@ -80,11 +81,11 @@ class UserDictDataCacheTest {
     void testRead_重复读取命中Redis管理器且用户类型隔离() {
         service.listUserVisibleDictData(1L, TYPE);
         service.listUserVisibleDictData(1L, TYPE);
-        verify(mapper, times(2)).selectList(any(Wrapper.class));
+        verify(mapper, times(2)).selectList(anyWrapper());
         service.listUserVisibleDictData(2L, TYPE);
-        verify(mapper, times(3)).selectList(any(Wrapper.class)); // 公共部分复用
+        verify(mapper, times(3)).selectList(anyWrapper()); // 公共部分复用
         service.listUserVisibleDictData(1L, "income_type");
-        verify(mapper, times(5)).selectList(any(Wrapper.class));
+        verify(mapper, times(5)).selectList(anyWrapper());
         assertCached(0L, TYPE, true);
         assertCached(1L, TYPE, true);
         assertNull(context.getBean("caffeineCacheManager", CacheManager.class)
@@ -97,11 +98,11 @@ class UserDictDataCacheTest {
         var override = row(8L, 1L, TYPE);
         override.setTemplateId(7L);
         override.setIsEnabled(0);
-        when(mapper.selectList(any(Wrapper.class))).thenReturn(List.of(base), List.of(override));
+        when(mapper.selectList(anyWrapper())).thenReturn(List.of(base)).thenReturn(List.of(override));
         assertTrue(service.listUserVisibleDictData(1L, TYPE).isEmpty());
         assertEquals(0, service.listUserVisibleDictData(1L, TYPE, true).getFirst().getIsEnabled());
         assertTrue(service.listUserVisibleDictData(1L, TYPE).isEmpty());
-        verify(mapper, times(2)).selectList(any(Wrapper.class));
+        verify(mapper, times(2)).selectList(anyWrapper());
     }
 
     @Test
@@ -113,7 +114,7 @@ class UserDictDataCacheTest {
         TransactionSynchronizationManager.setActualTransactionActive(false);
         dictionaries.list(1L, "bank_card_tag");
         dictionaries.list(1L, "bank_card_tag");
-        verify(mapper, times(5)).selectList(any(Wrapper.class));
+        verify(mapper, times(5)).selectList(anyWrapper());
         assertCached(1L, "bank_card_tag", false);
     }
 
@@ -132,7 +133,7 @@ class UserDictDataCacheTest {
     void testUpdate_提交后清理旧类型新类型并保留其他用户() {
         warm();
         doReturn(row(7L, 1L, TYPE)).when(service).getById(7L);
-        doReturn(true).when(service).update(any(UserDictDataEntity.class), any(Wrapper.class));
+        doReturn(true).when(service).update(any(UserDictDataEntity.class), anyWrapper());
         TransactionSynchronizationManager.initSynchronization();
         service.updateDictData(7L, row(7L, 1L, "income_type"), 1L);
         assertCached(1L, TYPE, true);
@@ -169,7 +170,7 @@ class UserDictDataCacheTest {
     void testHide_隐藏公共分类只清本人缓存() {
         warm();
         doReturn(row(7L, 0L, TYPE)).when(service).getById(7L);
-        doReturn(null).when(service).getOne(any(Wrapper.class));
+        doReturn(null).when(service).getOne(anyWrapper());
         doReturn(true).when(service).save(any(UserDictDataEntity.class));
         service.deleteDictData(7L, 1L);
         assertCached(1L, TYPE, false);
@@ -183,7 +184,7 @@ class UserDictDataCacheTest {
         var base = row(7L, 0L, TYPE);
         base.setIsReadonly("Y");
         doReturn(base).when(service).getById(7L);
-        doReturn(row(8L, 1L, TYPE)).when(service).getOne(any(Wrapper.class));
+        doReturn(row(8L, 1L, TYPE)).when(service).getOne(anyWrapper());
         doReturn(true).when(service).updateById(any(UserDictDataEntity.class));
         var updates = row(7L, 1L, TYPE);
         updates.setIsEnabled(0);
@@ -198,7 +199,7 @@ class UserDictDataCacheTest {
         doReturn(true).when(service).save(any(UserDictDataEntity.class));
         assertTrue(service.createBaseDictData(row(null, 0L, TYPE)));
         assertCached(0L, TYPE, false);
-        when(mapper.selectList(any(Wrapper.class))).thenReturn(List.of(row(7L, 0L, TYPE)));
+        when(mapper.selectList(anyWrapper())).thenReturn(List.of(row(7L, 0L, TYPE)));
         assertEquals(7L, service.listUserVisibleDictData(1L, TYPE).getFirst().getId());
         assertEquals(7L, service.listUserVisibleDictData(2L, TYPE).getFirst().getId());
         doReturn(row(7L, 0L, TYPE)).when(service).getById(7L);
@@ -232,7 +233,7 @@ class UserDictDataCacheTest {
         var first = row(7L, 0L, TYPE);
         var second = row(8L, 0L, TYPE);
         second.setSortOrder(10);
-        doReturn(new ArrayList<>(List.of(first, second))).when(service).list(any(Wrapper.class));
+        doReturn(new ArrayList<>(List.of(first, second))).when(service).list(anyWrapper());
         doReturn(true).when(service).updateBatchById(anyCollection());
         TransactionSynchronizationManager.initSynchronization();
         var sorted = service.reSortBaseDictData(TYPE, 8L, 7L, "before");
@@ -251,7 +252,7 @@ class UserDictDataCacheTest {
         doThrow(new IllegalStateException("Redis unavailable")).when(failed).put(any(), any());
         doThrow(new IllegalStateException("Redis unavailable")).when(failed).evict(any());
         doReturn(failed).when(caches).getCache(UserDictDataCache.CACHE_NAME);
-        when(mapper.selectList(any(Wrapper.class))).thenReturn(List.of(row(7L, 0L, TYPE)));
+        when(mapper.selectList(anyWrapper())).thenReturn(List.of(row(7L, 0L, TYPE)));
         assertEquals(7L, dictionaries.list(0L, TYPE).getFirst().getId());
         assertDoesNotThrow(() -> dictionaries.evictAfterCommit(0L, TYPE));
         verify(failed).evict("0:" + TYPE);
@@ -263,7 +264,7 @@ class UserDictDataCacheTest {
         var manager = new RedisConfig().cacheManager(mock(RedisConnectionFactory.class), json);
         manager.afterPropertiesSet();
         var config = manager.getCacheConfigurations().get(UserDictDataCache.CACHE_NAME);
-        assertEquals(Duration.ofMinutes(60), config.getTtl());
+        assertEquals(Duration.ofMinutes(60), config.getTtlFunction().getTimeToLive("test-key", null));
         var item = row(9223372036854775806L, 1L, TYPE);
         item.setTemplateId(9223372036854775805L);
         item.setCreateTime(LocalDateTime.of(2026, 10, 4, 12, 30));

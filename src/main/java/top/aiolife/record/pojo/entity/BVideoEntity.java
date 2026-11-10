@@ -1,12 +1,12 @@
 package top.aiolife.record.pojo.entity;
 
-import top.aiolife.core.pojo.entity.BaseEntity;
-
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-import top.aiolife.record.pojo.enums.ProgressStatusEnum;
-
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.BaseEntity;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 
 /**
  * 类功能描述
@@ -14,7 +14,9 @@ import java.time.LocalDateTime;
  * @author Lys
  * @date 2025/10/06 22:48
  */
-@Data
+@Getter
+@Setter
+@ToString
 @TableName("b_video")
 public class BVideoEntity extends BaseEntity{
     private String coverFileId;

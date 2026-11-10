@@ -1,20 +1,25 @@
 package top.aiolife.record.pojo.entity;
 
-import top.aiolife.core.pojo.entity.BaseEntity;
-
 import com.alibaba.fastjson2.annotation.JSONField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
  * user_bind
  */
 @TableName(value = "user_bind", autoResultMap = true)
-@Data
+@Getter
+@Setter
+@ToString
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 public class UserBindEntity extends BaseEntity {
 
     /**

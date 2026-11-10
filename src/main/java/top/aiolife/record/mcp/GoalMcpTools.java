@@ -3,6 +3,7 @@ package top.aiolife.record.mcp;
 import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import dev.langchain4j.agent.tool.Tool;
@@ -64,7 +65,7 @@ public class GoalMcpTools {
         if (req.getMonth() != null) {
             queryWrapper.eq(GoalEntity::getMonth, req.getMonth());
         }
-        queryWrapper.orderByDesc(GoalEntity::getCreateTime);
+        QueryOrder.descNullsLast(queryWrapper, GoalEntity::getCreateTime, GoalEntity::getId);
 
         int pageNo = req.getPage() == null ? 1 : req.getPage();
         int size = req.getPageSize() == null ? 10 : Math.min(req.getPageSize(), 100);

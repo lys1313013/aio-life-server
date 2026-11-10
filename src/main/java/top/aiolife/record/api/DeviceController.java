@@ -2,6 +2,7 @@ package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
@@ -50,7 +51,7 @@ public class DeviceController {
                 condition.getType());
         lambdaQueryWrapper.like(SysUtil.isNotEmpty(requestQuery.getCondition().getName()),
                 DeviceEntity::getName, requestQuery.getCondition().getName());
-        lambdaQueryWrapper.orderByDesc(DeviceEntity::getPurchaseDate).orderByDesc(DeviceEntity::getId);        // 分页
+        QueryOrder.descNullsLast(lambdaQueryWrapper, DeviceEntity::getPurchaseDate).orderByDesc(DeviceEntity::getId);        // 分页
         Page<DeviceEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<DeviceEntity> iPage = getBaseMapper().selectPage(page, lambdaQueryWrapper);
         PageResp<DeviceEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());

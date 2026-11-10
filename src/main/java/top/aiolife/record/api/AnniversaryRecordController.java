@@ -2,6 +2,7 @@ package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -42,7 +43,7 @@ public class AnniversaryRecordController {
         if (Integer.valueOf(1).equals(isPinned)) {
             queryWrapper.orderByAsc(AnniversaryRecordEntity::getPinnedSortOrder).orderByDesc(AnniversaryRecordEntity::getId);
         } else {
-            queryWrapper.orderByDesc(AnniversaryRecordEntity::getCreateTime).orderByDesc(AnniversaryRecordEntity::getId);
+            QueryOrder.descNullsLast(queryWrapper, AnniversaryRecordEntity::getCreateTime).orderByDesc(AnniversaryRecordEntity::getId);
         }
 
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toAnniversaryRecordVOList(anniversaryRecordService.list(queryWrapper)));

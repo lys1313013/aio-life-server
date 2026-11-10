@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -81,7 +82,7 @@ public class GoalController {
         if (Integer.valueOf(1).equals(isPinned)) {
             queryWrapper.orderByAsc(GoalEntity::getPinnedSortOrder).orderByDesc(GoalEntity::getId);
         } else {
-            queryWrapper.orderByDesc(GoalEntity::getCreateTime).orderByDesc(GoalEntity::getId);
+            QueryOrder.descNullsLast(queryWrapper, GoalEntity::getCreateTime).orderByDesc(GoalEntity::getId);
         }
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toGoalVOList(goalService.list(queryWrapper)));
     }

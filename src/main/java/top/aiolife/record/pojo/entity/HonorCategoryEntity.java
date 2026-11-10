@@ -1,10 +1,10 @@
 package top.aiolife.record.pojo.entity;
 
-import top.aiolife.core.pojo.entity.BaseEntity;
-
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
  * 荣誉分类实体
@@ -12,8 +12,9 @@ import lombok.EqualsAndHashCode;
  * @author Lys
  * @date 2026/04/11
  */
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString
 @TableName("honor_category")
 public class HonorCategoryEntity extends BaseEntity {
 

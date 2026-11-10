@@ -84,4 +84,9 @@ public class SysDictDataEntity extends AuditEntity {
 
     @TableLogic
     private Integer isDeleted;
+
+    @Override
+    protected Object identityKey() {
+        return dictCode;
+    }
 }

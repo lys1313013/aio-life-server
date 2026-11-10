@@ -47,7 +47,7 @@ class BaiduMapQuotaStoreTest {
     }
 
     @Test void testBlocked_任一额度状态均跳过查询() {
-        when(values.multiGet(any())).thenReturn(Arrays.asList("302", null), Arrays.asList(null, "301"));
+        when(values.multiGet(any())).thenReturn(Arrays.asList("302", null)).thenReturn(Arrays.asList(null, "301"));
         assertThrows(MapQuotaExceededException.class, () -> store.beforeQuery("key", "/geocoding/v3/"));
         assertThrows(MapQuotaExceededException.class, () -> store.beforeQuery("key", "/geocoding/v3/"));
         verify(values, never()).setIfAbsent(any(), any(), any(Duration.class));

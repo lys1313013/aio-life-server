@@ -5,21 +5,22 @@
 
 ## 1. 支持范围
 
-只支持 PostgreSQL 18+，使用真实 PostgreSQL 验证初始化、增量和业务 SQL。旧 MySQL 文件冻结保留，不能改写或作为当前执行入口。新表及每个字段必须有准确的中文 COMMENT，索引与约束必须说明用途。凭据、实际部署地址和个人数据不得进入 SQL 或仓库。
+只支持 PostgreSQL 18+，使用真实 PostgreSQL 验证初始化、增量和业务 SQL。旧 MySQL 结构、数据及历史修正 SQL 仅在 Git 历史追溯，不保留本地副本或旧执行入口；当前只维护 PostgreSQL SQL。新表及每个字段必须有准确的中文 COMMENT，索引与约束必须说明用途。凭据、实际部署地址和个人数据不得进入 SQL 或仓库。
 
 ## 2. 目录、命名与格式
 
 | 内容 | 目录或入口 | 要求 |
 | --- | --- | --- |
-| 全量初始化基线 | `sql/migrations/postgresql/B<版本>__description.sql` | 冻结快照；新库采用最新基线及其后的增量，不部分合并 |
-| 结构及数据增量 | `sql/migrations/postgresql/VYYYYMMDD_NN__description.sql` | 唯一版本、按版本顺序执行；菜单、字典及数据修正也使用 V 迁移 |
+| 全量初始化基线 | `sql/migrations/B<版本>__description.sql` | 冻结快照；新库采用最新基线及其后的增量，不部分合并 |
+| 结构及数据增量 | `sql/migrations/VYYYYMMDD_NN__description.sql` | 唯一版本、按版本顺序执行；菜单、字典及数据修正也使用 V 迁移 |
 | 原始资料 | `sql/reference/` | 维护来源与许可，生成器输出待审阅文件，不覆写已执行迁移 |
 | 执行与结构说明 | `tools/flyway/pom.xml`、`docs/数据库初始化与验证.md`、`docs/数据库表结构.md` | 迁移执行、真实结构比对和业务定义分别维护 |
 
-- `V` 版本可增加序号层级，例如本次种子使用 `V20261028_05_001__base_menu.sql`。文件名分隔符为双下划线 `__`；版本唯一，不能补入低于已发布版本的新迁移。
+- `V` 版本可增加序号层级，例如 `V20261111_01_001__menu_data.sql`。文件名分隔符为双下划线 `__`；版本唯一，不能补入低于已发布版本的新迁移。
+- 历史归档按用途整理：同类可以合并，结构、注释、菜单、字典、配置、地区、日历及独立业务预设分开；保留原版本、来源和依赖顺序。日常不改写已执行的 PostgreSQL V 迁移；2026-11-10 聚合公共种子的分类拆分是本次明确要求的整理，已有库先执行[一次性拆分登记](数据库初始化与验证.md#已执行旧公共种子的库一次性拆分登记)，不作为未来直接改写历史的先例。
 - 已在持久环境执行的迁移不得修改、删除或重排；修正新增版本。基线合并生成新的 `B` 文件，不覆盖旧基线或删除升级路径。已有库不会重新执行新基线。
 - 数据库通过独立 Flyway 入口迁移，不在应用启动时运行；Flyway 历史表属于工具基础设施，业务表实体校验只排除明确的 `flyway_schema_history`，不能扩大豁免范围。
-- SQL 执行文件统一放在 `sql/migrations/postgresql/`，不另设历史兼容目录。旧 MySQL 迁移原位冻结，当前独立 PostgreSQL 版本链从 V20261110_01 开始；不将 MySQL 迁移历史登记为 PostgreSQL 基线。
+- SQL 执行文件统一放在 `sql/migrations/`，不另设历史兼容目录。当前独立 PostgreSQL 版本链从 V20261110_01 开始；不将 MySQL 迁移历史登记为 PostgreSQL 基线。
 
 - 使用 UTF-8；SQL 关键字与类型使用大写，表名、列名使用英文小写下划线必要时使用双引号引用，保留字 user 必须始终引用。
 - 每个字段、索引、约束单独占行，缩进统一为两个空格，语句以分号结束。
@@ -109,7 +110,7 @@ ALTER TABLE life_footprint ADD CONSTRAINT ck_footprint_end CHECK (end_date >= st
 
 ## 8. 生活足迹参考
 
-- `life_footprint` 的结构由[当前初始迁移](../sql/migrations/postgresql/V20261110_01__postgresql_schema.sql)和后续适用增量共同定义。
+- `life_footprint` 的结构由[当前初始迁移](../sql/migrations/V20261110_01__postgresql_schema.sql)和后续适用增量共同定义。
 - 当前结构不含 `request_key`、`ongoing`、`version`；开始和结束均为 DATE，结束日期必填，`9999-12-31` 表示至今。暂不使用乐观锁，`update_time` 仅用于审计。
 
 ## PostgreSQL 参数与事务

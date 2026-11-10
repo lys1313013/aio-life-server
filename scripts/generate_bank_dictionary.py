@@ -67,7 +67,7 @@ def main():
 -- 来源：国家金融监督管理总局，截至 2025-12-31，发布于 2026-08-14。
 -- 3132 家大陆银行/农信法人机构；不是发卡资格、卡种或港澳台全量名录。
 -- 来源、哈希及筛选规则见 sql/reference/banks/README.md。
--- 包含银行字典类型、全部3132家机构和银行卡菜单；重复执行保留已有配置和软删除状态。
+-- 仅包含银行字典类型和全部3132家机构；菜单单独维护；重复执行保留已有配置和软删除状态。
 -- 已软删除银行字典类型时不恢复类型或补子项；固定 ID 与其他对象冲突直接失败。
 -- 在无并发字典维护的迁移窗口执行；主键冲突直接失败，禁止静默忽略固定 ID 冲突。
 INSERT INTO sys_dict_type(dict_id,dict_name,dict_type,is_enabled,is_deleted,create_user,update_user)
@@ -99,9 +99,6 @@ WHERE (SELECT dict_id FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0
 );
 DROP TABLE tmp_nfra_bank_dictionary;
 
-INSERT INTO sys_menu(id,parent_id,name,path,component,meta,sort_order,web_is_enabled,is_deleted,create_user,update_user)
-SELECT 1605,1600,'bankCards','/finance/bank-cards','bank-card/index','{"icon":"lucide:credit-card","title":"银行卡","keepAlive":false}',4,1,0,0,0
-WHERE NOT EXISTS(SELECT 1 FROM sys_menu WHERE id=1605 OR name='bankCards' OR path='/finance/bank-cards');
 """
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     TARGET.write_text(header + '\n'.join(body) + footer)

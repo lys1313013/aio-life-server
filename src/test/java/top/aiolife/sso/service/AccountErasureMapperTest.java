@@ -26,7 +26,7 @@ class AccountErasureMapperTest {
         var tablePattern = Pattern.compile("CREATE TABLE(?: IF NOT EXISTS)? \"([^\"]+)\" \\((.*?)\\n \\);", Pattern.DOTALL);
         var columnPattern = Pattern.compile("(?m)^\\s*\"([^\"]+)\"");
         var tables = new LinkedHashMap<String, List<String>>();
-        var matcher = tablePattern.matcher(Files.readString(Path.of("sql/migrations/postgresql/V20261110_01__postgresql_schema.sql")));
+        var matcher = tablePattern.matcher(Files.readString(Path.of("sql/migrations/V20261110_01__postgresql_schema.sql")));
         while (matcher.find()) {
             String table = matcher.group(1);
             var columns = columnPattern.matcher(matcher.group(2)).results().map(m -> m.group(1)).toList();

@@ -7,7 +7,7 @@ final class TestProject {
     private TestProject() {}
     static Path copy(Path target) throws Exception {
         Path source = MigrationProject.root();
-        for (String directory : new String[]{"sql/migrations", "tools/flyway/src/main/java"}) {
+        for (String directory : new String[]{"sql/migrations", "sql/reference/seed-split", "tools/flyway/src/main/java"}) {
             try (var paths = Files.walk(source.resolve(directory))) {
                 for (Path file : paths.filter(Files::isRegularFile).toList()) {
                     Path destination = target.resolve(source.relativize(file));

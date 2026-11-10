@@ -109,6 +109,7 @@ public class ExportAuthorizationService {
                         new LambdaUpdateWrapper<ExportGrantEntity>()
                                 .eq(ExportGrantEntity::getId, grant.getId())
                                 .eq(ExportGrantEntity::getConsumed, 0)
+                                .set(ExportGrantEntity::getUpdateTime, ExportTime.now())
                                 .set(ExportGrantEntity::getConsumed, 1));
         if (changed != 1) throw reauth();
         return grant;

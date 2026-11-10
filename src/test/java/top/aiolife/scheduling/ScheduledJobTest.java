@@ -1,5 +1,6 @@
 package top.aiolife.scheduling;
 
+import static top.aiolife.support.MockMatchers.anyWrapper;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -60,10 +61,10 @@ class ScheduledJobTest {
 
     @Test void 保存并发冲突不得发布调度事件() {
         var req = new ScheduledJobUpdateReq(); req.setCron(row.getCron()); req.setIsEnabled(0); req.setRevision(0);
-        when(jobs.update(isNull(), any(Wrapper.class))).thenReturn(0);
+        when(jobs.update(isNull(), anyWrapper())).thenReturn(0);
         assertThrows(IllegalArgumentException.class, () -> service.update(row.getId(), req, 1L));
         verifyNoInteractions(events);
-        when(jobs.update(isNull(), any(Wrapper.class))).thenReturn(1);
+        when(jobs.update(isNull(), anyWrapper())).thenReturn(1);
         service.update(row.getId(), req, 1L);
         verify(events).publishEvent(new ScheduledJobChanged(row.getId()));
     }

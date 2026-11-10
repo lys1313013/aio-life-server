@@ -2,6 +2,7 @@ package top.aiolife.wardrobe.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -97,7 +98,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
                     .or().like(WardrobeItemEntity::getBrand, keyword));
         }
 
-        queryWrapper.orderByDesc(WardrobeItemEntity::getCreateTime);
+        QueryOrder.descNullsLast(queryWrapper, WardrobeItemEntity::getCreateTime, WardrobeItemEntity::getId);
         List<WardrobeItemEntity> list = this.list(queryWrapper);
         Map<Long, String> categoryNameMap = list.isEmpty() ? Collections.emptyMap() : getCategoryNameMap(userId);
         return list.stream().map(item -> toVO(item, categoryNameMap)).collect(Collectors.toList());

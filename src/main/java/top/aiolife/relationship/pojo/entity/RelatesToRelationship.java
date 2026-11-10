@@ -24,7 +24,7 @@ public class RelatesToRelationship {
 
     @Id
     @GeneratedValue
-    private Long id;
+    private String id;
 
     /**
      * 用户ID（所属用户）

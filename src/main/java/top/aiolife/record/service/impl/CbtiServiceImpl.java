@@ -1,6 +1,7 @@
 package top.aiolife.record.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -180,7 +181,7 @@ public class CbtiServiceImpl implements ICbtiService {
         LambdaQueryWrapper<CbtiResultEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(CbtiResultEntity::getIsDeleted, 0);
         wrapper.eq(CbtiResultEntity::getUserId, userId);
-        wrapper.orderByDesc(CbtiResultEntity::getCreateTime);
+        QueryOrder.descNullsLast(wrapper, CbtiResultEntity::getCreateTime, CbtiResultEntity::getId);
         List<CbtiResultEntity> list = cbtiResultMapper.selectList(wrapper);
 
         Map<String, CbtiPersonalityEntity> personalityMap = new HashMap<>();

@@ -110,7 +110,7 @@ class WereadServiceTest {
             var result = service.connection();
             assertTrue(result.connected());
             assertFalse(json.writeValueAsString(result).contains("key"));
-            ArgumentCaptor<Wrapper<UserBindEntity>> captor = ArgumentCaptor.forClass(Wrapper.class);
+            ArgumentCaptor<Wrapper<UserBindEntity>> captor = ArgumentCaptor.captor();
             verify(mapper).selectOne(captor.capture());
             String sql = captor.getValue().getSqlSegment();
             assertTrue(sql.contains("user_id"));
@@ -148,7 +148,7 @@ class WereadServiceTest {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             var error = assertThrows(IllegalStateException.class, () -> service.sync("annually"));
             assertEquals("笔记本分页未推进，请重试", error.getMessage());
-            verify(mapper,never()).update(isNull(),any());
+            verify(mapper,never()).recordWereadSync(anyLong(), anyLong(), anyString(), anyString(), any());
             verify(client,times(2)).call(anyString(),eq("/user/notebooks"),any());
             verify(client).call("wrk-test", "/user/notebooks", Map.of("count", 100));
             verify(client).call("wrk-test", "/user/notebooks", Map.of("count", 100, "lastSort", 3L));
@@ -191,7 +191,7 @@ class WereadServiceTest {
     @Test
     void sync_完整成功后才返回同步时间() throws Exception {
         when(mapper.selectOne(any())).thenReturn(connection());
-        when(mapper.update(isNull(), any())).thenReturn(1);
+        when(mapper.recordWereadSync(anyLong(), anyLong(), anyString(), anyString(), any())).thenReturn(1);
         when(client.call(anyString(), eq("/shelf/sync"), any())).thenReturn(json.readTree("{\"books\":[]}"));
         when(client.call(anyString(), eq("/user/notebooks"), any())).thenReturn(json.readTree("{\"books\":[],\"hasMore\":0}"));
         when(client.call(anyString(), eq("/readdata/detail"), any())).thenReturn(json.readTree("{\"totalReadTime\":0}"));
@@ -201,7 +201,7 @@ class WereadServiceTest {
             verify(client).call("wrk-test", "/readdata/detail", Map.of("mode", "annually", "baseTime", 1735689600L));
             assertTrue(result.hasNonNull("lastSyncTime"));
             assertEquals(0, result.path("stats").path("totalReadTime").asInt());
-            verify(mapper).update(isNull(), any());
+            verify(mapper).recordWereadSync(eq(1L), eq(42L), eq("test-version"), anyString(), any());
         }
     }
 
@@ -238,8 +238,8 @@ class WereadServiceTest {
             service.disconnect();
             var order = inOrder(mapper);
             order.verify(mapper).lockWereadUser(42L);
-            order.verify(mapper).update(isNull(),any());
-            ArgumentCaptor<Wrapper<UserBindEntity>> captor = ArgumentCaptor.forClass(Wrapper.class);
+            order.verify(mapper).clearWereadCredentials(eq(42L), any());
+            ArgumentCaptor<Wrapper<UserBindEntity>> captor = ArgumentCaptor.captor();
             order.verify(mapper).delete(captor.capture());
             assertTrue(captor.getValue().getSqlSegment().contains("platform"));
             var params = ((AbstractWrapper<?,?,?>)captor.getValue()).getParamNameValuePairs();
@@ -258,7 +258,7 @@ class WereadServiceTest {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             assertEquals("https://weread.qq.com/web/reader/test-book", service.bookLink(bookId).deepLink());
             verify(client).call("wrk-test", "/book/info", Map.of("bookId", bookId));
-            ArgumentCaptor<Wrapper<UserBindEntity>> captor = ArgumentCaptor.forClass(Wrapper.class);
+            ArgumentCaptor<Wrapper<UserBindEntity>> captor = ArgumentCaptor.captor();
             verify(mapper).selectOne(captor.capture());
             captor.getValue().getSqlSegment();
             assertTrue(((AbstractWrapper<?,?,?>)captor.getValue()).getParamNameValuePairs().containsValue(42L));
@@ -402,7 +402,7 @@ class WereadServiceTest {
 
     @Test
     void recent_读取期间解绑不返回旧连接数据() throws Exception {
-        when(mapper.selectOne(any())).thenReturn(connection(), null);
+        when(mapper.selectOne(any())).thenReturn(connection()).thenReturn(null);
         when(client.call(anyString(), eq("/shelf/sync"), anyMap())).thenReturn(json.readTree("{\"books\":[]}"));
         try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);

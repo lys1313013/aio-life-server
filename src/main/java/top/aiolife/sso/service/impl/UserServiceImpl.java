@@ -210,6 +210,7 @@ public class UserServiceImpl implements IUserService {
         userEntity.setPassword(null);
         userEntity.setPasswordSalt(null);
         clearExternalCredentials(userEntity);
+        userEntity.setUpdateTime(LocalDateTime.now());
         if (avatarFileIdSpecified) avatarFiles.validateForBinding(userEntity.getId(), userEntity.getAvatarFileId());
         if (avatarFileIdSpecified) {
             userMapper.update(userEntity, new LambdaUpdateWrapper<UserEntity>()
@@ -237,6 +238,8 @@ public class UserServiceImpl implements IUserService {
         String salt = PasswordUtil.getSalt();
         userEntity.setPasswordSalt(salt);
         userEntity.setPassword(PasswordUtil.encryptPassword(changePasswordReq.getNewPassword(), salt));
+        userEntity.setUpdateTime(LocalDateTime.now());
+        userEntity.setUpdateUser(userId);
         userMapper.updateById(userEntity);
     }
 
@@ -520,6 +523,8 @@ public class UserServiceImpl implements IUserService {
         String salt = PasswordUtil.getSalt();
         userEntity.setPasswordSalt(salt);
         userEntity.setPassword(PasswordUtil.encryptPassword(resetPasswordReq.getPassword(), salt));
+        userEntity.setUpdateTime(LocalDateTime.now());
+        userEntity.setUpdateUser(userEntity.getId());
         if (userMapper.updateById(userEntity) != 1) {
             throw new IllegalStateException("密码重置失败，请重试");
         }
@@ -587,6 +592,8 @@ public class UserServiceImpl implements IUserService {
         String salt = PasswordUtil.getSalt();
         user.setSecondaryPasswordSalt(salt);
         user.setSecondaryPassword(PasswordUtil.encryptPassword(password, salt));
+        user.setUpdateTime(LocalDateTime.now());
+        user.setUpdateUser(user.getId());
         userMapper.updateById(user);
     }
 
@@ -718,6 +725,8 @@ public class UserServiceImpl implements IUserService {
         String salt = PasswordUtil.getSalt();
         user.setSecondaryPasswordSalt(salt);
         user.setSecondaryPassword(PasswordUtil.encryptPassword(password, salt));
+        user.setUpdateTime(LocalDateTime.now());
+        user.setUpdateUser(user.getId());
         userMapper.updateById(user);
     }
 }

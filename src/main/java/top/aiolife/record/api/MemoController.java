@@ -2,6 +2,7 @@ package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
@@ -57,7 +58,7 @@ public class MemoController {
             lambdaQueryWrapper.like(MemoEntity::getContent, query.getCondition().getContent());
         }
 
-        lambdaQueryWrapper.orderByDesc(MemoEntity::getUpdateTime, MemoEntity::getId);
+        QueryOrder.descNullsLast(lambdaQueryWrapper, MemoEntity::getUpdateTime, MemoEntity::getId);
 
         Page<MemoEntity> page = new Page<>(query.getPage(), query.getPageSize());
 

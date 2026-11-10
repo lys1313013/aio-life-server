@@ -1,9 +1,11 @@
 package top.aiolife.sso.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-
 import java.sql.Timestamp;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.IdentityEntity;
 
 /**
  * 登录日志
@@ -11,9 +13,11 @@ import java.sql.Timestamp;
  * @author Lys
  * @date 2025/06/22 20:45
  */
-@Data
+@Getter
+@Setter
+@ToString
 @TableName("login_log")
-public class LoginLogEntity {
+public class LoginLogEntity extends IdentityEntity {
     /**
      * 主键
      */
@@ -34,4 +38,9 @@ public class LoginLogEntity {
      * ip地址
      */
     private String ipAddress;
+
+    @Override
+    protected Object identityKey() {
+        return id;
+    }
 }

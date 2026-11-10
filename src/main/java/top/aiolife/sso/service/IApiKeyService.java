@@ -12,6 +12,9 @@ import java.util.List;
  * @date 2026/03/09
  */
 public interface IApiKeyService extends IService<ApiKeyEntity> {
+
+    /** 仅修改当前用户持有且未删除的密钥备注。 */
+    ApiKeyEntity updateRemark(Long userId, Long id, String remark);
     
     /**
      * 生成 API Key

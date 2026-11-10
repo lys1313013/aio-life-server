@@ -1,12 +1,11 @@
 package top.aiolife.record.pojo.entity;
 
-import top.aiolife.core.pojo.entity.BaseEntity;
-
 import com.baomidou.mybatisplus.annotation.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
  * 任务实体类
@@ -14,8 +13,9 @@ import java.time.LocalDateTime;
  * @author Lys
  * @date 2025/04/10 22:45
  */
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString
 @TableName("task")
 public class TaskEntity extends BaseEntity {
 

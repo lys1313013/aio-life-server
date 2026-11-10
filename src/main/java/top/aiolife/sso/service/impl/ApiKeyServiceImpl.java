@@ -2,9 +2,13 @@ package top.aiolife.sso.service.impl;
 
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.sso.mapper.ApiKeyMapper;
 import top.aiolife.sso.pojo.entity.ApiKeyEntity;
 import top.aiolife.sso.service.IApiKeyService;
@@ -23,6 +27,21 @@ import java.util.List;
 public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyEntity> implements IApiKeyService {
 
     private static final int MAX_GENERATE_ATTEMPTS = 5;
+
+    @Override
+    @Transactional
+    public ApiKeyEntity updateRemark(Long userId, Long id, String remark) {
+        boolean updated = this.update(new LambdaUpdateWrapper<ApiKeyEntity>()
+                .eq(ApiKeyEntity::getId, id)
+                .eq(ApiKeyEntity::getUserId, userId)
+                .set(ApiKeyEntity::getRemark, remark)
+                .set(ApiKeyEntity::getUpdateUser, userId)
+                .set(ApiKeyEntity::getUpdateTime, LocalDateTime.now()));
+        if (!updated) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "API Key 不存在或已删除");
+        }
+        return this.getById(id);
+    }
 
     @Override
     public ApiKeyEntity generateApiKey(Long userId, String remark, Integer expireDays) {

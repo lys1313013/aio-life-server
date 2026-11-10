@@ -34,6 +34,7 @@ public class VideoCoverService {
         if (StringUtils.hasText(source)) downloader.normalize(source);
         long version = (video.getCoverVersion() == null ? 0 : video.getCoverVersion()) + 1;
         var update = new LambdaUpdateWrapper<BVideoEntity>().eq(BVideoEntity::getId, videoId)
+                .set(BVideoEntity::getUpdateTime, LocalDateTime.now()).set(BVideoEntity::getUpdateUser, owner)
                 .set(BVideoEntity::getCover, source).set(BVideoEntity::getCoverVersion, version)
                 .set(BVideoEntity::getCoverState, StringUtils.hasText(source) ? "PENDING" : "NONE");
         if (!StringUtils.hasText(source)) update.set(BVideoEntity::getCoverFileId, null);
@@ -70,6 +71,7 @@ public class VideoCoverService {
         file.setBizId(video.getId()); file.setIsPublic(0); file.fillCreateCommonField(video.getUserId());
         files.insert(file);
         videos.update(null, new LambdaUpdateWrapper<BVideoEntity>().eq(BVideoEntity::getId, video.getId())
+                .set(BVideoEntity::getUpdateTime, LocalDateTime.now()).set(BVideoEntity::getUpdateUser, video.getUserId())
                 .set(BVideoEntity::getCoverFileId, file.getId()).set(BVideoEntity::getCoverState, "READY"));
         finish(taskId, "READY");
     }
@@ -88,14 +90,17 @@ public class VideoCoverService {
                 .set(ImageImportTaskEntity::getErrorCode, errorCode)
                 .set(ImageImportTaskEntity::getNextAttemptAt, LocalDateTime.now().plusSeconds(
                         Math.min(30L, 5L << Math.max(0, task.getAttempts() - 1))))
+                .set(ImageImportTaskEntity::getUpdateTime, LocalDateTime.now())
                 .set(ImageImportTaskEntity::getLeaseToken, null).set(ImageImportTaskEntity::getLeaseUntil, null));
         if (exhausted) videos.update(null, new LambdaUpdateWrapper<BVideoEntity>().eq(BVideoEntity::getId, video.getId())
-                .set(BVideoEntity::getCoverState, "FAILED"));
+                .set(BVideoEntity::getCoverState, "FAILED").set(BVideoEntity::getUpdateTime, LocalDateTime.now())
+                .set(BVideoEntity::getUpdateUser, video.getUserId()));
     }
 
     private void finish(long taskId, String state) {
         tasks.update(null, new LambdaUpdateWrapper<ImageImportTaskEntity>().eq(ImageImportTaskEntity::getId, taskId)
                 .set(ImageImportTaskEntity::getState, state)
+                .set(ImageImportTaskEntity::getUpdateTime, LocalDateTime.now())
                 .set(ImageImportTaskEntity::getLeaseToken, null).set(ImageImportTaskEntity::getLeaseUntil, null));
     }
 

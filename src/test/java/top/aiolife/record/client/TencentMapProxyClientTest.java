@@ -29,7 +29,7 @@ class TencentMapProxyClientTest {
     @BeforeEach void setup() throws Exception {
         when(config.displayKey()).thenReturn("synthetic-server-key");
         response = mock(HttpResponse.class);
-        when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(response);
+        when(http.<byte[]>send(any(HttpRequest.class), any())).thenReturn(response);
         when(response.statusCode()).thenReturn(200);
         when(response.headers()).thenReturn(HttpHeaders.of(Map.of("Content-Type", List.of("application/javascript;charset=UTF-8")), (a, b) -> true));
         when(response.body()).thenReturn("TMap._svcb.test({\"info\":{\"error\":0},\"key\":\"synthetic-server-key\"})".getBytes(StandardCharsets.UTF_8));
@@ -82,7 +82,7 @@ class TencentMapProxyClientTest {
         assertTrue(new String(client.forward(7, "/checkKey", new LinkedMultiValueMap<>()).getBody(), StandardCharsets.UTF_8).contains("-202"));
         when(response.statusCode()).thenReturn(302);
         assertEquals(502, assertThrows(ResponseStatusException.class, () -> client.forward(7, "/checkKey", new LinkedMultiValueMap<>())).getStatusCode().value());
-        when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenThrow(new IOException("https://upstream?key=synthetic-server-key"));
+        when(http.<byte[]>send(any(HttpRequest.class), any())).thenThrow(new IOException("https://upstream?key=synthetic-server-key"));
         var error = assertThrows(ResponseStatusException.class, () -> client.forward(7, "/checkKey", new LinkedMultiValueMap<>()));
         assertFalse(error.toString().contains("synthetic-server-key")); assertNull(error.getCause());
     }

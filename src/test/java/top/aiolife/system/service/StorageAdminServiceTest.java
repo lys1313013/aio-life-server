@@ -6,6 +6,7 @@ import io.minio.GetObjectResponse;
 import io.minio.MinioClient;
 import io.minio.StatObjectArgs;
 import io.minio.StatObjectResponse;
+import io.minio.errors.ErrorResponseException;
 import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -131,6 +132,31 @@ class StorageAdminServiceTest {
         service.read("unsafe.svg", true, response);
         assertEquals("application/octet-stream", response.getContentType());
         assertTrue(response.getHeader("Content-Disposition").startsWith("attachment;"));
+    }
+
+    @Test
+    void 列表异步接口仍透传S3权限异常() throws Exception {
+        var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> {
+            byte[] xml = """
+                    <Error><Code>AccessDenied</Code><Message>Access Denied</Message>
+                    <BucketName>business</BucketName><RequestId>test</RequestId><HostId>test</HostId></Error>
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/xml");
+            exchange.sendResponseHeaders(403, xml.length);
+            exchange.getResponseBody().write(xml);
+            exchange.close();
+        });
+        server.start();
+        var config = config();
+        config.setEndpoint("http://127.0.0.1:" + server.getAddress().getPort());
+        try (var client = new StorageListClient(config)) {
+            var error = assertThrows(ErrorResponseException.class, () -> client.page("business", null, null, 2));
+            assertEquals("AccessDenied", error.errorResponse().code());
+            assertEquals(403, error.response().code());
+        } finally {
+            server.stop(0);
+        }
     }
 
     @Test

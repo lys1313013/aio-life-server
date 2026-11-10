@@ -58,7 +58,7 @@ public interface IExerciseRecordMapper extends BaseMapper<ExerciseRecordEntity> 
     List<ExerciseStatisticsDTO> selectDashboardTotals(@Param("userId") Long userId,
                                                      @Param("dates") List<LocalDate> dates);
 
-    /** 每个类型独立取四个历史运动日，用 UNION ALL 一次查询，兼容不支持窗口函数的 MySQL。 */
+    /** 每个类型独立取四个历史运动日，用 UNION ALL 一次查询。 */
     @Select("""
             <script>
             SELECT exercise_type_id, exercise_date, exercise_count FROM (

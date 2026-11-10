@@ -1,8 +1,11 @@
 package top.aiolife.record.api;
 
+import java.time.LocalDateTime;
+
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
@@ -60,7 +63,7 @@ public class SysDictTypeController {
 
         LambdaQueryWrapper<SysDictDataEntity> typeQueryWrapper = new LambdaQueryWrapper<>();
         typeQueryWrapper.eq(SysDictDataEntity::getDictId, sysDictTypeEntity.getDictId());
-        typeQueryWrapper.orderByAsc(SysDictDataEntity::getSortOrder);
+        QueryOrder.ascNullsFirst(typeQueryWrapper, SysDictDataEntity::getSortOrder);
         List<SysDictDataEntity> sysDictDataEntityList = sysDictDataMapper.selectList(typeQueryWrapper);
         SysDictTypeDetailVO sysDictTypeDetailVO = new SysDictTypeDetailVO();
         sysDictTypeDetailVO.setSysDictTypeEntity(RecordApiConvertor.INSTANCE.toSysDictTypeVO(sysDictTypeEntity));
@@ -111,6 +114,7 @@ public class SysDictTypeController {
         entity.setDictId(dictId);
         entity.setCreateUser(null);
         entity.setUpdateUser(StpUtil.getLoginIdAsLong());
+        entity.setUpdateTime(LocalDateTime.now());
         return ApiResponse.success(getBaseMapper().updateById(entity) > 0);
     }
 

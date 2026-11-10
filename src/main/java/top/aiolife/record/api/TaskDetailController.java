@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Operation;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -53,7 +54,7 @@ public class TaskDetailController {
         queryWrapper.eq(TaskDetailEntity::getTaskId, taskId);
         queryWrapper.eq(TaskDetailEntity::getUserId, userId);
         queryWrapper.orderByAsc(TaskDetailEntity::getIsCompleted);
-        queryWrapper.orderByAsc(TaskDetailEntity::getPriority);
+        QueryOrder.ascNullsFirst(queryWrapper, TaskDetailEntity::getPriority);
         queryWrapper.orderByAsc(TaskDetailEntity::getSortOrder, TaskDetailEntity::getId);
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVOList(taskDetailService.list(queryWrapper)));
     }
@@ -180,7 +181,7 @@ public class TaskDetailController {
         queryWrapper.eq(TaskDetailEntity::getUserId, userId);
         queryWrapper.eq(TaskDetailEntity::getIsStarred, 1);
         queryWrapper.eq(TaskDetailEntity::getIsCompleted, 0);
-        queryWrapper.orderByAsc(TaskDetailEntity::getPriority);
+        QueryOrder.ascNullsFirst(queryWrapper, TaskDetailEntity::getPriority);
         queryWrapper.orderByAsc(TaskDetailEntity::getSortOrder, TaskDetailEntity::getId);
         List<TaskDetailEntity> list = taskDetailService.list(queryWrapper);
 

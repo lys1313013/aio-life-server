@@ -176,6 +176,7 @@ public class ExportWorker {
                             new LambdaUpdateWrapper<ExportJobEntity>()
                                     .eq(ExportJobEntity::getId, job.getId())
                                     .eq(ExportJobEntity::getObjectKey, job.getObjectKey())
+                                    .set(ExportJobEntity::getUpdateTime, ExportTime.now())
                                     .set(ExportJobEntity::getObjectKey, null));
                     audit.independent(job.getUserId(), job.getId(), "ARTIFACT_DELETED", "OK", null);
                 } catch (Exception unavailable) {

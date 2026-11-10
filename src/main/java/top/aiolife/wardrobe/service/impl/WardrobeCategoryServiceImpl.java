@@ -2,6 +2,7 @@ package top.aiolife.wardrobe.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -77,7 +78,7 @@ public class WardrobeCategoryServiceImpl extends ServiceImpl<WardrobeCategoryMap
                 .eq(WardrobeCategoryEntity::getCategoryType, 1)
                 .eq(WardrobeCategoryEntity::getUserId, userId)
         );
-        queryWrapper.orderByAsc(WardrobeCategoryEntity::getSortOrder);
+        QueryOrder.ascNullsFirst(queryWrapper, WardrobeCategoryEntity::getSortOrder);
 
         List<WardrobeCategoryEntity> list = this.list(queryWrapper);
         return buildTree(list);

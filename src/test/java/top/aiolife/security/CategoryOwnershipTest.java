@@ -1,5 +1,6 @@
 package top.aiolife.security;
 
+import static top.aiolife.support.MockMatchers.anyWrapper;
 import java.util.List;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
@@ -44,7 +45,7 @@ class CategoryOwnershipTest {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
             assertThrows(IllegalArgumentException.class, () -> service.saveTimeRecord(req));
             verify(service, never()).save(any(TimeRecordEntity.class));
-            var query = ArgumentCaptor.forClass(Wrapper.class);
+            ArgumentCaptor<Wrapper<TimeTrackerCategoryEntity>> query = ArgumentCaptor.captor();
             verify(categories).count(query.capture());
             String sql = query.getValue().getSqlSegment();
             assertTrue(sql.contains("user_id")); assertTrue(sql.contains(" OR "));
@@ -54,7 +55,7 @@ class CategoryOwnershipTest {
     @Test
     void allowedTimeCategory_preservesNormalSave() {
         var categories = mock(ITimeTrackerCategoryService.class);
-        when(categories.count(any(Wrapper.class))).thenReturn(1L);
+        when(categories.count(anyWrapper())).thenReturn(1L);
         var visible = new TimeTrackerCategoryEntity(); visible.setId(22L);
         when(categories.listUserVisibleCategories(11L)).thenReturn(List.of(visible));
         var service = spy(new TimeRecordServiceImpl(null, null, null, null, null, null, null,

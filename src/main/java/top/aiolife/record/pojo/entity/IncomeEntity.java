@@ -6,12 +6,12 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
+import top.aiolife.core.pojo.entity.IdentityEntity;
 
 /**
  * 类功能描述
@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 @Setter
 @TableName("income")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class IncomeEntity {
+public class IncomeEntity extends IdentityEntity {
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private BigDecimal amt;
@@ -47,4 +47,9 @@ public class IncomeEntity {
      */
     private Long incTypeId;
     private BigDecimal tax;
+
+    @Override
+    protected Object identityKey() {
+        return id;
+    }
 }

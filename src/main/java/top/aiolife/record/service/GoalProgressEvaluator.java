@@ -41,7 +41,7 @@ public class GoalProgressEvaluator {
     public ObjectNode variables(GoalEntity goal) {
         ObjectNode values = object(goal.getProgressVariables());
         ObjectNode bindings = object(goal.getProgressVariableBindings());
-        bindings.fields().forEachRemaining(entry -> {
+        bindings.properties().forEach(entry -> {
             String key = entry.getKey(), binding = entry.getValue().asText();
             if (!key.matches("[A-Za-z_][A-Za-z0-9_]*") || values.has(key) || !entry.getValue().isTextual() || !BINDINGS.contains(binding))
                 throw new IllegalArgumentException("变量绑定无效或与固定变量重复");

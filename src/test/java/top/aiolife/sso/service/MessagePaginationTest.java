@@ -1,5 +1,7 @@
 package top.aiolife.sso.service;
 
+import static top.aiolife.support.MockMatchers.anyWrapper;
+import static top.aiolife.support.MockMatchers.anyPage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,15 +34,15 @@ class MessagePaginationTest {
         MessageMapper mapper = mock(MessageMapper.class);
         MessageServiceImpl service = new MessageServiceImpl();
         ReflectionTestUtils.setField(service, "baseMapper", mapper);
-        when(mapper.selectPage(any(IPage.class), any(Wrapper.class)))
+        when(mapper.selectPage(anyPage(), anyWrapper()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         IPage<MessageEntity> result = service.pageByUserId(123L, false, 2, 20);
 
         assertEquals(2, result.getCurrent());
         assertEquals(20, result.getSize());
-        ArgumentCaptor<Wrapper<MessageEntity>> query = ArgumentCaptor.forClass(Wrapper.class);
-        verify(mapper).selectPage(any(IPage.class), query.capture());
+        ArgumentCaptor<Wrapper<MessageEntity>> query = ArgumentCaptor.captor();
+        verify(mapper).selectPage(anyPage(), query.capture());
         String sql = query.getValue().getSqlSegment();
         Map<String, Object> values = ((LambdaQueryWrapper<MessageEntity>) query.getValue())
                 .getParamNameValuePairs();

@@ -68,7 +68,7 @@ class ExportDatasetRegistryTest {
                         .matcher(
                                 Files.readString(
                                         Path.of(
-                                                "sql/migrations/postgresql/V20261110_01__postgresql_schema.sql")));
+                                                "sql/migrations/V20261110_01__postgresql_schema.sql")));
         while (matcher.find())
             assertTrue(
                     classified.contains(matcher.group(1)),
@@ -87,7 +87,7 @@ class ExportDatasetRegistryTest {
                                 Path.of("src/main/resources/export/excluded-columns.json")),
                         new TypeReference<>() {});
         String schema =
-                Files.readString(Path.of("sql/migrations/postgresql/V20261110_01__postgresql_schema.sql"));
+                Files.readString(Path.of("sql/migrations/V20261110_01__postgresql_schema.sql"));
         for (var dataset : datasets) {
             var table =
                     Pattern.compile(

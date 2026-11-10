@@ -1,0 +1,45 @@
+-- 目的：初始化会员平台，仅供 PostgreSQL 18+ 新库使用。
+-- 前置：已执行 V20261110_01 结构迁移及之前的适用版本。
+-- 影响：插入公共预设，不创建用户账号；源库搬迁仍由独立导入器处理。
+-- 重跑：由 Flyway 版本历史保证只执行一次；失败事务回滚后修正原因再迁移。
+-- 执行：mvn -f tools/flyway/pom.xml compile flyway:migrate flyway:validate。
+-- BEGIN ORIGINAL SEED SQL
+INSERT INTO "membership_provider" ("id", "name", "code", "category", "icon_key", "sort_order", "is_enabled", "create_user", "create_time", "update_user", "update_time", "is_deleted") VALUES
+(195001, '腾讯视频', 'tencent_video', 'video', 'tencent_video', 10, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195002, '爱奇艺', 'iqiyi', 'video', 'iqiyi', 20, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195003, '优酷', 'youku', 'video', 'youku', 30, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195004, '哔哩哔哩', 'bilibili', 'video', 'bilibili', 40, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195005, 'Netflix', 'netflix', 'video', 'netflix', 50, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195006, 'YouTube', 'youtube', 'video', 'youtube', 60, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195007, 'QQ音乐', 'qq_music', 'music', 'qq_music', 70, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195008, '网易云音乐', 'netease_music', 'music', 'netease_music', 80, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195009, '酷狗音乐', 'kugou', 'music', 'kugou', 90, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195010, 'Spotify', 'spotify', 'music', 'spotify', 100, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195011, 'Apple Music', 'apple_music', 'music', 'apple_music', 110, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195012, '京东', 'jd', 'shopping', 'jd', 120, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195013, '淘宝', 'taobao', 'shopping', 'taobao', 130, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195014, '美团', 'meituan', 'lifestyle', 'meituan', 140, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195015, '百度网盘', 'baidu_netdisk', 'cloud', 'baidu_netdisk', 150, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195016, '夸克', 'quark', 'cloud', 'quark', 160, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195017, '阿里云盘', 'aliyundrive', 'cloud', 'aliyundrive', 170, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195018, '迅雷', 'xunlei', 'cloud', 'xunlei', 180, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195019, 'ChatGPT', 'chatgpt', 'AI', 'chatgpt', 190, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195020, 'Disney+', 'disneyplus', 'video', 'disneyplus', 65, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195021, 'Claude', 'claude', 'AI', 'claude', 210, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195022, 'Gemini / Google AI', 'gemini', 'AI', 'gemini', 220, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195023, 'Grok', 'grok', 'AI', 'grok', 230, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195024, 'Poe', 'poe', 'AI', 'poe', 240, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195025, 'Kimi', 'kimi', 'AI', 'kimi', 250, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195026, 'Cursor', 'cursor', 'AI', 'cursor', 260, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195027, 'GitHub Copilot', 'github_copilot', 'AI', 'github_copilot', 270, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195028, '智谱 GLM Coding Plan', 'glm_coding_plan', 'AI', 'glm_coding_plan', 280, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195029, 'Midjourney', 'midjourney', 'AI', 'midjourney', 290, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195030, '即梦 AI', 'jimeng', 'AI', 'jimeng', 300, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195031, 'Suno', 'suno', 'AI', 'suno', 310, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195032, '阿里云百炼', 'aliyun_bailian', 'AI', 'aliyun_bailian', 320, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195033, '火山引擎·火山方舟', 'volcengine_ark', 'AI', 'volcengine_ark', 330, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195034, 'OpenCode Go', 'opencode_go', 'AI', 'opencode_go', 340, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195035, 'iCloud+', 'icloud', 'cloud', 'icloud', 181, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195036, '小米云服务', 'xiaomi_cloud', 'cloud', 'xiaomi_cloud', 182, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195037, '肯德基', 'kfc', 'lifestyle', 'kfc', 141, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0),
+(195038, '微信读书', 'weread', 'reading', NULL, 183, 1, NULL, '2026-11-10 11:39:36', NULL, '2026-11-10 11:39:36', 0);

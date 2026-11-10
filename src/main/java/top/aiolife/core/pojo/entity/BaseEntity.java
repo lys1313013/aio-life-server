@@ -3,10 +3,10 @@ package top.aiolife.core.pojo.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 /**
  * 类功能描述
@@ -14,8 +14,9 @@ import java.time.LocalDateTime;
  * @author Lys
  * @date 2025/04/13 14:30
  */
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString
 public class BaseEntity extends AuditEntity {
 
     @TableId(type = IdType.ASSIGN_ID)
@@ -35,5 +36,10 @@ public class BaseEntity extends AuditEntity {
     public void fillUpdateCommonField(Long userId) {
         this.setUpdateUser(userId);
         this.setUpdateTime(LocalDateTime.now());
+    }
+
+    @Override
+    protected Object identityKey() {
+        return id;
     }
 }

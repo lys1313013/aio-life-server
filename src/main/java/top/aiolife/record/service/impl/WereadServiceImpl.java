@@ -202,13 +202,7 @@ public class WereadServiceImpl implements IWereadService {
         long userId = StpUtil.getLoginIdAsLong();
         mapper.lockWereadUser(userId);
         // 与账号绑定的解绑语义一致，并在逻辑删除前清除敏感凭证。
-        mapper.update(null, new LambdaUpdateWrapper<UserBindEntity>()
-                .eq(UserBindEntity::getUserId, userId)
-                .eq(UserBindEntity::getPlatform, "weread")
-                .set(UserBindEntity::getAccessToken, null)
-                .setSql("meta_fields = JSON_REMOVE(COALESCE(meta_fields, JSON_OBJECT()), '$.lastSyncTime')")
-                .set(UserBindEntity::getUpdateTime, LocalDateTime.now())
-                .set(UserBindEntity::getUpdateUser, userId));
+        mapper.clearWereadCredentials(userId, LocalDateTime.now());
         mapper.delete(new LambdaQueryWrapper<UserBindEntity>()
                 .eq(UserBindEntity::getUserId, userId)
                 .eq(UserBindEntity::getPlatform, "weread"));
@@ -238,15 +232,8 @@ public class WereadServiceImpl implements IWereadService {
         result.set("notebooks", notebooks(key));
         result.set("stats", client.call(key, "/readdata/detail", Map.of("mode", mode, "baseTime", "overall".equals(mode) ? 0L : baseTime)));
         LocalDateTime now = LocalDateTime.now();
-        int updated = mapper.update(null, new LambdaUpdateWrapper<UserBindEntity>()
-                .eq(UserBindEntity::getId, connection.getId())
-                .eq(UserBindEntity::getUserId, userId)
-                .eq(UserBindEntity::getPlatform, "weread")
-                .apply("(meta_fields::jsonb ->> 'connectionVersion') = {0}",
-                        metadata(connection).getString("connectionVersion"))
-                .setSql("meta_fields = JSON_SET(COALESCE(meta_fields, JSON_OBJECT()), '$.lastSyncTime', {0})", now.toString())
-                .set(UserBindEntity::getUpdateTime, now)
-                .set(UserBindEntity::getUpdateUser, userId));
+        int updated = mapper.recordWereadSync(connection.getId(), userId,
+                metadata(connection).getString("connectionVersion"), now.toString(), now);
         if (updated == 0) throw new IllegalStateException("连接已变更，请重新同步");
         result.put("lastSyncTime", now.toString());
         return result;

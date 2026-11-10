@@ -6,10 +6,12 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.IdentityEntity;
 
 /**
  * 类功能描述
@@ -17,10 +19,12 @@ import java.time.LocalDateTime;
  * @author Lys
  * @date 2025/10/03 21:02
  */
-@Data
+@Getter
+@Setter
+@ToString
 @TableName("expense")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ExpenseEntity {
+public class ExpenseEntity extends IdentityEntity {
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     /**
@@ -88,4 +92,9 @@ public class ExpenseEntity {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateTime;
     private Long updateUser;
+
+    @Override
+    protected Object identityKey() {
+        return id;
+    }
 }

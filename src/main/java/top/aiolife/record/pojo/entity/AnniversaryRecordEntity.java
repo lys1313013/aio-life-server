@@ -1,12 +1,12 @@
 package top.aiolife.record.pojo.entity;
 
-import top.aiolife.core.pojo.entity.BaseEntity;
-
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
-
 import java.time.LocalDate;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
  * 纪念日记录实体
@@ -14,7 +14,9 @@ import java.time.LocalDate;
  * @author Lys
  * @date 2026/04/18
  */
-@Data
+@Getter
+@Setter
+@ToString
 @TableName("anniversary_record")
 public class AnniversaryRecordEntity extends BaseEntity {
     /** 是否固定到首页：0=否，1=是。 */

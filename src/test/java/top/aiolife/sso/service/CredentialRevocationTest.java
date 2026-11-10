@@ -105,8 +105,10 @@ class CredentialRevocationTest {
                 mock(UserAvatarFileService.class));
         var proxy = new ProxyFactory(implementation);
         proxy.setProxyTargetClass(true);
-        proxy.addAdvice(new TransactionInterceptor(new DataSourceTransactionManager(source),
-                new AnnotationTransactionAttributeSource()));
+        var interceptor = new TransactionInterceptor();
+        interceptor.setTransactionManager(new DataSourceTransactionManager(source));
+        interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
+        proxy.addAdvice(interceptor);
         users = (UserServiceImpl) proxy.getProxy();
 
         sessionDao = new SaTokenDaoDefaultImpl();

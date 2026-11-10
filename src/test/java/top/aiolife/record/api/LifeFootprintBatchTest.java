@@ -51,8 +51,10 @@ class LifeFootprintBatchTest {
         var target = new LifeFootprintService(new SqlSessionTemplate(factory.getObject())
                 .getMapper(LifeFootprintMapper.class), mock(SystemRegionService.class));
         var proxy = new ProxyFactory(target);
-        proxy.addAdvice(new TransactionInterceptor(new DataSourceTransactionManager(ds),
-                new AnnotationTransactionAttributeSource()));
+        var interceptor = new TransactionInterceptor();
+        interceptor.setTransactionManager(new DataSourceTransactionManager(ds));
+        interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
+        proxy.addAdvice(interceptor);
         service = (LifeFootprintService) proxy.getProxy();
     }
 

@@ -2,6 +2,7 @@ package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
@@ -42,7 +43,7 @@ public class HonorRecordController {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<HonorRecordEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(HonorRecordEntity::getUserId, userId);
-        queryWrapper.orderByDesc(HonorRecordEntity::getIsTop);
+        QueryOrder.descNullsLast(queryWrapper, HonorRecordEntity::getIsTop);
         queryWrapper.orderByDesc(HonorRecordEntity::getHonorDate);
         List<HonorRecordEntity> list = honorRecordService.list(queryWrapper);
         if (list != null && !list.isEmpty()) {

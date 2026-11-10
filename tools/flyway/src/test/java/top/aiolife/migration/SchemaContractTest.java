@@ -38,7 +38,7 @@ class SchemaContractTest {
         Path root = TestProject.copy(temporary);
         Path contract = root.resolve("contract.json");
         var evidence = MigrationProject.toolSources(root);
-        SchemaContract.JSON.writeValue(contract.toFile(), new SchemaContract(SchemaContract.FORMAT, "20261110.02", "18.0", MigrationProject.sources(root), fixture(), evidence));
+        SchemaContract.JSON.writeValue(contract.toFile(), new SchemaContract(SchemaContract.FORMAT, "20261110.02.011", "18.0", MigrationProject.sources(root), fixture(), evidence));
         Path file = root.resolve(change.equals("javaComment") ? "tools/flyway/src/main/java/top/aiolife/migration/MigrationGuard.java" : "tools/flyway/pom.xml");
         String source = Files.readString(file);
         String edited = switch (change) {
@@ -56,13 +56,13 @@ class SchemaContractTest {
     void SQL及迁移配置变化必须重新生成契约(String change, @org.junit.jupiter.api.io.TempDir Path temporary) throws Exception {
         Path root = TestProject.copy(temporary);
         Path contract = root.resolve("contract.json");
-        SchemaContract.JSON.writeValue(contract.toFile(), new SchemaContract(SchemaContract.FORMAT, "20261110.02", "18.0", MigrationProject.sources(root), fixture(), MigrationProject.toolSources(root)));
-        Path sql = root.resolve("sql/migrations/postgresql/V20261110_02__public_seed_data.sql");
+        SchemaContract.JSON.writeValue(contract.toFile(), new SchemaContract(SchemaContract.FORMAT, "20261110.02.011", "18.0", MigrationProject.sources(root), fixture(), MigrationProject.toolSources(root)));
+        Path sql = root.resolve("sql/migrations/V20261110_02_006__menus.sql");
         Path pom = root.resolve("tools/flyway/pom.xml");
         String source = Files.readString(pom);
         switch (change) {
             case "sqlEdit" -> Files.writeString(sql, Files.readString(sql) + "\nSELECT 1;\n");
-            case "sqlAdd" -> Files.writeString(root.resolve("sql/migrations/postgresql/V99999999_01__probe.sql"), "SELECT 1;");
+            case "sqlAdd" -> Files.writeString(root.resolve("sql/migrations/V99999999_01__probe.sql"), "SELECT 1;");
             case "sqlRemove" -> Files.delete(sql);
             case "encoding" -> Files.writeString(pom, source.replace("<encoding>UTF-8</encoding>", "<encoding>UTF-16</encoding>"));
             case "flywayVersion" -> Files.writeString(pom, source.replace("<flyway.version>13.11.1</flyway.version>", "<flyway.version>13.11.2</flyway.version>"));

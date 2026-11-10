@@ -2,11 +2,12 @@ package top.aiolife.membership.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
-import top.aiolife.core.pojo.entity.BaseEntity;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
  * 会员记录实体
@@ -14,7 +15,9 @@ import java.time.LocalDate;
  * @author Lys
  * @date 2026/08/06
  */
-@Data
+@Getter
+@Setter
+@ToString
 @TableName("membership_record")
 public class MembershipRecordEntity extends BaseEntity {
 

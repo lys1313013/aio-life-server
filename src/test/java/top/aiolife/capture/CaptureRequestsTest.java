@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -58,7 +57,7 @@ class CaptureRequestsTest {
         var attempt = requests.begin(1, "direct", payload);
         var result = json.createObjectNode().put("operation", "created");
         requests.finish(attempt, result);
-        when(redis.execute(any(DefaultRedisScript.class), anyList(), any(), any(), any()))
+        when(redis.execute(any(), anyList(), any(), any(), any()))
                 .thenThrow(new RedisConnectionFailureException("simulated"));
         for (var sync : TransactionSynchronizationManager.getSynchronizations()) {
             sync.afterCommit();
@@ -76,9 +75,9 @@ class CaptureRequestsTest {
         requests.begin(1, "direct", json.createObjectNode().put("idempotencyKey", "rollback-key"));
         var sync = TransactionSynchronizationManager.getSynchronizations().getFirst();
         sync.afterCompletion(TransactionSynchronization.STATUS_UNKNOWN);
-        verify(redis, never()).execute(any(DefaultRedisScript.class), anyList(), any());
+        verify(redis, never()).execute(any(), anyList(), any());
         sync.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
-        verify(redis).execute(any(DefaultRedisScript.class), anyList(), any());
+        verify(redis).execute(any(), anyList(), any());
     }
 
     @Test

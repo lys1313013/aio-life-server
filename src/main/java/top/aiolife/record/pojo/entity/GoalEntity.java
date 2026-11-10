@@ -5,12 +5,14 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.IdentityEntity;
 import top.aiolife.record.pojo.enums.GoalTypeEnum;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
-
-import java.time.LocalDateTime;
-import java.math.BigDecimal;
 
 /**
  * 目标实体
@@ -22,9 +24,11 @@ import java.math.BigDecimal;
  * @see GoalTypeEnum
  * @see ProgressStatusEnum
  */
-@Data
+@Getter
+@Setter
+@ToString
 @TableName("goal")
-public class GoalEntity {
+public class GoalEntity extends IdentityEntity {
 
     /** 进度来源：manual 手动，graphql 自定义只读查询。 */
     private String progressMode;
@@ -187,4 +191,9 @@ public class GoalEntity {
     private Long progressVersion;
     /** 最近一次刷新请求标识；只供并发快照回写校验，不向客户端暴露。 */
     private String progressRefreshId;
+
+    @Override
+    protected Object identityKey() {
+        return id;
+    }
 }

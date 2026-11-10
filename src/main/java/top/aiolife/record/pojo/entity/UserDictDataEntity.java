@@ -2,8 +2,9 @@ package top.aiolife.record.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
@@ -11,8 +12,9 @@ import top.aiolife.core.pojo.entity.BaseEntity;
  *
  * @author Lys
  */
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString
 @TableName("user_dict_data")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserDictDataEntity extends BaseEntity {

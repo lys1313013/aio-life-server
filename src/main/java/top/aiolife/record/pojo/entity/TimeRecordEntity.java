@@ -1,20 +1,20 @@
 package top.aiolife.record.pojo.entity;
 
-
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import java.time.LocalDate;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import top.aiolife.core.pojo.entity.AuditEntity;
 
-import java.time.LocalDate;
-
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString
 @TableName("time_record")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TimeRecordEntity extends AuditEntity {
@@ -61,4 +61,9 @@ public class TimeRecordEntity extends AuditEntity {
 
     @TableLogic
     private Integer isDeleted;
+
+    @Override
+    protected Object identityKey() {
+        return id;
+    }
 }

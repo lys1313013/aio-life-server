@@ -38,7 +38,7 @@ public class MembershipProviderService {
     public Map<Long, MembershipProviderEntity> findAll(Collection<Long> ids) {
         List<Long> nonNull = ids.stream().filter(Objects::nonNull).distinct().toList();
         if (nonNull.isEmpty()) return Map.of();
-        return mapper.selectBatchIds(nonNull).stream().collect(Collectors.toMap(MembershipProviderEntity::getId, Function.identity()));
+        return mapper.selectByIds(nonNull).stream().collect(Collectors.toMap(MembershipProviderEntity::getId, Function.identity()));
     }
 
     /** 必须在记录保存事务内调用，序列化新增引用与平台停用、删除。 */

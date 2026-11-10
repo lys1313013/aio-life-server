@@ -105,8 +105,10 @@ class TimeRecordExercisePersistenceTest {
         var proxy = new ProxyFactory(target);
         proxy.setProxyTargetClass(true);
         transactions = new DataSourceTransactionManager(source);
-        proxy.addAdvice(new TransactionInterceptor(transactions,
-                new AnnotationTransactionAttributeSource()));
+        var interceptor = new TransactionInterceptor();
+        interceptor.setTransactionManager(transactions);
+        interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
+        proxy.addAdvice(interceptor);
         service = (TimeRecordServiceImpl) proxy.getProxy();
         controller = new TimeRecordController(guard, service, exercises, categories, mock(UserDictDataService.class));
         login = mockStatic(StpUtil.class);

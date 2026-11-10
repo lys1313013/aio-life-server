@@ -1,17 +1,19 @@
 package top.aiolife.record.pojo.entity;
 
-import top.aiolife.core.pojo.entity.BaseEntity;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
+import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.BaseEntity;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 
-import java.time.LocalDateTime;
-
-@Data
+@Getter
+@Setter
+@ToString
 @TableName("read_record")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ReadRecordEntity extends BaseEntity {

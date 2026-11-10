@@ -1,5 +1,6 @@
 package top.aiolife.record.service.impl;
 
+import static top.aiolife.support.MockMatchers.anyWrapper;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
@@ -91,14 +92,14 @@ class TimeRecordDayQueryTest {
     @Test
     void testQuery_超过原分页上限完整返回且用户日期分别缓存() {
         var records = IntStream.range(0, 151).mapToObj(i -> record("row-" + i, date)).toList();
-        when(mapper.selectList(any(Wrapper.class))).thenReturn(records);
+        when(mapper.selectList(anyWrapper())).thenReturn(records);
         assertEquals(151, service.queryDay(1L, date).size());
         assertEquals(151, service.queryDay(1L, date).size());
-        verify(mapper, times(1)).selectList(any(Wrapper.class));
+        verify(mapper, times(1)).selectList(anyWrapper());
         service.queryDay(2L, date);
         service.queryDay(1L, date.plusDays(1));
-        verify(mapper, times(3)).selectList(any(Wrapper.class));
-        var query = ArgumentCaptor.forClass(Wrapper.class);
+        verify(mapper, times(3)).selectList(anyWrapper());
+        ArgumentCaptor<Wrapper<TimeRecordEntity>> query = ArgumentCaptor.captor();
         verify(mapper, times(3)).selectList(query.capture());
         assertTrue(query.getAllValues().getFirst().getSqlSegment().contains("user_id"));
         assertTrue(query.getAllValues().getFirst().getSqlSegment().contains("date"));
@@ -107,14 +108,14 @@ class TimeRecordDayQueryTest {
 
     @Test
     void testEmpty_空列表缓存且事务内绕过缓存() {
-        when(mapper.selectList(any(Wrapper.class))).thenReturn(List.of());
+        when(mapper.selectList(anyWrapper())).thenReturn(List.of());
         assertTrue(service.queryDay(1L, date).isEmpty());
         assertTrue(service.queryDay(1L, date).isEmpty());
-        verify(mapper, times(1)).selectList(any(Wrapper.class));
+        verify(mapper, times(1)).selectList(anyWrapper());
         TransactionSynchronizationManager.setActualTransactionActive(true);
         service.queryDay(1L, date);
         service.queryDay(1L, date);
-        verify(mapper, times(3)).selectList(any(Wrapper.class));
+        verify(mapper, times(3)).selectList(anyWrapper());
     }
 
     @Test
@@ -156,12 +157,12 @@ class TimeRecordDayQueryTest {
     @Test
     void testDelete_单条和整日删除清理对应日期() {
         warm(1L, date);
-        doReturn(record("7", date)).when(service).getOne(any(Wrapper.class));
-        doReturn(true).when(service).remove(any(Wrapper.class));
+        doReturn(record("7", date)).when(service).getOne(anyWrapper());
+        doReturn(true).when(service).remove(anyWrapper());
         service.removeById("7", 1L);
         assertCached(1L, date, false);
         warm(1L, date);
-        when(mapper.selectList(any(Wrapper.class))).thenReturn(List.of(record("7", date)));
+        when(mapper.selectList(anyWrapper())).thenReturn(List.of(record("7", date)));
         doReturn(true).when(service).removeByIds(anyCollection());
         service.removeByDate(date, 1L);
         assertCached(1L, date, false);
@@ -174,9 +175,9 @@ class TimeRecordDayQueryTest {
         when(failed.get(any())).thenThrow(new IllegalStateException("Redis unavailable"));
         doThrow(new IllegalStateException("Redis unavailable")).when(failed).put(any(), any());
         doReturn(failed).when(caches).getCache("timeRecordDay:v1");
-        when(mapper.selectList(any(Wrapper.class))).thenReturn(List.of(record("7", date)));
+        when(mapper.selectList(anyWrapper())).thenReturn(List.of(record("7", date)));
         assertEquals("7", service.queryDay(1L, date).getFirst().getId());
-        verify(mapper, times(1)).selectList(any(Wrapper.class));
+        verify(mapper, times(1)).selectList(anyWrapper());
     }
 
     @Test
@@ -187,7 +188,7 @@ class TimeRecordDayQueryTest {
                 mock(RedisConnectionFactory.class), json);
         manager.afterPropertiesSet();
         var config = manager.getCacheConfigurations().get("timeRecordDay:v1");
-        assertEquals(Duration.ofHours(1), config.getTtl());
+        assertEquals(Duration.ofHours(1), config.getTtlFunction().getTimeToLive("test-key", null));
         var row = RecordApiConvertor.INSTANCE.toTimeRecordListVO(record("7", date));
         var encoded = config.getValueSerializationPair().getWriter().write(List.of(row));
         var decoded = config.getValueSerializationPair().getReader().read(encoded);

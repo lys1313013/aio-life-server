@@ -122,4 +122,9 @@ public class UserEntity extends AuditEntity {
     @TableField("last_active_at")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastActiveTime;
+
+    @Override
+    protected Object identityKey() {
+        return id;
+    }
 }

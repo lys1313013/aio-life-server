@@ -2,7 +2,6 @@ package top.aiolife.core;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -109,7 +108,7 @@ class ApiBoundaryContractTest {
                      "isDeleted":1,"unCompletedCount":999,"content":"允许修改的内容"}
                     """)).andExpect(status().isOk());
             var saved = ArgumentCaptor.forClass(TaskEntity.class);
-            verify(mapper).update(saved.capture(), any(Wrapper.class));
+            verify(mapper).update(saved.capture(), any());
             assertEquals(9007199254740993L, saved.getValue().getId());
             assertEquals("允许修改的内容", saved.getValue().getContent());
             assertNull(saved.getValue().getUserId());

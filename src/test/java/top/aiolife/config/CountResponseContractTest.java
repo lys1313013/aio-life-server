@@ -85,7 +85,7 @@ class CountResponseContractTest {
                 new WardrobeStatsAggregate(2, new BigDecimal("40"), 2, 0, 2, 0),
                 new WardrobeStatsAggregate(0, BigDecimal.ZERO, 0, 0, 0, 0));
         when(items.aggregateCategoryCounts(11L))
-                .thenReturn(List.of(new WardrobeCategoryCount(null, 2)), List.of());
+                .thenReturn(List.of(new WardrobeCategoryCount(null, 2))).thenReturn(List.of());
         JsonNode json = mapper.valueToTree(service.getStats(11L));
         assertNumber(json.path("totalCount"), 2);
         assertNumber(json.path("categoryCount").path("未分类"), 2);

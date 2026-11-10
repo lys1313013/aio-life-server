@@ -1,5 +1,7 @@
 package top.aiolife.sso.wechat;
 
+import java.time.LocalDateTime;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
@@ -60,7 +62,8 @@ public class WechatAccountService {
         if (StringUtils.hasText(user.getWechatOpenid()) && !user.getWechatOpenid().equals(ticket.openid())) throw conflict();
         LambdaUpdateWrapper<UserEntity> update = new LambdaUpdateWrapper<UserEntity>()
                 .eq(UserEntity::getId, userId).set(UserEntity::getWechatOpenid, ticket.openid())
-                .set(UserEntity::getWechatUnionid, ticket.unionid()).set(UserEntity::getUpdateUser, userId);
+                .set(UserEntity::getWechatUnionid, ticket.unionid()).set(UserEntity::getUpdateUser, userId)
+                .set(UserEntity::getUpdateTime, LocalDateTime.now());
         if (users.update(null, update) != 1) throw conflict();
         return users.selectById(userId);
     }
@@ -77,6 +80,8 @@ public class WechatAccountService {
         }
         String salt = PasswordUtil.getSalt();
         users.update(null, new LambdaUpdateWrapper<UserEntity>().eq(UserEntity::getId, userId)
+                .set(UserEntity::getUpdateTime, LocalDateTime.now())
+                .set(UserEntity::getUpdateUser, userId)
                 .set(UserEntity::getPasswordSalt, salt)
                 .set(UserEntity::getPassword, PasswordUtil.encryptPassword(password, salt)));
     }

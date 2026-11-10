@@ -99,7 +99,7 @@ class BaiduMapQuotaRedisTest {
     @Test void testRotation_在途旧AK耗尽不得污染新AK或其他API() throws Exception {
         var h = harness(302);
         var oldTicket = h.ticket("/place/v2/search");
-        when(h.http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenAnswer(invocation -> {
+        when(h.http.<String>send(any(HttpRequest.class), any())).thenAnswer(invocation -> {
             when(h.config.serviceKey()).thenReturn("replacement-" + UUID.randomUUID());
             return h.response;
         });
@@ -161,7 +161,7 @@ class BaiduMapQuotaRedisTest {
         when(config.timeoutMs()).thenReturn(1000);
         var http = mock(HttpClient.class);
         HttpResponse<String> response = mock(HttpResponse.class);
-        when(http.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(response);
+        when(http.<String>send(any(HttpRequest.class), any())).thenReturn(response);
         when(response.statusCode()).thenReturn(200); when(response.body()).thenReturn("{\"status\":" + status + "}");
         var tencent = mock(FootprintMapProvider.class);
         when(tencent.available()).thenReturn(true);

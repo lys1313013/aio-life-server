@@ -37,7 +37,7 @@ public class PersonWithRelationships {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class RelationshipDetail {
-        private Long id;
+        private String id;
         private String relationType;
         private String direction;
         private String description;

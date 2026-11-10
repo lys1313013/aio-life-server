@@ -6,13 +6,17 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.IdentityEntity;
 
-@Data
+@Getter
+@Setter
+@ToString
 @TableName("message")
-public class MessageEntity {
+public class MessageEntity extends IdentityEntity {
 
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
@@ -45,4 +49,9 @@ public class MessageEntity {
 
     @TableLogic
     private Integer isDeleted;
+
+    @Override
+    protected Object identityKey() {
+        return id;
+    }
 }

@@ -1,13 +1,13 @@
 package top.aiolife.record.pojo.entity;
 
-import top.aiolife.core.pojo.entity.BaseEntity;
-
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-
 import java.time.LocalDate;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
  * 运动记录实体类
@@ -15,7 +15,9 @@ import java.time.LocalDate;
  * @author Lys
  * @date 2025-11-29 18:40
  */
-@Data
+@Getter
+@Setter
+@ToString
 @TableName("exercise_record")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ExerciseRecordEntity extends BaseEntity {

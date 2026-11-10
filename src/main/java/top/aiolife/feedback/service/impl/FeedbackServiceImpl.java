@@ -1,6 +1,7 @@
 package top.aiolife.feedback.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -106,7 +107,7 @@ public class FeedbackServiceImpl implements IFeedbackService {
         wrapper.eq(FeedbackEntity::getUserId, userId);
         wrapper.eq(FeedbackEntity::getIsDeleted, 0);
         applyCommonFilters(wrapper, condition);
-        wrapper.orderByDesc(FeedbackEntity::getCreateTime);
+        QueryOrder.descNullsLast(wrapper, FeedbackEntity::getCreateTime);
 
         Page<FeedbackEntity> pageObj = new Page<>(page, size);
         var iPage = feedbackMapper.selectPage(pageObj, wrapper);
@@ -175,7 +176,7 @@ public class FeedbackServiceImpl implements IFeedbackService {
         LambdaQueryWrapper<FeedbackEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(FeedbackEntity::getIsDeleted, 0);
         applyCommonFilters(wrapper, condition);
-        wrapper.orderByDesc(FeedbackEntity::getCreateTime);
+        QueryOrder.descNullsLast(wrapper, FeedbackEntity::getCreateTime);
 
         Page<FeedbackEntity> pageObj = new Page<>(page, size);
         var iPage = feedbackMapper.selectPage(pageObj, wrapper);
@@ -409,7 +410,7 @@ public class FeedbackServiceImpl implements IFeedbackService {
         LambdaQueryWrapper<FeedbackCommentEntity> cw = new LambdaQueryWrapper<>();
         cw.eq(FeedbackCommentEntity::getFeedbackId, entity.getId());
         cw.eq(FeedbackCommentEntity::getIsDeleted, 0);
-        cw.orderByAsc(FeedbackCommentEntity::getCreateTime);
+        QueryOrder.ascNullsFirst(cw, FeedbackCommentEntity::getCreateTime);
         List<FeedbackCommentEntity> comments = commentMapper.selectList(cw);
         vo.setComments(comments.stream()
                 .map(c -> toCommentVO(c, c.getUserId()))

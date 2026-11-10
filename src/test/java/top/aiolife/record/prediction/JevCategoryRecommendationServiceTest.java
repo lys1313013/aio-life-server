@@ -54,7 +54,7 @@ class JevCategoryRecommendationServiceTest {
     @Test
     void testRecommend_隔离用户并过滤目标时刻以后和不可见分类() {
         enable();
-        when(mapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(
+        when(mapper.selectList(any())).thenReturn(List.of(
                 record(date, 540, 599, 104L), record(date, 600, 659, 104L),
                 record(reference, 540, 719, 104L), record(reference, 720, 779, 999L),
                 record(date.minusDays(1), 540, 599, 104L)));
@@ -77,7 +77,7 @@ class JevCategoryRecommendationServiceTest {
         assertEquals(1, state.path("previousComparableDay").path("records").size());
         assertEquals("用户覆盖后的工作分类", request.getValue().path("questions")
                 .path("current_category").path("criteria").path("104").asText());
-        var query = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        ArgumentCaptor<LambdaQueryWrapper<TimeRecordEntity>> query = ArgumentCaptor.captor();
         verify(mapper).selectList(query.capture());
         assertTrue(query.getValue().getSqlSegment().contains("user_id ="));
         assertTrue(query.getValue().getParamNameValuePairs().containsValue(7L));
@@ -87,7 +87,7 @@ class JevCategoryRecommendationServiceTest {
     @Test
     void testRecommend_无可用历史不调用模型() {
         enable();
-        when(mapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(record(date, 600, 659, 104L)));
+        when(mapper.selectList(any())).thenReturn(List.of(record(date, 600, 659, 104L)));
         assertNull(service.recommend(7L, date, 600, false, reference));
         verify(client, never()).predict(any());
     }
@@ -95,7 +95,7 @@ class JevCategoryRecommendationServiceTest {
     @Test
     void testRecommend_参考日缺失可使用当天此前记录() {
         enable();
-        when(mapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(record(date, 540, 599, 104L)));
+        when(mapper.selectList(any())).thenReturn(List.of(record(date, 540, 599, 104L)));
         service.recommend(7L, date, 600, false, null);
         var request = ArgumentCaptor.forClass(ObjectNode.class);
         verify(client).predict(request.capture());
@@ -107,7 +107,7 @@ class JevCategoryRecommendationServiceTest {
     void testRecommend_实际时钟以后的记录不得传入模型() {
         enable();
         var future = LocalDate.now().plusDays(2);
-        when(mapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(record(future.minusDays(1), 0, 100, 104L)));
+        when(mapper.selectList(any())).thenReturn(List.of(record(future.minusDays(1), 0, 100, 104L)));
         assertNull(service.recommend(7L, future, 600, true, future.minusDays(1)));
         verify(client, never()).predict(any());
     }
@@ -115,13 +115,13 @@ class JevCategoryRecommendationServiceTest {
     @Test
     void testRecommend_只缓存数据库查询每次重新调用Jev() {
         enable();
-        when(mapper.selectList(any(LambdaQueryWrapper.class)))
+        when(mapper.selectList(any()))
                 .thenReturn(List.of(record(date, 540, 599, 104L)));
         when(client.predict(any())).thenReturn(104L, 105L);
         assertEquals(104L, service.recommend(7L, date, 600, true, reference));
         assertEquals(105L, service.recommend(7L, date, 600, true, reference));
         verify(client, times(2)).predict(any());
-        verify(mapper, times(1)).selectList(any(LambdaQueryWrapper.class));
+        verify(mapper, times(1)).selectList(any());
         verify(categories, times(1)).listUserVisibleCategories(7L);
     }
 

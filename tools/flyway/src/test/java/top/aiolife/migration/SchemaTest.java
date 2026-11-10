@@ -46,7 +46,7 @@ class SchemaTest {
         assertTrue(sources.containsKey("flyway.settings"));
         assertFalse(sources.containsKey("tools/flyway/pom.xml"));
         assertTrue(MigrationProject.toolSources(MigrationProject.root()).containsKey("tools/flyway/src/main/java/top/aiolife/migration/MigrationGuard.java"));
-        assertTrue(sources.containsKey("sql/migrations/postgresql/V20261110_01__postgresql_schema.sql"));
+        assertTrue(sources.containsKey("sql/migrations/V20261110_01__postgresql_schema.sql"));
         assertFalse(sources.keySet().stream().anyMatch(key -> key.endsWith(".py")));
     }
 }

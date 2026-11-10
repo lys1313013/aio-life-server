@@ -50,7 +50,7 @@ class WorkCalendarIntegrationTest {
         try (var connection = dataSource.getConnection()) {
             new JdbcTemplate(dataSource).execute(CurrentSchema.table("sys_work_calendar"));
             String seed = Pattern.compile("(?s)INSERT INTO \"sys_work_calendar\".*?;")
-                    .matcher(Files.readString(Path.of("sql/migrations/postgresql/V20261110_02__public_seed_data.sql")))
+                    .matcher(Files.readString(Path.of("sql/migrations/V20261110_02_007__work_calendar_2026.sql")))
                     .results().map(MatchResult::group).collect(Collectors.joining("\n"));
             ScriptUtils.executeSqlScript(connection, new ByteArrayResource(seed.getBytes(StandardCharsets.UTF_8)));
         }

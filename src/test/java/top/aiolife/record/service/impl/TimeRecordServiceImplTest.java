@@ -1,5 +1,6 @@
 package top.aiolife.record.service.impl;
 
+import static top.aiolife.support.MockMatchers.anyWrapper;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -180,10 +181,10 @@ class TimeRecordServiceImplTest {
         var previous = createRecord(0, 599);
         previous.setCategoryId(104L);
         doAnswer(invocation -> {
-            var query = (LambdaQueryWrapper<TimeRecordEntity>) invocation.getArgument(0);
+            var query = invocation.<LambdaQueryWrapper<TimeRecordEntity>>getArgument(0);
             assertTrue(query.getSqlSelect().contains("category_id"), "必须查询分类供 Controller 读取");
             return List.of(previous);
-        }).when(service).list(any(Wrapper.class));
+        }).when(service).list(anyWrapper());
         var result = service.recommendNext(1L, "2020-09-19");
         assertEquals(600, result.getRecommend().getStartTime());
         assertEquals(104L, result.getRecords().getFirst().getCategoryId());

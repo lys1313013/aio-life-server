@@ -16,7 +16,7 @@ class SecondaryLockMenuResolverTest {
         var locks = mock(UserSecondaryLockMenuMapper.class);
         var menus = mock(ISysMenuMapper.class);
         var row = new UserSecondaryLockMenuEntity(); row.setMenuId(7L);
-        when(locks.selectForAccessControl(anyLong())).thenReturn(List.of(), List.of(row), List.of());
+        when(locks.selectForAccessControl(anyLong())).thenReturn(List.of()).thenReturn(List.of(row)).thenReturn(List.of());
         var first = new SecondaryLockMenuResolver(locks, new MenuAccessReader(menus));
         var restarted = new SecondaryLockMenuResolver(locks, new MenuAccessReader(menus));
         assertEquals(List.of(), first.getLockedMenuIds(1));
@@ -33,7 +33,7 @@ class SecondaryLockMenuResolverTest {
         when(locks.selectForAccessControl(anyLong())).thenReturn(List.of(row));
         var old = new SysMenuEntity(); old.setId(7L); old.setPath("/old");
         var changed = new SysMenuEntity(); changed.setId(7L); changed.setPath("/new");
-        when(menus.selectAllForAccessControl()).thenReturn(List.of(old), List.of(changed))
+        when(menus.selectAllForAccessControl()).thenReturn(List.of(old)).thenReturn(List.of(changed))
                 .thenThrow(new IllegalStateException("database unavailable"));
         var guard = new SecondaryLockMenuResolver(locks, new MenuAccessReader(menus));
         assertEquals(Set.of("/old"), guard.getLockedPaths(1));

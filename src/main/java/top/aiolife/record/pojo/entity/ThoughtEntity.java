@@ -1,12 +1,12 @@
 package top.aiolife.record.pojo.entity;
 
-import top.aiolife.core.pojo.entity.BaseEntity;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
  * 类功能描述
@@ -14,7 +14,9 @@ import java.util.List;
  * @author Lys
  * @date 2025-11-16 15:34
  */
-@Data
+@Getter
+@Setter
+@ToString
 @TableName("thought")
 public class ThoughtEntity extends BaseEntity {
 

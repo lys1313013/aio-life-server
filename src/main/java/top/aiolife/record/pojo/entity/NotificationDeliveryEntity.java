@@ -1,15 +1,15 @@
 package top.aiolife.record.pojo.entity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
+import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import top.aiolife.core.pojo.entity.BaseEntity;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
-import java.time.LocalDateTime;
-
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString
 @TableName("notification_delivery")
 public class NotificationDeliveryEntity extends BaseEntity {
     private String dedupKey;

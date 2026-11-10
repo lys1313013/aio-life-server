@@ -142,7 +142,7 @@ public class WereadStatsService {
         Map<LocalDate, Integer> result = new HashMap<>();
         JsonNode readTimes = data.path("readTimes");
         if (!readTimes.isObject()) return result;
-        Iterator<Map.Entry<String, JsonNode>> fields = readTimes.fields();
+        Iterator<Map.Entry<String, JsonNode>> fields = readTimes.properties().iterator();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> entry = fields.next();
             try {

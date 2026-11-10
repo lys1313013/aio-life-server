@@ -3,6 +3,7 @@ package top.aiolife.record.api;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
@@ -57,7 +58,7 @@ public class SysDictDataController {
     public ApiResponse<PageResp<SysDictDataRecordVO>> query(
             @QueryParams CommonQuery<SysDictTypeQuery> query) {
         LambdaQueryWrapper<SysDictDataEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.orderByAsc(SysDictDataEntity::getDictId, SysDictDataEntity::getSortOrder, SysDictDataEntity::getDictCode);
+        QueryOrder.ascNullsFirst(lambdaQueryWrapper, SysDictDataEntity::getDictId, SysDictDataEntity::getSortOrder, SysDictDataEntity::getDictCode);
 
         SysDictTypeQuery condition = query.getCondition();
         if (condition != null && SysUtil.isNotEmpty(condition.getDictLabel())) {

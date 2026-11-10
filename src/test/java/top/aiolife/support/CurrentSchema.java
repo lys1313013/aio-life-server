@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 public final class CurrentSchema {
     private CurrentSchema() {}
     public static String table(String name) throws IOException {
-        String source = Files.readString(Path.of("sql/migrations/postgresql/V20261110_01__postgresql_schema.sql"));
+        String source = Files.readString(Path.of("sql/migrations/V20261110_01__postgresql_schema.sql"));
         var start = Pattern.compile("(?m)^CREATE TABLE \"" + Pattern.quote(name) + "\" \\(").matcher(source);
         if (!start.find()) throw new IllegalArgumentException("当前结构缺少表：" + name);
         int end = source.indexOf("\n );", start.end());

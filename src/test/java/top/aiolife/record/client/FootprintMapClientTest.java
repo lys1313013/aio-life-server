@@ -146,7 +146,7 @@ class FootprintMapClientTest {
         when(harness.baiduResponse.statusCode()).thenReturn(500);
         when(harness.baiduResponse.body()).thenReturn("{\"status\":302}");
         assertThrows(ResponseStatusException.class, () -> harness.client.search(1, "住所", "全国"));
-        when(harness.baiduHttp.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+        when(harness.baiduHttp.<String>send(any(HttpRequest.class), any()))
                 .thenThrow(new IOException("https://api.map.baidu.com/?ak=synthetic-baidu-key"));
         var failure = assertThrows(ResponseStatusException.class, () -> harness.client.search(1, "住所", "全国"));
         assertFalse(failure.toString().contains("synthetic-baidu-key")); assertNull(failure.getCause());
@@ -172,8 +172,8 @@ class FootprintMapClientTest {
         when(baiduConfig.timeoutMs()).thenReturn(1000); when(tencentConfig.timeoutMs()).thenReturn(1000);
         HttpClient b = mock(HttpClient.class), t = mock(HttpClient.class);
         HttpResponse<String> br = mock(HttpResponse.class), tr = mock(HttpResponse.class);
-        when(b.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(br);
-        when(t.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(tr);
+        when(b.<String>send(any(HttpRequest.class), any())).thenReturn(br);
+        when(t.<String>send(any(HttpRequest.class), any())).thenReturn(tr);
         when(br.statusCode()).thenReturn(200); when(br.body()).thenReturn(baiduBody);
         when(tr.statusCode()).thenReturn(200); when(tr.body()).thenReturn("""
             {"status":0,"data":[{"title":"腾讯住所","address":"示例地址","city":"杭州","id":"synthetic-poi","location":{"lng":120.1,"lat":30.2}}]}

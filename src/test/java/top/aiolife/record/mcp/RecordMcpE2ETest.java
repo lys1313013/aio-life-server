@@ -1,5 +1,6 @@
 package top.aiolife.record.mcp;
 
+import top.aiolife.record.mapper.ITimeRecordMapper;
 import cn.dev33.satoken.context.SaTokenContext;
 import cn.dev33.satoken.context.model.SaRequest;
 import cn.dev33.satoken.context.model.SaResponse;
@@ -170,9 +171,9 @@ public class RecordMcpE2ETest {
                     new Class[]{ITimeRecordService.class},
                     (proxy, method, args) -> {
                         if ("lambdaQuery".equals(method.getName())) {
-                            BaseMapper<TimeRecordEntity> dummyMapper = (BaseMapper<TimeRecordEntity>) Proxy.newProxyInstance(
-                                    BaseMapper.class.getClassLoader(),
-                                    new Class[]{BaseMapper.class},
+                            BaseMapper<TimeRecordEntity> dummyMapper = (ITimeRecordMapper) Proxy.newProxyInstance(
+                                    ITimeRecordMapper.class.getClassLoader(),
+                                    new Class[]{ITimeRecordMapper.class},
                                     (mProxy, mMethod, mArgs) -> {
                                         if ("selectList".equals(mMethod.getName()) || "selectOne".equals(mMethod.getName())) {
                                             TimeRecordEntity lastRecord = new TimeRecordEntity();

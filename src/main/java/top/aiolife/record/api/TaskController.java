@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Operation;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
@@ -69,7 +70,7 @@ public class TaskController {
             lambdaQueryWrapper.eq(TaskEntity::getId, taskId);
         }
 
-        lambdaQueryWrapper.orderByAsc(TaskEntity::getSortOrder, TaskEntity::getId);        // 分页
+        QueryOrder.ascNullsFirst(lambdaQueryWrapper, TaskEntity::getSortOrder, TaskEntity::getId);        // 分页
         Page<TaskEntity> page = new Page<>(pageNumber, pageSize);
         IPage<TaskEntity> iPage = getBaseMapper().selectPage(page, lambdaQueryWrapper);
         List<TaskEntity> records = iPage.getRecords();

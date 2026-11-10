@@ -31,7 +31,7 @@ class HomeCardQueryTest {
             Wrapper<ReadRecordEntity> wrapper = invocation.getArgument(1);
             assertQuery(page, wrapper);
             return page.setRecords(List.of());
-        }).when(service).page(any(Page.class), any(Wrapper.class));
+        }).when(service).page(any(), any());
         try (var identity = mockStatic(StpUtil.class)) {
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(88L);
             var query = new ReadRecordQuery();
@@ -52,7 +52,7 @@ class HomeCardQueryTest {
             Wrapper<MovieEntity> wrapper = invocation.getArgument(1);
             assertQuery(page, wrapper);
             return page.setRecords(List.of());
-        }).when(service).page(any(Page.class), any(Wrapper.class));
+        }).when(service).page(any(), any());
         try (var identity = mockStatic(StpUtil.class)) {
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(88L);
             var query = new MovieQuery();
@@ -74,7 +74,7 @@ class HomeCardQueryTest {
             assertTrue(wrapper.getSqlSegment().contains("CASE status WHEN 'not_started' THEN 1 WHEN 'in_progress' THEN 2"));
             assertTrue(wrapper.getSqlSegment().endsWith("id DESC"));
             return page.setRecords(List.of());
-        }).when(service).page(any(Page.class), any(Wrapper.class));
+        }).when(service).page(any(), any());
         try (var identity = mockStatic(StpUtil.class)) {
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(88L);
             service.pageList(new MovieQuery());

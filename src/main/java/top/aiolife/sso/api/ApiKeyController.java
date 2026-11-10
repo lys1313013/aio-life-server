@@ -1,6 +1,7 @@
 package top.aiolife.sso.api;
 
 import cn.dev33.satoken.stp.StpUtil;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -9,6 +10,7 @@ import top.aiolife.sso.convertor.ApiKeyConvertor;
 import top.aiolife.sso.convertor.SsoApiConvertor;
 import top.aiolife.sso.pojo.entity.ApiKeyEntity;
 import top.aiolife.sso.pojo.req.ApiKeyGenerateReq;
+import top.aiolife.sso.pojo.req.ApiKeyUpdateReq;
 import top.aiolife.sso.pojo.vo.ApiKeyCreatedVO;
 import top.aiolife.sso.pojo.vo.ApiKeyVO;
 import top.aiolife.sso.service.IApiKeyService;
@@ -40,9 +42,17 @@ public class ApiKeyController {
      * 生成新的 API Key
      */
     @PostMapping("/generate")
-    public ApiResponse<ApiKeyCreatedVO> generate(@RequestBody ApiKeyGenerateReq req) {
+    public ApiResponse<ApiKeyCreatedVO> generate(@Valid @RequestBody ApiKeyGenerateReq req) {
         long userId = StpUtil.getLoginIdAsLong();
         return ApiResponse.success(SsoApiConvertor.INSTANCE.toApiKeyCreatedVO(apiKeyService.generateApiKey(userId, req.getRemark(), req.getExpireDays())));
+    }
+
+    /** 修改当前用户的 API Key 备注，返回脱敏信息。 */
+    @PutMapping("/{id}")
+    public ApiResponse<ApiKeyVO> update(@PathVariable Long id, @Valid @RequestBody ApiKeyUpdateReq req) {
+        long userId = StpUtil.getLoginIdAsLong();
+        return ApiResponse.success(ApiKeyConvertor.INSTANCE.entity2VO(
+                apiKeyService.updateRemark(userId, id, req.getRemark().trim())));
     }
 
     /**

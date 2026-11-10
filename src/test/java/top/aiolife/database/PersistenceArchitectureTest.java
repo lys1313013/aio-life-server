@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -19,6 +20,10 @@ class PersistenceArchitectureTest {
     private static final Pattern SQL = Pattern.compile(
             "\\b(?:SELECT\\s+.+?\\s+FROM|INSERT\\s+INTO|UPDATE\\s+\\w+\\s+SET|DELETE\\s+FROM)\\b",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    private static final Pattern WRAPPER_SQL = Pattern.compile("\\.(?:setSql|apply)\\s*\\(\\s*\"");
+    private static final Pattern MYSQL_FUNCTION = Pattern.compile(
+            "\\b(?:JSON_SET|JSON_REMOVE|JSON_EXTRACT|JSON_UNQUOTE|IFNULL|DATE_FORMAT|FIND_IN_SET|GROUP_CONCAT|TIMESTAMPDIFF)\\s*\\(",
+            Pattern.CASE_INSENSITIVE);
 
     @Test
     void 生产代码禁止绕过MyBatis直接访问数据库() throws Exception {
@@ -44,9 +49,23 @@ class PersistenceArchitectureTest {
         try (var paths = Files.walk(SOURCE)) {
             for (var file : paths.filter(path -> path.toString().endsWith(".java")).toList()) {
                 if (file.toString().contains("/mapper/")) continue;
-                if (SQL.matcher(Files.readString(file)).find()) violations.add(file.toString());
+                String source = Files.readString(file);
+                if (SQL.matcher(source).find() || WRAPPER_SQL.matcher(source).find()) violations.add(file.toString());
             }
         }
         assertTrue(violations.isEmpty(), "将 SQL 移至 Mapper，Service / Guard 只编排业务：" + violations);
+    }
+
+    @Test
+    void 生产查询不能重新引入MySQL专属函数() throws Exception {
+        var violations = new ArrayList<String>();
+        for (var root : List.of(SOURCE, Path.of("src/main/resources/mapper"))) {
+            try (var paths = Files.walk(root)) {
+                for (var file : paths.filter(Files::isRegularFile).toList()) {
+                    if (MYSQL_FUNCTION.matcher(Files.readString(file)).find()) violations.add(file.toString());
+                }
+            }
+        }
+        assertTrue(violations.isEmpty(), "使用 PostgreSQL SQL 并补真实数据库回归：" + violations);
     }
 }

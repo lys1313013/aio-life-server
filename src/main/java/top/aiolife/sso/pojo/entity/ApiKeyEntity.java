@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
-
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.IdentityEntity;
 
 /**
  * API Key 实体
@@ -14,9 +16,11 @@ import java.time.LocalDateTime;
  * @author Lys
  * @date 2026/03/09
  */
-@Data
+@Getter
+@Setter
+@ToString
 @TableName("api_key")
-public class ApiKeyEntity {
+public class ApiKeyEntity extends IdentityEntity {
 
     /**
      * 主键ID
@@ -73,4 +77,9 @@ public class ApiKeyEntity {
      */
     @TableLogic
     private Integer isDeleted;
+
+    @Override
+    protected Object identityKey() {
+        return id;
+    }
 }

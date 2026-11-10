@@ -1,5 +1,6 @@
 package top.aiolife.record.service.impl;
 
+import static top.aiolife.support.MockMatchers.anyWrapper;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -79,7 +80,7 @@ class TimeCategoryHierarchyTest {
         doNothing().when(service).lockHierarchy();
         var override = category(100, 8, null); override.setTemplateId(2L); override.setName("个人名称");
         doReturn(List.of(category(1, 0, 0L), category(2, 0, 1L)), List.of(override))
-                .when(service).list(any(Wrapper.class));
+                .when(service).list(anyWrapper());
         var merged = service.listUserCategories(8L).stream().filter(c -> c.getId() == 2L).findFirst().orElseThrow();
         assertEquals(1L, merged.getParentId());
         assertEquals(2L, merged.getTemplateId());
@@ -93,7 +94,7 @@ class TimeCategoryHierarchyTest {
         var override = category(100, 8, 0L); override.setTemplateId(2L);
         var hidden = category(101, 8, null); hidden.setTemplateId(1L); hidden.setIsEnabled(0);
         doReturn(List.of(category(1, 0, 0L), category(2, 0, 1L), category(3, 0, 1L)), List.of(override, hidden))
-                .when(service).list(any(Wrapper.class));
+                .when(service).list(anyWrapper());
         var all = service.listUserCategories(8L);
         assertEquals(3, all.size());
         assertEquals(0, all.stream().filter(c -> c.getId() == 3L).findFirst().orElseThrow().getIsEnabled());
@@ -117,12 +118,12 @@ class TimeCategoryHierarchyTest {
         var template = category(2, 0, 1L);
         var override = category(100, 8, 0L); override.setTemplateId(2L);
         doReturn(template).when(service).getById(2L);
-        doReturn(override).when(service).getOne(any(Wrapper.class));
+        doReturn(override).when(service).getOne(any());
         doReturn(List.of(category(1, 0, 0L), category(2, 8, 0L))).when(service).listUserCategories(8L);
-        doReturn(true).when(service).update(any(Wrapper.class));
+        doReturn(true).when(service).update(any());
         var updates = new TimeTrackerCategoryEntity(); updates.setParentId(null);
         service.updateCategory(2L, updates, 8L);
-        var capture = ArgumentCaptor.forClass(Wrapper.class);
+        ArgumentCaptor<Wrapper<TimeTrackerCategoryEntity>> capture = ArgumentCaptor.captor();
         verify(service).update(capture.capture());
         var wrapper = (LambdaUpdateWrapper<?>) capture.getValue();
         assertTrue(wrapper.getSqlSet().contains("parent_id="));
@@ -135,7 +136,7 @@ class TimeCategoryHierarchyTest {
         doNothing().when(service).lockHierarchy();
         doReturn(category(1, 0, 0L)).when(service).getById(1L);
         doReturn(List.of(category(1, 0, 0L), category(2, 0, 0L))).when(service).listAllCategories();
-        doReturn(List.of(category(3, 8, 1L)), List.of()).when(service).list(any(Wrapper.class));
+        doReturn(List.of(category(3, 8, 1L)), List.of()).when(service).list(anyWrapper());
         doReturn(List.of(category(1, 0, 0L), category(2, 0, 0L), category(3, 8, 1L)))
                 .when(service).listUserCategories(8L);
         var updates = new TimeTrackerCategoryEntity(); updates.setParentId(2L);
@@ -148,7 +149,7 @@ class TimeCategoryHierarchyTest {
         var service = spy(newService());
         doNothing().when(service).lockHierarchy();
         doReturn(List.of(category(1, 0, 0L))).when(service).listAllCategories();
-        doReturn(List.of(category(9, 8, 0L))).when(service).list(any(Wrapper.class));
+        doReturn(List.of(category(9, 8, 0L))).when(service).list(anyWrapper());
         doReturn(List.of(category(1, 0, 9L), category(9, 8, 0L))).when(service).listUserCategories(8L);
         var child = category(3, 0, 1L);
         assertThrows(IllegalArgumentException.class, () -> service.adminCreateCategory(child));
@@ -160,13 +161,13 @@ class TimeCategoryHierarchyTest {
         var service = spy(newService());
         doNothing().when(service).lockHierarchy();
         doReturn(category(1, 8, 0L)).when(service).getById(1L);
-        doReturn(1L).when(service).count(any(Wrapper.class));
+        doReturn(1L).when(service).count(any());
         assertThrows(IllegalArgumentException.class, () -> service.deleteCategory(1L, 8L));
         verify(service, never()).updateById(any());
-        doReturn(0L).when(service).count(any(Wrapper.class));
+        doReturn(0L).when(service).count(any());
         var records = mock(ITimeRecordMapper.class);
         ReflectionTestUtils.setField(service, "timeRecordMapper", records);
-        when(records.selectCount(any(Wrapper.class))).thenReturn(1L);
+        when(records.selectCount(any())).thenReturn(1L);
         assertThrows(IllegalArgumentException.class, () -> service.deleteCategory(1L, 8L));
         verify(service, never()).updateById(any());
     }

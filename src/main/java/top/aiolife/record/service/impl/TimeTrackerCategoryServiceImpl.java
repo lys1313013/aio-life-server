@@ -1,5 +1,7 @@
 package top.aiolife.record.service.impl;
 
+import java.time.LocalDateTime;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -333,6 +335,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
             wrapper.set(TimeTrackerCategoryEntity::getTimeType, updates.getTimeType());
         }
         wrapper.set(TimeTrackerCategoryEntity::getUpdateUser, userId);
+        wrapper.set(TimeTrackerCategoryEntity::getUpdateTime, LocalDateTime.now());
         wrapper.set(TimeTrackerCategoryEntity::getIsDeleted, 0);
         return this.update(wrapper);
     }
@@ -366,6 +369,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
                 TimeTrackerCategoryEntity update = new TimeTrackerCategoryEntity();
                 update.setId(existingOverride.getId());
                 update.setIsEnabled(0);
+                update.fillUpdateCommonField(userId);
                 changed = this.updateById(update);
             } else {
                 // 插入隐藏记录
@@ -387,6 +391,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
             TimeTrackerCategoryEntity update = new TimeTrackerCategoryEntity();
             update.setId(categoryId);
             update.setIsDeleted(1);
+            update.fillUpdateCommonField(userId);
             changed = this.updateById(update);
         } else {
             throw new RuntimeException("无权删除此分类");
@@ -473,6 +478,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         updates.setId(categoryId);
         updates.setUserId(0L);
         updates.setTemplateId(null);
+        updates.fillUpdateCommonField(0L);
         if (this.updateById(updates)) categoryCache.evictAfterCommit(0L);
     }
 

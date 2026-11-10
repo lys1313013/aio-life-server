@@ -79,8 +79,8 @@ public class DoubanCaptureService {
                 warnings.add("豆瓣元数据补充失败，请手动补齐标题等字段");
             }
         }
-        metadata.fields()
-                .forEachRemaining(
+        metadata.properties()
+                .forEach(
                         e -> {
                             if (!e.getValue().isNull()) draft.set(e.getKey(), e.getValue());
                         });
@@ -120,7 +120,7 @@ public class DoubanCaptureService {
                 throw conflict("记录已变化，请重新预览");
         }
         ObjectNode merged = found == null ? json.createObjectNode() : recordFields(found);
-        patch.fields().forEachRemaining(e -> merged.set(e.getKey(), e.getValue()));
+        patch.properties().forEach(e -> merged.set(e.getKey(), e.getValue()));
         String title = text(merged, "title", true, 255);
         int type = integer(merged, "type", 1, book(subject) ? 1 : 5);
         String status =

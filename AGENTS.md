@@ -162,6 +162,9 @@ public class MyMcpTools {
 
 ### 对象映射
 
+- PostgreSQL 持久化实体统一继承 `IdentityEntity`（可经 `AuditEntity` / `BaseEntity`），使用其不可覆盖的身份比较：运行时类型相同且非空主键相同才相等；无主键时仅自身相等。主键赋值后不得修改，业务、审计和逻辑删除字段不参与比较。哈希值按类型固定，避免分配主键后破坏集合查找；大量记录的索引与去重显式使用主键作为 Map / Set 的键。
+- 实体使用 `@Getter` / `@Setter`，需要时单独使用 `@ToString` 并保留敏感字段排除，不使用 `@Data` 或 Lombok `@EqualsAndHashCode` 重新生成比较方法。DTO / VO 使用值比较时，继承的值对象应显式包含父类字段；不要套用实体的身份规则或通过全局配置屏蔽警告。
+
 使用 MapStruct，Convertor 接口约定：
 
 ```java
@@ -227,15 +230,21 @@ class MyControllerTest extends BaseIntegrationTest {
 
 使用中文描述测试场景：`testMethod_测试场景描述()`
 
+Mockito 通过 Maven Surefire 在测试 JVM 启动时加载代理；`maven-dependency-plugin:properties` 解析实际依赖 JAR 路径，不依赖动态挂载或放宽 JVM 动态代理限制。优先用 `mvn test`（或 `-Dtest=...`）执行，以保留这套启动配置。
+
+`RelationshipElementIdIntegrationTest` 自建隔离 Neo4j 5.26.0，验证关系 ID 在创建、详情和更新接口间原样往返，以及跨用户更新拒绝。需要 Docker，不访问业务图数据库；本地已有其他版本镜像时可通过 `-Daio.life.test.neo4j.image=neo4j:<version>` 显式指定测试镜像，交付时注明实际验证版本。
+
 ## 数据库初始化与增量升级
 
-仅支持 PostgreSQL 18+，不维护 MySQL 运行兼容。`sql/migrations/postgresql/` 是唯一当前 Flyway 发现目录；初始结构为 `V20261110_01__postgresql_schema.sql`，公共种子为 `V20261110_02__public_seed_data.sql`。旧 MySQL B/V 文件原位冻结，不能修改已执行内容，也不重新运行。
+仅支持 PostgreSQL 18+，不维护 MySQL 运行兼容。`sql/migrations/` 是唯一当前 Flyway 发现目录；初始结构为 `V20261110_01__postgresql_schema.sql`，公共种子按用途拆为 `V20261110_02_001` 至 `V20261110_02_011`，目录及顺序见 `sql/README.md`。旧 MySQL 结构、数据及历史修正 SQL 均不保留在工作树中，原文件仅通过 Git 历史追溯；当前 SQL 只维护 PostgreSQL。日常不改写已执行的 PostgreSQL 迁移；本次公共种子分类拆分由显式一次性 `preflight-seed-split` / `adopt-seed-split` 校验和转换旧账本，不自动执行，也不重放种子。
 
 通过 `mvn -f tools/flyway/pom.xml compile flyway:migrate flyway:validate` 独立迁移，使用 `FLYWAY_URL`、`FLYWAY_USER`、`FLYWAY_PASSWORD`；应用启动不迁移。新增更高版本 V，不能自动 baseline、清库或跳过失败。未知非空结构先只读预检，显式 baseline 必须提供匹配的 v6 PostgreSQL `schema.contract`。
 
 `mvn -f tools/flyway/pom.xml verify` 创建隔离 PostgreSQL，验证初始化、重复 migrate、增量数据保留、事务失败回滚、结构契约与非空库拒绝。实体必须通过真实 PostgreSQL 全字段查询。H2 仅用于局部单元夹具，不能证明 PostgreSQL 方言正确。
 
 数字状态列保持 smallint/integer，Boolean 实体由 MyBatis 类型处理器绑定 0/1；JSON 用 jsonb，二进制用 bytea，本地日期时间用 timestamp without time zone。JDBC 连接中 `stringtype=unspecified` 使 JSON 字符串按目标类型绑定；CONCAT 等变参函数中的参数显式 CAST。需要清空字段时显式 set null，同一 UPDATE 不得对一列重复赋值；可忽略的唯一键冲突使用 Mapper 的 ON CONFLICT，不能捕获错误后继续已中止事务。
+
+更新操作由应用显式维护审计时间，不能依赖列的 DEFAULT 自动更新；保留笔记、闪念仅切换隐藏状态不改变内容时间的业务语义。数字状态 DTO 对应的 SQL 表达式显式返回 0/1，不能直接投影 PostgreSQL boolean。可空字段排序通过 `QueryOrder` 明确空值位置，分页继续以唯一 ID 兜底；原生 SQL 同样显式写 NULLS FIRST/LAST。`PostgresqlRegressionIntegrationTest` 使用 Testcontainers 自建 PostgreSQL 18，不读取业务连接配置，执行该测试需要 Docker。
 
 当前表结构、初始化和一次性数据搬迁说明见 [数据库表结构](docs/数据库表结构.md)、[数据库初始化与验证](docs/数据库初始化与验证.md)、[SQL 脚本规范](docs/SQL脚本规范.md)。
 

@@ -1,17 +1,16 @@
 package top.aiolife.core.pojo.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
 
 /**
  * 统一审计字段。
  */
 @Getter
 @Setter
-public class AuditEntity {
+public abstract class AuditEntity extends IdentityEntity {
 
     private Long createUser;
 

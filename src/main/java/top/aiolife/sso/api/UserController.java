@@ -122,6 +122,7 @@ public class UserController {
         UserEntity userEntity = new UserEntity();
         userEntity.setId(id);
         userEntity.setNickname(req.getNickname());
+        userEntity.setUpdateUser(id);
         userEntity.setIntroduction(req.getIntroduction());
         userEntity.setAvatarFileId(req.getAvatarFileId());
         userService.updateUser(userEntity, req.isAvatarFileIdSpecified());

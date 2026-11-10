@@ -135,6 +135,7 @@ public class ExportJobService {
                         && job.getCancelRequested() == 0) {
                     job.setStatus(ExportStatus.QUEUED);
                     job.setPhase("QUEUED");
+                    job.setUpdateTime(ExportTime.now());
                     jobs.updateById(job);
                     audit.record(
                             job.getUserId(), job.getId(), "JOB_RETRYING", "LEASE_EXPIRED", null);
@@ -156,6 +157,7 @@ public class ExportJobService {
         job.setLeaseToken(UUID.randomUUID().toString());
         job.setLeaseUntil(now.plusSeconds(90));
         if (job.getStartedAt() == null) job.setStartedAt(now);
+        job.setUpdateTime(ExportTime.now());
         jobs.updateById(job);
         audit.record(
                 job.getUserId(),
@@ -211,6 +213,7 @@ public class ExportJobService {
         job.setSummaryJson(summary);
         job.setArtifactStatus("AVAILABLE");
         job.setExpiresAt(ExportTime.now().plusHours(properties.getArtifactHours()));
+        job.setUpdateTime(ExportTime.now());
         jobs.updateById(job);
         audit.record(
                 job.getUserId(),
@@ -244,6 +247,7 @@ public class ExportJobService {
             terminate(job, ExportStatus.CANCELLED, "USER_CANCELLED", job.getStartedAt() == null);
         else {
             job.setCancelRequested(1);
+            job.setUpdateTime(ExportTime.now());
             jobs.updateById(job);
         }
     }
@@ -254,6 +258,7 @@ public class ExportJobService {
         if (job == null || !job.getUserId().equals(userId)) throw ExportException.missing();
         if (!"AVAILABLE".equals(job.getArtifactStatus())) return;
         job.setArtifactStatus(state);
+        job.setUpdateTime(ExportTime.now());
         jobs.updateById(job);
         audit.record(userId, id, "ARTIFACT_" + state, "OK", null);
     }
@@ -264,6 +269,7 @@ public class ExportJobService {
         job.setErrorCode(code);
         job.setFinishedAt(ExportTime.now());
         if (refund) job.setQuotaCharged(0);
+        job.setUpdateTime(ExportTime.now());
         jobs.updateById(job);
         audit.record(job.getUserId(), job.getId(), "JOB_" + state, code, null);
         audit.record(

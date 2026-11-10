@@ -1,5 +1,6 @@
 package top.aiolife.record.service.impl;
 
+import static top.aiolife.support.MockMatchers.anyWrapper;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -223,7 +224,7 @@ class TimeTrackerCategoryCacheRedisTest {
             loads.get(requestedOwner).incrementAndGet();
             // 模拟数据库每次读取都返回独立实体，原始快照不会受合并过程修改影响。
             return json.convertValue(rows.get(requestedOwner), new TypeReference<List<TimeTrackerCategoryEntity>>() {});
-        }).when(service).list(any(Wrapper.class));
+        }).when(service).list(anyWrapper());
 
         assertEquals(List.of(9L, 201L), ids(service.listUserVisibleCategories(ownerA)));
         assertEquals(List.of(7L, 8L, 9L, 202L), ids(service.listUserVisibleCategories(ownerB)));

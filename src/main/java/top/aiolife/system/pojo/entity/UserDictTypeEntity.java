@@ -1,13 +1,15 @@
 package top.aiolife.system.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import top.aiolife.core.pojo.entity.BaseEntity;
 
 /** 用户自定义字典类型。 */
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString
 @TableName("user_dict_type")
 public class UserDictTypeEntity extends BaseEntity {
 

@@ -15,7 +15,7 @@ public interface IRelationshipService {
     /**
      * 更新关系
      */
-    RelatesToRelationship updateRelationship(Long userId, Long relationshipId, RelatesToRelationship relationship);
+    RelatesToRelationship updateRelationship(Long userId, String relationshipId, RelatesToRelationship relationship);
 
     /**
      * 删除关系

@@ -1,5 +1,7 @@
 package top.aiolife.sso.api;
 
+import cn.dev33.satoken.stp.StpUtil;
+
 import cn.dev33.satoken.annotation.SaCheckRole;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,7 @@ public class UserCenterController {
     @PutMapping
     public ApiResponse<Void> update(@Valid @RequestBody UserUpdateReq userEntityReq) {
         UserEntity userEntity = SsoApiConvertor.INSTANCE.fromUserUpdateReq(userEntityReq);
+        userEntity.setUpdateUser(StpUtil.getLoginIdAsLong());
         userService.updateUser(userEntity, userEntityReq.isAvatarFileIdSpecified());
         return ApiResponse.success();
     }

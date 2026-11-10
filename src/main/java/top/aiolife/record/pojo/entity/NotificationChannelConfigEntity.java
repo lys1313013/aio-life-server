@@ -1,13 +1,14 @@
 package top.aiolife.record.pojo.entity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import top.aiolife.core.pojo.entity.BaseEntity;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString
 @TableName("notification_channel_config")
 public class NotificationChannelConfigEntity extends BaseEntity {
     private Long userId;

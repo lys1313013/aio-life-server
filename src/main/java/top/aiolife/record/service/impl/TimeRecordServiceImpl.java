@@ -134,14 +134,18 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
                         .eq(ReadRecordEntity::getId, entity.getRelateId())
                         .eq(ReadRecordEntity::getUserId, userId)
                         .eq(ReadRecordEntity::getStatus, ProgressStatusEnum.NOT_STARTED)
-                        .set(ReadRecordEntity::getStatus, ProgressStatusEnum.IN_PROGRESS));
+                        .set(ReadRecordEntity::getStatus, ProgressStatusEnum.IN_PROGRESS)
+                        .set(ReadRecordEntity::getUpdateUser, userId)
+                        .set(ReadRecordEntity::getUpdateTime, LocalDateTime.now()));
             } else if (entity.getRelateType().equals(RelateTypeEnum.MOVIE.getValue())) {
                 secondaryLockGuard.checkMenus(userId, "/record/movie");
                 movieService.update(new LambdaUpdateWrapper<MovieEntity>()
                         .eq(MovieEntity::getId, entity.getRelateId())
                         .eq(MovieEntity::getUserId, userId)
                         .eq(MovieEntity::getStatus, ProgressStatusEnum.NOT_STARTED)
-                        .set(MovieEntity::getStatus, ProgressStatusEnum.IN_PROGRESS));
+                        .set(MovieEntity::getStatus, ProgressStatusEnum.IN_PROGRESS)
+                        .set(MovieEntity::getUpdateUser, userId)
+                        .set(MovieEntity::getUpdateTime, LocalDateTime.now()));
             }
         }
     }

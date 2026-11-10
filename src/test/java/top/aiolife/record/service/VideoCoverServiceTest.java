@@ -74,7 +74,10 @@ class VideoCoverServiceTest {
     }
     @SuppressWarnings("unchecked") <T> T proxy(T target) {
         var proxy = new ProxyFactory(target); proxy.setProxyTargetClass(true);
-        proxy.addAdvice(new TransactionInterceptor(tx,new AnnotationTransactionAttributeSource())); return (T)proxy.getProxy();
+        var interceptor = new TransactionInterceptor();
+        interceptor.setTransactionManager(tx);
+        interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
+        proxy.addAdvice(interceptor); return (T)proxy.getProxy();
     }
     void video(long id,long owner) {
         jdbc.update("INSERT INTO b_video(id,title,url,duration,user_id,cover,create_user,update_user) VALUES (?,?,?,?,?,?,?,?)", id,"合成视频","https://www.bilibili.com/video/BVtest",60,owner,URL,owner,owner);

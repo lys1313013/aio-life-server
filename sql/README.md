@@ -1,13 +1,27 @@
 # 数据库脚本入口
 
-当前执行方式统一见[数据库初始化与验证](../docs/数据库初始化与验证.md)，编写规则见[SQL 脚本规范](../docs/SQL脚本规范.md)。
+仅支持 PostgreSQL 18+。执行方式见[数据库初始化与验证](../docs/数据库初始化与验证.md)，编写规则见[SQL 脚本规范](../docs/SQL脚本规范.md)。
 
-- `migrations/B*.sql`：冻结的新库基线，当前新库自动采用 `B20261028_00_001__mysql_compatible_baseline.sql`，当前仅支持 MySQL 8.x（8.0.16+）；其后的 `V*.sql` 补齐结构和必要数据，由 Flyway 决定执行顺序。
-- `migrations/V*.sql`：已有库的版本迁移。日常变更新增版本，不修改、重排或删除已执行文件。
-- `reference/`：原始资料与来源说明，不是执行目录。
+## 当前执行链
 
-冻结 B/V 文件中保留的历史版本兼容说明、来源、旧路径、`upgrade-plan.json` 等旧入口注释仅用于追溯，不作为当前执行指引；它们不参与 Flyway 的迁移发现与排序。按当前指南连接目标库，核对 SQL 的业务前置条件与数据影响，再执行 `migrate`。不可为清理注释而修改已冻结文件的校验和。
+- [V20261110_01__postgresql_schema.sql](migrations/V20261110_01__postgresql_schema.sql)：完整结构，包含 72 张业务表、索引、约束和中文注释。
+- [V20261110_02_001__cbti_personalities.sql](migrations/V20261110_02_001__cbti_personalities.sql)：CBTI 人格定义。
+- [V20261110_02_002__data_export_coordinator.sql](migrations/V20261110_02_002__data_export_coordinator.sql)：数据导出协调记录。
+- [V20261110_02_003__honor_categories.sql](migrations/V20261110_02_003__honor_categories.sql)：荣誉分类。
+- [V20261110_02_004__membership_providers.sql](migrations/V20261110_02_004__membership_providers.sql)：会员平台。
+- [V20261110_02_005__bank_dictionary.sql](migrations/V20261110_02_005__bank_dictionary.sql)：银行字典。
+- [V20261110_02_006__menus.sql](migrations/V20261110_02_006__menus.sql)：系统菜单。
+- [V20261110_02_007__work_calendar_2026.sql](migrations/V20261110_02_007__work_calendar_2026.sql)：2026 年工作日历。
+- [V20261110_02_008__system_config.sql](migrations/V20261110_02_008__system_config.sql)：系统配置。
+- [V20261110_02_009__regions.sql](migrations/V20261110_02_009__regions.sql)：行政区划。
+- [V20261110_02_010__payment_methods.sql](migrations/V20261110_02_010__payment_methods.sql)：公共支付方式。
+- [V20261110_02_011__wardrobe_categories.sql](migrations/V20261110_02_011__wardrobe_categories.sql)：衣柜分类。
+- 后续结构、菜单和数据变更新增更高版本 `V`。日常不改写已执行的 PostgreSQL 文件，已有库升级所需的增量继续保留；本次种子分类拆分使用下述显式登记转换。
 
-执行文件只放在 `migrations/`，不维护独立历史脚本目录。唯一已有业务库为 117 库，其首次接入进度见初始化指南。冻结脚本中已删除的隐私字段旧脚本引用也仅作来源记录；所有后续升级新增 V 迁移。
+新库先用独立 Flyway 入口迁移，再启动应用；应用启动不自动建表或导入种子。公共种子已按用途从原 `V20261110_02` 拆为 `.02.001` 至 `.02.011`；结构迁移 `.01` 保持原文。已执行旧种子的库先按[一次性拆分登记流程](../docs/数据库初始化与验证.md#已执行旧公共种子的库一次性拆分登记)转换历史，再使用日常迁移入口。
 
-117 已有库已登记至 `20261028.06`，本目录现有 B/V 不会重跑；今后新增更高版本 V。登记只确认历史边界，实际结构差异见初始化指南。
+## 历史资料
+
+旧 MySQL 结构、数据及历史修正 SQL 不再保留在工作树中，原文件仅通过 Git 历史追溯；当前 SQL 只维护上述 PostgreSQL 分类迁移。一次性数据搬迁工具继续从源库或离线快照读取，不依赖旧 SQL 文件。
+
+`reference/banks/` 等目录继续保存公共来源快照与许可，`reference/seed-split/` 保存种子拆分登记所需证据；这些不是重复的 MySQL 执行脚本。生成器只输出待审阅草稿，不覆盖已执行迁移。后续 SQL 按同类合并、异类分开维护，并遵守 Flyway 版本不可改写的约定。

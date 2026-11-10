@@ -1,10 +1,10 @@
 package top.aiolife.record.pojo.entity;
 
-import top.aiolife.core.pojo.entity.BaseEntity;
-
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
  * 备忘录实体
@@ -12,8 +12,9 @@ import lombok.EqualsAndHashCode;
  * @author Lys
  * @date 2025/12/07 14:35
  */
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString
 @TableName("memo")
 public class MemoEntity extends BaseEntity {
 

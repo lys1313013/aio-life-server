@@ -1,5 +1,6 @@
 package top.aiolife.record.service.impl;
 
+import static top.aiolife.support.MockMatchers.anyWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +42,7 @@ class LeetcodeServiceImplTest {
         bind.setUserId(7L);
         bind.setPlatformUsername("test");
         when(users.selectById(7L)).thenReturn(user);
-        when(binds.list(any(Wrapper.class))).thenReturn(List.of(bind));
+        when(binds.list(anyWrapper())).thenReturn(List.of(bind));
         when(binds.getBindByUserIdAndPlatform(7L, "leetcode")).thenReturn(bind);
         when(email.getChannel()).thenReturn("EMAIL");
         when(station.getChannel()).thenReturn("STATION");
@@ -120,7 +121,7 @@ class LeetcodeServiceImplTest {
         service.notifyTodayQuestion();
         verify(locks).tryRun(eq("leetcode:check:lock"), any());
         verify(locks).tryRun(eq("leetcode:daily:lock"), any());
-        verify(binds, never()).list(any(Wrapper.class));
+        verify(binds, never()).list(anyWrapper());
         verifyNoInteractions(guard);
     }
 }

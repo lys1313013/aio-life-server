@@ -42,7 +42,10 @@ class ThoughtCreationTransactionTest {
         validation = Validation.buildDefaultValidatorFactory();
         var target = new ThoughtCreationService(session.getMapper(IThoughtMapper.class), session.getMapper(IRelaEventMapper.class), validation.getValidator());
         var proxy = new ProxyFactory(target);
-        proxy.addAdvice(new TransactionInterceptor(new DataSourceTransactionManager(ds), new AnnotationTransactionAttributeSource()));
+        var interceptor = new TransactionInterceptor();
+        interceptor.setTransactionManager(new DataSourceTransactionManager(ds));
+        interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
+        proxy.addAdvice(interceptor);
         service = (ThoughtCreationService) proxy.getProxy();
     }
 

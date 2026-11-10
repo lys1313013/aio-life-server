@@ -54,7 +54,7 @@ public class RelationshipServiceImpl implements IRelationshipService {
                     tags: $tags,
                     createdAt: datetime()
                 }]->(target)
-                RETURN id(r) as id, r.relationType as relationType, r.direction as direction, r.description as description, r.tags as tags, r.createdAt as createdAt
+                RETURN elementId(r) as id, r.relationType as relationType, r.direction as direction, r.description as description, r.tags as tags, r.createdAt as createdAt
                 """,
                 Map.of(
                     "sourceId", sourcePersonId,
@@ -69,7 +69,7 @@ public class RelationshipServiceImpl implements IRelationshipService {
 
             if (result.hasNext()) {
                 var record = result.next();
-                relationship.setId(record.get("id").asLong());
+                relationship.setId(record.get("id").asString());
                 relationship.setRelationType(record.get("relationType").asString());
                 relationship.setDirection(record.get("direction").asString());
                 relationship.setDescription(record.get("description").isNull() ? "" : record.get("description").asString());
@@ -82,10 +82,10 @@ public class RelationshipServiceImpl implements IRelationshipService {
     }
 
     @Override
-    public RelatesToRelationship updateRelationship(Long userId, Long relationshipId, RelatesToRelationship relationship) {
+    public RelatesToRelationship updateRelationship(Long userId, String relationshipId, RelatesToRelationship relationship) {
         try (Session session = driver.session()) {
             var check = session.run(
-                "MATCH (p:Person {userId: $userId})-[r:RELATES_TO]-() WHERE id(r) = $id RETURN id(r)",
+                "MATCH (p:Person {userId: $userId})-[r:RELATES_TO]-() WHERE elementId(r) = $id RETURN elementId(r)",
                 Map.of("id", relationshipId, "userId", userId)
             );
             if (!check.hasNext()) {
@@ -95,7 +95,7 @@ public class RelationshipServiceImpl implements IRelationshipService {
             session.run(
                 """
                 MATCH ()-[r:RELATES_TO]->()
-                WHERE id(r) = $id
+                WHERE elementId(r) = $id
                 SET r.relationType = $relationType, r.direction = $direction, r.description = $description, r.tags = $tags
                 """,
                 Map.of(
@@ -106,6 +106,7 @@ public class RelationshipServiceImpl implements IRelationshipService {
                     "tags", relationship.getTags() != null ? relationship.getTags() : ""
                 )
             );
+            relationship.setId(relationshipId);
             return relationship;
         }
     }

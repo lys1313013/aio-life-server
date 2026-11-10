@@ -98,7 +98,10 @@ class StorageUploadCoordinationTest {
         };
         ReflectionTestUtils.setField(target, "baseMapper", session.getMapper(IFileMapper.class));
         var proxy = new ProxyFactory(target); proxy.setProxyTargetClass(true);
-        proxy.addAdvice(new TransactionInterceptor(new DataSourceTransactionManager(ds), new AnnotationTransactionAttributeSource()));
+        var interceptor = new TransactionInterceptor();
+        interceptor.setTransactionManager(new DataSourceTransactionManager(ds));
+        interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
+        proxy.addAdvice(interceptor);
         files = (FileServiceImpl) proxy.getProxy();
         admin = new StorageAdminService(config, mock(StorageListClient.class), deletes,
                 new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class), new CbtiConfig(), mock(StorageObjectMapper.class)), locks);

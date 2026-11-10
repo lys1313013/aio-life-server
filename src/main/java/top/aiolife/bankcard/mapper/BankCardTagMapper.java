@@ -11,7 +11,7 @@ import java.util.List;
 /** 银行卡私有标签复用用户字典实体，查询始终限制用户及字典类型。 */
 @Mapper
 public interface BankCardTagMapper extends BaseMapper<UserDictDataEntity> {
-    @Select("SELECT id,dict_label AS name,color,is_enabled FROM user_dict_data WHERE user_id=#{userId} AND dict_type='bank_card_tag' AND is_deleted=0 ORDER BY sort_order,id")
+    @Select("SELECT id,dict_label AS name,color,is_enabled FROM user_dict_data WHERE user_id=#{userId} AND dict_type='bank_card_tag' AND is_deleted=0 ORDER BY sort_order NULLS FIRST,id")
     List<BankCardVO.Tag> selectTags(@Param("userId") long userId);
 
     default long countDuplicate(long userId, String name, long excludedId) {

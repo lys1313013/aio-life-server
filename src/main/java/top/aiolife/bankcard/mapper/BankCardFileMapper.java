@@ -34,13 +34,13 @@ public interface BankCardFileMapper {
     @Select("SELECT COUNT(*) FROM file WHERE biz_type='bank_card_template_cover' AND biz_id=#{templateId} AND is_deleted=0")
     long countTemplateFiles(@Param("templateId") long templateId);
 
-    @Update("UPDATE file SET is_deleted=1,update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE biz_type='bank_card_cover' AND biz_id=#{cardId} AND create_user=#{userId} AND is_deleted=0 AND (#{fileId} IS NULL OR id<>#{fileId})")
+    @Update("<script>UPDATE file SET is_deleted=1,update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE biz_type='bank_card_cover' AND biz_id=#{cardId} AND create_user=#{userId} AND is_deleted=0 <if test='fileId != null'>AND id&lt;&gt;#{fileId}</if></script>")
     int deletePrivateCoversExcept(@Param("userId") long userId, @Param("cardId") long cardId, @Param("fileId") String fileId);
 
     @Update("UPDATE file SET biz_id=#{cardId},update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE id=#{fileId} AND create_user=#{userId} AND is_deleted=0")
     int bindPrivateCover(@Param("cardId") long cardId, @Param("userId") long userId, @Param("fileId") String fileId);
 
-    @Update("UPDATE file SET is_deleted=1,update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE biz_type='bank_card_template_cover' AND biz_id=#{templateId} AND (#{fileId} IS NULL OR id<>#{fileId}) AND is_deleted=0")
+    @Update("<script>UPDATE file SET is_deleted=1,update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE biz_type='bank_card_template_cover' AND biz_id=#{templateId} AND is_deleted=0 <if test='fileId != null'>AND id&lt;&gt;#{fileId}</if></script>")
     int deleteTemplateCoversExcept(@Param("userId") long userId, @Param("templateId") long templateId, @Param("fileId") String fileId);
 
     @Update("UPDATE file SET biz_id=#{templateId},update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE id=#{fileId}")

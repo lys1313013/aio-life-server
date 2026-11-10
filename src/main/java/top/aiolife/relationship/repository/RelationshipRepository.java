@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 关系 Repository
  */
-public interface RelationshipRepository extends Neo4jRepository<RelatesToRelationship, Long> {
+public interface RelationshipRepository extends Neo4jRepository<RelatesToRelationship, String> {
 
     /**
      * 查询两个人之间的关系

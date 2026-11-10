@@ -2,6 +2,7 @@ package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -33,7 +34,7 @@ public class HonorCategoryController {
                 .or()
                 .isNull(HonorCategoryEntity::getUserId)
         );
-        queryWrapper.orderByAsc(HonorCategoryEntity::getSortOrder);
+        QueryOrder.ascNullsFirst(queryWrapper, HonorCategoryEntity::getSortOrder);
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toHonorCategoryVOList(honorCategoryService.list(queryWrapper)));
     }
 }

@@ -1,6 +1,7 @@
 package top.aiolife.sso.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -41,7 +42,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, MessageEntity
                 wrapper.eq(MessageEntity::getIsRead, isRead);
             }
         }
-        return wrapper.orderByDesc(MessageEntity::getCreateTime)
+        return QueryOrder.descNullsLast(wrapper, MessageEntity::getCreateTime)
                 .orderByDesc(MessageEntity::getId);
     }
 
@@ -101,7 +102,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, MessageEntity
                     .or()
                     .eq(MessageEntity::getSenderId, userId));
         }
-        return this.page(page, wrapper.orderByDesc(MessageEntity::getCreateTime));
+        return this.page(page, QueryOrder.descNullsLast(wrapper, MessageEntity::getCreateTime));
     }
 
     @Override

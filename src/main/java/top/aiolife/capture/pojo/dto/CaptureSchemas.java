@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
@@ -96,6 +97,7 @@ public final class CaptureSchemas {
     }
 
     @Data
+    @EqualsAndHashCode(callSuper = true)
     public static class DoubanDraft extends DoubanMetadata {
         private String url;
         private String mediaType;

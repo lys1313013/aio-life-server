@@ -56,7 +56,7 @@ class WechatSubscriptionServiceTest {
         when(users.selectById(7L)).thenReturn(user);
         when(preferences.selectOne(any())).thenReturn(preference);
         when(locks.tryRun(anyString(), any())).thenAnswer(inv -> { inv.<Runnable>getArgument(1).run(); return true; });
-        when(deliveries.selectPage(any(Page.class), any())).thenAnswer(inv -> {
+        when(deliveries.selectPage(any(), any())).thenAnswer(inv -> {
             Page<NotificationDeliveryEntity> page = inv.getArgument(0);
             return page.setRecords(row == null ? List.of() : List.of(row));
         });

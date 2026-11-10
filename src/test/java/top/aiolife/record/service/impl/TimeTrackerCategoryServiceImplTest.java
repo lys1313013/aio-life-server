@@ -1,5 +1,6 @@
 package top.aiolife.record.service.impl;
 
+import static top.aiolife.support.MockMatchers.anyWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
@@ -84,7 +85,7 @@ class TimeTrackerCategoryServiceImplTest {
         updates.setIsTrackTime(0);
 
         doReturn(template).when(service).getById(template.getId());
-        doReturn(null).when(service).getOne(any(Wrapper.class));
+        doReturn(null).when(service).getOne(anyWrapper());
         doReturn(true).when(service).save(any(TimeTrackerCategoryEntity.class));
 
         service.updateCategory(template.getId(), updates, 13L);
@@ -112,7 +113,7 @@ class TimeTrackerCategoryServiceImplTest {
         updates.setSortOrder(0);
 
         doReturn(template).when(service).getById(template.getId());
-        doReturn(null).when(service).getOne(any(Wrapper.class));
+        doReturn(null).when(service).getOne(anyWrapper());
         doReturn(true).when(service).save(any(TimeTrackerCategoryEntity.class));
 
         service.updateCategory(template.getId(), updates, 13L);
@@ -135,12 +136,12 @@ class TimeTrackerCategoryServiceImplTest {
         updates.setSortOrder(template.getSortOrder());
 
         doReturn(template).when(service).getById(template.getId());
-        doReturn(existingOverride).when(service).getOne(any(Wrapper.class));
-        doReturn(true).when(service).update(any(Wrapper.class));
+        doReturn(existingOverride).when(service).getOne(anyWrapper());
+        doReturn(true).when(service).update(anyWrapper());
 
         service.updateCategory(template.getId(), updates, 13L);
 
-        ArgumentCaptor<Wrapper<TimeTrackerCategoryEntity>> captor = ArgumentCaptor.forClass(Wrapper.class);
+        ArgumentCaptor<Wrapper<TimeTrackerCategoryEntity>> captor = ArgumentCaptor.captor();
         verify(service).update(captor.capture());
         LambdaUpdateWrapper<TimeTrackerCategoryEntity> wrapper =
                 (LambdaUpdateWrapper<TimeTrackerCategoryEntity>) captor.getValue();

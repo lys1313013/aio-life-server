@@ -13,7 +13,7 @@
         <foreach collection="statusCodes" item="statusCode" index="statusIndex">
             WHEN #{statusCode} THEN #{statusIndex} + 1
         </foreach>
-        ELSE 0 END, update_time DESC NULLS LAST
+        ELSE 0 END, update_time DESC NULLS LAST, id DESC
     </select>
 
     <select id="getStatusCount" resultType="top.aiolife.record.pojo.vo.StatusCount">

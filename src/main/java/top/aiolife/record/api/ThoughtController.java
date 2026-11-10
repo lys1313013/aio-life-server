@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import top.aiolife.record.service.ThoughtCreationService;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -78,7 +79,7 @@ public class ThoughtController {
                     condition.getContent());
         }
 
-        lambdaQueryWrapper.orderByDesc(ThoughtEntity::getUpdateTime);
+        QueryOrder.descNullsLast(lambdaQueryWrapper, ThoughtEntity::getUpdateTime, ThoughtEntity::getId);
         Page<ThoughtEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<ThoughtEntity> iPage = thoughtMapper.selectPage(page, lambdaQueryWrapper);
 
@@ -184,7 +185,7 @@ public class ThoughtController {
         LambdaQueryWrapper<ThoughtEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ThoughtEntity::getUserId, userId);
         wrapper.eq(ThoughtEntity::getIsPinned, 1);
-        wrapper.orderByDesc(ThoughtEntity::getUpdateTime);
+        QueryOrder.descNullsLast(wrapper, ThoughtEntity::getUpdateTime, ThoughtEntity::getId);
         List<ThoughtEntity> list = getBaseMapper().selectList(wrapper);
 
         // 查询明细

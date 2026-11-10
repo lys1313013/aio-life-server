@@ -2,6 +2,7 @@ package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
@@ -42,7 +43,7 @@ public class MilestoneController {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<MilestoneEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(MilestoneEntity::getUserId, userId);
-        queryWrapper.orderByDesc(MilestoneEntity::getCreateTime);
+        QueryOrder.descNullsLast(queryWrapper, MilestoneEntity::getCreateTime, MilestoneEntity::getId);
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toMilestoneVOList(milestoneService.list(queryWrapper)));
     }
 

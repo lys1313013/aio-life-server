@@ -2,6 +2,7 @@ package top.aiolife.record.mcp;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,7 @@ public class BVideoMcpTools {
         if (StringUtils.hasText(req.getStatus())) {
             queryWrapper.eq(BVideoEntity::getStatus, ProgressStatusEnum.fromCode(req.getStatus()));
         }
-        queryWrapper.orderByDesc(BVideoEntity::getLastWatched);
+        QueryOrder.descNullsLast(queryWrapper, BVideoEntity::getLastWatched, BVideoEntity::getId);
 
         int pageNo = req.getPage() == null ? 1 : req.getPage();
         int size = req.getPageSize() == null ? 10 : Math.min(req.getPageSize(), 100);

@@ -1,5 +1,6 @@
 package top.aiolife.security;
 
+import static top.aiolife.support.MockMatchers.anyWrapper;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
@@ -52,11 +53,11 @@ class PermissionMutationTest {
             var updates = new TimeTrackerCategoryEntity();
             updates.setUserId(injectedOwner); updates.setTemplateId(99L); updates.setName("本人分类");
             doReturn(existing).when(service).getById(7L);
-            doReturn(true).when(service).update(any(TimeTrackerCategoryEntity.class), any(Wrapper.class));
+            doReturn(true).when(service).update(any(TimeTrackerCategoryEntity.class), anyWrapper());
             service.updateCategory(7L, updates, 11L);
             assertEquals(11L, updates.getUserId());
             assertNull(updates.getTemplateId());
-            var query = ArgumentCaptor.forClass(Wrapper.class);
+            ArgumentCaptor<Wrapper<TimeTrackerCategoryEntity>> query = ArgumentCaptor.captor();
             verify(service).update(eq(updates), query.capture());
             assertTrue(query.getValue().getSqlSegment().contains("user_id"));
             verify(service, never()).updateById(any(TimeTrackerCategoryEntity.class));
@@ -71,7 +72,7 @@ class PermissionMutationTest {
         var updates = new UserDictDataEntity();
         updates.setUserId(0L); updates.setTemplateId(99L);
         doReturn(existing).when(service).getById(7L);
-        doReturn(true).when(service).update(any(UserDictDataEntity.class), any(Wrapper.class));
+        doReturn(true).when(service).update(any(UserDictDataEntity.class), anyWrapper());
         service.updateDictData(7L, updates, 11L);
         assertEquals(11L, updates.getUserId());
         assertNull(updates.getTemplateId());
@@ -84,7 +85,7 @@ class PermissionMutationTest {
         var foreign = new TimeTrackerCategoryEntity(); foreign.setUserId(22L);
         doReturn(foreign).when(service).getById(7L);
         assertThrows(RuntimeException.class, () -> service.updateCategory(7L, new TimeTrackerCategoryEntity(), 11L));
-        verify(service, never()).update(any(TimeTrackerCategoryEntity.class), any(Wrapper.class));
+        verify(service, never()).update(any(TimeTrackerCategoryEntity.class), anyWrapper());
     }
 
     @Test
@@ -97,7 +98,7 @@ class PermissionMutationTest {
             input.setContent("不要写入"); input.setCreateUser(22L); input.setSortOrder(3);
             controller.reSort(ApiRequestFixtures.requests(List.of(input), TaskSortReq.class));
             var saved = ArgumentCaptor.forClass(TaskEntity.class);
-            var query = ArgumentCaptor.forClass(Wrapper.class);
+            ArgumentCaptor<Wrapper<TaskEntity>> query = ArgumentCaptor.captor();
             verify(mapper).update(saved.capture(), query.capture());
             assertNull(saved.getValue().getUserId()); assertNull(saved.getValue().getCreateUser());
             assertNull(saved.getValue().getContent()); assertEquals(3, saved.getValue().getSortOrder());
@@ -113,7 +114,7 @@ class PermissionMutationTest {
             var column = new TaskColumnEntity(); column.setId(7L); column.setUserId(22L); column.setSortOrder(4);
             new TaskColumnController(columns, mock(ITaskColumnService.class)).reSort(ApiRequestFixtures.requests(List.of(column), TaskColumnSortReq.class));
             var savedColumn = ArgumentCaptor.forClass(TaskColumnEntity.class);
-            verify(columns).update(savedColumn.capture(), any(Wrapper.class));
+            verify(columns).update(savedColumn.capture(), anyWrapper());
             assertNull(savedColumn.getValue().getUserId());
             assertEquals(4, savedColumn.getValue().getSortOrder());
 
@@ -122,7 +123,7 @@ class PermissionMutationTest {
             detail.setTaskId(99L); detail.setContent("不要写入"); detail.setSortOrder(5);
             new TaskDetailController(details, mock(ITaskService.class)).reSort(ApiRequestFixtures.requests(List.of(detail), TaskDetailSortReq.class));
             var savedDetail = ArgumentCaptor.forClass(TaskDetailEntity.class);
-            verify(details).update(savedDetail.capture(), any(Wrapper.class));
+            verify(details).update(savedDetail.capture(), anyWrapper());
             assertNull(savedDetail.getValue().getUserId()); assertNull(savedDetail.getValue().getTaskId());
             assertNull(savedDetail.getValue().getContent()); assertEquals(5, savedDetail.getValue().getSortOrder());
         }
@@ -137,7 +138,7 @@ class PermissionMutationTest {
             var input = new TaskDetailEntity(); input.setId(7L); input.setUserId(22L);
             controller.update(ApiRequestFixtures.request(input, TaskDetailUpdateReq.class));
             var saved = ArgumentCaptor.forClass(TaskDetailEntity.class);
-            var query = ArgumentCaptor.forClass(Wrapper.class);
+            ArgumentCaptor<Wrapper<TaskDetailEntity>> query = ArgumentCaptor.captor();
             verify(service).update(saved.capture(), query.capture());
             assertEquals(11L, saved.getValue().getUserId());
             assertEquals(7L, saved.getValue().getId());
@@ -150,14 +151,14 @@ class PermissionMutationTest {
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
             var thoughts = mock(IThoughtMapper.class); var events = mock(IRelaEventMapper.class);
-            when(thoughts.update(any(ThoughtEntity.class), any(Wrapper.class))).thenReturn(1);
-            when(events.update(any(ThoughtRelaEventEntity.class), any(Wrapper.class))).thenReturn(0);
+            when(thoughts.update(any(ThoughtEntity.class), anyWrapper())).thenReturn(1);
+            when(events.update(any(ThoughtRelaEventEntity.class), anyWrapper())).thenReturn(0);
             var controller = new ThoughtController(thoughts, events, null);
             var input = new ThoughtEntity(); var event = new ThoughtRelaEventEntity();
             event.setId(99L); event.setThoughtId(88L); event.setContent("外来事件"); input.setEvents(List.of(event));
             assertThrows(IllegalArgumentException.class, () -> controller.update(7L,ApiRequestFixtures.request(input, ThoughtUpdateReq.class)));
             var saved = ArgumentCaptor.forClass(ThoughtRelaEventEntity.class);
-            var query = ArgumentCaptor.forClass(Wrapper.class);
+            ArgumentCaptor<Wrapper<ThoughtRelaEventEntity>> query = ArgumentCaptor.captor();
             verify(events).update(saved.capture(), query.capture());
             assertNull(saved.getValue().getThoughtId());
             assertTrue(query.getValue().getSqlSegment().contains("thought_id"));
@@ -178,7 +179,7 @@ class PermissionMutationTest {
                     new PerformanceController(new PerformanceRecordService(performanceMapper, files))
                             .updatePerformance(ApiRequestFixtures.request(performance, PerformanceUpdateReq.class)));
             var performanceUpdate = ArgumentCaptor.forClass(PerformanceEntity.class);
-            verify(performanceMapper).update(performanceUpdate.capture(), any(Wrapper.class));
+            verify(performanceMapper).update(performanceUpdate.capture(), anyWrapper());
             assertNull(performanceUpdate.getValue().getCreateUser());
             assertNull(performanceUpdate.getValue().getUserId());
             var honor = new HonorRecordEntity(); honor.setId(99L); honor.setFileIds(List.of("dummy-file"));
@@ -194,14 +195,14 @@ class PermissionMutationTest {
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
             var files = mock(IFileService.class); var mapper = mock(IPerformanceMapper.class);
-            when(mapper.update(any(PerformanceEntity.class), any(Wrapper.class))).thenReturn(1);
+            when(mapper.update(any(PerformanceEntity.class), anyWrapper())).thenReturn(1);
             // 附件同步会先查询当前用户拥有的文件，再执行绑定。
             var ownedFile = new FileEntity(); ownedFile.setId("31"); ownedFile.setCreateUser(11L);
-            when(files.list(any(Wrapper.class))).thenReturn(List.of(ownedFile));
+            when(files.list(anyWrapper())).thenReturn(List.of(ownedFile));
             var input = new PerformanceEntity(); input.setId(7L); input.setFileIds(List.of("31"));
             new PerformanceController(new PerformanceRecordService(mapper, files))
                     .updatePerformance(ApiRequestFixtures.request(input, PerformanceUpdateReq.class));
-            var query = ArgumentCaptor.forClass(Wrapper.class);
+            ArgumentCaptor<Wrapper<FileEntity>> query = ArgumentCaptor.captor();
             verify(files).list(query.capture());
             assertTrue(query.getValue().getSqlSegment().contains("id IN"));
             assertTrue(query.getValue().getSqlSegment().contains("create_user ="));

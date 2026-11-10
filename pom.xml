@@ -28,6 +28,8 @@
         <okhttp.version>4.12.0</okhttp.version>
         <spring.profiles.active>test</spring.profiles.active>
         <test.excludedGroups>external</test.excludedGroups>
+        <!-- 为 Surefire 的延迟参数替换提供默认值，允许其他测试工具追加 JVM 参数。 -->
+        <argLine></argLine>
     </properties>
 
     <dependencyManagement>
@@ -45,6 +47,12 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>2.0.5</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
@@ -284,9 +292,23 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>resolve-test-agent</id>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
+                    <!-- 启动时加载 Mockito，避免 Java 21+ 动态挂载代理。 -->
+                    <argLine>@{argLine} -javaagent:"${org.mockito:mockito-core:jar}"</argLine>
                     <excludedGroups>${test.excludedGroups}</excludedGroups>
                     <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
                     <systemPropertyVariables>
@@ -302,6 +324,10 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
+                    <showDeprecation>true</showDeprecation>
+                    <compilerArgs>
+                        <arg>-Xlint:unchecked</arg>
+                    </compilerArgs>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>com.github.therapi</groupId>

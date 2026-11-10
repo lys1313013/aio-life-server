@@ -1,5 +1,7 @@
 package top.aiolife.record.service.impl;
 
+import java.time.LocalDateTime;
+
 import javax.imageio.ImageIO;
 import top.aiolife.core.lock.StorageObjectLock;
 import cn.dev33.satoken.stp.StpUtil;
@@ -250,7 +252,9 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implem
         updateWrapper.in(FileEntity::getId, fileIds)
                 .eq(FileEntity::getCreateUser, userId)
                 .set(FileEntity::getBizId, bizId)
-                .set(FileEntity::getBizType, bizType);
+                .set(FileEntity::getBizType, bizType)
+                .set(FileEntity::getUpdateUser, userId)
+                .set(FileEntity::getUpdateTime, LocalDateTime.now());
         this.update(updateWrapper);
     }
 

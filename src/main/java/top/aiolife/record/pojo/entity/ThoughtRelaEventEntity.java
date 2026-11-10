@@ -1,9 +1,10 @@
 package top.aiolife.record.pojo.entity;
 
-import top.aiolife.core.pojo.entity.BaseEntity;
-
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
  * 类功能描述
@@ -11,7 +12,9 @@ import lombok.Data;
  * @author Lys
  * @date 2025-11-16 15:34
  */
-@Data
+@Getter
+@Setter
+@ToString
 @TableName("thought_rela_event")
 public class ThoughtRelaEventEntity extends BaseEntity{
 

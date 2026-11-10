@@ -72,10 +72,13 @@ public class GoalProgressService {
                 .eq(GoalEntity::getProgressRefreshId, refreshId);
         try {
             var computed = evaluator.evaluate(row, token);
-            update.set(GoalEntity::getCurrentValue, computed.getCurrentValue())
+            update.set(GoalEntity::getUpdateTime, LocalDateTime.now())
+                    .set(GoalEntity::getUpdateUser, userId)
+                    .set(GoalEntity::getCurrentValue, computed.getCurrentValue())
                     .set(GoalEntity::getProgressCheckedAt, LocalDateTime.now()).set(GoalEntity::getProgressError, null);
         } catch (IllegalArgumentException | SecondaryLockRequiredException error) {
-            update.set(GoalEntity::getProgressError, error.getMessage());
+            update.set(GoalEntity::getProgressError, error.getMessage())
+                    .set(GoalEntity::getUpdateTime, LocalDateTime.now()).set(GoalEntity::getUpdateUser, userId);
         }
         if (!Thread.currentThread().isInterrupted()) goals.update(null, update);
     }

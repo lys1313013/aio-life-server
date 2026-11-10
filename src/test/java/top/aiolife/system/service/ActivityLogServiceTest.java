@@ -1,5 +1,6 @@
 package top.aiolife.system.service;
 
+import static top.aiolife.support.MockMatchers.anyPage;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
@@ -35,7 +36,7 @@ class ActivityLogServiceTest {
         query.setStartDate(LocalDate.of(2026, 9, 15));
         query.setEndDate(LocalDate.of(2026, 9, 22));
         query.setUsername("a_%");
-        when(mapper.selectPage(any(Page.class), any())).thenAnswer(inv -> {
+        when(mapper.selectPage(anyPage(), any())).thenAnswer(inv -> {
             LambdaQueryWrapper<ActivityLogEntity> wrapper = inv.getArgument(1);
             String sql = wrapper.getSqlSegment();
             assertTrue(sql.contains("create_time >="));

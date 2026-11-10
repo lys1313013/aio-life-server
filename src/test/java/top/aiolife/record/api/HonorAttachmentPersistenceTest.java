@@ -75,8 +75,10 @@ class HonorAttachmentPersistenceTest {
                 new DoubanCoverUrlPolicy("doubanio.com"));
         ReflectionTestUtils.setField(files, "baseMapper", session.getMapper(IFileMapper.class));
         var proxy = new ProxyFactory(new HonorRecordController(honorMapper, honors, files));
-        proxy.addAdvice(new TransactionInterceptor(new DataSourceTransactionManager(source),
-                new AnnotationTransactionAttributeSource()));
+        var interceptor = new TransactionInterceptor();
+        interceptor.setTransactionManager(new DataSourceTransactionManager(source));
+        interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
+        proxy.addAdvice(interceptor);
         controller = (HonorRecordController) proxy.getProxy();
         stpUtil = mockStatic(StpUtil.class);
         stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);

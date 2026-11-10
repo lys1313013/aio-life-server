@@ -7,8 +7,6 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -60,7 +58,6 @@ class PaginationOrderingSqlTest {
         var source = new JdbcDataSource();
         source.setURL("jdbc:h2:mem:pagination_order_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(source);
-        String schema = Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql"));
         for (String table : List.of("task", "task_column", "memo", "sys_dict_type", "sys_dict_data")) {
             jdbc.execute(CurrentSchema.table(table)
                     .replaceAll(" COLLATE [a-zA-Z0-9_]+", "")

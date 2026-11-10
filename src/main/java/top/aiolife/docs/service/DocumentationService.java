@@ -130,7 +130,7 @@ public class DocumentationService {
 
     private Map<String, Entry> readOperations(JsonNode document, Map<String, List<String>> memberships) {
         Map<String, Entry> result = new LinkedHashMap<>();
-        document.path("paths").fields().forEachRemaining(path -> path.getValue().fields().forEachRemaining(method -> {
+        document.path("paths").properties().forEach(path -> path.getValue().properties().forEach(method -> {
             if (!METHODS.contains(method.getKey())) return;
             JsonNode operation = method.getValue();
             String id = operation.path("operationId").asText();

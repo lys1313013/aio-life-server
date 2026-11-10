@@ -1,14 +1,15 @@
 package top.aiolife.record.pojo.entity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import top.aiolife.core.pojo.entity.BaseEntity;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 /** 收藏文章。 */
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@ToString
 @TableName("record_article")
 public class RecordArticleEntity extends BaseEntity {
 

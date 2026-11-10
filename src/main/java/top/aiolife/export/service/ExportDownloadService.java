@@ -50,6 +50,7 @@ public class ExportDownloadService {
                 authorization.consume(
                         userId, grant, "DOWNLOAD", id, scope.decode(job.getScopeJson()));
         job.setDownloadCount(job.getDownloadCount() + 1);
+        job.setUpdateTime(ExportTime.now());
         jobs.updateById(job);
         String transferId = UUID.randomUUID().toString();
         audit.record(userId, id, "DOWNLOAD_STARTED", "OK", transferId);

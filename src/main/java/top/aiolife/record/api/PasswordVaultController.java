@@ -2,6 +2,7 @@ package top.aiolife.record.api;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.QueryOrder;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -47,7 +48,7 @@ public class PasswordVaultController {
         long userId = StpUtil.getLoginIdAsLong();
         LambdaQueryWrapper<PasswordVaultEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(PasswordVaultEntity::getUserId, userId);
-        wrapper.orderByDesc(PasswordVaultEntity::getUpdateTime);
+        QueryOrder.descNullsLast(wrapper, PasswordVaultEntity::getUpdateTime, PasswordVaultEntity::getId);
         List<PasswordVaultEntity> list = passwordVaultMapper.selectList(wrapper);
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toPasswordVaultVOList(list));
     }

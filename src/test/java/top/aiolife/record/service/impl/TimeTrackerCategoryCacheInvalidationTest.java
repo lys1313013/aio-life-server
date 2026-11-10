@@ -1,5 +1,6 @@
 package top.aiolife.record.service.impl;
 
+import static top.aiolife.support.MockMatchers.anyWrapper;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
@@ -51,9 +52,9 @@ class TimeTrackerCategoryCacheInvalidationTest {
                 invocation.<Supplier<List<TimeTrackerCategoryEntity>>>getArgument(1).get());
         service = spy(new TimeTrackerCategoryServiceImpl(cache));
         doNothing().when(service).lockHierarchy();
-        doReturn(0L).when(service).count(any(Wrapper.class));
+        doReturn(0L).when(service).count(anyWrapper());
         var records = mock(ITimeRecordMapper.class);
-        when(records.selectCount(any(Wrapper.class))).thenReturn(0L);
+        when(records.selectCount(anyWrapper())).thenReturn(0L);
         ReflectionTestUtils.setField(service, "timeRecordMapper", records);
     }
 
@@ -65,7 +66,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
         hiddenOverride.setIsEnabled(0);
         var personalCategory = category(7L, USER_ID);
         doReturn(List.of(publicCategory), List.of(hiddenOverride, personalCategory))
-                .when(service).list(any(Wrapper.class));
+                .when(service).list(anyWrapper());
 
         var result = service.listUserVisibleCategories(USER_ID);
 
@@ -82,7 +83,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
             transactionStates.add(TransactionSynchronizationManager.isActualTransactionActive());
             return invocation.<Supplier<List<TimeTrackerCategoryEntity>>>getArgument(1).get();
         }).when(cache).list(anyLong(), any());
-        doReturn(List.of()).when(service).list(any(Wrapper.class));
+        doReturn(List.of()).when(service).list(anyWrapper());
         doReturn(true).when(service).save(any(TimeTrackerCategoryEntity.class));
         var interceptor = new TransactionInterceptor();
         interceptor.setTransactionManager(new TestTransactionManager());
@@ -115,7 +116,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
     @Test
     void testUpdate_个人修改仅清本人缓存() {
         doReturn(category(7L, USER_ID)).when(service).getById(7L);
-        doReturn(true).when(service).update(any(TimeTrackerCategoryEntity.class), any(Wrapper.class));
+        doReturn(true).when(service).update(any(TimeTrackerCategoryEntity.class), anyWrapper());
         var updates = new TimeTrackerCategoryEntity();
         updates.setName("新名称");
 
@@ -138,9 +139,9 @@ class TimeTrackerCategoryCacheInvalidationTest {
     @ValueSource(booleans = {false, true})
     void testOverride_创建或更新公共覆盖仅清本人缓存(boolean alreadyOverridden) {
         doReturn(category(5L, 0L)).when(service).getById(5L);
-        doReturn(alreadyOverridden ? category(99L, USER_ID) : null).when(service).getOne(any(Wrapper.class));
+        doReturn(alreadyOverridden ? category(99L, USER_ID) : null).when(service).getOne(anyWrapper());
         doReturn(true).when(service).save(any(TimeTrackerCategoryEntity.class));
-        doReturn(true).when(service).update(any(Wrapper.class));
+        doReturn(true).when(service).update(anyWrapper());
         var updates = new TimeTrackerCategoryEntity();
         updates.setIsEnabled(1);
 
@@ -153,7 +154,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
     @ValueSource(booleans = {false, true})
     void testHide_新增或更新隐藏记录仅清本人缓存(boolean alreadyOverridden) {
         doReturn(category(5L, 0L)).when(service).getById(5L);
-        doReturn(alreadyOverridden ? category(99L, USER_ID) : null).when(service).getOne(any(Wrapper.class));
+        doReturn(alreadyOverridden ? category(99L, USER_ID) : null).when(service).getOne(anyWrapper());
         doReturn(true).when(service).save(any(TimeTrackerCategoryEntity.class));
         doReturn(true).when(service).updateById(any(TimeTrackerCategoryEntity.class));
 
@@ -166,9 +167,9 @@ class TimeTrackerCategoryCacheInvalidationTest {
     void testSort_接口排序个人和公共覆盖均清本人缓存() {
         doReturn(category(7L, USER_ID)).when(service).getById(7L);
         doReturn(category(5L, 0L)).when(service).getById(5L);
-        doReturn(null).when(service).getOne(any(Wrapper.class));
+        doReturn(null).when(service).getOne(anyWrapper());
         doReturn(true).when(service).save(any(TimeTrackerCategoryEntity.class));
-        doReturn(true).when(service).update(any(TimeTrackerCategoryEntity.class), any(Wrapper.class));
+        doReturn(true).when(service).update(any(TimeTrackerCategoryEntity.class), anyWrapper());
         var personal = new TimeTrackerCategorySortReq();
         personal.setId(7L);
         personal.setSortOrder(20);
@@ -205,7 +206,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
 
         clearInvocations(cache);
         doReturn(true).when(service).removeById(5L);
-        doReturn(true).when(service).remove(any(Wrapper.class));
+        doReturn(true).when(service).remove(anyWrapper());
         service.adminDeleteCategory(5L);
         assertOnlyInvalidated(0L);
     }
@@ -220,7 +221,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
                 () -> service.adminUpdateCategory(7L, new TimeTrackerCategoryEntity()));
         assertThrows(RuntimeException.class, () -> service.adminDeleteCategory(7L));
         doReturn(category(7L, USER_ID)).when(service).getById(7L);
-        doReturn(1L).when(service).count(any(Wrapper.class));
+        doReturn(1L).when(service).count(anyWrapper());
         assertThrows(IllegalArgumentException.class, () -> service.deleteCategory(7L, USER_ID));
         verifyNoInteractions(cache);
     }
@@ -228,21 +229,21 @@ class TimeTrackerCategoryCacheInvalidationTest {
     @Test
     void testNoWrite_数据库未写入时保留缓存() {
         doReturn(false).when(service).save(any(TimeTrackerCategoryEntity.class));
-        doReturn(false).when(service).update(any(TimeTrackerCategoryEntity.class), any(Wrapper.class));
-        doReturn(false).when(service).update(any(Wrapper.class));
+        doReturn(false).when(service).update(any(TimeTrackerCategoryEntity.class), anyWrapper());
+        doReturn(false).when(service).update(anyWrapper());
         doReturn(false).when(service).updateById(any(TimeTrackerCategoryEntity.class));
         doReturn(false).when(service).removeById(anyLong());
-        doReturn(false).when(service).remove(any(Wrapper.class));
+        doReturn(false).when(service).remove(anyWrapper());
         doReturn(List.of()).when(service).listAllCategories();
         doReturn(category(7L, USER_ID)).when(service).getById(7L);
         doReturn(category(5L, 0L)).when(service).getById(5L);
-        doReturn(null).when(service).getOne(any(Wrapper.class));
+        doReturn(null).when(service).getOne(anyWrapper());
         service.createCategory(category(null, USER_ID), USER_ID);
         service.updateCategory(7L, new TimeTrackerCategoryEntity(), USER_ID);
         service.deleteCategory(7L, USER_ID);
         service.updateCategory(5L, new TimeTrackerCategoryEntity(), USER_ID);
         service.deleteCategory(5L, USER_ID);
-        doReturn(category(99L, USER_ID)).when(service).getOne(any(Wrapper.class));
+        doReturn(category(99L, USER_ID)).when(service).getOne(anyWrapper());
         service.updateCategory(5L, new TimeTrackerCategoryEntity(), USER_ID);
         service.deleteCategory(5L, USER_ID);
         service.adminCreateCategory(category(null, 0L));
