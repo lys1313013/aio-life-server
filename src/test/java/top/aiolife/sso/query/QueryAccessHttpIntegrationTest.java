@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** 必须通过独立的测试 MySQL / Redis 环境运行，不能连接业务环境。 */
+/** 必须通过独立的测试 PostgreSQL / Redis 环境运行，不能连接业务环境。 */
 @ActiveProfiles("test")
 @SpringBootTest(classes = AioLifeMain.class, properties = {
         "aio.life.neo4j.enabled=false",

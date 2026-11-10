@@ -112,7 +112,17 @@
   "goal": {
     "create_user": "内部审计、安全字段或存储实现字段，不进入标准导出",
     "is_deleted": "内部审计、安全字段或存储实现字段，不进入标准导出",
-    "update_user": "内部审计、安全字段或存储实现字段，不进入标准导出"
+    "update_user": "内部审计、安全字段或存储实现字段，不进入标准导出",
+    "progress_mode": "自定义查询配置未纳入标准导出",
+    "target_operator": "自定义查询配置未纳入标准导出",
+    "progress_query": "用户自定义查询文本未纳入标准导出",
+    "progress_variables": "用户固定查询变量未纳入标准导出",
+    "progress_variable_bindings": "用户查询上下文绑定未纳入标准导出",
+    "progress_value_path": "用户查询结果定位配置未纳入标准导出",
+    "progress_checked_at": "查询刷新快照元数据未纳入标准导出",
+    "progress_error": "查询刷新快照元数据未纳入标准导出",
+    "progress_version": "查询配置并发控制字段，不进入标准导出",
+    "progress_refresh_id": "查询刷新并发控制字段，不进入标准导出"
   },
   "honor_category": {
     "create_user": "内部审计、安全字段或存储实现字段，不进入标准导出",

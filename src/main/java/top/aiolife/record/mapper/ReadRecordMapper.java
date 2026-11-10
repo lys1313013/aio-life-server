@@ -15,14 +15,14 @@ public interface ReadRecordMapper extends BaseMapper<ReadRecordEntity> {
     static void applyPageOrder(LambdaQueryWrapper<ReadRecordEntity> wrapper,
                                boolean inProgressFirst) {
         String statusOrder = inProgressFirst
-                ? "'in_progress', 'not_started', 'completed', 'on_hold'"
-                : "'not_started', 'in_progress', 'completed', 'on_hold'";
-        wrapper.last("ORDER BY FIELD(status, " + statusOrder + "), finish_time DESC, create_time DESC, id DESC");
+                ? "WHEN 'in_progress' THEN 1 WHEN 'not_started' THEN 2 WHEN 'completed' THEN 3 WHEN 'on_hold' THEN 4"
+                : "WHEN 'not_started' THEN 1 WHEN 'in_progress' THEN 2 WHEN 'completed' THEN 3 WHEN 'on_hold' THEN 4";
+        wrapper.last("ORDER BY CASE status " + statusOrder + " ELSE 0 END, finish_time DESC NULLS LAST, create_time DESC NULLS LAST, id DESC");
     }
     @Select("SELECT * FROM read_record WHERE user_id=#{userId} AND id=#{id} AND is_deleted=0 FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
     ReadRecordEntity captureLockOwned(@Param("userId") long userId,@Param("id") long id);
-    @Select("SELECT * FROM read_record WHERE user_id=#{userId} AND url LIKE CONCAT('%/subject/',#{subjectId},'%') AND is_deleted=0 FOR UPDATE")
+    @Select("SELECT * FROM read_record WHERE user_id=#{userId} AND url LIKE CONCAT('%/subject/',CAST(#{subjectId} AS text),'%') AND is_deleted=0 FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
     List<ReadRecordEntity> captureLockSubjects(@Param("userId") long userId,@Param("subjectId") String subjectId);
 }

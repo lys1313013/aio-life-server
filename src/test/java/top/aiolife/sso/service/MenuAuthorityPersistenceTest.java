@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MenuAuthorityPersistenceTest {
     @Test void 同一SqlSession中的配置查询不会复用旧结果() throws Exception {
-        var ds = new JdbcDataSource(); ds.setURL("jdbc:h2:mem:menus_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        var ds = new JdbcDataSource(); ds.setURL("jdbc:h2:mem:menus_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         var jdbc = new JdbcTemplate(ds);
         String audit = ", create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP, is_deleted INT DEFAULT 0";
         jdbc.execute("CREATE TABLE user_secondary_lock_menu(id BIGINT PRIMARY KEY, user_id BIGINT, menu_id BIGINT" + audit + ")");

@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/** 真实MySQL验证乐观更新、唯一触发键、执行日志和分页；业务调用模拟，不发通知。 */
+/** 真实PostgreSQL验证乐观更新、唯一触发键、执行日志和分页；业务调用模拟，不发通知。 */
 @ActiveProfiles("test")
 @SpringBootTest(classes = PhysicalTableEntitySelectIntegrationTest.DatabaseMapperTestApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE)
@@ -32,7 +32,7 @@ class ScheduledJobPersistenceTest {
     @Autowired ScheduledJobMapper jobs;
     @Autowired ScheduledJobLogMapper logs;
 
-    @Test void 配置保存日志分页和重复触发在真实MySQL上闭环() {
+    @Test void 配置保存日志分页和重复触发在真实PostgreSQL上闭环() {
         var leetcode = mock(ILeetcodeService.class);
         var registry = new ScheduledJobRegistry(leetcode);
         var service = new ScheduledJobService(jobs, logs, registry, mock(ApplicationEventPublisher.class), new MockEnvironment());

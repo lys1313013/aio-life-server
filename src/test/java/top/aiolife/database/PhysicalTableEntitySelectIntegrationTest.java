@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * 使用当前配置的真实 MySQL 数据库验证物理表、实体与 MyBatis-Plus 的字段映射。
+ * 使用当前配置的真实 PostgreSQL 数据库验证物理表、实体与 MyBatis-Plus 的字段映射。
  *
  * <p>测试只执行 SELECT，不插入、更新或删除任何数据。每个 Mapper 都通过未指定 select
  * 字段的 QueryWrapper 查询一条数据，以便 MyBatis-Plus 按实体映射生成全部持久化字段；
@@ -47,7 +47,7 @@ class PhysicalTableEntitySelectIntegrationTest {
     private static final String PHYSICAL_TABLE_SQL = """
             SELECT table_name
             FROM information_schema.tables
-            WHERE table_schema = DATABASE()
+            WHERE table_schema = current_schema()
               AND table_type = 'BASE TABLE'
               -- Flyway 的迁移账本属于基础设施，不映射业务实体；其他物理表全部检查。
               AND table_name <> 'flyway_schema_history'
@@ -74,7 +74,7 @@ class PhysicalTableEntitySelectIntegrationTest {
 
         for (String table : physicalTables) {
             if (!bindingsByTable.containsKey(table)) {
-                failures.add("物理表 `" + table + "` 没有对应的 MyBatis-Plus 实体 Mapper；字段："
+                failures.add("物理表 \"" + table + "\" 没有对应的 MyBatis-Plus 实体 Mapper；字段："
                         + describeColumns(table));
             }
         }
@@ -83,7 +83,7 @@ class PhysicalTableEntitySelectIntegrationTest {
             String table = entry.getKey();
             if (!physicalTables.contains(table)) {
                 for (MapperBinding binding : entry.getValue()) {
-                    failures.add(binding.description() + " 映射的物理表 `" + table + "` 不存在");
+                    failures.add(binding.description() + " 映射的物理表 \"" + table + "\" 不存在");
                 }
                 continue;
             }
@@ -111,7 +111,7 @@ class PhysicalTableEntitySelectIntegrationTest {
             Class<?> mapperType = resolveMapperType(beanName, mapper);
             Class<?> entityType = resolveEntityType(mapperType);
             if (entityType == null) {
-                failures.add("Mapper Bean `" + beanName + "` 无法解析实体泛型");
+                failures.add("Mapper Bean \"" + beanName + "\" 无法解析实体泛型");
                 continue;
             }
 
@@ -155,7 +155,7 @@ class PhysicalTableEntitySelectIntegrationTest {
     }
 
     private static String normalizeTableName(String tableName) {
-        String normalized = tableName.replace("`", "");
+        String normalized = tableName.replace("\"", "");
         int schemaSeparator = normalized.lastIndexOf('.');
         if (schemaSeparator >= 0) {
             normalized = normalized.substring(schemaSeparator + 1);
@@ -165,9 +165,9 @@ class PhysicalTableEntitySelectIntegrationTest {
 
     private String describeColumns(String tableName) {
         return String.join(", ", jdbcTemplate.queryForList("""
-                        SELECT CONCAT(column_name, ' ', column_type)
+                        SELECT CONCAT(column_name, ' ', data_type)
                         FROM information_schema.columns
-                        WHERE table_schema = DATABASE()
+                        WHERE table_schema = current_schema()
                           AND table_name = ?
                         ORDER BY ordinal_position
                         """, String.class, tableName));

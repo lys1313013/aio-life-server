@@ -19,7 +19,7 @@ import static org.mockito.Mockito.*;
 class IntegrationConfigPersistenceTest {
     @Test void testPersistence_独立读取实例即时读取更新且密钥仅保存密文() throws Exception {
         var source = new JdbcDataSource();
-        source.setURL("jdbc:h2:mem:integration_config;MODE=MySQL;DB_CLOSE_DELAY=-1");
+        source.setURL("jdbc:h2:mem:integration_config;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         var jdbc = new JdbcTemplate(source);
         jdbc.execute("""
                 CREATE TABLE system_config (

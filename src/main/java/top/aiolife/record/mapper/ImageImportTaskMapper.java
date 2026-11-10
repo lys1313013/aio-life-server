@@ -17,7 +17,7 @@ public interface ImageImportTaskMapper extends BaseMapper<ImageImportTaskEntity>
 
     @Update("""
         UPDATE image_import_task SET state='RUNNING', attempts=LEAST(attempts+1,5),
-          lease_token=#{token}, lease_until=TIMESTAMPADD(SECOND, 120, CURRENT_TIMESTAMP),
+          lease_token=#{token}, lease_until=CURRENT_TIMESTAMP + INTERVAL '120' SECOND,
           update_time=CURRENT_TIMESTAMP
         WHERE id=#{id} AND is_deleted=0
           AND ((state='PENDING' AND attempts < 5 AND next_attempt_at <= CURRENT_TIMESTAMP)

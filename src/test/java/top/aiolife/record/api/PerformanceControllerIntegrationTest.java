@@ -93,7 +93,7 @@ class PerformanceControllerIntegrationTest extends BaseIntegrationTest {
     void testOwnership_代录记录由所属用户查询修改删除且保留创建审计() {
         PerformanceEntity owned = createPerformance(null);
         owned.setCreateUser(2L);
-        // 固定小数秒，覆盖 MySQL DATETIME 舍入到下一秒的场景。
+        // 固定小数秒，覆盖 PostgreSQL DATETIME 舍入到下一秒的场景。
         owned.setCreateTime(LocalDateTime.of(2026, 1, 2, 3, 4, 5, 750_000_000));
         performanceMapper.insert(owned);
         // 创建审计是否被更新应比较持久化前后值，而非截断小数秒的内存值。

@@ -15,14 +15,16 @@ public interface IMovieMapper extends BaseMapper<MovieEntity> {
     static void applyPageOrder(LambdaQueryWrapper<MovieEntity> wrapper,
                                boolean inProgressFirst) {
         String statusOrder = inProgressFirst
-                ? "'in_progress', 'not_started', 'completed', 'on_hold'"
-                : "'not_started', 'in_progress', 'completed', 'on_hold'";
-        wrapper.last("ORDER BY FIELD(status, " + statusOrder + "), finish_time DESC, create_time DESC, id DESC");
+                ? "WHEN 'in_progress' THEN 1 WHEN 'not_started' THEN 2"
+                : "WHEN 'not_started' THEN 1 WHEN 'in_progress' THEN 2";
+        wrapper.last("ORDER BY CASE status " + statusOrder
+                + " WHEN 'completed' THEN 3 WHEN 'on_hold' THEN 4 ELSE 0 END,"
+                + " finish_time DESC NULLS LAST, create_time DESC NULLS LAST, id DESC");
     }
     @Select("SELECT * FROM movie WHERE user_id=#{userId} AND id=#{id} AND is_deleted=0 FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
     MovieEntity captureLockOwned(@Param("userId") long userId,@Param("id") long id);
-    @Select("SELECT * FROM movie WHERE user_id=#{userId} AND url LIKE CONCAT('%/subject/',#{subjectId},'%') AND is_deleted=0 FOR UPDATE")
+    @Select("SELECT * FROM movie WHERE user_id=#{userId} AND url LIKE CONCAT('%/subject/',CAST(#{subjectId} AS text),'%') AND is_deleted=0 FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
     List<MovieEntity> captureLockSubjects(@Param("userId") long userId,@Param("subjectId") String subjectId);
 }

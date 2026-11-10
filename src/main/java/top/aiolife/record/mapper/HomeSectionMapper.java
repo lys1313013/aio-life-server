@@ -12,21 +12,21 @@ public interface HomeSectionMapper {
     @Select("""
         SELECT id, title, hidden_content, update_time FROM memo
         WHERE user_id = #{userId} AND is_deleted = 0
-        ORDER BY update_time DESC, id DESC LIMIT 3
+        ORDER BY update_time DESC NULLS LAST, id DESC LIMIT 3
         """)
     List<MemoEntity> recentMemos(@Param("userId") long userId);
 
     @Select("""
         SELECT id, title, url, bvid, current_episode, episodes, watched_duration, duration, last_watched, cover_file_id, cover_state
         FROM b_video WHERE user_id = #{userId} AND is_deleted = 0 AND status = 'in_progress'
-        ORDER BY COALESCE(last_watched, update_time, create_time) DESC, id DESC LIMIT 3
+        ORDER BY COALESCE(last_watched, update_time, create_time) DESC NULLS LAST, id DESC LIMIT 3
         """)
     List<BVideoEntity> continuingVideos(@Param("userId") long userId);
 
     @Select("""
         SELECT id, name, purchase_date, purchase_price, end_date, file_id FROM device
         WHERE user_id = #{userId} AND is_deleted = 0 AND status = '1'
-        ORDER BY purchase_date DESC, id DESC LIMIT 3
+        ORDER BY purchase_date DESC NULLS LAST, id DESC LIMIT 3
         """)
     List<DeviceEntity> activeDevices(@Param("userId") long userId);
 

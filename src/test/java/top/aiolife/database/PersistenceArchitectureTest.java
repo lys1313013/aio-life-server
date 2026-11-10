@@ -27,7 +27,12 @@ class PersistenceArchitectureTest {
             var files = paths.filter(path -> path.toString().endsWith(".java")).toList();
             assertFalse(files.isEmpty(), "必须扫描实际生产源码");
             for (var file : files) {
-                if (DIRECT_JDBC.matcher(Files.readString(file)).find()) violations.add(file.toString());
+                String source = Files.readString(file);
+                // MyBatis 类型转换只读写绑定参数，不获取连接或执行 SQL。
+                boolean typeHandler = source.contains("extends BaseTypeHandler<")
+                        && !Pattern.compile("\\b(?:getConnection|execute|executeQuery|executeUpdate|prepareStatement)\\s*\\(").matcher(source).find()
+                        && !SQL.matcher(source).find();
+                if (!typeHandler && DIRECT_JDBC.matcher(source).find()) violations.add(file.toString());
             }
         }
         assertTrue(violations.isEmpty(), "业务数据库访问必须使用 Mapper：" + violations);

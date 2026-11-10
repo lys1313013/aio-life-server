@@ -242,7 +242,7 @@ public class WereadServiceImpl implements IWereadService {
                 .eq(UserBindEntity::getId, connection.getId())
                 .eq(UserBindEntity::getUserId, userId)
                 .eq(UserBindEntity::getPlatform, "weread")
-                .apply("JSON_UNQUOTE(JSON_EXTRACT(meta_fields, '$.connectionVersion')) = {0}",
+                .apply("(meta_fields::jsonb ->> 'connectionVersion') = {0}",
                         metadata(connection).getString("connectionVersion"))
                 .setSql("meta_fields = JSON_SET(COALESCE(meta_fields, JSON_OBJECT()), '$.lastSyncTime', {0})", now.toString())
                 .set(UserBindEntity::getUpdateTime, now)

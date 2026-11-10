@@ -14,7 +14,7 @@ public interface ExportDataset {
     List<ExportColumn> columns();
 
     default String source() {
-        return "MYSQL";
+        return "POSTGRESQL";
     }
 
     default boolean available() {

@@ -33,7 +33,7 @@ class StorageDeleteTest {
     @BeforeEach
     void setup() throws Exception {
         var ds = new JdbcDataSource();
-        ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds);
         jdbc.execute("CREATE TABLE file(id VARCHAR(32), file_name VARCHAR(1024), create_user BIGINT, biz_type VARCHAR(50), biz_id BIGINT, is_deleted INT)");
         jdbc.execute("CREATE TABLE cbti_personality(id BIGINT, image_object VARCHAR(1024), is_deleted INT)");

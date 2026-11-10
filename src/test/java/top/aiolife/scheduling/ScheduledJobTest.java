@@ -73,32 +73,32 @@ class ScheduledJobTest {
         environment.setProperty("aio.life.server.corn.notifyTodayQuestion", "-");
         when(jobs.selectCount(any())).thenReturn(0L);
         service.initializeDefaults();
-        verify(jobs).insert(argThat((ScheduledJobEntity j) -> j.getJobCode().equals(ScheduledJobRegistry.CHECK) && j.getCron().equals("0 0 22 * * ?")));
-        verify(jobs).insert(argThat((ScheduledJobEntity j) -> j.getJobCode().equals(ScheduledJobRegistry.DAILY) && j.getIsEnabled() == 0));
+        verify(jobs).insertIfAbsent(argThat((ScheduledJobEntity j) -> j.getJobCode().equals(ScheduledJobRegistry.CHECK) && j.getCron().equals("0 0 22 * * ?")));
+        verify(jobs).insertIfAbsent(argThat((ScheduledJobEntity j) -> j.getJobCode().equals(ScheduledJobRegistry.DAILY) && j.getIsEnabled() == 0));
         clearInvocations(jobs);
         when(jobs.selectCount(any())).thenReturn(1L);
         service.initializeDefaults();
-        verify(jobs, never()).insert(any(ScheduledJobEntity.class));
+        verify(jobs, never()).insertIfAbsent(any(ScheduledJobEntity.class));
     }
 
     private ScheduledJobExecutionService execution() {
         when(locks.tryRun(anyString(), any())).thenAnswer(call -> { call.getArgument(1, Runnable.class).run(); return true; });
-        when(logs.insert(any(ScheduledJobLogEntity.class))).thenAnswer(call -> { call.getArgument(0, ScheduledJobLogEntity.class).setId(99L); return 1; });
+        when(logs.insertIfAbsent(any(ScheduledJobLogEntity.class))).thenAnswer(call -> { call.getArgument(0, ScheduledJobLogEntity.class).setId(99L); return 1; });
         return new ScheduledJobExecutionService(service, logs, registry, locks);
     }
 
     @Test void 同一计划时点重复触发只执行一次() {
         var execution = execution();
         var count = new AtomicInteger();
-        when(logs.insert(any(ScheduledJobLogEntity.class))).thenAnswer(call -> {
-            if (count.incrementAndGet() > 1) throw new DuplicateKeyException("duplicate trigger");
+        when(logs.insertIfAbsent(any(ScheduledJobLogEntity.class))).thenAnswer(call -> {
+            if (count.incrementAndGet() > 1) return 0;
             call.getArgument(0, ScheduledJobLogEntity.class).setId(99L); return 1;
         });
         Instant scheduled = Instant.parse("2026-10-25T15:30:00Z");
         execution.execute(row, scheduled, null);
         execution.execute(row, scheduled, null);
         verify(leetcode, times(1)).check();
-        verify(logs, times(2)).insert(argThat((ScheduledJobLogEntity e) -> e.getTriggerKey().equals("AUTO:" + scheduled.toEpochMilli())));
+        verify(logs, times(2)).insertIfAbsent(argThat((ScheduledJobLogEntity e) -> e.getTriggerKey().equals("AUTO:" + scheduled.toEpochMilli())));
     }
 
     @Test void 暂停和旧配置回调不执行但暂停任务仍可手动执行() {

@@ -23,6 +23,13 @@ import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.system.mapper.IWorkCalendarMapper;
 import top.aiolife.support.CurrentSchema;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.regex.MatchResult;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import org.springframework.core.io.ByteArrayResource;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
@@ -31,18 +38,21 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/** 仅连接显式指定端口的本地临时 MySQL/Redis，不启动应用或读取正式环境配置。 */
-@EnabledIfEnvironmentVariable(named = "AIO_CALENDAR_TEST_MYSQL_PORT", matches = "[0-9]+")
+/** 仅连接显式指定端口的本地临时 PostgreSQL/Redis，不启动应用或读取正式环境配置。 */
+@EnabledIfEnvironmentVariable(named = "AIO_CALENDAR_TEST_PG_PORT", matches = "[0-9]+")
 @EnabledIfEnvironmentVariable(named = "AIO_CALENDAR_TEST_REDIS_PORT", matches = "[0-9]+")
 class WorkCalendarIntegrationTest {
     @Test
     void testCalendar_真实SQL及Redis缓存与推荐链路() throws Exception {
-        var dataSource = new DriverManagerDataSource("jdbc:mysql://127.0.0.1:"
-                + System.getenv("AIO_CALENDAR_TEST_MYSQL_PORT")
-                + "/aio_life?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai", "root", "");
+        var dataSource = new DriverManagerDataSource("jdbc:postgresql://127.0.0.1:"
+                + System.getenv("AIO_CALENDAR_TEST_PG_PORT")
+                + "/aio_calendar_test", "postgres", "calendar_test");
         try (var connection = dataSource.getConnection()) {
             new JdbcTemplate(dataSource).execute(CurrentSchema.table("sys_work_calendar"));
-            ScriptUtils.executeSqlScript(connection, new FileSystemResource("sql/migrations/V20261028_05_008__sys_work_calendar_2026.sql"));
+            String seed = Pattern.compile("(?s)INSERT INTO \"sys_work_calendar\".*?;")
+                    .matcher(Files.readString(Path.of("sql/migrations/postgresql/V20261110_02__public_seed_data.sql")))
+                    .results().map(MatchResult::group).collect(Collectors.joining("\n"));
+            ScriptUtils.executeSqlScript(connection, new ByteArrayResource(seed.getBytes(StandardCharsets.UTF_8)));
         }
         var jdbc = new JdbcTemplate(dataSource);
         jdbc.execute("""

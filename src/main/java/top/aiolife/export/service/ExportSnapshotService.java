@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** 同一个 MySQL 只读事务捕获所有选中数据，再在事务外进行 Excel 打包和上传。 */
+/** 同一个 PostgreSQL 只读事务捕获所有选中数据，再在事务外进行 Excel 打包和上传。 */
 @Service
 @RequiredArgsConstructor
 public class ExportSnapshotService {

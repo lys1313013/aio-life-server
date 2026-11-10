@@ -71,7 +71,7 @@ class HomeCardQueryTest {
         doAnswer(invocation -> {
             Page<MovieEntity> page = invocation.getArgument(0);
             Wrapper<MovieEntity> wrapper = invocation.getArgument(1);
-            assertTrue(wrapper.getSqlSegment().contains("FIELD(status, 'not_started', 'in_progress', 'completed', 'on_hold')"));
+            assertTrue(wrapper.getSqlSegment().contains("CASE status WHEN 'not_started' THEN 1 WHEN 'in_progress' THEN 2"));
             assertTrue(wrapper.getSqlSegment().endsWith("id DESC"));
             return page.setRecords(List.of());
         }).when(service).page(any(Page.class), any(Wrapper.class));
@@ -87,8 +87,8 @@ class HomeCardQueryTest {
         String sql = wrapper.getSqlSegment();
         assertTrue(sql.contains("user_id ="));
         assertTrue(sql.contains("status IN"));
-        assertTrue(sql.contains("FIELD(status, 'in_progress', 'not_started', 'completed', 'on_hold')"));
-        assertTrue(sql.endsWith("finish_time DESC, create_time DESC, id DESC"));
+        assertTrue(sql.contains("CASE status WHEN 'in_progress' THEN 1 WHEN 'not_started' THEN 2"));
+        assertTrue(sql.endsWith("finish_time DESC NULLS LAST, create_time DESC NULLS LAST, id DESC"));
         var values = ((AbstractWrapper<?, ?, ?>) wrapper)
                 .getParamNameValuePairs().values();
         assertTrue(values.contains(88L));

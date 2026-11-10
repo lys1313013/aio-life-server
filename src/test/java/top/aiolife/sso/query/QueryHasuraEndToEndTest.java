@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 显式启动隔离测试栈后执行：真实 AIO Life → Java 网关 → Hasura → MySQL Connector → MySQL。 */
+/** 显式启动隔离测试栈后执行：真实 AIO Life → Java 网关 → Hasura → PostgreSQL Connector → PostgreSQL。 */
 @EnabledIfEnvironmentVariable(named = "AIO_QUERY_E2E", matches = "1")
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -128,7 +128,7 @@ class QueryHasuraEndToEndTest {
     }
     private HttpResponse<String> query(String token, String operation) throws Exception {
         return call("POST", gatewayUrl + "/api/v1/queries/execute", token,
-                Map.of("domain", "time", "schemaVersion", "time-record-v4", "policyVersion", "time-record-v4", "operationName", "Q", "query", operation));
+                Map.of("query", operation));
     }
     private JsonNode result(String token, String operation) throws Exception {
         var response = query(token, operation); assertEquals(200, response.statusCode(), response.body());
@@ -172,9 +172,8 @@ class QueryHasuraEndToEndTest {
         assertEquals("aio-life-query", initialized.at("/result/serverInfo/name").asText());
         var listed = rpc(tokenA, "tools/list", Map.of()).at("/result/tools"); assertEquals(4, listed.size());
         var described = tool(tokenA, "aio_query_describe_dataset", Map.of("name", "time_record"));
-        assertEquals("time-record-v4", described.at("/data/schemaVersion").asText());
-        var args = Map.<String, Object>of("domain", "time", "schemaVersion", "time-record-v4", "policyVersion", "time-record-v4",
-                "operationName", "Q", "query", details);
+        assertEquals("time-record-v4", described.at("/data/releaseId").asText());
+        var args = Map.<String, Object>of("query", details);
         assertTrue(tool(tokenA, "aio_query_validate", args).at("/data/allowed").asBoolean());
         assertEquals(2, tool(tokenA, "aio_query_execute", args).at("/data/result/timeRecords").size());
         assertEquals(prefix + "b1", tool(tokenB, "aio_query_execute", args).at("/data/result/timeRecords/0/id").asText());
@@ -204,7 +203,7 @@ class QueryHasuraEndToEndTest {
     void 新数据集真实REST及MCP明细统计分页和隔离(String dataset,String domain,String version,String root,String statsRoot,String date,String numeric,String expectedSum) throws Exception {
         var catalog=call("GET",gatewayUrl+"/api/v1/datasets/"+dataset,tokenA,null);
         assertEquals(200,catalog.statusCode(),catalog.body());
-        assertEquals(version,json.readTree(catalog.body()).at("/data/schemaVersion").asText());
+        assertEquals(version,json.readTree(catalog.body()).at("/data/releaseId").asText());
         String where="where:{"+date+":{_gte:\"2026-09-01\",_lt:\"2026-10-01\"}}";
         String fields=switch(dataset) {
             case "exercise_record" -> "id exerciseDate exerciseTypeId exerciseCount";
@@ -215,8 +214,7 @@ class QueryHasuraEndToEndTest {
             default -> throw new IllegalArgumentException(dataset);
         };
         String details="query Q { "+root+"("+where+",orderBy:[{id:Asc}]){"+fields+"} }";
-        var args=new java.util.HashMap<String,Object>(); args.put("domain",domain);args.put("schemaVersion",version);
-        args.put("policyVersion",version);args.put("operationName","Q");args.put("query",details);
+        var args=new java.util.HashMap<String,Object>(); args.put("query",details);
         var response=call("POST",gatewayUrl+"/api/v1/queries/execute",tokenA,args);
         assertEquals(200,response.statusCode(),response.body());
         var a=json.readTree(response.body()).at("/data/result/"+root);assertEquals(2,a.size(),response.body());
@@ -268,6 +266,6 @@ class QueryHasuraEndToEndTest {
     @AfterAll void cleanup() throws Exception {
         if (gateway != null) { gateway.destroy(); if (!gateway.waitFor(10, TimeUnit.SECONDS)) gateway.destroyForcibly(); }
         apiKeyIds.forEach(apiKeys::removeById); sessions.forEach(StpUtil::logoutByTokenValue);
-        for (Long id : userIds) { for(String table:List.of("time_record","exercise_record","read_record","movie","b_video","performance")) db.update("DELETE FROM "+table+" WHERE user_id=?",id); db.update("DELETE FROM `user` WHERE id=?", id); }
+        for (Long id : userIds) { for(String table:List.of("time_record","exercise_record","read_record","movie","b_video","performance")) db.update("DELETE FROM "+table+" WHERE user_id=?",id); db.update("DELETE FROM \"user\" WHERE id=?", id); }
     }
 }

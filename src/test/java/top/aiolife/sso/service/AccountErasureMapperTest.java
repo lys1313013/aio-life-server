@@ -21,26 +21,26 @@ import static org.junit.jupiter.api.Assertions.*;
 class AccountErasureMapperTest {
     @Test void 清理包括软删除记录且保留其他账号和公共预设() throws Exception {
         var source = new JdbcDataSource();
-        source.setURL("jdbc:h2:mem:erase_" + UUID.randomUUID() + ";MODE=MySQL;NON_KEYWORDS=USER;DB_CLOSE_DELAY=-1");
+        source.setURL("jdbc:h2:mem:erase_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=USER;DB_CLOSE_DELAY=-1");
         var jdbc = new JdbcTemplate(source);
-        var tablePattern = Pattern.compile("CREATE TABLE(?: IF NOT EXISTS)? `([^`]+)` \\((.*?)\\) ENGINE", Pattern.DOTALL);
-        var columnPattern = Pattern.compile("(?m)^\\s*`([^`]+)`");
+        var tablePattern = Pattern.compile("CREATE TABLE(?: IF NOT EXISTS)? \"([^\"]+)\" \\((.*?)\\n \\);", Pattern.DOTALL);
+        var columnPattern = Pattern.compile("(?m)^\\s*\"([^\"]+)\"");
         var tables = new LinkedHashMap<String, List<String>>();
-        var matcher = tablePattern.matcher(Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql")));
+        var matcher = tablePattern.matcher(Files.readString(Path.of("sql/migrations/postgresql/V20261110_01__postgresql_schema.sql")));
         while (matcher.find()) {
             String table = matcher.group(1);
             var columns = columnPattern.matcher(matcher.group(2)).results().map(m -> m.group(1)).toList();
             tables.put(table, columns);
-            var definitions = columns.stream().map(column -> "`" + column + "` " +
+            var definitions = columns.stream().map(column -> "\"" + column + "\" " +
                     (column.endsWith("_at") || column.endsWith("_time") ? "TIMESTAMP" :
                      column.equals("id") || column.endsWith("_id") || column.equals("create_user") || column.equals("is_deleted") ? "BIGINT" : "VARCHAR(500)")).toList();
-            jdbc.execute("CREATE TABLE `" + table + "` (" + String.join(",", definitions) + ")");
+            jdbc.execute("CREATE TABLE \"" + table + "\" (" + String.join(",", definitions) + ")");
             if (columns.contains("user_id")) {
-                jdbc.update("INSERT INTO `" + table + "` (id,user_id) VALUES(1,7),(2,8),(3,NULL)");
-                if (columns.contains("is_deleted")) jdbc.update("UPDATE `" + table + "` SET is_deleted=1 WHERE user_id=7");
+                jdbc.update("INSERT INTO \"" + table + "\" (id,user_id) VALUES(1,7),(2,8),(3,NULL)");
+                if (columns.contains("is_deleted")) jdbc.update("UPDATE \"" + table + "\" SET is_deleted=1 WHERE user_id=7");
             }
         }
-        jdbc.update("INSERT INTO user(id,username,email,is_deleted,erasure_requested_at) VALUES(7,'fixture','fixture@example.test',0,?)", LocalDateTime.now());
+        jdbc.update("INSERT INTO \"user\"(id,username,email,is_deleted,erasure_requested_at) VALUES(7,'fixture','fixture@example.test',0,?)", LocalDateTime.now());
         jdbc.update("INSERT INTO file(id,create_user,biz_type) VALUES(11,7,'avatar'),(12,8,'avatar'),(13,7,'bank_card_template_cover')");
         jdbc.update("INSERT INTO thought_rela_event(id,thought_id,create_user) VALUES(1,1,8),(2,2,8)");
         jdbc.update("INSERT INTO record_article(id,create_user) VALUES(1,7),(2,8)");
@@ -59,9 +59,9 @@ class AccountErasureMapperTest {
             assertEquals("", jdbc.queryForObject("SELECT payload_ciphertext FROM notification_delivery WHERE user_id=7", String.class));
             mapper.purgePersonalRecords(7, "fixture@example.test");
             for (var table : tables.entrySet()) if (table.getValue().contains("user_id")) {
-                assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM `" + table.getKey() + "` WHERE user_id=7", Long.class), table.getKey());
-                assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM `" + table.getKey() + "` WHERE user_id=8", Long.class), table.getKey());
-                assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM `" + table.getKey() + "` WHERE user_id IS NULL", Long.class), table.getKey());
+                assertEquals(0L, jdbc.queryForObject("SELECT COUNT(*) FROM \"" + table.getKey() + "\" WHERE user_id=7", Long.class), table.getKey());
+                assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM \"" + table.getKey() + "\" WHERE user_id=8", Long.class), table.getKey());
+                assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM \"" + table.getKey() + "\" WHERE user_id IS NULL", Long.class), table.getKey());
             }
             assertEquals(2L, jdbc.queryForObject("SELECT COUNT(*) FROM file", Long.class));
             assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM thought_rela_event", Long.class));

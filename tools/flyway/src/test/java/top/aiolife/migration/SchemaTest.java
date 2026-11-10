@@ -7,11 +7,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SchemaTest {
     @Test void versionBoundaries() {
-        assertThrows(IllegalArgumentException.class, () -> SchemaSnapshot.Version.parse("8.0.15"));
-        assertThrows(IllegalArgumentException.class, () -> SchemaSnapshot.Version.parse("9.0.0"));
-        assertEquals(new SchemaSnapshot.Version(8, 4, 2), SchemaSnapshot.Version.parse("8.4.2"));
-        assertEquals(new SchemaSnapshot.Version(8, 0, 16), SchemaSnapshot.Version.parse("8.0.16-log"));
-        assertThrows(IllegalArgumentException.class, () -> SchemaSnapshot.Version.parse("10.6.0-MariaDB"));
+        assertThrows(IllegalArgumentException.class, () -> SchemaSnapshot.Version.parse("17.7"));
+        assertEquals(new SchemaSnapshot.Version(18, 0, 0), SchemaSnapshot.Version.parse("18.0"));
+        assertEquals(new SchemaSnapshot.Version(18, 6, 0), SchemaSnapshot.Version.parse("18.6 (Debian)"));
     }
     @Test void expressionsPreserveStringsAndGrouping() {
         assertEquals(SchemaSnapshot.expression("((A + B))"), SchemaSnapshot.expression("a+b"));
@@ -19,12 +17,12 @@ class SchemaTest {
         assertNotEquals(SchemaSnapshot.expression("x='A B'"), SchemaSnapshot.expression("x='ab'"));
     }
     @Test void metadataIncludesIndexAttributesAndEnforcedChecks() {
-        assertTrue(SchemaSnapshot.queries().get("indexes").contains("is_visible,expression"));
-        assertTrue(SchemaSnapshot.queries().get("checks").contains("check_constraints"));
-        assertTrue(SchemaSnapshot.queries().get("checks").contains("t.enforced"));
+        assertTrue(SchemaSnapshot.queries().get("indexes").contains("pg_get_indexdef"));
+        assertTrue(SchemaSnapshot.queries().get("checks").contains("pg_constraint"));
+        assertTrue(SchemaSnapshot.queries().get("checks").contains("convalidated"));
     }
     @Test void normalizationRetainsMeaningfulAttributes() {
-        var row = Arrays.asList("t", "c", "bigint(20)", "YES", null, "", "", null, null, "中文");
+        var row = Arrays.asList("t", "c", "bigint", "YES", null, "", "", null, null, "中文");
         var normalized = SchemaSnapshot.normalize("columns", row);
         assertEquals("bigint", normalized.get(2));
         assertEquals("中文", normalized.get(9));
@@ -48,7 +46,7 @@ class SchemaTest {
         assertTrue(sources.containsKey("flyway.settings"));
         assertFalse(sources.containsKey("tools/flyway/pom.xml"));
         assertTrue(MigrationProject.toolSources(MigrationProject.root()).containsKey("tools/flyway/src/main/java/top/aiolife/migration/MigrationGuard.java"));
-        assertTrue(sources.containsKey("sql/migrations/B20261028_00__baseline.sql"));
+        assertTrue(sources.containsKey("sql/migrations/postgresql/V20261110_01__postgresql_schema.sql"));
         assertFalse(sources.keySet().stream().anyMatch(key -> key.endsWith(".py")));
     }
 }

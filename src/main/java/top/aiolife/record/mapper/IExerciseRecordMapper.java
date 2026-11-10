@@ -28,7 +28,7 @@ public interface IExerciseRecordMapper extends BaseMapper<ExerciseRecordEntity> 
             <if test="filters.exerciseTypeId != null">AND exercise_type_id = #{filters.exerciseTypeId}</if>
             <if test="filters.startDate != null and filters.startDate != ''">AND exercise_date &gt;= #{filters.startDate}</if>
             <if test="filters.endDate != null and filters.endDate != ''">AND exercise_date &lt;= #{filters.endDate}</if>
-            <if test="filters.description != null and filters.description != ''">AND description LIKE CONCAT('%', #{filters.description}, '%')</if>
+            <if test="filters.description != null and filters.description != ''">AND description LIKE CONCAT('%', CAST(#{filters.description} AS text), '%')</if>
             GROUP BY exercise_type_id, exercise_date
             ORDER BY exercise_date DESC, MAX(id) DESC
             </script>

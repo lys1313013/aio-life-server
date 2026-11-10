@@ -24,7 +24,7 @@ class MenuIconColorTest {
     @Test
     void iconColor_独立持久化并支持修改清空及各入口回显() throws Exception {
         var source = new JdbcDataSource();
-        source.setURL("jdbc:h2:mem:menu_color;MODE=MySQL;DB_CLOSE_DELAY=-1");
+        source.setURL("jdbc:h2:mem:menu_color;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         var jdbc = new JdbcTemplate(source);
         jdbc.execute("""
                 CREATE TABLE sys_menu (

@@ -40,7 +40,7 @@ class LifeFootprintTest {
 
     @BeforeEach void setup() throws Exception {
         var ds = new JdbcDataSource();
-        ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
+        ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds);
         jdbc.execute(CurrentSchema.h2Table("life_footprint"));
         var config = new MybatisConfiguration(); config.addMapper(LifeFootprintMapper.class);

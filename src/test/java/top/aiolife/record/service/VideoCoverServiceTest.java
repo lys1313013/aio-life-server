@@ -52,16 +52,10 @@ class VideoCoverServiceTest {
     final String URL = "http://i1.hdslb.com/bfs/archive/example.jpg";
 
     @BeforeEach void setup() throws Exception {
-        var ds = new JdbcDataSource(); ds.setURL("jdbc:h2:mem:cover_"+UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        var ds = new JdbcDataSource(); ds.setURL("jdbc:h2:mem:cover_"+UUID.randomUUID()+";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds); tx = new DataSourceTransactionManager(ds);
-        // 从真实全量结构截取本功能四张表，去除 H2 不支持的 MySQL 排序规则及前缀索引。
-        String schema = Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql"));
         for (String table : List.of("b_video", "file", "storage_object", "image_import_task")) {
-            int start = schema.indexOf("CREATE TABLE IF NOT EXISTS `"+table+"`");
-            String sql = schema.substring(start, schema.indexOf(";",start));
-            sql = sql.replaceAll(" COLLATE [a-zA-Z0-9_]+", "").replaceAll(" CHARACTER SET [a-zA-Z0-9_]+", "")
-                    .replace("`title`(100)", "`title`");
-            jdbc.execute(sql);
+            jdbc.execute(top.aiolife.support.CurrentSchema.h2Table(table));
         }
         var config = new MybatisConfiguration(); config.setMapUnderscoreToCamelCase(true);
         config.addMapper(IBVideoMapper.class); config.addMapper(IFileMapper.class);
@@ -118,7 +112,7 @@ class VideoCoverServiceTest {
         var task=tasks.due().getFirst();
         assertEquals(1,tasks.claim(task.getId(),"first"));
         assertEquals(0,tasks.claim(task.getId(),"second"));
-        jdbc.update("UPDATE image_import_task SET lease_until=TIMESTAMPADD(SECOND,-1,CURRENT_TIMESTAMP)");
+        jdbc.update("UPDATE image_import_task SET lease_until=CURRENT_TIMESTAMP - INTERVAL '1' SECOND");
         assertEquals(1,tasks.claim(task.getId(),"second"));
         service.complete(task.getId(),"first",png); assertEquals(0,files.selectCount(null));
         service.complete(task.getId(),"second",png);
@@ -152,7 +146,7 @@ class VideoCoverServiceTest {
     }
     @Test void 最后一次执行中断可恢复成失败且允许显式重试() {
         video(1,11); service.enqueue(1,11,URL,false);
-        jdbc.update("UPDATE image_import_task SET state='RUNNING',attempts=5,lease_until=TIMESTAMPADD(SECOND,-1,CURRENT_TIMESTAMP),lease_token='dead'");
+        jdbc.update("UPDATE image_import_task SET state='RUNNING',attempts=5,lease_until=CURRENT_TIMESTAMP - INTERVAL '1' SECOND,lease_token='dead'");
         var downloader=mock(VideoCoverDownloader.class); new VideoCoverWorker(tasks,downloader,service).runBatch();
         assertEquals("FAILED",videos.selectById(1L).getCoverState()); verifyNoInteractions(downloader);
         service.retry(1,11); assertEquals("PENDING",videos.selectById(1L).getCoverState()); assertEquals(2,tasks.selectCount(null));
@@ -170,7 +164,7 @@ class VideoCoverServiceTest {
             assertTrue(delay>=expected-1 && delay<=expected, "退避秒数: "+delay);
             assertEquals(attempt,task.getAttempts());
             assertEquals("PENDING",task.getState());
-            jdbc.update("UPDATE image_import_task SET next_attempt_at=TIMESTAMPADD(SECOND,-1,CURRENT_TIMESTAMP) WHERE id=?",task.getId());
+            jdbc.update("UPDATE image_import_task SET next_attempt_at=CURRENT_TIMESTAMP - INTERVAL '1' SECOND WHERE id=?",task.getId());
         }
         assertEquals(1,tasks.claim(task.getId(),"lease"));
         service.complete(task.getId(),"lease",png);

@@ -14,8 +14,8 @@ public interface DeviceExpenseMapper extends BaseMapper<DeviceExpenseEntity> {
         INSERT INTO device_expense
           (id, user_id, device_id, expense_id, is_deleted, create_user, create_time, update_user, update_time)
         VALUES (#{id}, #{userId}, #{deviceId}, #{expenseId}, 0, #{userId}, NOW(), #{userId}, NOW())
-        ON DUPLICATE KEY UPDATE device_id = VALUES(device_id), is_deleted = 0,
-          update_user = VALUES(update_user), update_time = NOW()
+        ON CONFLICT (expense_id) DO UPDATE SET device_id = EXCLUDED.device_id, is_deleted = 0,
+          update_user = EXCLUDED.update_user, update_time = NOW()
         """)
     int bind(DeviceExpenseEntity entity);
 

@@ -14,7 +14,7 @@ import java.sql.SQLException;
 /** 禁止负数取消分页或静默截短超大页；覆盖未经过 HTTP DTO 的内部调用。 */
 public class BoundedPaginationInnerInterceptor extends PaginationInnerInterceptor {
     public BoundedPaginationInnerInterceptor() {
-        super(DbType.MYSQL);
+        super(DbType.POSTGRE_SQL);
         setMaxLimit((long) PaginationRequest.MAX_PAGE_SIZE);
     }
 

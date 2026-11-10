@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** 真实路由、拦截器、Sa-Token、Redis、MySQL；只使用事务回滚的模拟账号。 */
+/** 真实路由、拦截器、Sa-Token、Redis、PostgreSQL；只使用事务回滚的模拟账号。 */
 @ActiveProfiles("test")
 @SpringBootTest(classes = AioLifeMain.class, properties = "aio.life.neo4j.enabled=false")
 @AutoConfigureMockMvc

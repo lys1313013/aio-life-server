@@ -29,7 +29,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /** 只允许指向专用临时数据库；测试会重建 notification_delivery，不发送真实飞书消息。 */
-@EnabledIfEnvironmentVariable(named = "AIO_LOCK_TEST_MYSQL_URL", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "AIO_LOCK_TEST_PG_URL", matches = "jdbc:postgresql://127\\.0\\.0\\.1:[0-9]+/aio_notification_test_[a-z0-9]+.*")
 @EnabledIfEnvironmentVariable(named = "AIO_LOCK_TEST_REDIS_PORT", matches = ".+")
 class FeishuEnqueueLockIntegrationTest {
     private static RedissonClient first;
@@ -43,12 +43,10 @@ class FeishuEnqueueLockIntegrationTest {
 
     @BeforeAll
     static void setup() throws Exception {
-        var source = new DriverManagerDataSource(System.getenv("AIO_LOCK_TEST_MYSQL_URL"), "root", "notification_test");
+        var source = new DriverManagerDataSource(System.getenv("AIO_LOCK_TEST_PG_URL"), "postgres", "notification_test");
         jdbc = new JdbcTemplate(source);
         jdbc.execute("DROP TABLE IF EXISTS notification_delivery");
-        String init = Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql"));
-        int start = init.indexOf("CREATE TABLE IF NOT EXISTS `notification_delivery`");
-        jdbc.execute(init.substring(start, init.indexOf(';', start)));
+        jdbc.execute(top.aiolife.support.CurrentSchema.table("notification_delivery"));
         var config = new MybatisConfiguration();
         config.setMapUnderscoreToCamelCase(true);
         config.addMapper(NotificationDeliveryMapper.class);

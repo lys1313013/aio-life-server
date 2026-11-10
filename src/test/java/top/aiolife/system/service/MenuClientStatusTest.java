@@ -30,7 +30,7 @@ class MenuClientStatusTest {
 
     @BeforeEach void setup() throws Exception {
         var source = new JdbcDataSource();
-        source.setURL("jdbc:h2:mem:menu_client_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        source.setURL("jdbc:h2:mem:menu_client_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(source);
         jdbc.execute("""
                 CREATE TABLE sys_menu (

@@ -49,15 +49,15 @@ class BankCardServiceTest {
     static final String FILE_B = "b".repeat(32);
     @BeforeEach void setup() throws Exception {
         var ds = new JdbcDataSource();
-        ds.setURL("jdbc:h2:mem:"+UUID.randomUUID()+";MODE=MySQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=USER;DB_CLOSE_DELAY=-1");
+        ds.setURL("jdbc:h2:mem:"+UUID.randomUUID()+";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=USER;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds); tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         jdbc.execute("CREATE TABLE user(policy_version VARCHAR(32), policy_accepted_at TIMESTAMP, erasure_requested_at TIMESTAMP, erasure_retry_at TIMESTAMP, id BIGINT PRIMARY KEY,is_deleted INT DEFAULT 0)");
-        jdbc.execute("INSERT INTO user(id) VALUES(1),(2)");
-        jdbc.execute("CREATE TABLE sys_dict_type(dict_id BIGINT PRIMARY KEY,dict_type VARCHAR(100),is_enabled TINYINT,is_deleted INT DEFAULT 0)");
-        jdbc.execute("CREATE TABLE sys_dict_data(dict_code BIGINT PRIMARY KEY,dict_id BIGINT,dict_label VARCHAR(100),dict_value VARCHAR(100),sort_order INT,is_enabled TINYINT,is_deleted INT DEFAULT 0)");
+        jdbc.execute("INSERT INTO \"user\"(id) VALUES(1),(2)");
+        jdbc.execute("CREATE TABLE sys_dict_type(dict_id BIGINT PRIMARY KEY,dict_type VARCHAR(100),is_enabled SMALLINT,is_deleted INT DEFAULT 0)");
+        jdbc.execute("CREATE TABLE sys_dict_data(dict_code BIGINT PRIMARY KEY,dict_id BIGINT,dict_label VARCHAR(100),dict_value VARCHAR(100),sort_order INT,is_enabled SMALLINT,is_deleted INT DEFAULT 0)");
         jdbc.execute("INSERT INTO sys_dict_type VALUES(10,'bank',1,0),(11,'other',1,0)");
         jdbc.execute("INSERT INTO sys_dict_data VALUES(20,10,'测试银行','TEST',0,1,0),(21,11,'其他字典','OTHER',0,1,0)");
-        jdbc.execute("CREATE TABLE user_dict_data(id BIGINT PRIMARY KEY,user_id BIGINT,dict_type VARCHAR(100),dict_label VARCHAR(100),dict_value VARCHAR(100),color VARCHAR(20),sort_order INT,is_enabled TINYINT,is_default CHAR(1),is_readonly CHAR(1),is_deleted INT DEFAULT 0,create_user BIGINT,update_user BIGINT,create_time DATETIME,update_time DATETIME)");
+        jdbc.execute("CREATE TABLE user_dict_data(id BIGINT PRIMARY KEY,user_id BIGINT,dict_type VARCHAR(100),dict_label VARCHAR(100),dict_value VARCHAR(100),color VARCHAR(20),sort_order INT,is_enabled SMALLINT,is_default CHAR(1),is_readonly CHAR(1),is_deleted INT DEFAULT 0,create_user BIGINT,update_user BIGINT,create_time DATETIME,update_time DATETIME)");
         jdbc.execute("CREATE TABLE file(id VARCHAR(32) PRIMARY KEY,biz_type VARCHAR(50),biz_id BIGINT,create_user BIGINT,update_user BIGINT,is_deleted INT DEFAULT 0,is_public INT DEFAULT 0,update_time DATETIME)");
         for (String table : List.of("bank_card", "bank_card_tag_rel", "bank_card_cover_template")) {
             jdbc.execute(CurrentSchema.h2Table(table));

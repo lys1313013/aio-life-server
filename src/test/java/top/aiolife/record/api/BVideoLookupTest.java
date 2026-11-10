@@ -30,7 +30,6 @@ class BVideoLookupTest {
     void setUp() throws Exception {
         database = new HomeDetailTestSupport();
         // 模拟生产 utf8mb4_unicode_ci 的不区分大小写比较，确保二进制条件实际生效。
-        database.jdbc.execute("ALTER TABLE b_video ALTER COLUMN bvid VARCHAR_IGNORECASE(20)");
         mvc = database.mvc(new BVideoController(database.session.getMapper(IBVideoMapper.class), mock(VideoCoverService.class)));
     }
 

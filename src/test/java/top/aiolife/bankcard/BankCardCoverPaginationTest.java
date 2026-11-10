@@ -22,7 +22,7 @@ class BankCardCoverPaginationTest {
     BankCardCoverTemplateService service;
     @BeforeEach void setup() throws Exception {
         var ds=new JdbcDataSource();
-        ds.setURL("jdbc:h2:mem:"+UUID.randomUUID()+";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
+        ds.setURL("jdbc:h2:mem:"+UUID.randomUUID()+";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc=new JdbcTemplate(ds);
         jdbc.execute("CREATE TABLE bank_card_cover_template(id BIGINT PRIMARY KEY,name VARCHAR(100),bank_id BIGINT,card_type VARCHAR(10),source_url VARCHAR(1000),is_enabled INT,sort_order INT,is_deleted INT)");
         jdbc.execute("CREATE TABLE sys_dict_data(dict_code BIGINT PRIMARY KEY,dict_label VARCHAR(100))");

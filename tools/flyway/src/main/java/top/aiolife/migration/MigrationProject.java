@@ -21,14 +21,14 @@ public final class MigrationProject {
         if (locations.length != 1 || !locations[0].isFileSystem())
             throw new IllegalArgumentException("Use the project's single filesystem migration location");
         Path sql = Path.of(locations[0].getPath()).toAbsolutePath().normalize();
-        if (!sql.endsWith(Path.of("sql", "migrations")))
-            throw new IllegalArgumentException("Migration location must end in sql/migrations");
-        return sql.getParent().getParent();
+        if (!sql.endsWith(Path.of("sql", "migrations", "postgresql")))
+            throw new IllegalArgumentException("Migration location must end in sql/migrations/postgresql");
+        return sql.getParent().getParent().getParent();
     }
     /** 强校验只绑定 SQL 和影响迁移的配置；不绑定 Java 文本、POM 排版和测试依赖。 */
     public static Map<String, String> sources(Path root) throws IOException {
         Map<String, String> result = new TreeMap<>();
-        collect(root, "sql/migrations", ".sql", result);
+        collect(root, "sql/migrations/postgresql", ".sql", result);
         result.put("flyway.settings", sha256(settings(root).getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         return result;
     }
@@ -53,7 +53,7 @@ public final class MigrationProject {
             var xpath = javax.xml.xpath.XPathFactory.newInstance().newXPath();
             Map<String, String> values = new TreeMap<>();
             for (String path : new String[]{"/project/properties/flyway.version", "/project/properties/adoption.version",
-                    "/project/dependencies/dependency[artifactId='mariadb-java-client']/version"})
+                    "/project/dependencies/dependency[artifactId='postgresql']/version"})
                 values.put(path, xpath.evaluate(path, document).trim());
             var plugin = (org.w3c.dom.Node) xpath.evaluate("/project/build/plugins/plugin[artifactId='flyway-maven-plugin']", document, javax.xml.xpath.XPathConstants.NODE);
             if (plugin == null) throw new IllegalArgumentException("Missing Flyway plugin configuration");

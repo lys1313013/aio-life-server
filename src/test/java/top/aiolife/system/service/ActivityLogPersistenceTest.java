@@ -32,7 +32,7 @@ import top.aiolife.system.pojo.query.ActivityLogQuery;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
-/** 默认独立 H2；可指定专用临时 MySQL 库，验证相同生产 Mapper。 */
+/** 独立 H2 PostgreSQL 模式验证生产 Mapper；真实数据库路径由 PostgreSQL 集成测试覆盖。 */
 class ActivityLogPersistenceTest {
     private ActivityLogService service;
     private ActivityLogMapper mapper;
@@ -40,27 +40,16 @@ class ActivityLogPersistenceTest {
     private DriverManagerDataSource dataSource;
 
     @BeforeEach void setup() throws Exception {
-        String mysql = System.getenv("AIO_LOG_TEST_MYSQL_URL");
         var ds = new DriverManagerDataSource();
-        if (mysql == null) {
-            ds.setUrl("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
-            ds.setUsername("sa"); ds.setPassword("");
-        } else {
-            assertTrue(mysql.matches("jdbc:mysql://127\\.0\\.0\\.1:13317/aio_operation_test_[a-z0-9]+(?:\\?.*)?"), "只允许专用本地测试库");
-            ds.setUrl(mysql); ds.setUsername("root"); ds.setPassword("");
-        }
+        ds.setUrl("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
+        ds.setUsername("sa"); ds.setPassword("");
         dataSource = ds;
         jdbc = new JdbcTemplate(ds);
-        jdbc.execute("DROP TABLE IF EXISTS sys_activity_log");
-        String full = Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql"));
-        int start = full.indexOf("CREATE TABLE IF NOT EXISTS `sys_activity_log`");
-        String schema = full.substring(start, full.indexOf(";", start));
-        if (mysql == null) schema = schema.substring(0, schema.indexOf(" ENGINE="));
-        jdbc.execute(schema);
+        jdbc.execute(top.aiolife.support.CurrentSchema.h2Table("sys_activity_log"));
         var config = new MybatisConfiguration(); config.addMapper(ActivityLogMapper.class);
         var factory = new MybatisSqlSessionFactoryBean(); factory.setDataSource(ds); factory.setConfiguration(config);
         factory.setMapperLocations(new ClassPathResource("mapper/ActivityLogMapper.xml"));
-        var pagination = new MybatisPlusInterceptor(); pagination.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
+        var pagination = new MybatisPlusInterceptor(); pagination.addInnerInterceptor(new PaginationInnerInterceptor(DbType.POSTGRE_SQL));
         factory.setPlugins(pagination);
         mapper = new SqlSessionTemplate(factory.getObject()).getMapper(ActivityLogMapper.class);
         service = new ActivityLogService(mapper);
@@ -110,8 +99,7 @@ class ActivityLogPersistenceTest {
         assertThrows(IllegalArgumentException.class, () -> service.detail(6L));
         assertThrows(IllegalArgumentException.class, () -> service.detail(100L));
         String value = "{\"path\":{\"id\":\"9223372036854775806\"}}";
-        if (System.getenv("AIO_LOG_TEST_MYSQL_URL") == null) jdbc.update("UPDATE sys_activity_log SET request_params=? FORMAT JSON WHERE id=2",value);
-        else jdbc.update("UPDATE sys_activity_log SET request_params=? WHERE id=2",value);
+        jdbc.update("UPDATE sys_activity_log SET request_params=? FORMAT JSON WHERE id=2",value);
         assertTrue(service.detail(2L).getRequestParams().contains("9223372036854775806"));
         assertTrue(service.list("OPERATION",day()).getItems().stream().allMatch(row -> row.getRequestParams()==null));
         var query = day(); assertEquals(3L,mapper.operationMaxId(query));

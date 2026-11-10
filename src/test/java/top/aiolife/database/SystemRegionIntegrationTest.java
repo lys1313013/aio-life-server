@@ -14,7 +14,7 @@ import top.aiolife.system.service.SystemRegionService;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 真实MySQL目录及层级契约；测试写入由事务回滚。 */
+/** 真实PostgreSQL目录及层级契约；测试写入由事务回滚。 */
 @ActiveProfiles("test")
 @SpringBootTest(classes = PhysicalTableEntitySelectIntegrationTest.DatabaseMapperTestApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE)

@@ -21,7 +21,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** 在测试 MySQL 上验证真实索引、逻辑删除及事务内账号归属，不访问微信。 */
+/** 在测试 PostgreSQL 上验证真实索引、逻辑删除及事务内账号归属，不访问微信。 */
 @ActiveProfiles("test")
 @SpringBootTest(classes = WechatAccountIntegrationTest.Application.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Transactional

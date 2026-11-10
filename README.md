@@ -11,7 +11,7 @@ AIO Life 的业务后端，提供生活记录、目标与待办、财务与物�
 | 依赖 | 要求与用途 |
 | --- | --- |
 | Java / Maven | JDK 21；构建镜像使用 Maven 3.9，依赖版本以 [pom.xml](pom.xml) 为准 |
-| MySQL | 仅支持 8.x（最低 8.0.16）；迁移及 CI 业务测试覆盖 8.0.40 / 8.4.2，具体边界见 [SQL 规范](docs/SQL脚本规范.md) |
+| PostgreSQL | 仅支持 PostgreSQL 18+；迁移及 CI 使用真实 PostgreSQL，具体边界见 [SQL 规范](docs/SQL脚本规范.md) |
 | Redis | 登录会话、二级锁解锁状态、缓存、分布式锁和定时任务需要 |
 | MinIO | 附件、头像、封面、导出等文件功能需要；不使用文件功能时可暂不配置 |
 | SMTP | 邮箱验证码、注册及邮件相关功能需要；默认配置为 QQ 邮箱 SMTP |
@@ -34,7 +34,7 @@ mvn -version
 
 ### 2. 准备数据库
 
-先准备 MySQL 和 Redis，再按[数据库初始化与验证](docs/数据库初始化与验证.md)创建 `aio_life` 数据库并完成结构和种子初始化。应用数据源用户名为 `aio_life`，地址变量只填 `host:port`；库名和用户名由 [application.yml](src/main/resources/application.yml)配置，不能把初始化用的 root 密码误当作应用账号密码。
+先准备 PostgreSQL 和 Redis，再按[数据库初始化与验证](docs/数据库初始化与验证.md)创建 `aio_life` 数据库并完成结构和种子初始化。地址变量 `AIO_LIFE_DB_URL` 只填 `host:port`；库名、用户名、密码分别使用 `AIO_LIFE_DB_NAME`、`AIO_LIFE_DB_USERNAME`、`AIO_LIFE_DB_PASSWORD` 配置。
 
 数据库迁移通过独立 Flyway 工具执行，需要 Maven 和 Java 21。连接通过 `FLYWAY_URL`、`FLYWAY_USER`、`FLYWAY_PASSWORD` 环境变量注入；创建好空库后，在后端仓库执行：
 
@@ -42,7 +42,7 @@ mvn -version
 mvn -f tools/flyway/pom.xml compile flyway:migrate flyway:validate
 ```
 
-117 已有库已按用户确认登记至 `20261028.06`，现有 SQL 不再重跑，后续只执行更高版本 V；[接入状态与结构差异](docs/数据库初始化与验证.md#已有库首次接入)分别记录，登记不等于结构完全一致。结构预检使用 v5 契约，格式不匹配时重新生成；Java 注释或测试依赖改动不使契约失效。后续使用同一入口的 `info`、`migrate`、`validate` 管理升级；应用启动不会自动迁移数据库。
+当前执行链仅使用 `sql/migrations/postgresql/`，结构预检使用 v6 PostgreSQL 契约。旧 MySQL B/V 文件冻结保留但不运行；已有库的数据搬迁和完整性检查见[数据库初始化与验证](docs/数据库初始化与验证.md)。应用启动不会自动迁移数据库。
 
 日常结构和默认数据变更新增不可改写的 `V` 迁移；维护者在选定节点生成新的完整 `B` 基线。新库不再创建固定密码管理员，先通过注册流程建立账号，再由受控管理流程授权。
 
@@ -51,7 +51,7 @@ mvn -f tools/flyway/pom.xml compile flyway:migrate flyway:validate
 Maven、`java -jar` 和 `start.sh` 都不会自动加载 `.env`。启动前在当前终端或进程管理器注入环境变量；下列值须按本机配置填写：
 
 ```bash
-export AIO_LIFE_DB_URL='127.0.0.1:3306'
+export AIO_LIFE_DB_URL='127.0.0.1:5432'
 export AIO_LIFE_DB_PASSWORD='<应用数据库账号密码>'
 export AIO_LIFE_REDIS_HOST='127.0.0.1'
 export AIO_LIFE_REDIS_PORT='6379'
@@ -80,7 +80,7 @@ export AIO_LIFE_SERVER_BASE_URL='http://localhost:45678/api'
 mvn spring-boot:run
 ```
 
-也可使用 `./start.sh`，先检查 MySQL / Redis 和已启用的 Neo4j 端口，再启动应用；它不创建数据库、不执行迁移、不拉起依赖容器。`./start.sh --clean` 会先清理编译产物，`SKIP_DEPS_CHECK=true` 可跳过端口检查。
+也可使用 `./start.sh`，先检查 PostgreSQL / Redis 和已启用的 Neo4j 端口，再启动应用；它不创建数据库、不执行迁移、不拉起依赖容器。`./start.sh --clean` 会先清理编译产物，`SKIP_DEPS_CHECK=true` 可跳过端口检查。
 
 | 入口 | 默认地址 |
 | --- | --- |
@@ -111,7 +111,7 @@ mvn clean package -DskipTests                  # 只打包，不代表测试通�
 java -jar target/aio-life-server-1.0.0.jar
 ```
 
-Surefire 默认使用 `test` 配置，部分集成测试仍需要已初始化的 MySQL / Redis；应指向隔离测试环境，不能因为启用 `test` profile 就认为数据访问已隔离。配置见 [application-test.yml](src/test/resources/application-test.yml)，CI 环境见 [docker-publish.yml](.github/workflows/docker-publish.yml)。数据库验证与增量测试另见[数据库初始化与验证](docs/数据库初始化与验证.md)，初始化检查通过不能替代已有库升级验证。
+Surefire 默认使用 `test` 配置，部分集成测试仍需要已初始化的 PostgreSQL / Redis；应指向隔离测试环境，不能因为启用 `test` profile 就认为数据访问已隔离。配置见 [application-test.yml](src/test/resources/application-test.yml)，CI 环境见 [docker-publish.yml](.github/workflows/docker-publish.yml)。数据库验证与增量测试另见[数据库初始化与验证](docs/数据库初始化与验证.md)，初始化检查通过不能替代已有库升级验证。
 
 CI 通过独立 Flyway Maven 工具初始化业务测试库，并运行 Java 迁移测试；迁移检查与业务测试均通过后才发布镜像。
 
@@ -138,7 +138,7 @@ python3 scripts/generate-api-contracts.py --check
 
 ## 使用 Docker 部署
 
-先在容器可达的 MySQL / Redis 中准备业务账号和当前数据库结构。`.env` 使用不含 `export` 的 `KEY=value` 格式；容器内 `localhost` 指自身，依赖地址须对应实际容器网络或宿主机入口。
+先在容器可达的 PostgreSQL / Redis 中准备业务账号和当前数据库结构。`.env` 使用不含 `export` 的 `KEY=value` 格式；容器内 `localhost` 指自身，依赖地址须对应实际容器网络或宿主机入口。
 
 ```bash
 docker build -t aio-life-server:latest .
@@ -176,7 +176,7 @@ SW_LOGGING_OUTPUT=CONSOLE
 
 | 文件 | 内容与前提 |
 | --- | --- |
-| [docker/docker-compose.yml](docker/docker-compose.yml) | Prometheus / Grafana，不提供 MySQL、Redis 或业务应用 |
+| [docker/docker-compose.yml](docker/docker-compose.yml) | Prometheus / Grafana，不提供 PostgreSQL、Redis 或业务应用 |
 | [docker/docker-compose-minio.yml](docker/docker-compose-minio.yml) | MinIO；须先准备 `docker/.env` 中的 `MINIO_PORT`、`MINIO_CONSOLE_PORT`、`MINIO_USER`、`MINIO_PASSWORD`，从根目录运行时同时传 `--env-file docker/.env` |
 | [docker/docker-compose-neo4j.yml](docker/docker-compose-neo4j.yml) | Neo4j；应用需另行开启图谱并匹配连接凭据 |
 
@@ -246,7 +246,7 @@ docker/             # 可选基础设施 Compose 与监控配置
 docs/               # 当前契约、接入说明与历史记录
 ```
 
-业务模块按 API、Service、Mapper、POJO 分层；MySQL 业务访问统一使用 MyBatis-Plus / MyBatis Mapper。完整架构边界与测试要求见 [AGENTS.md](AGENTS.md)，专题入口见[后端文档目录](docs/README.md)。
+业务模块按 API、Service、Mapper、POJO 分层；PostgreSQL 业务访问统一使用 MyBatis-Plus / MyBatis Mapper。完整架构边界与测试要求见 [AGENTS.md](AGENTS.md)，专题入口见[后端文档目录](docs/README.md)。
 
 ## 授权
 

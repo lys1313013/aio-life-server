@@ -22,18 +22,18 @@ public interface IExpenseMapper extends BaseMapper<ExpenseEntity> {
     ExpenseEntity lockOwned(@Param("userId") long userId, @Param("id") long id);
 
     @Select("""
-            SELECT left(exp_time, 4) AS year ,sum(amt) as amt,exp_type_id AS type_id
+            SELECT TO_CHAR(exp_time, 'YYYY') AS year ,sum(amt) as amt,exp_type_id AS type_id
             FROM expense
             WHERE user_id = #{userId} and is_deleted = 0  
-            GROUP BY LEFT(exp_time, 4), exp_type_id
+            GROUP BY TO_CHAR(exp_time, 'YYYY'), exp_type_id
             """)
     List<ExpStaByYearVO> statisticsByYear(long userId);
 
     @Select("""
-            SELECT left(exp_time, 4) AS year, substring(exp_time, 6, 2) AS month ,sum(amt) as amt,exp_type_id AS type_id
+            SELECT TO_CHAR(exp_time, 'YYYY') AS year, TO_CHAR(exp_time, 'MM') AS month ,sum(amt) as amt,exp_type_id AS type_id
             FROM expense
             WHERE user_id = #{userId} and is_deleted = 0  
-            GROUP BY LEFT(exp_time, 4), substring(exp_time, 6, 2), exp_type_id
+            GROUP BY TO_CHAR(exp_time, 'YYYY'), TO_CHAR(exp_time, 'MM'), exp_type_id
             """)
     List<ExpStaByYearVO> statisticsByMonth(long userId);
 }

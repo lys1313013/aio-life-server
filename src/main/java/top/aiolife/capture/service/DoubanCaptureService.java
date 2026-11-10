@@ -171,10 +171,10 @@ public class DoubanCaptureService {
                         new LambdaUpdateWrapper<ReadRecordEntity>()
                                 .eq(ReadRecordEntity::getId, entity.getId())
                                 .eq(ReadRecordEntity::getUserId, user)
-                                .set(ReadRecordEntity::getRemark, entity.getRemark())
-                                .set(ReadRecordEntity::getFileId, entity.getFileId())
-                                .set(ReadRecordEntity::getTotalProgress, total)
-                                .set(ReadRecordEntity::getAuthor, entity.getAuthor());
+                                .set(entity.getRemark() == null, ReadRecordEntity::getRemark, null)
+                                .set(entity.getFileId() == null, ReadRecordEntity::getFileId, null)
+                                .set(total == null, ReadRecordEntity::getTotalProgress, null)
+                                .set(entity.getAuthor() == null, ReadRecordEntity::getAuthor, null);
                 readMapper.update(entity, w);
             }
             return requests.finish(
@@ -205,11 +205,11 @@ public class DoubanCaptureService {
                     new LambdaUpdateWrapper<MovieEntity>()
                             .eq(MovieEntity::getId, entity.getId())
                             .eq(MovieEntity::getUserId, user)
-                            .set(MovieEntity::getRating, entity.getRating())
-                            .set(MovieEntity::getRemark, entity.getRemark())
-                            .set(MovieEntity::getFileId, entity.getFileId())
-                            .set(MovieEntity::getTotalProgress, total)
-                            .set(MovieEntity::getDirector, entity.getDirector());
+                            .set(entity.getRating() == null, MovieEntity::getRating, null)
+                            .set(entity.getRemark() == null, MovieEntity::getRemark, null)
+                            .set(entity.getFileId() == null, MovieEntity::getFileId, null)
+                            .set(total == null, MovieEntity::getTotalProgress, null)
+                            .set(entity.getDirector() == null, MovieEntity::getDirector, null);
             movieMapper.update(entity, w);
         }
         return requests.finish(key, result(subject, entity, found == null ? "created" : "updated"));

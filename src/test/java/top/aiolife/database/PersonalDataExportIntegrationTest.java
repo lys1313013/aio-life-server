@@ -36,7 +36,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
-/** 专用隔离 MySQL 中验证生产 Mapper/事务；不能用生产库执行这些写入夹具。 */
+/** 专用隔离 PostgreSQL 中验证生产 Mapper/事务；不能用生产库执行这些写入夹具。 */
 @ActiveProfiles("test")
 @SpringBootTest(
         classes = PhysicalTableEntitySelectIntegrationTest.DatabaseMapperTestApplication.class,
@@ -65,7 +65,7 @@ class PersonalDataExportIntegrationTest {
     void setup() {
         cleanup();
         sql.update(
-                "INSERT INTO `user` (id,username,nickname,password,password_salt) VALUES"
+                "INSERT INTO \"user\" (id,username,nickname,password,password_salt) VALUES"
                         + " (?,?,?,?,?)",
                 USER,
                 "export-fixture",
@@ -89,7 +89,7 @@ class PersonalDataExportIntegrationTest {
         reset(audit);
         sql.update("DELETE FROM data_export_audit_event WHERE user_id=?", USER);
         sql.update("DELETE FROM data_export_job WHERE user_id=?", USER);
-        sql.update("DELETE FROM `user` WHERE id=?", USER);
+        sql.update("DELETE FROM \"user\" WHERE id=?", USER);
         sql.update("DELETE FROM task_detail WHERE id IN (880000000000000201,880000000000000202)");
         sql.update("DELETE FROM task WHERE id IN (880000000000000301,880000000000000302)");
     }
@@ -160,7 +160,7 @@ class PersonalDataExportIntegrationTest {
     }
 
     @Test
-    void 所有白名单字段均能在真实MySQL读取且父表越权不泄露() throws Exception {
+    void 所有白名单字段均能在真实PostgreSQL读取且父表越权不泄露() throws Exception {
         List<SqlDatasetDefinition> definitions =
                 new ObjectMapper()
                         .readValue(

@@ -41,7 +41,7 @@ public class VideoCoverService {
         if (!StringUtils.hasText(source)) return;
         var task = new ImageImportTaskEntity();
         task.setVideoId(videoId); task.setCoverVersion(version); task.setSourceUrl(source);
-        task.setState("PENDING"); task.setAttempts(0); task.setNextAttemptAt(LocalDateTime.now());
+        task.setState("PENDING"); task.setAttempts(0); task.setNextAttemptAt(LocalDateTime.now().withNano(0));
         task.fillCreateCommonField(owner);
         tasks.insert(task);
     }

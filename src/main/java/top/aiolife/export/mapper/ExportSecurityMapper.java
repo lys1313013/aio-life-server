@@ -11,7 +11,7 @@ import java.util.List;
 
 /** 权限不使用业务快照及 MyBatis 查询缓存，撤权实时生效。 */
 public interface ExportSecurityMapper {
-    @Select("SELECT * FROM `user` WHERE id = #{userId} AND is_deleted = 0")
+    @Select("SELECT * FROM \"user\" WHERE id = #{userId} AND is_deleted = 0")
     @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
     UserEntity user(@Param("userId") long userId);
 

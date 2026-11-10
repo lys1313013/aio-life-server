@@ -21,7 +21,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** 真实路由、认证拦截器、MySQL、Redis、Sa-Token 与 JSON；只模拟微信外部接口。 */
+/** 真实路由、认证拦截器、PostgreSQL、Redis、Sa-Token 与 JSON；只模拟微信外部接口。 */
 @ActiveProfiles("test")
 @SpringBootTest(classes = AioLifeMain.class)
 @AutoConfigureMockMvc

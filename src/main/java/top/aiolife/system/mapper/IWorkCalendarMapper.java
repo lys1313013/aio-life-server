@@ -18,8 +18,8 @@ public interface IWorkCalendarMapper extends BaseMapper<WorkCalendarEntity> {
             SELECT calendar_date
             FROM sys_work_calendar
             WHERE calendar_date < #{date}
-              AND ((#{workday} = TRUE AND day_type IN (0, 3))
-                OR (#{workday} = FALSE AND day_type IN (1, 2)))
+              AND ((#{workday} = 1 AND day_type IN (0, 3))
+                OR (#{workday} = 0 AND day_type IN (1, 2)))
             ORDER BY calendar_date DESC
             LIMIT 1
             """)

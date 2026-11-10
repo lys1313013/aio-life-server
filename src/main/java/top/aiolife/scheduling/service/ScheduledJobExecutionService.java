@@ -7,7 +7,6 @@ import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.scheduling.mapper.ScheduledJobLogMapper;
@@ -34,7 +33,7 @@ public class ScheduledJobExecutionService {
             var entry = entry(current, scheduled, operator);
             entry.setTriggerKey(scheduled == null ? UUID.randomUUID().toString() : "AUTO:" + scheduled.toEpochMilli());
             entry.setStatus("RUNNING");
-            try { logs.insert(entry); } catch (DuplicateKeyException ignored) { return; }
+            if (logs.insertIfAbsent(entry) == 0) return;
             long started = System.nanoTime();
             String status = "SUCCESS";
             String message = "业务方法执行完成；通知投递结果以通知记录为准";

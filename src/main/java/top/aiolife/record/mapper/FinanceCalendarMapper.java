@@ -18,9 +18,9 @@ public interface FinanceCalendarMapper {
         <if test="end != null">AND exp_time &lt; #{end}</if>
         GROUP BY
         <choose>
-            <when test="granularity == 'year'">YEAR(exp_time)</when>
-            <when test="granularity == 'month'">YEAR(exp_time), MONTH(exp_time)</when>
-            <otherwise>YEAR(exp_time), MONTH(exp_time), DAYOFMONTH(exp_time)</otherwise>
+            <when test="granularity == 'year'">EXTRACT(YEAR FROM exp_time)</when>
+            <when test="granularity == 'month'">EXTRACT(YEAR FROM exp_time), EXTRACT(MONTH FROM exp_time)</when>
+            <otherwise>EXTRACT(YEAR FROM exp_time), EXTRACT(MONTH FROM exp_time), EXTRACT(DAY FROM exp_time)</otherwise>
         </choose>
         ORDER BY date
         </script>
@@ -39,9 +39,9 @@ public interface FinanceCalendarMapper {
         <if test="end != null">AND inc_date &lt; #{end}</if>
         GROUP BY
         <choose>
-            <when test="granularity == 'year'">YEAR(inc_date)</when>
-            <when test="granularity == 'month'">YEAR(inc_date), MONTH(inc_date)</when>
-            <otherwise>YEAR(inc_date), MONTH(inc_date), DAYOFMONTH(inc_date)</otherwise>
+            <when test="granularity == 'year'">EXTRACT(YEAR FROM inc_date)</when>
+            <when test="granularity == 'month'">EXTRACT(YEAR FROM inc_date), EXTRACT(MONTH FROM inc_date)</when>
+            <otherwise>EXTRACT(YEAR FROM inc_date), EXTRACT(MONTH FROM inc_date), EXTRACT(DAY FROM inc_date)</otherwise>
         </choose>
         ORDER BY date
         </script>

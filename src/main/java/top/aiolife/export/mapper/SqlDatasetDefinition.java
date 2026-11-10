@@ -30,7 +30,7 @@ public record SqlDatasetDefinition(
     public static String identifier(String value) {
         if (value == null || !value.matches("[a-z][a-z0-9_]*"))
             throw new IllegalArgumentException("Invalid SQL identifier");
-        return "`" + value + "`";
+        return "\"" + value + "\"";
     }
 
     public record ParentScope(

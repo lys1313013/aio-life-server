@@ -68,10 +68,10 @@ class CredentialRevocationTest {
     void setup() throws Exception {
         var source = new JdbcDataSource();
         source.setURL("jdbc:h2:mem:revoke_" + UUID.randomUUID()
-                + ";MODE=MySQL;NON_KEYWORDS=USER;DB_CLOSE_DELAY=-1");
+                + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=USER;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(source);
         jdbc.execute("""
-                CREATE TABLE `user` (policy_version VARCHAR(32), policy_accepted_at TIMESTAMP, erasure_requested_at TIMESTAMP, erasure_retry_at TIMESTAMP,
+                CREATE TABLE "user" (policy_version VARCHAR(32), policy_accepted_at TIMESTAMP, erasure_requested_at TIMESTAMP, erasure_retry_at TIMESTAMP,
                     id BIGINT PRIMARY KEY, username VARCHAR(255), password VARCHAR(255), password_salt VARCHAR(255),
                     secondary_password VARCHAR(255), secondary_password_salt VARCHAR(255), nickname VARCHAR(255),
                     avatar_file_id VARCHAR(32), email VARCHAR(255), phone_country_code VARCHAR(32), phone VARCHAR(64),
@@ -85,7 +85,7 @@ class CredentialRevocationTest {
                     expired_at TIMESTAMP, create_user BIGINT, update_user BIGINT, create_time TIMESTAMP,
                     update_time TIMESTAMP, is_deleted INT DEFAULT 0)
                 """);
-        jdbc.update("INSERT INTO `user` (id, email, password, password_salt) VALUES (1, 'one@example.com', ?, 'salt'), (2, 'two@example.com', ?, 'salt')",
+        jdbc.update("INSERT INTO \"user\" (id, email, password, password_salt) VALUES (1, 'one@example.com', ?, 'salt'), (2, 'two@example.com', ?, 'salt')",
                 PasswordUtil.encryptPassword("old-password", "salt"), PasswordUtil.encryptPassword("old-password", "salt"));
         jdbc.update("INSERT INTO api_key (id, user_id, api_key) VALUES (11, 1, 'ak-one'), (12, 1, 'ak-one-extra'), (21, 2, 'ak-two')");
         var configuration = new MybatisConfiguration();
@@ -189,7 +189,7 @@ class CredentialRevocationTest {
     void 已删除账号的历史遗留会话和密钥也被认证入口拒绝() throws Exception {
         String web = token(1, "web");
         assertAccess(web, 1);
-        jdbc.update("UPDATE `user` SET is_deleted=1 WHERE id=1");
+        jdbc.update("UPDATE \"user\" SET is_deleted=1 WHERE id=1");
         assertNotNull(StpUtil.getLoginIdByToken(web));
         assertRejected(web);
         assertRejected("ak-one");

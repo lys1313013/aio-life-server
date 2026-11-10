@@ -40,7 +40,7 @@ import static org.mockito.Mockito.mockStatic;
 
 /** 只能由 Query 隔离验收脚本提供临时数据库与网关，绝不使用默认业务连接。 */
 @SpringJUnitConfig(GoalGraphqlIntegrationTest.Config.class)
-@EnabledIfEnvironmentVariable(named = "AIO_GOAL_TEST_JDBC_URL", matches = "jdbc:mysql://127\\.0\\.0\\.1:[0-9]+/aio_life.*")
+@EnabledIfEnvironmentVariable(named = "AIO_GOAL_TEST_JDBC_URL", matches = "jdbc:postgresql://127\\.0\\.0\\.1:[0-9]+/aio_life.*")
 class GoalGraphqlIntegrationTest {
     @Autowired GoalController controller;
     @Autowired ObjectMapper json;
@@ -75,7 +75,7 @@ class GoalGraphqlIntegrationTest {
             assertEquals(100, preview("salary").getProgressPercent());
 
             // 严格超过：80 尚未达标，81 才达标；同日重复、午睡、00:01、删除、其他用户和范围外均已在夹具中。
-            jdbc.update("INSERT INTO time_record(id,date,category_id,user_id,start_time,end_time) WITH RECURSIVE n AS (SELECT 26 AS v UNION ALL SELECT v+1 FROM n WHERE v<80) SELECT CONCAT('extra-',v),DATE_ADD('2026-01-01', INTERVAL v-1 DAY),1,101,0,420 FROM n");
+            jdbc.update("INSERT INTO time_record(id,date,category_id,user_id,start_time,end_time) WITH RECURSIVE n AS (SELECT 26 AS v UNION ALL SELECT v+1 FROM n WHERE v<80) SELECT CONCAT('extra-',v),(DATE '2026-01-01' + (v-1)),1,101,0,420 FROM n");
             var equal = preview("sleep");
             assertEquals(0, equal.getCurrentValue().compareTo(new BigDecimal("80")));
             assertFalse(equal.isAchieved()); assertEquals(99, equal.getProgressPercent());
@@ -154,7 +154,7 @@ class GoalGraphqlIntegrationTest {
     @Import({GoalController.class, GoalServiceImpl.class, GoalProgressService.class, GoalProgressEvaluator.class, GoalQueryClient.class})
     static class Config {
         @Bean ObjectMapper json() { return new ObjectMapper().findAndRegisterModules(); }
-        @Bean DataSource dataSource() { return new DriverManagerDataSource(System.getenv("AIO_GOAL_TEST_JDBC_URL"), "root", "fixture-root"); }
+        @Bean DataSource dataSource() { return new DriverManagerDataSource(System.getenv("AIO_GOAL_TEST_JDBC_URL"), "postgres", "fixture-root"); }
         @Bean JdbcTemplate jdbc(DataSource ds) { return new JdbcTemplate(ds); }
         @Bean DataSourceTransactionManager transactionManager(DataSource ds) { return new DataSourceTransactionManager(ds); }
         @Bean SqlSessionFactory sqlSessionFactory(DataSource ds) throws Exception {

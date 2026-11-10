@@ -46,13 +46,16 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
   datasource:
-    username: aio_life
+    username: ${AIO_LIFE_DB_USERNAME:aio_life}
     password: ${AIO_LIFE_DB_PASSWORD:root}
-    url: jdbc:mysql://${AIO_LIFE_DB_URL:127.0.0.1:3306}/aio_life?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&autoReconnect=true&connectTimeout=10000&socketTimeout=30000
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:postgresql://${AIO_LIFE_DB_URL:127.0.0.1:5432}/${AIO_LIFE_DB_NAME:aio_life}?sslmode=${AIO_LIFE_DB_SSLMODE:prefer}&stringtype=unspecified&ApplicationName=aio-life-server
+    driver-class-name: org.postgresql.Driver
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
-      # 连接池空闲检测，防止空闲连接被 MySQL 踢掉导致 Communications link failure
+      # Druid 使用毫秒；不要在 JDBC URL 中设置同名秒数，1.2.24 会按毫秒重新应用。
+      connect-timeout: 10000
+      socket-timeout: 30000
+      # 连接池空闲检测，及时回收 PostgreSQL 失效连接
       test-while-idle: true
       validation-query: SELECT 1
       time-between-eviction-runs-millis: 30000
@@ -141,6 +144,7 @@ sa-token:
   jwt-secret-key: ${AIO_LIFE_JWT_SECRET:aio_life}
 
 mybatis-plus:
+  type-handlers-package: top.aiolife.core.mybatis
   global-config:
     db-config:
       logic-delete-field: is_deleted # 全局逻辑删除字段名

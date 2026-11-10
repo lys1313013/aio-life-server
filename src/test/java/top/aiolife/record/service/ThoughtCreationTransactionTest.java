@@ -29,7 +29,7 @@ class ThoughtCreationTransactionTest {
 
     @BeforeEach void setup() throws Exception {
         var ds = new JdbcDataSource();
-        ds.setURL("jdbc:h2:mem:thought_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        ds.setURL("jdbc:h2:mem:thought_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds);
         String audit = ", create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP, is_deleted INT DEFAULT 0";
         jdbc.execute("CREATE TABLE thought(id BIGINT PRIMARY KEY, user_id BIGINT, content VARCHAR(1000) NOT NULL, is_pinned INT, hidden_content INT" + audit + ")");

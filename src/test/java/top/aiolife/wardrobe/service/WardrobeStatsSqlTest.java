@@ -32,7 +32,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** H2 MySQL 模式执行生产聚合 SQL，验证统计口径、数据隔离与响应数字类型。 */
+/** H2 PostgreSQL 模式执行生产聚合 SQL，验证统计口径、数据隔离与响应数字类型。 */
 class WardrobeStatsSqlTest {
     private JdbcTemplate jdbc;
     private SqlSession session;
@@ -43,7 +43,7 @@ class WardrobeStatsSqlTest {
     @BeforeEach
     void setUp() throws Exception {
         var source = new JdbcDataSource();
-        source.setURL("jdbc:h2:mem:wardrobe_stats_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        source.setURL("jdbc:h2:mem:wardrobe_stats_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(source);
         for (String table : List.of("wardrobe_category", "wardrobe_item")) {
             jdbc.execute(CurrentSchema.h2Table(table)

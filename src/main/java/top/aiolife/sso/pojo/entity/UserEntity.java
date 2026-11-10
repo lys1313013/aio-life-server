@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
  */
 @Getter
 @Setter
-@TableName("user")
+@TableName("\"user\"")
 public class UserEntity extends AuditEntity {
 
     /** 最近一次注册协议同意版本和时间，不向普通用户资料接口暴露。 */

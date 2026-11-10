@@ -40,7 +40,7 @@ class FinanceCalendarServiceTest {
 
     @BeforeEach void setup() {
         var source = new JdbcDataSource();
-        source.setURL("jdbc:h2:mem:expense_calendar_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        source.setURL("jdbc:h2:mem:expense_calendar_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(source);
         jdbc.execute("CREATE TABLE expense (user_id BIGINT, amt DECIMAL(12,2), exp_time TIMESTAMP, is_deleted INT DEFAULT 0)");
         jdbc.execute("CREATE TABLE income (user_id BIGINT, amt DECIMAL(12,2), inc_date DATE, is_deleted INT DEFAULT 0)");

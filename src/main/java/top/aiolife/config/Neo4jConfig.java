@@ -14,7 +14,7 @@ import org.springframework.data.neo4j.repository.config.EnableNeo4jRepositories;
  * 设置 AIO_LIFE_NEO4J_ENABLED=true 后加载；缺省或为 false 时关系图谱模块整体不加载，其他接口（timeRecord、wardrobe 等）可正常使用。
  *
  * 事务管理器说明：
- * - MybatisPlusConfig 中显式声明了 dataSourceTransactionManager 并标记 @Primary（MySQL @Transactional 默认走它）。
+ * - MybatisPlusConfig 中显式声明了 dataSourceTransactionManager 并标记 @Primary（PostgreSQL @Transactional 默认走它）。
  * - 由于 PlatformTransactionManager 已存在，Spring Data Neo4j 的自动配置会跳过 transactionManager 创建。
  * - 因此这里显式提供 neo4jTransactionManager，并通过 transactionManagerRef 指给 Neo4j Repository 使用。
  */

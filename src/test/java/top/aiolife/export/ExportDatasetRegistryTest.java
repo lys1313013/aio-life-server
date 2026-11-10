@@ -64,11 +64,11 @@ class ExportDatasetRegistryTest {
                         item.key() + "." + column.key());
         }
         var matcher =
-                Pattern.compile("CREATE TABLE(?: IF NOT EXISTS)? `([^`]+)`")
+                Pattern.compile("CREATE TABLE(?: IF NOT EXISTS)? \"([^\"]+)\"")
                         .matcher(
                                 Files.readString(
                                         Path.of(
-                                                "sql/migrations/B20261028_00__baseline.sql")));
+                                                "sql/migrations/postgresql/V20261110_01__postgresql_schema.sql")));
         while (matcher.find())
             assertTrue(
                     classified.contains(matcher.group(1)),
@@ -87,18 +87,18 @@ class ExportDatasetRegistryTest {
                                 Path.of("src/main/resources/export/excluded-columns.json")),
                         new TypeReference<>() {});
         String schema =
-                Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql"));
+                Files.readString(Path.of("sql/migrations/postgresql/V20261110_01__postgresql_schema.sql"));
         for (var dataset : datasets) {
             var table =
                     Pattern.compile(
-                                    "CREATE TABLE(?: IF NOT EXISTS)? `"
+                                    "CREATE TABLE(?: IF NOT EXISTS)? \""
                                             + dataset.table()
-                                            + "`\\s*\\((.*?)\\) ENGINE",
+                                            + "\"\\s*\\((.*?)\\)",
                                     Pattern.DOTALL)
                             .matcher(CurrentSchema.table(dataset.table()));
             assertTrue(table.find(), dataset.table());
             Set<String> actual = new HashSet<>();
-            var fields = Pattern.compile("(?m)^\\s*`([^`]+)`\\s+").matcher(table.group(1));
+            var fields = Pattern.compile("(?m)^\\s*\"([^\"]+)\"\\s+").matcher(CurrentSchema.table(dataset.table()));
             while (fields.find()) actual.add(fields.group(1));
             Set<String> classified = new HashSet<>();
             dataset.columns().forEach(column -> classified.add(column.key()));

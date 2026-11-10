@@ -20,7 +20,7 @@ env:
 
 jobs:
   flyway-migrations:
-    name: Verify Flyway on MySQL 8.0 and 8.4
+    name: Verify Flyway on PostgreSQL 18
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -48,17 +48,17 @@ jobs:
           retention-days: 30
 
   test:
-    name: Test (MySQL ${{ matrix.mysql }})
+    name: Test (PostgreSQL ${{ matrix.postgresql }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        mysql: ['8.0.40', '8.4.2']
+        postgresql: ['18-alpine']
     timeout-minutes: 15
     permissions:
       contents: read
     env:
-      AIO_LIFE_DB_URL: 127.0.0.1:3306
+      AIO_LIFE_DB_URL: 127.0.0.1:5432
       AIO_LIFE_DB_PASSWORD: test_password
       AIO_LIFE_REDIS_HOST: 127.0.0.1
       AIO_LIFE_REDIS_PORT: 6379
@@ -67,17 +67,16 @@ jobs:
       AIO_LIFE_CBTI_ENABLED: 'false'
       SPRING_PROFILES_ACTIVE: test
     services:
-      mysql:
-        image: mysql:${{ matrix.mysql }}
+      postgresql:
+        image: postgres:${{ matrix.postgresql }}
         env:
-          MYSQL_DATABASE: aio_life
-          MYSQL_USER: aio_life
-          MYSQL_PASSWORD: test_password
-          MYSQL_ROOT_PASSWORD: root_password
+          POSTGRES_DB: aio_life
+          POSTGRES_USER: aio_life
+          POSTGRES_PASSWORD: test_password
         ports:
-          - 3306:3306
+          - 5432:5432
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot_password"
+          --health-cmd="pg_isready -U aio_life -d aio_life"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -103,20 +102,16 @@ jobs:
 
       - name: Initialize test database
         env:
-          FLYWAY_URL: 'jdbc:mariadb://127.0.0.1:3306/aio_life?sslMode=disable&allowPublicKeyRetrieval=true'
-          FLYWAY_USER: root
-          FLYWAY_PASSWORD: root_password
+          FLYWAY_URL: 'jdbc:postgresql://127.0.0.1:5432/aio_life'
+          FLYWAY_USER: aio_life
+          FLYWAY_PASSWORD: test_password
         run: |
-          # 在空的 CI 测试库中先设置项目字符集，与隔离迁移测试的建库方式一致。
-          docker exec -e MYSQL_PWD=root_password "${{ job.services.mysql.id }}" \
-            mysql -uroot -e 'ALTER DATABASE aio_life CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
           mvn -B -ntp -f tools/flyway/pom.xml compile flyway:migrate flyway:validate
 
       - name: Test and package
         run: mvn package -B -ntp
 
       - name: Upload application JAR
-        if: matrix.mysql == '8.0.40'
         uses: actions/upload-artifact@v6
         with:
           name: application-jar
@@ -129,7 +124,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: surefire-reports-mysql-${{ matrix.mysql }}-${{ github.run_number }}
+          name: surefire-reports-postgresql-${{ matrix.postgresql }}-${{ github.run_number }}
           path: target/surefire-reports/
           if-no-files-found: ignore
           retention-days: 7

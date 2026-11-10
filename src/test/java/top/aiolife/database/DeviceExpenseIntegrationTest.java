@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.ArgumentMatchers.any;
 
-/** 隔离 MySQL 库中的关联行为，所有夹具由事务回滚。 */
+/** 隔离 PostgreSQL 库中的关联行为，所有夹具由事务回滚。 */
 @ActiveProfiles("test")
 @SpringBootTest(classes = PhysicalTableEntitySelectIntegrationTest.DatabaseMapperTestApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE)

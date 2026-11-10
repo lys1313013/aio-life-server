@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,7 +51,7 @@ public class ScheduledJobService {
                 : ScheduledJobRules.validateCron(cron));
         row.setZoneId(ScheduledJobRules.ZONE.getId()); row.setIsEnabled(!"-".equals(cron) ? 1 : 0); row.setRevision(0);
         row.fillCreateCommonField(null);
-        try { jobs.insert(row); } catch (DuplicateKeyException ignored) { /* 多实例首次启动或软删除记录不覆盖。 */ }
+        jobs.insertIfAbsent(row);
     }
 
     public ScheduledJobEntity require(Long id) {

@@ -58,14 +58,14 @@ class PaginationOrderingSqlTest {
     @BeforeEach
     void setUp() throws Exception {
         var source = new JdbcDataSource();
-        source.setURL("jdbc:h2:mem:pagination_order_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        source.setURL("jdbc:h2:mem:pagination_order_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(source);
         String schema = Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql"));
         for (String table : List.of("task", "task_column", "memo", "sys_dict_type", "sys_dict_data")) {
             jdbc.execute(CurrentSchema.table(table)
                     .replaceAll(" COLLATE [a-zA-Z0-9_]+", "")
                     .replaceAll(" CHARACTER SET [a-zA-Z0-9_]+", "")
-                    .replace("KEY `idx_", "KEY `" + table + "_idx_"));
+                    .replace("KEY \"idx_", "KEY \"" + table + "_idx_"));
         }
         var configuration = new MybatisConfiguration();
         configuration.setEnvironment(new Environment("test", new JdbcTransactionFactory(), source));

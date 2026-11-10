@@ -27,7 +27,7 @@ public final class MigrationGuard implements Callback {
             checkConfiguration(config);
             var root = MigrationProject.root(config);
             var connection = context.getConnection();
-            SchemaSnapshot.version(connection); // 执行任何 DDL 前检查 MySQL 8.x 版本下限。
+            SchemaSnapshot.version(connection); // 执行任何 DDL 前检查 PostgreSQL 18 版本下限。
             if (event == Event.BEFORE_BASELINE) {
                 String file = System.getProperty("schema.contract");
                 if (file == null || file.isBlank()) throw new IllegalArgumentException("baseline requires -Dschema.contract=<adoption-contract.json>");
@@ -36,7 +36,7 @@ public final class MigrationGuard implements Callback {
                     throw new IllegalArgumentException("Contract version differs from baselineVersion");
                 contract.check(connection);
             } else {
-                var tables = SchemaSnapshot.rows(connection, "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE()");
+                var tables = SchemaSnapshot.rows(connection, "SELECT table_name FROM information_schema.tables WHERE table_schema=current_schema()");
                 boolean history = tables.stream().anyMatch(row -> SchemaSnapshot.HISTORY.equals(row.getFirst()));
                 if (!history && !tables.isEmpty()) throw new IllegalArgumentException("Nonempty database requires verified explicit baseline");
             }

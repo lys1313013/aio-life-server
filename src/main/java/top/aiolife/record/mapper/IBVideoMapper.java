@@ -27,11 +27,11 @@ public interface IBVideoMapper extends BaseMapper<BVideoEntity> {
     @Select("""
             SELECT * FROM b_video
             WHERE user_id = #{userId} AND is_deleted = 0 AND bvid = #{bvid}
-              AND CAST(bvid AS BINARY(20)) = CAST(#{bvid} AS BINARY(20))
+              AND CAST(bvid AS bytea) = CAST(CAST(#{bvid} AS text) AS bytea)
             ORDER BY CASE status
                 WHEN 'not_started' THEN 1 WHEN 'in_progress' THEN 2
                 WHEN 'on_hold' THEN 3 WHEN 'completed' THEN 4 ELSE 0 END,
-                update_time DESC, id DESC
+                update_time DESC NULLS LAST, id DESC
             LIMIT 1
             """)
     BVideoEntity findOwnedByBvid(@Param("userId") long userId, @Param("bvid") String bvid);
@@ -47,7 +47,13 @@ public interface IBVideoMapper extends BaseMapper<BVideoEntity> {
     /**
      * 按业务状态顺序分页查询
      */
-    IPage<BVideoEntity> selectPageWithStatusOrder(
+    default IPage<BVideoEntity> selectPageWithStatusOrder(
+            Page<BVideoEntity> page, Wrapper<BVideoEntity> queryWrapper, List<String> statusCodes) {
+        page.setCountId(IBVideoMapper.class.getName() + ".countWithStatusFilter");
+        return selectPageWithStatusOrderRows(page, queryWrapper, statusCodes);
+    }
+
+    IPage<BVideoEntity> selectPageWithStatusOrderRows(
             Page<BVideoEntity> page,
             @Param(Constants.WRAPPER) Wrapper<BVideoEntity> queryWrapper,
             @Param("statusCodes") List<String> statusCodes);

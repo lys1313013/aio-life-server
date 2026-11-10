@@ -48,7 +48,7 @@ class BoundedPaginationInnerInterceptorTest {
         Page<Object> page = new Page<>(2, 200);
         BoundSql sql = statement.getBoundSql(page);
         interceptor.beforeQuery(null, statement, page, RowBounds.DEFAULT, null, sql);
-        assertTrue(sql.getSql().contains("LIMIT ?,?"), sql.getSql());
+        assertTrue(sql.getSql().contains("LIMIT ? OFFSET ?"), sql.getSql());
         assertEquals(200L, sql.getAdditionalParameter(sql.getParameterMappings().get(0).getProperty()));
         assertEquals(200L, sql.getAdditionalParameter(sql.getParameterMappings().get(1).getProperty()));
         assertEquals(200, page.getSize());

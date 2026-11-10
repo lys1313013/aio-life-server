@@ -18,12 +18,11 @@ public record SchemaSnapshot(Map<String, List<List<String>>> sections) {
 
     public record Version(int major, int minor, int patch) implements Comparable<Version> {
         public static Version parse(String value) {
-            var match = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)").matcher(value);
-            if (!match.find() || value.toLowerCase(Locale.ROOT).contains("mariadb"))
-                throw new IllegalArgumentException("Expected MySQL server, got " + value);
-            var version = new Version(Integer.parseInt(match.group(1)), Integer.parseInt(match.group(2)), Integer.parseInt(match.group(3)));
-            boolean mysql8 = version.major == 8 && version.compareTo(new Version(8, 0, 16)) >= 0;
-            if (!mysql8) throw new IllegalArgumentException("Requires MySQL 8.x (8.0.16+)");
+            var match = Pattern.compile("^(\\d+)\\.(\\d+)(?:\\.(\\d+))?").matcher(value);
+            if (!match.find()) throw new IllegalArgumentException("Expected PostgreSQL version, got " + value);
+            var version = new Version(Integer.parseInt(match.group(1)), Integer.parseInt(match.group(2)),
+                    match.group(3) == null ? 0 : Integer.parseInt(match.group(3)));
+            if (version.major < 18) throw new IllegalArgumentException("Requires PostgreSQL 18+");
             return version;
         }
         public int compareTo(Version other) {
@@ -33,15 +32,59 @@ public record SchemaSnapshot(Map<String, List<List<String>>> sections) {
         }
     }
     public static Version version(Connection connection) throws SQLException {
-        return Version.parse(rows(connection, "SELECT VERSION()").getFirst().getFirst());
+        if (!"PostgreSQL".equals(connection.getMetaData().getDatabaseProductName()))
+            throw new IllegalArgumentException("Only PostgreSQL is supported");
+        return Version.parse(rows(connection, "SHOW server_version").getFirst().getFirst());
     }
     public static Map<String, String> queries() {
         Map<String, String> queries = new LinkedHashMap<>();
-        queries.put("tables", "SELECT table_name,engine,table_collation,table_comment FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE' ORDER BY table_name");
-        queries.put("columns", "SELECT table_name,column_name,column_type,is_nullable,column_default,extra,generation_expression,character_set_name,collation_name,column_comment FROM information_schema.columns WHERE table_schema=DATABASE() ORDER BY table_name,column_name");
-        queries.put("indexes", "SELECT table_name,index_name,non_unique,seq_in_index,column_name,sub_part,index_type,collation,is_visible,expression FROM information_schema.statistics WHERE table_schema=DATABASE() ORDER BY table_name,index_name,seq_in_index");
-        queries.put("checks", "SELECT t.table_name,t.constraint_name,c.check_clause,t.enforced FROM information_schema.table_constraints t JOIN information_schema.check_constraints c ON t.constraint_schema=c.constraint_schema AND t.constraint_name=c.constraint_name WHERE t.constraint_schema=DATABASE() AND t.constraint_type='CHECK' ORDER BY t.table_name,t.constraint_name");
-        queries.put("foreign_keys", "SELECT k.table_name,k.constraint_name,k.column_name,k.ordinal_position,k.referenced_table_name,k.referenced_column_name,r.update_rule,r.delete_rule FROM information_schema.key_column_usage k JOIN information_schema.referential_constraints r ON k.constraint_schema=r.constraint_schema AND k.constraint_name=r.constraint_name WHERE k.constraint_schema=DATABASE() AND k.referenced_table_name IS NOT NULL ORDER BY k.table_name,k.constraint_name,k.ordinal_position");
+        queries.put("tables", """
+            SELECT c.relname, c.relpersistence::text, current_setting('server_encoding'),
+                   COALESCE(obj_description(c.oid), '')
+            FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+            WHERE n.nspname=current_schema() AND c.relkind='r' ORDER BY c.relname
+            """);
+        queries.put("columns", """
+            SELECT c.relname, a.attname, format_type(a.atttypid,a.atttypmod),
+                   CASE WHEN a.attnotnull THEN 'NO' ELSE 'YES' END,
+                   CASE WHEN a.attgenerated='' THEN pg_get_expr(d.adbin,d.adrelid) END,
+                   a.attidentity::text,
+                   CASE WHEN a.attgenerated<>'' THEN pg_get_expr(d.adbin,d.adrelid) END,
+                   current_setting('server_encoding'), co.collname, COALESCE(col_description(c.oid,a.attnum),'')
+            FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+            JOIN pg_attribute a ON a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped
+            LEFT JOIN pg_attrdef d ON d.adrelid=c.oid AND d.adnum=a.attnum
+            LEFT JOIN pg_collation co ON co.oid=a.attcollation
+            WHERE n.nspname=current_schema() AND c.relkind='r' ORDER BY c.relname,a.attname
+            """);
+        queries.put("indexes", """
+            SELECT t.relname, i.relname, CASE WHEN x.indisunique THEN '0' ELSE '1' END,
+                   k.ordinality::text, a.attname, NULL::text, am.amname, k.options::text,
+                   x.indisvalid::text, pg_get_indexdef(i.oid)
+            FROM pg_index x JOIN pg_class t ON t.oid=x.indrelid
+            JOIN pg_namespace n ON n.oid=t.relnamespace JOIN pg_class i ON i.oid=x.indexrelid
+            JOIN pg_am am ON am.oid=i.relam
+            CROSS JOIN LATERAL unnest(x.indkey::smallint[],x.indoption::smallint[])
+                WITH ORDINALITY AS k(attnum,options,ordinality)
+            LEFT JOIN pg_attribute a ON a.attrelid=t.oid AND a.attnum=k.attnum
+            WHERE n.nspname=current_schema() ORDER BY t.relname,i.relname,k.ordinality
+            """);
+        queries.put("checks", """
+            SELECT t.relname,c.conname,pg_get_constraintdef(c.oid),c.convalidated::text
+            FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid
+            JOIN pg_namespace n ON n.oid=t.relnamespace
+            WHERE n.nspname=current_schema() AND c.contype='c' ORDER BY t.relname,c.conname
+            """);
+        queries.put("foreign_keys", """
+            SELECT t.relname,c.conname,a.attname,k.ordinality::text,r.relname,b.attname,
+                   c.confupdtype::text,c.confdeltype::text
+            FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid
+            JOIN pg_namespace n ON n.oid=t.relnamespace JOIN pg_class r ON r.oid=c.confrelid
+            CROSS JOIN LATERAL unnest(c.conkey,c.confkey) WITH ORDINALITY AS k(local_col,remote_col,ordinality)
+            JOIN pg_attribute a ON a.attrelid=t.oid AND a.attnum=k.local_col
+            JOIN pg_attribute b ON b.attrelid=r.oid AND b.attnum=k.remote_col
+            WHERE n.nspname=current_schema() AND c.contype='f' ORDER BY t.relname,c.conname,k.ordinality
+            """);
         return queries;
     }
     public static SchemaSnapshot read(Connection connection) throws SQLException {
@@ -89,15 +132,8 @@ public record SchemaSnapshot(Map<String, List<List<String>>> sections) {
     public static List<String> normalize(String section, List<String> source) {
         List<String> row = new ArrayList<>(source);
         if (section.equals("columns")) {
-            String type = row.get(2).toLowerCase(Locale.ROOT);
-            if (!type.contains("zerofill")) type = type.replaceFirst("^(tinyint|smallint|mediumint|int|bigint)\\(\\d+\\)", "$1");
-            row.set(2, type);
-            if (type.matches("^(timestamp|datetime)\\b.*") && row.get(4) != null)
-                row.set(4, row.get(4).replaceFirst("(?i)^current_timestamp(?:\\(\\))?$", "CURRENT_TIMESTAMP"));
-            row.set(5, row.get(5).toLowerCase(Locale.ROOT).replace("default_generated", "").replace("current_timestamp()", "current_timestamp").replaceAll("\\s+", " ").trim());
+            row.set(2, row.get(2).toLowerCase(Locale.ROOT));
             row.set(6, expression(row.get(6)));
-        } else if (section.equals("foreign_keys")) {
-            for (int i = 6; i < 8; i++) if ("NO ACTION".equals(row.get(i))) row.set(i, "RESTRICT");
         } else if (section.equals("indexes") && row.get(9) != null) row.set(9, expression(row.get(9)));
         else if (section.equals("checks")) row.set(2, expression(row.get(2)));
         return row;

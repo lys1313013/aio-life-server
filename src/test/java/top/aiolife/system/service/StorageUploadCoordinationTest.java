@@ -65,7 +65,7 @@ class StorageUploadCoordinationTest {
     @BeforeEach void setup() throws Exception {
         written = new CountDownLatch(1); finish = new CountDownLatch(1); key = new AtomicReference<>();
         executor = Executors.newSingleThreadExecutor();
-        var ds = new JdbcDataSource(); ds.setURL("jdbc:h2:mem:upload_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        var ds = new JdbcDataSource(); ds.setURL("jdbc:h2:mem:upload_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds);
         jdbc.execute("CREATE TABLE file(id VARCHAR(32) PRIMARY KEY, storage_object_id BIGINT, file_name VARCHAR(1024), file_size BIGINT, file_type VARCHAR(100), hash_value VARCHAR(255), biz_type VARCHAR(50), biz_id BIGINT, is_public INT, create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP, is_deleted INT DEFAULT 0)");
         jdbc.execute("CREATE TABLE cbti_personality(id BIGINT, image_object VARCHAR(1024), is_deleted INT)");

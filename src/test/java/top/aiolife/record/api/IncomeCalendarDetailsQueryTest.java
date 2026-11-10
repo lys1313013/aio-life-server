@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 class IncomeCalendarDetailsQueryTest {
     @Test void 明细范围排除结束边界且分页隔离归属和未填日期() throws Exception {
         var source = new JdbcDataSource();
-        source.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        source.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         var jdbc = new JdbcTemplate(source);
         var columns = new ArrayList<String>();
         for (var field : IncomeEntity.class.getDeclaredFields()) {

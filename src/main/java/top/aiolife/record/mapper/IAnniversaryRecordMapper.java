@@ -16,7 +16,7 @@ import top.aiolife.record.pojo.entity.AnniversaryRecordEntity;
 @Mapper
 public interface IAnniversaryRecordMapper extends BaseMapper<AnniversaryRecordEntity> {
     /** 锁定用户行，将同一用户的固定、排序和删除串行化；即使尚无固定记录也有效。 */
-    @Select("SELECT id FROM `user` WHERE id = #{userId} AND is_deleted = 0 FOR UPDATE")
+    @Select("SELECT id FROM \"user\" WHERE id = #{userId} AND is_deleted = 0 FOR UPDATE")
     @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
     Long lockPinOwner(@Param("userId") long userId);
 }

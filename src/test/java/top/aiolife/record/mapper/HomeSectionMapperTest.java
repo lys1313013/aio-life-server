@@ -29,7 +29,7 @@ class HomeSectionMapperTest {
     @BeforeEach
     void setUp() {
         var source = new JdbcDataSource();
-        source.setURL("jdbc:h2:mem:home_sections_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        source.setURL("jdbc:h2:mem:home_sections_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(source);
         jdbc.execute("CREATE TABLE memo (id BIGINT, user_id BIGINT, title VARCHAR(255), content TEXT, hidden_content BOOLEAN, update_time TIMESTAMP, is_deleted INT DEFAULT 0)");
         jdbc.execute("CREATE TABLE b_video (id BIGINT, user_id BIGINT, title VARCHAR(255), url VARCHAR(512), bvid VARCHAR(64), current_episode INT, episodes INT, watched_duration INT, duration INT, last_watched TIMESTAMP, cover_file_id VARCHAR(32), cover_state VARCHAR(16), update_time TIMESTAMP, create_time TIMESTAMP, status VARCHAR(32), is_deleted INT DEFAULT 0)");

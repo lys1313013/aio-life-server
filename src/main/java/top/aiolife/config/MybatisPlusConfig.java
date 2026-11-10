@@ -30,10 +30,10 @@ public class MybatisPlusConfig {
   }
 
   /**
-   * 显式声明 MySQL 事务管理器并标记为 @Primary。
+   * 显式声明 PostgreSQL 事务管理器并标记为 @Primary。
    * 当 Neo4j 也在 classpath 时，spring-data-neo4j 会注册一个同名 transactionManager，
    * 借助 @ConditionalOnMissingBean 会让 Spring Boot 的 DataSourceTransactionManagerAutoConfiguration 跳过，
-   * 导致所有 @Transactional 全部路由到 Neo4jTransactionManager，Neo4j 不可用时 MySQL 写入也会报错。
+   * 导致所有 @Transactional 全部路由到 Neo4jTransactionManager，Neo4j 不可用时 PostgreSQL 写入也会报错。
    * 这里显式 @Primary 强制走 JDBC 事务管理器。
    */
   @Bean(name = "dataSourceTransactionManager")

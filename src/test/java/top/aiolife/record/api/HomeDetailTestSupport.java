@@ -27,16 +27,10 @@ final class HomeDetailTestSupport implements AutoCloseable {
 
     HomeDetailTestSupport() throws Exception {
         var source = new JdbcDataSource();
-        source.setURL("jdbc:h2:mem:home_details_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        source.setURL("jdbc:h2:mem:home_details_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(source);
-        String schema = Files.readString(Path.of("sql/migrations/B20261028_00__baseline.sql"));
         for (String table : List.of("memo", "b_video")) {
-            int start = schema.indexOf("CREATE TABLE IF NOT EXISTS `" + table + "`");
-            String sql = schema.substring(start, schema.indexOf(';', start))
-                    .replaceAll(" COLLATE [a-zA-Z0-9_]+", "")
-                    .replaceAll(" CHARACTER SET [a-zA-Z0-9_]+", "")
-                    .replace("`title`(100)", "`title`");
-            jdbc.execute(sql);
+            jdbc.execute(top.aiolife.support.CurrentSchema.h2Table(table));
         }
         var configuration = new MybatisConfiguration();
         configuration.setEnvironment(new Environment("test", new JdbcTransactionFactory(), source));

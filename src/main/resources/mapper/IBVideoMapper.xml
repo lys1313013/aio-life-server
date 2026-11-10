@@ -2,15 +2,18 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="top.aiolife.record.mapper.IBVideoMapper">
 
-    <select id="selectPageWithStatusOrder" resultType="top.aiolife.record.pojo.entity.BVideoEntity">
+    <select id="countWithStatusFilter" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM b_video ${ew.customSqlSegment}
+    </select>
+    <select id="selectPageWithStatusOrderRows" resultType="top.aiolife.record.pojo.entity.BVideoEntity">
         SELECT *
         FROM b_video
         ${ew.customSqlSegment}
-        ORDER BY FIELD(status,
-        <foreach collection="statusCodes" item="statusCode" separator=",">
-            #{statusCode}
+        ORDER BY CASE status
+        <foreach collection="statusCodes" item="statusCode" index="statusIndex">
+            WHEN #{statusCode} THEN #{statusIndex} + 1
         </foreach>
-        ), update_time DESC
+        ELSE 0 END, update_time DESC NULLS LAST
     </select>
 
     <select id="getStatusCount" resultType="top.aiolife.record.pojo.vo.StatusCount">

@@ -179,7 +179,7 @@ public class ExcelExportWriter {
                     "导出说明",
                     List.of("项目", "说明"),
                     List.of("范围", "标准个人数据；不含认证凭据、密码库秘密、完整卡号、附件原件和已删除数据"));
-            append("导出说明", List.of("项目", "说明"), List.of("一致性", "MySQL同一读取事务；其他数据源按各自读取区间，非跨源时点备份"));
+            append("导出说明", List.of("项目", "说明"), List.of("一致性", "PostgreSQL同一读取事务；其他数据源按各自读取区间，非跨源时点备份"));
             append(
                     "导出说明",
                     List.of("项目", "说明"),

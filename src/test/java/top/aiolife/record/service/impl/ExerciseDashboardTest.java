@@ -34,7 +34,7 @@ class ExerciseDashboardTest {
     @BeforeEach
     void setUp() {
         JdbcDataSource source = new JdbcDataSource();
-        source.setURL("jdbc:h2:mem:exercise_" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1");
+        source.setURL("jdbc:h2:mem:exercise_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(source);
         jdbc.execute("CREATE TABLE exercise_record (user_id BIGINT, exercise_type_id BIGINT, exercise_date DATE, exercise_count INT, is_deleted INT DEFAULT 0)");
         Configuration config = new Configuration(new Environment("test", new JdbcTransactionFactory(), source));
