@@ -4,6 +4,8 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +66,11 @@ public class IncomeController {
         IncomeQuery condition = query.getCondition();
         lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getIncTypeId()), IncomeEntity::getIncTypeId,
                 condition.getIncTypeId());
-        lambdaQueryWrapper.likeRight(SysUtil.isNotEmpty(condition.getYear()), IncomeEntity::getIncDate, condition.getYear());
+        if (SysUtil.isNotEmpty(condition.getYear())) {
+            LocalDate start = LocalDate.parse(condition.getYear() + "-01-01");
+            lambdaQueryWrapper.ge(IncomeEntity::getIncDate, start)
+                    .lt(IncomeEntity::getIncDate, start.plusYears(1));
+        }
         lambdaQueryWrapper.ge(SysUtil.isNotEmpty(condition.getStartTime()), IncomeEntity::getIncDate, condition.getStartTime());
         lambdaQueryWrapper.le(SysUtil.isNotEmpty(condition.getEndTime()), IncomeEntity::getIncDate, condition.getEndTime());
         lambdaQueryWrapper.lt(SysUtil.isNotEmpty(condition.getEndTimeBefore()), IncomeEntity::getIncDate, condition.getEndTimeBefore());
@@ -91,6 +97,8 @@ public class IncomeController {
         Long userId = StpUtil.getLoginIdAsLong();
         entity.setId(incomeId);
         entity.setUserId(null);
+        entity.setUpdateUser(userId);
+        entity.setUpdateTime(LocalDateTime.now());
         LambdaQueryWrapper<IncomeEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(IncomeEntity::getId, incomeId);
         wrapper.eq(IncomeEntity::getUserId, userId);

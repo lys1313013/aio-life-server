@@ -41,6 +41,8 @@ public class QueryAccessService {
         if (!equal(properties.getServiceKey(), serviceKey) || !properties.getAllowedApps().contains("aio-life-query")) throw denied();
         var policy = policy(dataset);
         if (!accounts.isActive(userId)) throw denied();
+        // 两个查询页面与 API/MCP 共享只读查询能力，入口锁不能通过其他传输绕过。
+        locks.checkMenus(userId, "/query/workbench", "/query/models");
         locks.checkMenus(userId, policy.menus());
         long expiresAt;
         if (apiKey) {
@@ -114,6 +116,7 @@ public class QueryAccessService {
 
     private void checkUser(long userId) {
         if (!accounts.isActive(userId)) throw denied();
+        locks.checkMenus(userId, "/query/workbench", "/query/models");
         locks.checkMenus(userId, "/mcp/tools", "/time/time-tracker", "/time/dashboard");
     }
 

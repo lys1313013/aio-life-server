@@ -16,6 +16,7 @@
 - [V20261110_02_009__regions.sql](migrations/V20261110_02_009__regions.sql)：行政区划。
 - [V20261110_02_010__payment_methods.sql](migrations/V20261110_02_010__payment_methods.sql)：公共支付方式。
 - [V20261110_02_011__wardrobe_categories.sql](migrations/V20261110_02_011__wardrobe_categories.sql)：衣柜分类。
+- [V20261111_01__query_workspace_menus.sql](migrations/V20261111_01__query_workspace_menus.sql)：在 AI 接入分组补充 Web 查询工作台与数据模型菜单，移动端不启用。
 - 后续结构、菜单和数据变更新增更高版本 `V`。日常不改写已执行的 PostgreSQL 文件，已有库升级所需的增量继续保留；本次种子分类拆分使用下述显式登记转换。
 
 新库先用独立 Flyway 入口迁移，再启动应用；应用启动不自动建表或导入种子。公共种子已按用途从原 `V20261110_02` 拆为 `.02.001` 至 `.02.011`；结构迁移 `.01` 保持原文。已执行旧种子的库先按[一次性拆分登记流程](../docs/数据库初始化与验证.md#已执行旧公共种子的库一次性拆分登记)转换历史，再使用日常迁移入口。

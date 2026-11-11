@@ -148,17 +148,35 @@ LLM 会话、消息和模型密钥业务接口、数据表及实体 Mapper 已�
 
 ### MCP Tool 开发
 
+工具方法使用零参数或单个 DTO 参数；DTO 字段通过 `@Description` 描述，并声明实际需要的 Bean Validation 约束。调用器将整个 `arguments` 对象转换为 DTO，不使用单个 `String` 等标量参数承接字段。
+
 ```java
+import dev.langchain4j.agent.tool.Tool;
+import dev.langchain4j.model.output.structured.Description;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
+import lombok.Setter;
+import top.aiolife.mcp.annotation.McpToolProvider;
+
 @McpToolProvider  // 标记为 MCP 工具提供者
-@RequiredArgsConstructor
 public class MyMcpTools {
 
-    @Tool("工具描述，说明功能")
-    public MyVO myTool(@Param("参数描述") String param) {
-        // 实现逻辑
+    @Getter
+    @Setter
+    public static class MyToolReq {
+        @Description("关键词，不可为空白")
+        @NotBlank
+        private String keyword;
+    }
+
+    @Tool("返回已校验的关键词，演示 DTO 入参")
+    public String myTool(MyToolReq req) {
+        return req.getKeyword();
     }
 }
 ```
+
+示例调用参数为 `{"keyword":"示例"}`。实际业务工具复用 Service，并登记相应的二级锁策略；参考 [GoalMcpTools](src/main/java/top/aiolife/record/mcp/GoalMcpTools.java) 与[接口范围](../docs/需求/MCP接口需求方案.md)。
 
 ### 对象映射
 

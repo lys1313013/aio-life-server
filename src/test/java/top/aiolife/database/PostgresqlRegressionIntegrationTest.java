@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -48,10 +49,14 @@ import top.aiolife.core.query.QueryOrder;
 import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.record.api.DeviceController;
+import top.aiolife.record.api.ExpController;
+import top.aiolife.record.api.IncomeController;
 import top.aiolife.record.api.MemoController;
 import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.mapper.IDeviceMapper;
+import top.aiolife.record.mapper.IExpenseMapper;
 import top.aiolife.record.mapper.IFileMapper;
+import top.aiolife.record.mapper.IIncomeMapper;
 import top.aiolife.record.mapper.IMemoMapper;
 import top.aiolife.record.mapper.ITaskMapper;
 import top.aiolife.record.mapper.ITimeRecordMapper;
@@ -61,12 +66,18 @@ import top.aiolife.record.mapper.UserBindMapper;
 import top.aiolife.record.pojo.entity.TaskEntity;
 import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.pojo.query.DeviceQuery;
+import top.aiolife.record.pojo.query.ExpenseQuery;
+import top.aiolife.record.pojo.query.IncomeQuery;
+import top.aiolife.record.pojo.req.ExpenseUpdateReq;
+import top.aiolife.record.pojo.req.IncomeUpdateReq;
 import top.aiolife.record.pojo.req.MemoUpdateReq;
 import top.aiolife.record.service.DeviceExpenseService;
 import top.aiolife.record.service.DoubanCoverUrlPolicy;
+import top.aiolife.record.service.IExpenseService;
 import top.aiolife.record.service.IMailService;
 import top.aiolife.record.service.IMemoService;
 import top.aiolife.record.service.TimeTrackerCategoryCache;
+import top.aiolife.record.service.UserDictDataService;
 import top.aiolife.record.service.VideoCoverDownloader;
 import top.aiolife.record.service.VideoCoverService;
 import top.aiolife.record.service.VideoCoverStorage;
@@ -115,7 +126,8 @@ class PostgresqlRegressionIntegrationTest {
         configuration.getTypeHandlerRegistry().register(NumericBooleanTypeHandler.class);
         for (var mapper : List.of(BankCardFileMapper.class, BankCardMapper.class, BankCardDictionaryMapper.class,
                 BankCardTagMapper.class, BankCardTagRelMapper.class, BankCardCoverTemplateMapper.class,
-                UserBindMapper.class, UserMapper.class, IDeviceMapper.class, IMemoMapper.class, ITaskMapper.class,
+                UserBindMapper.class, UserMapper.class, IDeviceMapper.class, IIncomeMapper.class, IExpenseMapper.class,
+                IMemoMapper.class, ITaskMapper.class,
                 IBVideoMapper.class, IFileMapper.class, ImageImportTaskMapper.class, ITimeTrackerCategoryMapper.class)) configuration.addMapper(mapper);
         var factory = new MybatisSqlSessionFactoryBean();
         factory.setDataSource(source); factory.setConfiguration(configuration);
@@ -136,9 +148,106 @@ class PostgresqlRegressionIntegrationTest {
     private LocalDateTime updated(String table, long id) {
         return jdbc.queryForObject("SELECT update_time FROM " + table + " WHERE id=?", LocalDateTime.class, id);
     }
+    private IncomeController incomeController() {
+        return new IncomeController(mapper(IIncomeMapper.class), mock(UserDictDataService.class));
+    }
+    private ExpController expenseController() {
+        return new ExpController(mock(UserDictDataService.class), mock(IExpenseService.class),
+                mock(DeviceExpenseService.class), mapper(IExpenseMapper.class));
+    }
     private void file(String id, String type, long owner, long business) {
         jdbc.update("INSERT INTO file(id,file_name,biz_type,biz_id,create_user,create_time,update_time) VALUES (?,?,?,?,?,?,?)",
                 id, "fixture.png", type, business, owner, OLD_TIME, OLD_TIME);
+    }
+
+    @Test void 收入按年份筛选包含年初年末并保留其他筛选条件() {
+        jdbc.update("""
+                INSERT INTO income(id,user_id,amt,inc_date,inc_type_id,is_deleted) VALUES
+                (1,42,100,'2025-12-31',1,0),(2,42,100,'2026-01-01',1,0),
+                (3,42,100,'2026-12-31',1,0),(4,42,100,'2027-01-01',1,0),
+                (5,43,100,'2026-06-01',1,0),(6,42,100,'2026-06-01',1,1),
+                (7,42,100,'2026-06-01',2,0)
+                """);
+        var controller = incomeController();
+        var request = new CommonQuery<IncomeQuery>();
+        var condition = new IncomeQuery(); condition.setYear("2026"); condition.setIncTypeId("1");
+        request.setCondition(condition);
+        try (var auth = mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
+            var response = controller.query(request);
+            assertEquals(0, response.getCode()); assertEquals(2L, response.getData().getTotal());
+            assertEquals(List.of("3", "2"), response.getData().getItems().stream().map(row -> row.getId().toString()).toList());
+            condition.setStartTime("2026-07-01");
+            assertEquals(List.of("3"), controller.query(request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
+            condition.setYear(null); condition.setStartTime(null);
+            assertEquals(List.of("4", "3", "2", "1"), controller.query(request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
+        }
+    }
+
+    @Test void 支出按年份筛选包含年末最后一秒且排除次年零点() {
+        jdbc.update("""
+                INSERT INTO expense(id,user_id,amt,exp_time,exp_type_id,is_deleted) VALUES
+                (1,42,100,'2025-12-31 23:59:59',1,0),(2,42,100,'2026-01-01 00:00:00',1,0),
+                (3,42,100,'2026-12-31 23:59:59',1,0),(4,42,100,'2027-01-01 00:00:00',1,0),
+                (5,43,100,'2026-06-01 00:00:00',1,0),(6,42,100,'2026-06-01 00:00:00',1,1),
+                (7,42,100,'2026-06-01 00:00:00',2,0)
+                """);
+        var controller = expenseController();
+        var request = new CommonQuery<ExpenseQuery>();
+        var condition = new ExpenseQuery(); condition.setYear("2026"); condition.setExpTypeId("1");
+        request.setCondition(condition);
+        try (var auth = mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
+            var response = controller.query(request);
+            assertEquals(0, response.getCode()); assertEquals(2L, response.getData().getTotal());
+            assertEquals(List.of("3", "2"), response.getData().getItems().stream().map(row -> row.getId().toString()).toList());
+            condition.setStartTime(LocalDateTime.of(2026, 7, 1, 0, 0));
+            assertEquals(List.of("3"), controller.query(request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
+            condition.setYear(null); condition.setStartTime(null);
+            assertEquals(List.of("4", "3", "2", "1"), controller.query(request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
+        }
+    }
+
+    @Test void 修改收入维护审计字段且不修改创建信息和其他用户记录() {
+        jdbc.update("""
+                INSERT INTO income(id,user_id,amt,inc_date,inc_type_id,create_user,create_time,update_user,update_time)
+                VALUES (1,42,100,'2026-01-01',1,99,?,7,?),(2,43,100,'2026-01-01',1,99,?,7,?)
+                """, OLD_TIME, OLD_TIME, OLD_TIME, OLD_TIME);
+        var controller = incomeController();
+        var change = new IncomeUpdateReq(); change.setAmt(new BigDecimal("200"));
+        try (var auth = mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
+            assertTrue(controller.update(1L, change).getData());
+            assertFalse(controller.update(2L, change).getData());
+        }
+        var saved = mapper(IIncomeMapper.class).selectById(1);
+        assertEquals(new BigDecimal("200.00"), saved.getAmt());
+        assertTrue(saved.getUpdateTime().isAfter(OLD_TIME)); assertEquals(42L, saved.getUpdateUser());
+        assertEquals(OLD_TIME, saved.getCreateTime()); assertEquals(99L, saved.getCreateUser());
+        var foreign = mapper(IIncomeMapper.class).selectById(2);
+        assertEquals(new BigDecimal("100.00"), foreign.getAmt());
+        assertEquals(OLD_TIME, foreign.getUpdateTime()); assertEquals(7L, foreign.getUpdateUser());
+    }
+
+    @Test void 修改支出维护审计字段且不修改创建信息和其他用户记录() {
+        jdbc.update("""
+                INSERT INTO expense(id,user_id,amt,exp_time,exp_type_id,create_user,create_time,update_user,update_time)
+                VALUES (1,42,100,'2026-01-01 00:00:00',1,99,?,7,?),(2,43,100,'2026-01-01 00:00:00',1,99,?,7,?)
+                """, OLD_TIME, OLD_TIME, OLD_TIME, OLD_TIME);
+        var controller = expenseController();
+        var change = new ExpenseUpdateReq(); change.setId(1L); change.setAmt(new BigDecimal("200"));
+        try (var auth = mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
+            assertEquals(0, controller.update(change).getCode());
+            change.setId(2L); controller.update(change);
+        }
+        var saved = mapper(IExpenseMapper.class).selectById(1);
+        assertEquals(new BigDecimal("200.00"), saved.getAmt()); assertEquals(saved.getAmt(), saved.getTransactionAmt());
+        assertTrue(saved.getUpdateTime().isAfter(OLD_TIME)); assertEquals(42L, saved.getUpdateUser());
+        assertEquals(OLD_TIME, saved.getCreateTime()); assertEquals(99L, saved.getCreateUser());
+        var foreign = mapper(IExpenseMapper.class).selectById(2);
+        assertEquals(new BigDecimal("100.00"), foreign.getAmt());
+        assertEquals(OLD_TIME, foreign.getUpdateTime()); assertEquals(7L, foreign.getUpdateUser());
     }
 
     @Test void 银行卡新增更换卡面清空及删除都能执行真实SQL() {

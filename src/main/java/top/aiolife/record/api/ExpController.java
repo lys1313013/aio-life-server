@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -77,8 +79,11 @@ public class ExpController {
                 condition.getExpTypeId());
         lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getPayTypeId()), ExpenseEntity::getPayTypeId,
                 condition.getPayTypeId());
-        lambdaQueryWrapper.likeRight(SysUtil.isNotEmpty(condition.getYear()), ExpenseEntity::getExpTime,
-                condition.getYear());
+        if (SysUtil.isNotEmpty(condition.getYear())) {
+            LocalDateTime start = LocalDate.parse(condition.getYear() + "-01-01").atStartOfDay();
+            lambdaQueryWrapper.ge(ExpenseEntity::getExpTime, start)
+                    .lt(ExpenseEntity::getExpTime, start.plusYears(1));
+        }
         lambdaQueryWrapper.ge(condition.getStartTime() != null, ExpenseEntity::getExpTime, condition.getStartTime());
         lambdaQueryWrapper.le(condition.getEndTime() != null, ExpenseEntity::getExpTime, condition.getEndTime());
         lambdaQueryWrapper.lt(condition.getEndTimeBefore() != null, ExpenseEntity::getExpTime, condition.getEndTimeBefore());
@@ -117,6 +122,8 @@ public class ExpController {
         ExpenseEntity entity = RecordApiConvertor.INSTANCE.fromExpenseUpdateReq(entityReq);
         Long userId = StpUtil.getLoginIdAsLong();
         entity.setUserId(userId);
+        entity.setUpdateUser(userId);
+        entity.setUpdateTime(LocalDateTime.now());
         // 更新时，交易金额为空时，默认设置为记账金额
         if (entity.getTransactionAmt() == null) {
             entity.setTransactionAmt(entity.getAmt());

@@ -13,14 +13,14 @@ public final class HomeCardCatalog {
     private static Definition section(String key, String title, String visualKey) {
         return new Definition("section." + key, "section", title, visualKey, true);
     }
-    // Keep existing provider / Web section order for users without preferences.
+    // 未保存偏好时，按目录中的分组顺序展示。
     // New cards are visible by default; explicit user preferences still take precedence.
     public static final List<Definition> ALL = List.of(
-        overview("leetcode", "每日一题", "leetcode"),
-        overview("github", "GitHub", "github"),
+        overview("read", "今日阅读", "weread"),
         overview("exercise", "今日运动", "exercise"),
         overview("shanbay", "扇贝单词", "shanbay"),
-        overview("read", "今日阅读", "weread"),
+        overview("github", "GitHub", "github"),
+        overview("leetcode", "每日一题", "leetcode"),
         section("time", "时迹", "time"),
         section("links", "快捷导航", "links"),
         section("watched", "待办", "todo"),

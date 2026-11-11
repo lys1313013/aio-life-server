@@ -48,7 +48,7 @@ class SeedSplitAdoptionIT {
                 try (var statement = connection.createStatement()) { statement.execute("CREATE DATABASE fresh"); }
                 String freshUrl = url.substring(0, url.lastIndexOf('/') + 1) + "fresh";
                 var fresh = Flyway.configure().dataSource(freshUrl, "postgres", "isolated-fixture")
-                        .locations("filesystem:" + root.resolve("sql/migrations"))
+                        .locations("filesystem:" + root.resolve("sql/migrations")).target("20261110.02.011")
                         .validateMigrationNaming(true).placeholderReplacement(false).callbacks(new MigrationGuard()).load();
                 assertEquals(12, fresh.migrate().migrationsExecuted);
                 try (var freshConnection = DriverManager.getConnection(freshUrl, "postgres", "isolated-fixture")) {
@@ -94,7 +94,7 @@ class SeedSplitAdoptionIT {
                 assertTrue(Files.readString(backup).contains("V20261110_02__public_seed_data.sql"));
                 assertEquals(before, data(connection));
                 var current = Flyway.configure().dataSource(url, "postgres", "isolated-fixture")
-                        .locations("filesystem:" + root.resolve("sql/migrations"))
+                        .locations("filesystem:" + root.resolve("sql/migrations")).target("20261110.02.011")
                         .validateMigrationNaming(true).placeholderReplacement(false).callbacks(new MigrationGuard()).load();
                 current.validate();
                 assertEquals(0, current.migrate().migrationsExecuted);

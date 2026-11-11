@@ -133,7 +133,7 @@ class GoalGraphqlIntegrationTest {
             assertThrows(IllegalArgumentException.class, () -> controller.previewProgress(invalid));
             invalid.setProgressQuery("mutation { deleteEverything }");
             assertThrows(IllegalArgumentException.class, () -> controller.previewProgress(invalid));
-            var empty = example("pushups", GoalProgressPreviewReq.class); empty.setProgressVariables("{\"type\":\"999999\"}");
+            var empty = example("pushups", GoalProgressPreviewReq.class); empty.setProgressVariables("{\"exerciseTypeName\":\"不存在的运动类型\"}");
             assertEquals(0, controller.previewProgress(empty).getData().getCurrentValue().signum());
         }
     }
