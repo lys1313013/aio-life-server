@@ -48,6 +48,7 @@ class PermissionMutationTest {
     void privateCategory_cannotBecomePublicOrAnotherUsersRecord() {
         for (long injectedOwner : List.of(0L, 22L)) {
             var service = spy(new TimeTrackerCategoryServiceImpl(mock(TimeTrackerCategoryCache.class)));
+            doNothing().when(service).lockHierarchy();
             var existing = new TimeTrackerCategoryEntity();
             existing.setId(7L); existing.setUserId(11L);
             var updates = new TimeTrackerCategoryEntity();

@@ -68,15 +68,15 @@ class FinanceCalendarServiceTest {
         assertTrue(day.buckets().getLast().future());
     }
 
-    @Test void 月年聚合保留精确金额并显式包含未填日期账目() {
+    @Test void 月年聚合保留精确金额并忽略无日期账目() {
         var month = service.calendar(7, "month", "2026", today);
         assertEquals(12, month.buckets().size());
         assertEquals(new BigDecimal("32.10"), month.amount());
         assertEquals(new BigDecimal("25.50"), month.buckets().get(9).amount());
         var year = service.calendar(7, "year", null, today);
-        assertEquals(new BigDecimal("48.60"), year.amount());
-        assertEquals(List.of("2025年", "2026年", "未填日期"), year.buckets().stream().map(FinanceCalendarVO.Bucket::label).toList());
-        assertEquals(new BigDecimal("8.80"), year.buckets().getLast().amount());
+        assertEquals(new BigDecimal("39.80"), year.amount());
+        assertEquals(List.of("2025年", "2026年"), year.buckets().stream().map(FinanceCalendarVO.Bucket::label).toList());
+        assertEquals(new BigDecimal("32.10"), year.buckets().getLast().amount());
         assertNull(year.startDate());
     }
 
@@ -118,7 +118,7 @@ class FinanceCalendarServiceTest {
         assertEquals(new BigDecimal("120.30"), week.buckets().getFirst().amount());
         assertEquals(5, week.buckets().size());
         assertEquals(new BigDecimal("191.00"), service.incomeCalendar(7, "month", "2026", today).amount());
-        assertEquals(new BigDecimal("241.50"), service.incomeCalendar(7, "year", null, today).amount());
+        assertEquals(new BigDecimal("191.00"), service.incomeCalendar(7, "year", null, today).amount());
         var json = new JsonConfig().jacksonObjectMapper(new Jackson2ObjectMapperBuilder());
         var mvc = MockMvcBuilders.standaloneSetup(new FinanceCalendarController(service))
                 .setControllerAdvice(new ExceptionHandle())
@@ -148,10 +148,10 @@ class FinanceCalendarServiceTest {
         assertEquals(new BigDecimal("120.30"), week.buckets().getFirst().income());
         assertEquals(new BigDecimal("15.60"), week.buckets().getFirst().expense());
         var year = service.overviewCalendar(7, "year", null, today);
-        assertEquals(new BigDecimal("192.90"), year.balance());
-        assertEquals(List.of("2025年", "2026年", "未填日期"), year.buckets().stream().map(row -> row.label()).toList());
+        assertEquals(new BigDecimal("151.20"), year.balance());
+        assertEquals(List.of("2025年", "2026年"), year.buckets().stream().map(row -> row.label()).toList());
         assertEquals(new BigDecimal("-7.70"), year.buckets().getFirst().balance());
-        assertEquals(new BigDecimal("41.70"), year.buckets().getLast().balance());
+        assertEquals(new BigDecimal("158.90"), year.buckets().getLast().balance());
         var json = new JsonConfig().jacksonObjectMapper(new Jackson2ObjectMapperBuilder());
         var mvc = MockMvcBuilders.standaloneSetup(new FinanceCalendarController(service))
                 .setControllerAdvice(new ExceptionHandle())

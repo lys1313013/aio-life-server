@@ -170,7 +170,7 @@ class TimeRecordControllerIntegrationTest extends BaseIntegrationTest {
         entity.setEndMinute(600);
         entity.setTitle("测试时间记录");
         entity.setCategoryId(1L);
-        entity.setDurationMinutes(60);
+        entity.setDurationMinutes(61);
         return entity;
     }
 }
