@@ -49,6 +49,8 @@ class PersistenceArchitectureTest {
         try (var paths = Files.walk(SOURCE)) {
             for (var file : paths.filter(path -> path.toString().endsWith(".java")).toList()) {
                 if (file.toString().contains("/mapper/")) continue;
+                // core/mybatis 是 Wrapper 条件拼装层，属于持久化边界，不属于 Service / Guard。
+                if (file.toString().contains("/core/mybatis/")) continue;
                 String source = Files.readString(file);
                 if (SQL.matcher(source).find() || WRAPPER_SQL.matcher(source).find()) violations.add(file.toString());
             }
