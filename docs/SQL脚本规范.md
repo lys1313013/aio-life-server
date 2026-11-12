@@ -5,7 +5,7 @@
 
 ## 1. 支持范围
 
-只支持 PostgreSQL 18+，使用真实 PostgreSQL 验证初始化、增量和业务 SQL。旧 MySQL 结构、数据及历史修正 SQL 仅在 Git 历史追溯，不保留本地副本或旧执行入口；当前只维护 PostgreSQL SQL。新表及每个字段必须有准确的中文 COMMENT，索引与约束必须说明用途。凭据、实际部署地址和个人数据不得进入 SQL 或仓库。
+只支持 PostgreSQL 18+，使用真实 PostgreSQL 验证初始化、增量和业务 SQL。旧库结构、数据及历史修正 SQL 仅在 Git 历史追溯，不保留本地副本或旧执行入口；当前只维护 PostgreSQL SQL。新表及每个字段必须有准确的中文 COMMENT，索引与约束必须说明用途。凭据、实际部署地址和个人数据不得进入 SQL 或仓库。
 
 ## 2. 目录、命名与格式
 
@@ -20,7 +20,7 @@
 - 历史归档按用途整理：同类可以合并，结构、注释、菜单、字典、配置、地区、日历及独立业务预设分开；保留原版本、来源和依赖顺序。日常不改写已执行的 PostgreSQL V 迁移；2026-11-10 聚合公共种子的分类拆分是本次明确要求的整理，已有库先执行[一次性拆分登记](数据库初始化与验证.md#已执行旧公共种子的库一次性拆分登记)，不作为未来直接改写历史的先例。
 - 已在持久环境执行的迁移不得修改、删除或重排；修正新增版本。基线合并生成新的 `B` 文件，不覆盖旧基线或删除升级路径。已有库不会重新执行新基线。
 - 数据库通过独立 Flyway 入口迁移，不在应用启动时运行；Flyway 历史表属于工具基础设施，业务表实体校验只排除明确的 `flyway_schema_history`，不能扩大豁免范围。
-- SQL 执行文件统一放在 `sql/migrations/`，不另设历史兼容目录。当前独立 PostgreSQL 版本链从 V20261110_01 开始；不将 MySQL 迁移历史登记为 PostgreSQL 基线。
+- SQL 执行文件统一放在 `sql/migrations/`，不另设历史兼容目录。当前独立 PostgreSQL 版本链从 V20261110_01 开始；不将旧库迁移历史登记为 PostgreSQL 基线。
 
 - 使用 UTF-8；SQL 关键字与类型使用大写，表名、列名使用英文小写下划线必要时使用双引号引用，保留字 user 必须始终引用。
 - 每个字段、索引、约束单独占行，缩进统一为两个空格，语句以分号结束。
@@ -117,6 +117,6 @@ ALTER TABLE life_footprint ADD CONSTRAINT ck_footprint_end CHECK (end_date >= st
 
 JSON 使用 jsonb，二进制使用 bytea，数字状态保持 smallint/integer；Boolean 实体通过 NumericBooleanTypeHandler 映射 0/1。分页使用 LIMIT/OFFSET。字符串参数在变参函数 CONCAT 中显式 CAST 为 text，不能依赖未知参数类型推断。
 
-可忽略的唯一键冲突使用 Mapper 的 ON CONFLICT，不捕获重复键后继续同一事务。UPDATE 对同一列只能赋值一次，需要清空的可空字段显式 set null。DESC 排序按业务声明 NULLS LAST，不能依赖 MySQL 的默认 NULL 顺序。数据库默认不自动执行 ON UPDATE，业务审计在实体/Mapper 中维护。
+可忽略的唯一键冲突使用 Mapper 的 ON CONFLICT，不捕获重复键后继续同一事务。UPDATE 对同一列只能赋值一次，需要清空的可空字段显式 set null。DESC 排序按业务声明 NULLS LAST，不能依赖数据库的默认 NULL 顺序。数据库默认不自动执行 ON UPDATE，业务审计在实体/Mapper 中维护。
 
 Druid 的 connect-timeout/socket-timeout 使用毫秒，只在连接池配置；不要把 PostgreSQL 驱动的秒数放入同名 URL 参数，Druid 1.2.24 会按毫秒重新应用。

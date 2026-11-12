@@ -16,7 +16,7 @@
 
 事务内去重核对会短暂使用额外数据库连接；连接池需为这种读取预留容量。
 
-无需 SQL 迁移。所有实例必须共享同一个 Redis 数据库、MySQL 和业务时区。所有运行实例使用同一当前互斥实现与键约定。
+无需 SQL 迁移。所有实例必须共享同一个 Redis、PostgreSQL 和业务时区。所有运行实例使用同一当前互斥实现与键约定。
 
 成功标记解决锁释放后晚到实例再次执行的问题，不能把外部邮件/飞书发送和 Redis、数据库写入变成一个原子操作。进程在外部发送成功后、结果记录前退出，或 Redis 数据丢失、锁续期失败，仍存在重复投递窗口。发送失败不会新增自动重试任务，沿用原有触发机制。
 
@@ -26,9 +26,9 @@
 
 单元测试：配置映射、Lettuce 共存、锁竞争、异常释放、锁所有权、事务结束释放、发送成功/失败返回值、成功标记和 LeetCode 业务入口。
 
-集成测试：两个独立 Redisson 客户端模拟多实例；验证 16 路通知发送/飞书入队、晚到请求、不同渠道和日期事件、失败后再次触发、真实 watchdog 续期、重试任务互斥、MySQL 提交/回滚、旧快照、同一事务重复调用和不同事件并发事务。
+集成测试：两个独立 Redisson 客户端模拟多实例；验证 16 路通知发送/飞书入队、晚到请求、不同渠道和日期事件、失败后再次触发、真实 watchdog 续期、重试任务互斥、数据库提交/回滚、旧快照、同一事务重复调用和不同事件并发事务。
 
-通过 `AIO_LOCK_TEST_REDIS_PORT` 指定本机临时 Redis 端口；通过 `AIO_LOCK_TEST_MYSQL_URL` 指定专用临时 MySQL 数据库（测试账号 root，密码 notification_test）。MySQL 测试会重建 `notification_delivery`，只能指向临时库。未设置对应环境变量时跳过依赖它的测试。不会发送真实邮件或飞书消息。
+通过 `AIO_LOCK_TEST_REDIS_PORT` 指定本机临时 Redis 端口；通过 `AIO_LOCK_TEST_PG_URL` 指定专用临时 PostgreSQL 数据库（测试账号 postgres，密码 notification_test）。测试会重建 `notification_delivery`，只能指向临时库。未设置对应环境变量时跳过依赖它的测试。不会发送真实邮件或飞书消息。
 
 ```bash
 mvn -Dtest=DistributedLockExecutorTest,RedissonConfigTest,NotificationSenderResultTest,NotificationSendGuardTest,RedissonNotificationIntegrationTest,FeishuEnqueueLockIntegrationTest,LeetcodeServiceImplTest test

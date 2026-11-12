@@ -91,7 +91,7 @@ curl --fail-with-body --silent --show-error --get \
 
 - 新增闪念：`POST /thought`，`{"content":"记录想法"}`。
 - 新增待办明细：`POST /taskDetails`，`{"taskId":"真实主任务ID","content":"待办内容"}`。
-- 新增时迹：`POST /timeRecord`，`{"startTime":600,"endTime":659}`；日期省略为服务端今天，区间包含两个端点，时长为 60 分钟。
+- 新增时迹：`POST /timeRecord`，`{"startMinute":600,"endMinute":659}`；日期省略为服务端今天，区间包含两个端点，时长为 60 分钟。
 - 更新时迹：`PUT /timeRecord/{id}`，可仅提交 `{"title":"更新标题"}`，起止分钟省略时保留原值。
 - 查询在读记录：`GET /read-record/page?statuses=in_progress`；默认分页可省略，多状态用重复 `statuses` 键。阅读／观影不再接受 `status/activeOnly` 查询参数。
 - 新增阅读：`POST /read-record`，`{"title":"书名","type":1}`；成功 data 为新增或已有豆瓣条目的字符串 ID。

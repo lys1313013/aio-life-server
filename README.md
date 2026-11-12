@@ -42,7 +42,7 @@ mvn -version
 mvn -f tools/flyway/pom.xml compile flyway:migrate flyway:validate
 ```
 
-当前执行链仅使用 `sql/migrations/`，结构预检使用 v6 PostgreSQL 契约。旧 MySQL 结构、数据及历史修正脚本均已清理，原文件通过 Git 历史追溯；已有库的数据搬迁和完整性检查见[数据库初始化与验证](docs/数据库初始化与验证.md)。应用启动不会自动迁移数据库。
+当前执行链仅使用 `sql/migrations/`，结构预检使用 v6 PostgreSQL 契约。旧库结构、数据及历史修正脚本均已清理，原文件通过 Git 历史追溯；数据库初始化与完整性检查见[数据库初始化与验证](docs/数据库初始化与验证.md)。应用启动不会自动迁移数据库。
 
 日常结构和默认数据变更新增不可改写的 `V` 迁移；维护者在选定节点生成新的完整 `B` 基线。新库不再创建固定密码管理员，先通过注册流程建立账号，再由受控管理流程授权。
 

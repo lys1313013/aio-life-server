@@ -5,7 +5,7 @@
 ### 1.1 技术栈
 - **后端框架**: Java 21 + Spring Boot 3.3.10
 - **AI集成**: LangChain4j 1.12.2（已集成）
-- **数据库**: MySQL + MyBatis Plus
+- **数据库**: PostgreSQL + MyBatis Plus
 - **权限认证**: Sa-Token
 - **缓存**: Redis + Caffeine
 - **对象存储**: MinIO

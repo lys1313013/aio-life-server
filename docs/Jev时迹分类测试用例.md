@@ -184,4 +184,4 @@ mvn -q -Dtest=JevCategoryRecommendationServiceTest,JevCategoryClientTest,JevTime
 - `recommendNext` 查询补上 `category_id`，返回的当天记录携带分类，Controller 可正确取得上一分类。
 - 空分类日志原因：`NO_PAST_REFERENCE_DAY`、`REFERENCE_TIME_NOT_PAST`、`NO_VISIBLE_CATEGORIES`、`NO_VALID_REFERENCE_RECORD`、`OVERLAPPING_REFERENCE_RECORDS`。
 
-相关单元回归覆盖 Jev 优先、参考日唯一命中、延续上一分类、无参考日、隐藏分类、重叠、未来截止和查询投影；`WorkCalendarIntegrationTest` 已同步新 Mapper，仍需显式提供临时 MySQL/Redis 端口才会运行。
+相关单元回归覆盖 Jev 优先、参考日唯一命中、延续上一分类、无参考日、隐藏分类、重叠、未来截止和查询投影；`WorkCalendarIntegrationTest` 已同步新 Mapper，仍需显式提供临时 PostgreSQL/Redis 端口才会运行。
