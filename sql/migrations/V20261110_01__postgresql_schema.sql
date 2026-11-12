@@ -2,23 +2,22 @@
 -- 来源为冻结 MySQL 迁移在隔离库完整执行后的结构，不包含业务账号或业务数据。
 -- 数字状态保持 smallint/integer；JSON 使用 jsonb，二进制使用 bytea，时间保持本地时间语义。
 -- 索引名加表名前缀，避免 PostgreSQL schema 内重名；保留唯一键、检查、生成列和外键。
-CREATE COLLATION aio_unicode_ci (provider = icu, locale = 'und-u-ks-level1', deterministic = false);
-COMMENT ON COLLATION aio_unicode_ci IS '业务文本忽略大小写和重音的比较；精确外部标识符保留确定性排序';
+-- 文本列使用数据库默认排序规则（确定性、精确比较）；大小写不敏感只在查询层用 ILIKE 或 lower() 显式表达。
 
 CREATE TABLE "anniversary_record" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "title" varchar(200) COLLATE aio_unicode_ci NOT NULL,
+    "title" varchar(200) NOT NULL,
     "target_date" date NOT NULL,
-    "type" varchar(20) COLLATE aio_unicode_ci NOT NULL,
-    "remark" varchar(500) COLLATE aio_unicode_ci,
-    "color" varchar(50) COLLATE aio_unicode_ci,
-    "icon" varchar(20) COLLATE aio_unicode_ci,
+    "type" varchar(20) NOT NULL,
+    "remark" varchar(500),
+    "color" varchar(50),
+    "icon" varchar(20),
     "is_pinned" smallint DEFAULT '0' NOT NULL,
     "pinned_sort_order" integer DEFAULT '0' NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "create_time" timestamp(0) without time zone,
-    "update_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "create_user" bigint,
     "update_user" bigint,
     PRIMARY KEY ("id")
@@ -49,13 +48,13 @@ COMMENT ON INDEX "anniversary_record_idx_user_id" IS '业务检索索引：idx_u
 CREATE TABLE "api_key" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "api_key" varchar(128) COLLATE aio_unicode_ci NOT NULL,
-    "remark" varchar(255) COLLATE aio_unicode_ci,
+    "api_key" varchar(128) COLLATE "C" NOT NULL,
+    "remark" varchar(255),
     "expired_at" timestamp(0) without time zone,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -76,11 +75,11 @@ COMMENT ON INDEX "api_key_idx_user_id" IS '业务检索索引：idx_user_id';
 CREATE TABLE "api_key_log" (
     "id" bigint NOT NULL,
     "api_key_id" bigint NOT NULL,
-    "request_path" varchar(255) COLLATE aio_unicode_ci NOT NULL,
-    "request_method" varchar(10) COLLATE aio_unicode_ci NOT NULL,
+    "request_path" varchar(255) NOT NULL,
+    "request_method" varchar(10) NOT NULL,
     "response_status" integer,
-    "client_ip" varchar(45) COLLATE aio_unicode_ci,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "client_ip" varchar(45),
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "api_key_log" IS 'API Key 调用日志表';
@@ -95,24 +94,24 @@ CREATE INDEX "api_key_log_idx_api_key_id" ON "api_key_log" ("api_key_id");
 COMMENT ON INDEX "api_key_log_idx_api_key_id" IS '业务检索索引：idx_api_key_id';
 
 CREATE TABLE "b_video" (
-    "cover_file_id" varchar(32) COLLATE aio_unicode_ci,
-    "cover_state" varchar(16) COLLATE aio_unicode_ci DEFAULT 'NONE' NOT NULL,
+    "cover_file_id" varchar(32),
+    "cover_state" varchar(16) DEFAULT 'NONE' NOT NULL,
     "cover_version" bigint DEFAULT '0' NOT NULL,
     "id" bigint NOT NULL,
-    "title" varchar(500) COLLATE aio_unicode_ci NOT NULL,
-    "url" varchar(1000) COLLATE aio_unicode_ci NOT NULL,
-    "cover" varchar(1000) COLLATE aio_unicode_ci,
-    "duration" integer NOT NULL,
-    "watched_duration" integer DEFAULT '0' NOT NULL,
+    "title" varchar(500) NOT NULL,
+    "url" varchar(1000) COLLATE "C" NOT NULL,
+    "cover" varchar(1000),
+    "duration_seconds" integer NOT NULL,
+    "watched_duration_seconds" integer DEFAULT '0' NOT NULL,
     "episodes" integer DEFAULT '1',
     "current_episode" integer DEFAULT '1',
-    "status" varchar(32) COLLATE aio_unicode_ci DEFAULT 'in_progress' NOT NULL,
+    "status" varchar(32) DEFAULT 'in_progress' NOT NULL,
     "last_watched" timestamp(0) without time zone,
-    "notes" text COLLATE aio_unicode_ci,
-    "bvid" varchar(20) COLLATE aio_unicode_ci,
-    "aid" varchar(20) COLLATE aio_unicode_ci,
-    "description" text COLLATE aio_unicode_ci,
-    "owner_name" varchar(100) COLLATE aio_unicode_ci,
+    "notes" text,
+    "bvid" varchar(20) COLLATE "C",
+    "aid" varchar(20),
+    "description" text,
+    "owner_name" varchar(100),
     "pages_info" jsonb,
     "user_id" bigint NOT NULL,
     "create_user" bigint,
@@ -130,8 +129,8 @@ COMMENT ON COLUMN "b_video"."id" IS '主键ID';
 COMMENT ON COLUMN "b_video"."title" IS '视频标题';
 COMMENT ON COLUMN "b_video"."url" IS 'B站视频URL';
 COMMENT ON COLUMN "b_video"."cover" IS '视频封面URL';
-COMMENT ON COLUMN "b_video"."duration" IS '视频时长（秒）';
-COMMENT ON COLUMN "b_video"."watched_duration" IS '观看时长';
+COMMENT ON COLUMN "b_video"."duration_seconds" IS '视频总时长（秒）';
+COMMENT ON COLUMN "b_video"."watched_duration_seconds" IS '已观看时长（秒）';
 COMMENT ON COLUMN "b_video"."episodes" IS '总集数';
 COMMENT ON COLUMN "b_video"."current_episode" IS '当前观看集数';
 COMMENT ON COLUMN "b_video"."status" IS '学习状态：not_started/in_progress/on_hold/completed';
@@ -141,7 +140,7 @@ COMMENT ON COLUMN "b_video"."bvid" IS 'BV号';
 COMMENT ON COLUMN "b_video"."aid" IS 'AV号';
 COMMENT ON COLUMN "b_video"."description" IS '视频描述';
 COMMENT ON COLUMN "b_video"."owner_name" IS '视频UP主名称，未获取时为空';
-COMMENT ON COLUMN "b_video"."pages_info" IS '分集信息：cid-分集ID, page-页码, part-分集标题, duration-分集时长';
+COMMENT ON COLUMN "b_video"."pages_info" IS '分集信息：cid-分集ID, page-页码, part-分集标题, durationSeconds-分集时长（秒）';
 COMMENT ON COLUMN "b_video"."user_id" IS '所属用户ID，用于用户数据隔离';
 COMMENT ON COLUMN "b_video"."create_user" IS '创建人';
 COMMENT ON COLUMN "b_video"."create_time" IS '创建时间';
@@ -161,15 +160,15 @@ CREATE TABLE "bank_card" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
     "bank_id" bigint,
-    "custom_bank_name" varchar(100) COLLATE aio_unicode_ci,
-    "card_name" varchar(100) COLLATE aio_unicode_ci,
-    "alias" varchar(50) COLLATE aio_unicode_ci,
-    "card_type" varchar(20) COLLATE aio_unicode_ci NOT NULL,
-    "card_no_ciphertext" varchar(512) COLLATE aio_unicode_ci,
+    "custom_bank_name" varchar(100),
+    "card_name" varchar(100),
+    "alias" varchar(50),
+    "card_type" varchar(20) NOT NULL,
+    "card_no_ciphertext" varchar(512) COLLATE "C",
     "card_no_fingerprint" bytea,
-    "card_no_last4" char(4) COLLATE aio_unicode_ci,
-    "branch_name" varchar(200) COLLATE aio_unicode_ci,
-    "status" varchar(20) COLLATE aio_unicode_ci DEFAULT 'normal' NOT NULL,
+    "card_no_last4" char(4),
+    "branch_name" varchar(200),
+    "status" varchar(20) DEFAULT 'normal' NOT NULL,
     "opened_date" date,
     "expiry_month" date,
     "balance" numeric(18,2),
@@ -177,10 +176,10 @@ CREATE TABLE "bank_card" (
     "statement_day" smallint,
     "repayment_day" smallint,
     "cover_template_id" bigint,
-    "cover_color" char(7) COLLATE aio_unicode_ci,
-    "cover_source_url" varchar(1000) COLLATE aio_unicode_ci,
+    "cover_color" char(7),
+    "cover_source_url" varchar(1000),
     "sort_order" integer DEFAULT '0' NOT NULL,
-    "remark" varchar(1000) COLLATE aio_unicode_ci,
+    "remark" varchar(1000),
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     "create_user" bigint NOT NULL,
     "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -233,10 +232,10 @@ COMMENT ON INDEX "bank_card_idx_user_sort" IS '业务检索索引：idx_user_sor
 
 CREATE TABLE "bank_card_cover_template" (
     "id" bigint NOT NULL,
-    "name" varchar(100) COLLATE aio_unicode_ci NOT NULL,
+    "name" varchar(100) NOT NULL,
     "bank_id" bigint NOT NULL,
-    "card_type" varchar(20) COLLATE aio_unicode_ci NOT NULL,
-    "source_url" varchar(1000) COLLATE aio_unicode_ci,
+    "card_type" varchar(20) NOT NULL,
+    "source_url" varchar(1000),
     "is_enabled" smallint DEFAULT '1' NOT NULL,
     "sort_order" integer DEFAULT '0' NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
@@ -293,22 +292,22 @@ COMMENT ON INDEX "bank_card_tag_rel_idx_user_tag_card" IS '业务检索索引：
 
 CREATE TABLE "cbti_personality" (
     "id" bigint NOT NULL,
-    "code" varchar(20) COLLATE aio_unicode_ci NOT NULL,
-    "name" varchar(64) COLLATE aio_unicode_ci NOT NULL,
-    "motto" varchar(255) COLLATE aio_unicode_ci,
-    "color" varchar(20) COLLATE aio_unicode_ci,
+    "code" varchar(20) COLLATE "C" NOT NULL,
+    "name" varchar(64) NOT NULL,
+    "motto" varchar(255),
+    "color" varchar(20),
     "vector" jsonb,
-    "description" text COLLATE aio_unicode_ci,
+    "description" text,
     "strengths" jsonb,
     "weaknesses" jsonb,
-    "tech_stack" varchar(255) COLLATE aio_unicode_ci,
-    "spirit" text COLLATE aio_unicode_ci,
-    "image_object" varchar(255) COLLATE aio_unicode_ci,
+    "tech_stack" varchar(255),
+    "spirit" text,
+    "image_object" varchar(255),
     "is_special" smallint DEFAULT '0' NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -333,21 +332,21 @@ COMMENT ON COLUMN "cbti_personality"."update_time" IS '更新时间';
 COMMENT ON COLUMN "cbti_personality"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
 CREATE INDEX "cbti_personality_idx_cbti_personality_special" ON "cbti_personality" ("is_special");
 COMMENT ON INDEX "cbti_personality_idx_cbti_personality_special" IS '业务检索索引：idx_cbti_personality_special';
-CREATE UNIQUE INDEX "cbti_personality_uk_cbti_personality_code" ON "cbti_personality" ("code");
-COMMENT ON INDEX "cbti_personality_uk_cbti_personality_code" IS '唯一性约束：uk_cbti_personality_code';
+CREATE UNIQUE INDEX "cbti_personality_uk_cbti_personality_code" ON "cbti_personality" ("code") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "cbti_personality_uk_cbti_personality_code" IS '有效人格代码唯一，已删除人格不占用';
 
 CREATE TABLE "cbti_result" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "personality_code" varchar(20) COLLATE aio_unicode_ci NOT NULL,
+    "personality_code" varchar(20) NOT NULL,
     "similarity" integer DEFAULT '0' NOT NULL,
     "dimensions" jsonb,
     "answers" jsonb,
     "hidden_answers" jsonb,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -375,12 +374,12 @@ CREATE TABLE "data_export_audit_event" (
     "id" bigint NOT NULL,
     "job_id" bigint,
     "user_id" bigint,
-    "event_type" varchar(128) COLLATE aio_unicode_ci NOT NULL,
-    "result_code" varchar(128) COLLATE aio_unicode_ci NOT NULL,
-    "request_id" varchar(64) COLLATE aio_unicode_ci NOT NULL,
-    "client_ip" varchar(128) COLLATE aio_unicode_ci,
-    "trace_id" varchar(64) COLLATE aio_unicode_ci,
-    "details" text COLLATE aio_unicode_ci,
+    "event_type" varchar(128) NOT NULL,
+    "result_code" varchar(128) NOT NULL,
+    "request_id" varchar(64) NOT NULL,
+    "client_ip" varchar(128),
+    "trace_id" varchar(64),
+    "details" text,
     "event_time" timestamp(3) without time zone NOT NULL,
     "create_user" bigint,
     "create_time" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -412,7 +411,7 @@ COMMENT ON INDEX "data_export_audit_event_idx_data_export_audit_event_user" IS '
 
 CREATE TABLE "data_export_coordinator" (
     "id" bigint NOT NULL,
-    "name" varchar(128) COLLATE aio_unicode_ci NOT NULL,
+    "name" varchar(128) NOT NULL,
     "create_user" bigint,
     "create_time" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
@@ -434,11 +433,11 @@ COMMENT ON INDEX "data_export_coordinator_uk_data_export_coordinator_name" IS '�
 CREATE TABLE "data_export_grant" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "token_hash" varchar(64) COLLATE aio_unicode_ci NOT NULL,
-    "session_hash" varchar(64) COLLATE aio_unicode_ci NOT NULL,
-    "security_hash" varchar(64) COLLATE aio_unicode_ci NOT NULL,
-    "scope_hash" varchar(64) COLLATE aio_unicode_ci NOT NULL,
-    "purpose" varchar(128) COLLATE aio_unicode_ci NOT NULL,
+    "token_hash" varchar(64) NOT NULL,
+    "session_hash" varchar(64) NOT NULL,
+    "security_hash" varchar(64) NOT NULL,
+    "scope_hash" varchar(64) NOT NULL,
+    "purpose" varchar(128) NOT NULL,
     "job_id" bigint,
     "expires_at" timestamp(3) without time zone NOT NULL,
     "consumed" integer NOT NULL,
@@ -473,31 +472,31 @@ COMMENT ON INDEX "data_export_grant_uk_data_export_grant_token" IS '唯一性约
 CREATE TABLE "data_export_job" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "request_key" varchar(64) COLLATE aio_unicode_ci NOT NULL,
-    "request_hash" varchar(64) COLLATE aio_unicode_ci NOT NULL,
-    "scope_json" text COLLATE aio_unicode_ci NOT NULL,
-    "session_hash" varchar(64) COLLATE aio_unicode_ci NOT NULL,
-    "security_hash" varchar(64) COLLATE aio_unicode_ci NOT NULL,
-    "quota_month" varchar(7) COLLATE aio_unicode_ci NOT NULL,
+    "request_key" varchar(64) COLLATE "C" NOT NULL,
+    "request_hash" varchar(64) NOT NULL,
+    "scope_json" text NOT NULL,
+    "session_hash" varchar(64) NOT NULL,
+    "security_hash" varchar(64) NOT NULL,
+    "quota_month" varchar(7) NOT NULL,
     "quota_charged" integer NOT NULL,
-    "status" varchar(128) COLLATE aio_unicode_ci NOT NULL,
-    "phase" varchar(128) COLLATE aio_unicode_ci NOT NULL,
+    "status" varchar(128) NOT NULL,
+    "phase" varchar(128) NOT NULL,
     "attempt" integer NOT NULL,
-    "lease_token" varchar(128) COLLATE aio_unicode_ci,
+    "lease_token" varchar(128),
     "lease_until" timestamp(3) without time zone,
     "deadline" timestamp(3) without time zone NOT NULL,
     "started_at" timestamp(3) without time zone,
     "finished_at" timestamp(3) without time zone,
     "cancel_requested" integer NOT NULL,
-    "error_code" varchar(128) COLLATE aio_unicode_ci,
-    "summary_json" text COLLATE aio_unicode_ci,
-    "object_key" varchar(255) COLLATE aio_unicode_ci,
-    "file_name" varchar(128) COLLATE aio_unicode_ci,
-    "content_type" varchar(128) COLLATE aio_unicode_ci,
-    "sha256" varchar(64) COLLATE aio_unicode_ci,
+    "error_code" varchar(128),
+    "summary_json" jsonb,
+    "object_key" varchar(255) COLLATE "C",
+    "file_name" varchar(128),
+    "content_type" varchar(128),
+    "sha256" varchar(64),
     "file_bytes" bigint,
     "row_count" integer NOT NULL,
-    "artifact_status" varchar(128) COLLATE aio_unicode_ci NOT NULL,
+    "artifact_status" varchar(128) NOT NULL,
     "expires_at" timestamp(3) without time zone,
     "download_count" integer NOT NULL,
     "create_user" bigint,
@@ -512,7 +511,7 @@ COMMENT ON COLUMN "data_export_job"."id" IS '记录ID，由应用生成雪花ID'
 COMMENT ON COLUMN "data_export_job"."user_id" IS '所属用户ID，用于个人数据隔离';
 COMMENT ON COLUMN "data_export_job"."request_key" IS '客户端幂等键，同一用户内唯一';
 COMMENT ON COLUMN "data_export_job"."request_hash" IS '归一化申请范围的SHA256摘要';
-COMMENT ON COLUMN "data_export_job"."scope_json" IS '已授权数据集键数组，不含业务正文';
+COMMENT ON COLUMN "data_export_job"."scope_json" IS '已授权数据集键数组（JSON 原文）；按写入字节参与导出请求幂等哈希，必须保持 text，不能改为 jsonb';
 COMMENT ON COLUMN "data_export_job"."session_hash" IS '申请会话Token摘要，不保存原值';
 COMMENT ON COLUMN "data_export_job"."security_hash" IS '账户凭据状态摘要，用于凭据变更后撤销授权';
 COMMENT ON COLUMN "data_export_job"."quota_month" IS '申请所属自然月，上海时区yyyy-MM';
@@ -527,7 +526,7 @@ COMMENT ON COLUMN "data_export_job"."started_at" IS '首次开始读取时间，
 COMMENT ON COLUMN "data_export_job"."finished_at" IS '终态时间，尚未结束为空';
 COMMENT ON COLUMN "data_export_job"."cancel_requested" IS '取消请求：0=未请求，1=用户已请求';
 COMMENT ON COLUMN "data_export_job"."error_code" IS '安全错误码，成功或尚未失败为空';
-COMMENT ON COLUMN "data_export_job"."summary_json" IS '数据集行数及文件摘要清单，完成前为空';
+COMMENT ON COLUMN "data_export_job"."summary_json" IS '数据集行数及文件摘要清单（JSON 对象），完成前为空';
 COMMENT ON COLUMN "data_export_job"."object_key" IS '专用私有桶内部对象键，不返回客户端';
 COMMENT ON COLUMN "data_export_job"."file_name" IS '用户下载文件名，不含个人信息';
 COMMENT ON COLUMN "data_export_job"."content_type" IS '生成文件MIME类型，完成前为空';
@@ -550,32 +549,31 @@ CREATE INDEX "data_export_job_idx_data_export_job_month" ON "data_export_job" ("
 COMMENT ON INDEX "data_export_job_idx_data_export_job_month" IS '业务检索索引：idx_data_export_job_month';
 CREATE INDEX "data_export_job_idx_data_export_job_queue" ON "data_export_job" ("status", "create_time", "id");
 COMMENT ON INDEX "data_export_job_idx_data_export_job_queue" IS '业务检索索引：idx_data_export_job_queue';
-CREATE UNIQUE INDEX "data_export_job_uk_data_export_job_request" ON "data_export_job" ("user_id", "request_key");
-COMMENT ON INDEX "data_export_job_uk_data_export_job_request" IS '唯一性约束：uk_data_export_job_request';
+CREATE UNIQUE INDEX "data_export_job_uk_data_export_job_request" ON "data_export_job" ("user_id", "request_key") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "data_export_job_uk_data_export_job_request" IS '同一用户有效导出任务的幂等键唯一，已删除任务不占用';
 
 CREATE TABLE "device" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "name" varchar(255) COLLATE aio_unicode_ci NOT NULL,
-    "spec" varchar(255) COLLATE aio_unicode_ci,
-    "type" varchar(255) COLLATE aio_unicode_ci,
-    "status" varchar(255) COLLATE aio_unicode_ci,
-    "remark" varchar(255) COLLATE aio_unicode_ci,
+    "name" varchar(255) NOT NULL,
+    "spec" varchar(255),
+    "type" varchar(255),
+    "status" varchar(255),
+    "remark" varchar(255),
     "purchase_date" date,
     "purchase_price" numeric(10,2),
-    "purchase_place" varchar(255) COLLATE aio_unicode_ci,
-    "purchase_company" varchar(255) COLLATE aio_unicode_ci,
+    "purchase_place" varchar(255),
     "end_date" date,
-    "file_id" varchar(32) COLLATE aio_unicode_ci,
+    "file_id" varchar(32),
     "source_platform" varchar(16),
-    "source_order_id" varchar(100),
-    "source_product_id" varchar(100),
-    "source_item_id" varchar(128),
+    "source_order_id" varchar(100) COLLATE "C",
+    "source_product_id" varchar(100) COLLATE "C",
+    "source_item_id" varchar(128) COLLATE "C",
     "source_unit_index" integer,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -590,7 +588,6 @@ COMMENT ON COLUMN "device"."remark" IS '备注';
 COMMENT ON COLUMN "device"."purchase_date" IS '购买日期';
 COMMENT ON COLUMN "device"."purchase_price" IS '购买价格';
 COMMENT ON COLUMN "device"."purchase_place" IS '购买地点';
-COMMENT ON COLUMN "device"."purchase_company" IS '购买公司';
 COMMENT ON COLUMN "device"."end_date" IS '结束日期（用于计算日均费用）';
 COMMENT ON COLUMN "device"."file_id" IS '图片文件ID(UUID)';
 COMMENT ON COLUMN "device"."source_platform" IS '采集平台：jd=京东、taobao=淘宝；手工录入或历史记录为NULL';
@@ -612,9 +609,9 @@ CREATE TABLE "device_expense" (
     "device_id" bigint NOT NULL,
     "expense_id" bigint NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -633,36 +630,19 @@ COMMENT ON INDEX "device_expense_idx_device_expense_user_device" IS '业务检�
 CREATE UNIQUE INDEX "device_expense_uk_device_expense_expense" ON "device_expense" ("expense_id");
 COMMENT ON INDEX "device_expense_uk_device_expense_expense" IS '唯一性约束：uk_device_expense_expense';
 
-CREATE TABLE "enum_type" (
-    "type_id" bigint NOT NULL,
-    "type_name" varchar(50) COLLATE aio_unicode_ci NOT NULL,
-    "description" varchar(255) COLLATE aio_unicode_ci,
-    "created_at" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY ("type_id")
- );
-COMMENT ON TABLE "enum_type" IS '枚举类型表';
-COMMENT ON COLUMN "enum_type"."type_id" IS '类型ID';
-COMMENT ON COLUMN "enum_type"."type_name" IS '类型名称（英文唯一标识）';
-COMMENT ON COLUMN "enum_type"."description" IS '类型描述';
-COMMENT ON COLUMN "enum_type"."created_at" IS '创建时间';
-COMMENT ON COLUMN "enum_type"."updated_at" IS '修改时间';
-CREATE UNIQUE INDEX "enum_type_type_name" ON "enum_type" ("type_name");
-COMMENT ON INDEX "enum_type_type_name" IS '唯一性约束：type_name';
-
 CREATE TABLE "exercise_record" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
     "exercise_type_id" bigint,
     "exercise_date" date NOT NULL,
     "exercise_count" integer DEFAULT '0' NOT NULL,
-    "description" text COLLATE aio_unicode_ci,
+    "description" text,
     "create_user" bigint,
     "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "is_deleted" integer DEFAULT '0' NOT NULL,
-    "time_id" varchar(32) COLLATE aio_unicode_ci,
+    "is_deleted" smallint DEFAULT '0' NOT NULL,
+    "time_id" varchar(32),
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "exercise_record" IS '运动记录表';
@@ -685,7 +665,7 @@ CREATE TABLE "expense" (
     "transaction_amt" numeric(10,2),
     "exp_type_id" bigint NOT NULL,
     "pay_type_id" bigint,
-    "remark" varchar(255) COLLATE aio_unicode_ci,
+    "remark" varchar(255),
     "user_id" bigint NOT NULL,
     "exp_time" timestamp(0) without time zone NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
@@ -693,12 +673,12 @@ CREATE TABLE "expense" (
     "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
     "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "exp_desc" varchar(200) COLLATE aio_unicode_ci,
-    "transaction_id" varchar(100) COLLATE aio_unicode_ci,
-    "counterparty" varchar(100) COLLATE aio_unicode_ci,
-    "counterparty_acct" varchar(100) COLLATE aio_unicode_ci,
-    "merchant_order_no" varchar(100) COLLATE aio_unicode_ci,
-    "transaction_status" varchar(20) COLLATE aio_unicode_ci,
+    "exp_desc" varchar(200),
+    "transaction_id" varchar(100) COLLATE "C",
+    "counterparty" varchar(100),
+    "counterparty_acct" varchar(100) COLLATE "C",
+    "merchant_order_no" varchar(100) COLLATE "C",
+    "transaction_status" varchar(20),
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "expense" IS '支出表';
@@ -725,14 +705,14 @@ COMMENT ON COLUMN "expense"."transaction_status" IS '交易状态';
 CREATE TABLE "feedback" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "title" varchar(200) COLLATE aio_unicode_ci NOT NULL,
-    "content" text COLLATE aio_unicode_ci NOT NULL,
-    "feedback_type" varchar(32) COLLATE aio_unicode_ci NOT NULL,
-    "status" varchar(32) COLLATE aio_unicode_ci DEFAULT 'PENDING' NOT NULL,
-    "priority" varchar(16) COLLATE aio_unicode_ci DEFAULT 'MEDIUM',
+    "title" varchar(200) NOT NULL,
+    "content" text NOT NULL,
+    "feedback_type" varchar(32) NOT NULL,
+    "status" varchar(32) DEFAULT 'PENDING' NOT NULL,
+    "priority" varchar(16) DEFAULT 'MEDIUM',
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "create_time" timestamp(0) without time zone,
-    "update_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "create_user" bigint,
     "update_user" bigint,
     PRIMARY KEY ("id")
@@ -759,11 +739,11 @@ CREATE TABLE "feedback_comment" (
     "id" bigint NOT NULL,
     "feedback_id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "role_type" varchar(16) COLLATE aio_unicode_ci NOT NULL,
-    "content" text COLLATE aio_unicode_ci NOT NULL,
+    "role_type" varchar(16) NOT NULL,
+    "content" text NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "create_time" timestamp(0) without time zone,
-    "update_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "create_user" bigint,
     "update_user" bigint,
     PRIMARY KEY ("id")
@@ -784,18 +764,18 @@ COMMENT ON INDEX "feedback_comment_idx_feedback_id_create_time" IS '业务检索
 
 CREATE TABLE "file" (
     "storage_object_id" bigint,
-    "id" varchar(32) COLLATE aio_unicode_ci NOT NULL,
-    "file_name" varchar(255) COLLATE aio_unicode_ci NOT NULL,
+    "id" varchar(32) NOT NULL,
+    "file_name" varchar(255) COLLATE "C" NOT NULL,
     "file_size" bigint,
-    "file_type" varchar(100) COLLATE aio_unicode_ci,
-    "hash_value" varchar(128) COLLATE aio_unicode_ci,
-    "biz_type" varchar(50) COLLATE aio_unicode_ci NOT NULL,
+    "file_type" varchar(100),
+    "hash_value" varchar(128),
+    "biz_type" varchar(50) NOT NULL,
     "biz_id" bigint,
     "is_public" smallint DEFAULT '0' NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone NOT NULL,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -825,10 +805,10 @@ CREATE TABLE "goal" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
     "type" smallint,
-    "title" varchar(255) COLLATE aio_unicode_ci,
-    "description" text COLLATE aio_unicode_ci,
-    "content" text COLLATE aio_unicode_ci,
-    "status" varchar(32) COLLATE aio_unicode_ci DEFAULT 'not_started',
+    "title" varchar(255),
+    "description" text,
+    "content" text,
+    "status" varchar(32) DEFAULT 'not_started',
     "target_value" numeric(14,2),
     "current_value" numeric(14,2),
     "year" integer,
@@ -838,23 +818,23 @@ CREATE TABLE "goal" (
     "start_date" timestamp(0) without time zone,
     "end_date" timestamp(0) without time zone,
     "completed_at" timestamp(0) without time zone,
-    "tags" varchar(1000) COLLATE aio_unicode_ci,
+    "tags" varchar(1000),
     "is_pinned" smallint DEFAULT '0' NOT NULL,
     "pinned_sort_order" integer DEFAULT '0' NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "create_time" timestamp(0) without time zone,
-    "update_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "create_user" bigint,
     "update_user" bigint,
-    "progress_mode" varchar(16) COLLATE aio_unicode_ci DEFAULT 'manual' NOT NULL,
-    "progress_query" text COLLATE aio_unicode_ci,
-    "progress_variables" text COLLATE aio_unicode_ci,
-    "progress_variable_bindings" text COLLATE aio_unicode_ci,
-    "progress_value_path" varchar(256) COLLATE aio_unicode_ci,
-    "target_operator" varchar(8) COLLATE aio_unicode_ci DEFAULT 'gte' NOT NULL,
+    "progress_mode" varchar(16) DEFAULT 'manual' NOT NULL,
+    "progress_query" text,
+    "progress_variables" jsonb,
+    "progress_variable_bindings" jsonb,
+    "progress_value_path" varchar(256),
+    "target_operator" varchar(8) DEFAULT 'gte' NOT NULL,
     "progress_checked_at" timestamp(0) without time zone,
-    "progress_error" varchar(255) COLLATE aio_unicode_ci,
-    "progress_refresh_id" varchar(36) COLLATE aio_unicode_ci,
+    "progress_error" varchar(255),
+    "progress_refresh_id" varchar(36),
     "progress_version" bigint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id"),
     CONSTRAINT "ck_goal_progress_mode" CHECK (("progress_mode" in ('manual','graphql'))),
@@ -888,8 +868,8 @@ COMMENT ON COLUMN "goal"."create_user" IS '创建人ID';
 COMMENT ON COLUMN "goal"."update_user" IS '更新人ID';
 COMMENT ON COLUMN "goal"."progress_mode" IS '进度来源：manual=手动，graphql=自定义只读查询';
 COMMENT ON COLUMN "goal"."progress_query" IS '自定义GraphQL查询文本，NULL表示未配置';
-COMMENT ON COLUMN "goal"."progress_variables" IS '固定查询变量的JSON对象文本，NULL表示空对象';
-COMMENT ON COLUMN "goal"."progress_variable_bindings" IS '变量到目标日期上下文的JSON绑定对象文本，NULL表示不绑定';
+COMMENT ON COLUMN "goal"."progress_variables" IS '固定查询变量（JSON 对象）；NULL 表示空对象';
+COMMENT ON COLUMN "goal"."progress_variable_bindings" IS '变量到目标日期上下文的绑定（JSON 对象）；NULL 表示不绑定';
 COMMENT ON COLUMN "goal"."progress_value_path" IS '相对于GraphQL data的数值路径，支持字段及数组下标；NULL表示未配置';
 COMMENT ON COLUMN "goal"."target_operator" IS '达标比较：gte=达到目标值，gt=严格超过目标值';
 COMMENT ON COLUMN "goal"."progress_checked_at" IS '最近成功计算的本地时间，NULL表示尚未成功计算';
@@ -904,15 +884,15 @@ COMMENT ON INDEX "goal_idx_user_id" IS '业务检索索引：idx_user_id';
 CREATE TABLE "honor_category" (
     "id" bigint NOT NULL,
     "user_id" bigint,
-    "name" varchar(50) COLLATE aio_unicode_ci NOT NULL,
-    "icon" varchar(255) COLLATE aio_unicode_ci,
-    "color" varchar(20) COLLATE aio_unicode_ci,
+    "name" varchar(50) NOT NULL,
+    "icon" varchar(255),
+    "color" varchar(20),
     "sort_order" integer DEFAULT '0',
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "honor_category" IS '荣誉分类表';
@@ -933,23 +913,22 @@ COMMENT ON INDEX "honor_category_idx_user_id" IS '业务检索索引：idx_user_
 CREATE TABLE "honor_record" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "title" varchar(200) COLLATE aio_unicode_ci NOT NULL,
-    "description" text COLLATE aio_unicode_ci,
+    "title" varchar(200) NOT NULL,
+    "description" text,
     "honor_date" date NOT NULL,
-    "issuer" varchar(200) COLLATE aio_unicode_ci,
-    "level" varchar(20) COLLATE aio_unicode_ci,
+    "issuer" varchar(200),
+    "level" varchar(20),
     "category_id" bigint,
-    "custom_category" varchar(50) COLLATE aio_unicode_ci,
-    "tags" varchar(500) COLLATE aio_unicode_ci,
+    "custom_category" varchar(50),
+    "tags" varchar(500),
     "is_top" smallint DEFAULT '0',
     "is_public" smallint DEFAULT '1',
     "sort_order" integer DEFAULT '0',
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "create_time" timestamp(0) without time zone,
-    "update_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "create_user" bigint,
     "update_user" bigint,
-    "file_id" varchar(32) COLLATE aio_unicode_ci,
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "honor_record" IS '荣誉记录表';
@@ -971,7 +950,6 @@ COMMENT ON COLUMN "honor_record"."create_time" IS '创建时间';
 COMMENT ON COLUMN "honor_record"."update_time" IS '更新时间';
 COMMENT ON COLUMN "honor_record"."create_user" IS '创建人ID';
 COMMENT ON COLUMN "honor_record"."update_user" IS '更新人ID';
-COMMENT ON COLUMN "honor_record"."file_id" IS '证书/奖牌图片文件ID(UUID)';
 CREATE INDEX "honor_record_idx_category_id" ON "honor_record" ("category_id");
 COMMENT ON INDEX "honor_record_idx_category_id" IS '业务检索索引：idx_category_id';
 CREATE INDEX "honor_record_idx_honor_date" ON "honor_record" ("honor_date");
@@ -983,17 +961,17 @@ CREATE TABLE "image_import_task" (
     "id" bigint NOT NULL,
     "video_id" bigint NOT NULL,
     "cover_version" bigint NOT NULL,
-    "source_url" varchar(1000) COLLATE aio_unicode_ci NOT NULL,
-    "state" varchar(16) COLLATE aio_unicode_ci NOT NULL,
+    "source_url" varchar(1000) NOT NULL,
+    "state" varchar(16) NOT NULL,
     "attempts" integer DEFAULT '0' NOT NULL,
     "next_attempt_at" timestamp(0) without time zone NOT NULL,
-    "lease_token" varchar(32) COLLATE aio_unicode_ci,
+    "lease_token" varchar(32),
     "lease_until" timestamp(0) without time zone,
-    "error_code" varchar(64) COLLATE aio_unicode_ci,
+    "error_code" varchar(64),
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone NOT NULL,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -1022,7 +1000,7 @@ CREATE TABLE "income" (
     "id" bigint NOT NULL,
     "amt" numeric(10,2) NOT NULL,
     "inc_date" date NOT NULL,
-    "remark" varchar(255) COLLATE aio_unicode_ci,
+    "remark" varchar(255),
     "user_id" bigint NOT NULL,
     "create_user" bigint,
     "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -1052,20 +1030,20 @@ CREATE TABLE "life_footprint" (
     "user_id" bigint NOT NULL,
     "start_date" date NOT NULL,
     "end_date" date NOT NULL,
-    "place_name" varchar(100) COLLATE aio_unicode_ci NOT NULL,
-    "address" varchar(500) COLLATE aio_unicode_ci,
-    "city" varchar(100) COLLATE aio_unicode_ci,
-    "region_code" varchar(12) COLLATE aio_unicode_ci,
+    "place_name" varchar(100) NOT NULL,
+    "address" varchar(500),
+    "city" varchar(100),
+    "region_code" varchar(12),
     "longitude" numeric(10,6) NOT NULL,
     "latitude" numeric(9,6) NOT NULL,
-    "coordinate_system" varchar(16) COLLATE aio_unicode_ci DEFAULT 'GCJ02' NOT NULL,
-    "provider_uid" varchar(128) COLLATE aio_unicode_ci,
-    "remark" text COLLATE aio_unicode_ci,
+    "coordinate_system" varchar(16) DEFAULT 'GCJ02' NOT NULL,
+    "provider_uid" varchar(128),
+    "remark" text,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
-    "is_deleted" integer DEFAULT '0' NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id"),
     CONSTRAINT "ck_footprint_coordinate" CHECK (("coordinate_system" = 'GCJ02')),
     CONSTRAINT "ck_footprint_end" CHECK (("end_date" >= "start_date")),
@@ -1097,9 +1075,9 @@ COMMENT ON INDEX "life_footprint_idx_footprint_user_start" IS '业务检索索�
 CREATE TABLE "login_log" (
     "id" bigint NOT NULL,
     "user_id" bigint,
-    "username" varchar(50) COLLATE aio_unicode_ci NOT NULL,
+    "username" varchar(50) NOT NULL,
     "created_at" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "ip_address" varchar(45) COLLATE aio_unicode_ci NOT NULL,
+    "ip_address" varchar(45) NOT NULL,
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "login_log" IS '登录日志';
@@ -1111,13 +1089,13 @@ COMMENT ON COLUMN "login_log"."ip_address" IS 'IP地址';
 
 CREATE TABLE "mail_log" (
     "id" bigint NOT NULL,
-    "send_to" varchar(100) COLLATE aio_unicode_ci NOT NULL,
-    "subject" varchar(255) COLLATE aio_unicode_ci,
-    "biz_type" varchar(50) COLLATE aio_unicode_ci,
+    "send_to" varchar(100) NOT NULL,
+    "subject" varchar(255),
+    "biz_type" varchar(50),
     "status" smallint DEFAULT '1' NOT NULL,
-    "error_msg" varchar(255) COLLATE aio_unicode_ci,
-    "ip_address" varchar(45) COLLATE aio_unicode_ci,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "error_msg" varchar(255),
+    "ip_address" varchar(45),
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "mail_log" IS '邮件发送记录表';
@@ -1137,14 +1115,14 @@ COMMENT ON INDEX "mail_log_idx_send_to_biz_type" IS '业务检索索引：idx_se
 CREATE TABLE "mbti_result" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "test_id" varchar(255) COLLATE aio_unicode_ci,
-    "mbti_type" varchar(10) COLLATE aio_unicode_ci,
-    "raw_result" text COLLATE aio_unicode_ci,
-    "results_page" varchar(500) COLLATE aio_unicode_ci,
+    "test_id" varchar(255),
+    "mbti_type" varchar(10),
+    "raw_result" text,
+    "results_page" varchar(500),
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -1169,16 +1147,16 @@ COMMENT ON INDEX "mbti_result_idx_user_id" IS '业务检索索引：idx_user_id'
 
 CREATE TABLE "membership_provider" (
     "id" bigint NOT NULL,
-    "name" varchar(100) COLLATE aio_unicode_ci NOT NULL,
-    "code" varchar(50) COLLATE aio_unicode_ci NOT NULL,
-    "category" varchar(50) COLLATE aio_unicode_ci DEFAULT 'other' NOT NULL,
-    "icon_key" varchar(64) COLLATE aio_unicode_ci,
+    "name" varchar(100) NOT NULL,
+    "code" varchar(50) COLLATE "C" NOT NULL,
+    "category" varchar(50) DEFAULT 'other' NOT NULL,
+    "icon_key" varchar(64),
     "sort_order" integer DEFAULT '0' NOT NULL,
     "is_enabled" smallint DEFAULT '1' NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     "active_flag" smallint GENERATED ALWAYS AS ((case when ("is_deleted" = 0) then 1 else NULL end)) STORED,
     PRIMARY KEY ("id")
@@ -1205,23 +1183,23 @@ COMMENT ON INDEX "membership_provider_uk_membership_provider_code" IS '唯一性
 CREATE TABLE "membership_record" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "name" varchar(100) COLLATE aio_unicode_ci NOT NULL,
-    "category" varchar(50) COLLATE aio_unicode_ci DEFAULT 'other' NOT NULL,
+    "name" varchar(100) NOT NULL,
+    "category" varchar(50) DEFAULT 'other' NOT NULL,
     "provider_id" bigint,
-    "provider" varchar(100) COLLATE aio_unicode_ci,
-    "icon" varchar(50) COLLATE aio_unicode_ci,
-    "color" varchar(50) COLLATE aio_unicode_ci,
+    "provider" varchar(100),
+    "icon" varchar(50),
+    "color" varchar(50),
     "start_date" date,
     "expiry_date" date NOT NULL,
     "price" numeric(10,2),
-    "billing_cycle" varchar(20) COLLATE aio_unicode_ci DEFAULT 'month' NOT NULL,
+    "billing_cycle" varchar(20) DEFAULT 'month' NOT NULL,
     "monthly_amount" numeric(10,2) DEFAULT '0.00' NOT NULL,
     "auto_renew" smallint DEFAULT '0',
-    "remark" varchar(500) COLLATE aio_unicode_ci,
+    "remark" varchar(500),
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -1256,13 +1234,13 @@ COMMENT ON INDEX "membership_record_idx_user_id" IS '业务检索索引：idx_us
 CREATE TABLE "memo" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "title" varchar(100) COLLATE aio_unicode_ci,
-    "content" text COLLATE aio_unicode_ci,
+    "title" varchar(100),
+    "content" text,
     "hidden_content" smallint DEFAULT '0',
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -1282,14 +1260,14 @@ CREATE TABLE "message" (
     "id" bigint NOT NULL,
     "sender_id" bigint NOT NULL,
     "receiver_id" bigint NOT NULL,
-    "title" varchar(255) COLLATE aio_unicode_ci NOT NULL,
-    "content" text COLLATE aio_unicode_ci,
+    "title" varchar(255) NOT NULL,
+    "content" text,
     "type" integer DEFAULT '0' NOT NULL,
     "is_read" smallint DEFAULT '0' NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -1314,17 +1292,17 @@ COMMENT ON INDEX "message_idx_receiver_is_read" IS '业务检索索引：idx_rec
 CREATE TABLE "milestone" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "title" varchar(255) COLLATE aio_unicode_ci NOT NULL,
-    "description" text COLLATE aio_unicode_ci,
+    "title" varchar(255) NOT NULL,
+    "description" text,
     "date" date NOT NULL,
     "end_date" date,
-    "type" varchar(50) COLLATE aio_unicode_ci DEFAULT 'other' NOT NULL,
+    "type" varchar(50) DEFAULT 'other' NOT NULL,
     "tags" jsonb,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
-    "is_deleted" integer DEFAULT '0' NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "milestone" IS '里程碑表';
@@ -1346,24 +1324,24 @@ COMMENT ON INDEX "milestone_idx_user_date" IS '业务检索索引：idx_user_dat
 
 CREATE TABLE "movie" (
     "id" bigint NOT NULL,
-    "title" varchar(255) COLLATE aio_unicode_ci NOT NULL,
+    "title" varchar(255) NOT NULL,
     "type" smallint NOT NULL,
-    "director" varchar(100) COLLATE aio_unicode_ci,
-    "url" varchar(500) COLLATE aio_unicode_ci,
-    "status" varchar(32) COLLATE aio_unicode_ci DEFAULT 'not_started',
+    "director" varchar(100),
+    "url" varchar(500),
+    "status" varchar(32) DEFAULT 'not_started',
     "total_progress" integer DEFAULT '0',
     "current_progress" integer DEFAULT '0',
     "start_time" timestamp(0) without time zone,
     "finish_time" timestamp(0) without time zone,
     "rating" smallint,
-    "remark" varchar(1000) COLLATE aio_unicode_ci,
+    "remark" varchar(1000),
     "user_id" bigint NOT NULL,
     "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "create_user" bigint,
     "update_user" bigint,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "file_id" varchar(32) COLLATE aio_unicode_ci,
+    "file_id" varchar(32),
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "movie" IS '影视记录表';
@@ -1392,16 +1370,16 @@ COMMENT ON INDEX "movie_idx_user_id" IS '业务检索索引：idx_user_id';
 CREATE TABLE "notification_channel_config" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "channel" varchar(32) COLLATE aio_unicode_ci NOT NULL,
+    "channel" varchar(32) NOT NULL,
     "is_enabled" smallint DEFAULT '0' NOT NULL,
-    "app_id" varchar(128) COLLATE aio_unicode_ci NOT NULL,
-    "app_secret_ciphertext" text COLLATE aio_unicode_ci NOT NULL,
-    "receiver_open_id" varchar(128) COLLATE aio_unicode_ci,
-    "receiver_name" varchar(128) COLLATE aio_unicode_ci,
+    "app_id" varchar(128) NOT NULL,
+    "app_secret_ciphertext" text NOT NULL,
+    "receiver_open_id" varchar(128),
+    "receiver_name" varchar(128),
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone NOT NULL,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -1422,20 +1400,20 @@ COMMENT ON COLUMN "notification_channel_config"."is_deleted" IS '逻辑删除标
 
 CREATE TABLE "notification_delivery" (
     "id" bigint NOT NULL,
-    "dedup_key" varchar(128) COLLATE aio_unicode_ci NOT NULL,
+    "dedup_key" varchar(128) NOT NULL,
     "user_id" bigint NOT NULL,
-    "biz_type" varchar(64) COLLATE aio_unicode_ci NOT NULL,
-    "channel" varchar(32) COLLATE aio_unicode_ci NOT NULL,
-    "status" varchar(16) COLLATE aio_unicode_ci NOT NULL,
-    "payload_ciphertext" text COLLATE aio_unicode_ci NOT NULL,
+    "biz_type" varchar(64) NOT NULL,
+    "channel" varchar(32) NOT NULL,
+    "status" varchar(16) NOT NULL,
+    "payload_ciphertext" text NOT NULL,
     "retry_count" integer DEFAULT '0' NOT NULL,
     "next_retry_time" timestamp(0) without time zone,
-    "provider_code" varchar(64) COLLATE aio_unicode_ci,
-    "error_message" varchar(512) COLLATE aio_unicode_ci,
+    "provider_code" varchar(64),
+    "error_message" varchar(512),
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone NOT NULL,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -1462,13 +1440,13 @@ COMMENT ON INDEX "notification_delivery_idx_retry" IS '业务检索索引：idx_
 CREATE TABLE "notification_preference" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "biz_type" varchar(64) COLLATE aio_unicode_ci NOT NULL,
-    "channel" varchar(32) COLLATE aio_unicode_ci NOT NULL,
+    "biz_type" varchar(64) NOT NULL,
+    "channel" varchar(32) NOT NULL,
     "is_enabled" smallint DEFAULT '1' NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone NOT NULL,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -1487,17 +1465,17 @@ COMMENT ON COLUMN "notification_preference"."is_deleted" IS '逻辑删除标记�
 CREATE TABLE "password_vault" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "title" varchar(100) COLLATE aio_unicode_ci NOT NULL,
-    "website" varchar(255) COLLATE aio_unicode_ci,
-    "category" varchar(50) COLLATE aio_unicode_ci DEFAULT '其他',
-    "username" text COLLATE aio_unicode_ci,
-    "password" text COLLATE aio_unicode_ci,
-    "salt" varchar(64) COLLATE aio_unicode_ci NOT NULL,
-    "remark" text COLLATE aio_unicode_ci,
+    "title" varchar(100) NOT NULL,
+    "website" varchar(255),
+    "category" varchar(50) DEFAULT '其他',
+    "username" text,
+    "password" text,
+    "salt" varchar(64) NOT NULL,
+    "remark" text,
     "favorite" smallint DEFAULT '0',
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "create_time" timestamp(0) without time zone,
-    "update_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "create_user" bigint,
     "update_user" bigint,
     PRIMARY KEY ("id")
@@ -1524,19 +1502,19 @@ COMMENT ON INDEX "password_vault_idx_user_id" IS '业务检索索引：idx_user_
 CREATE TABLE "performance" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "performance_name" varchar(100) COLLATE aio_unicode_ci NOT NULL,
-    "performer" varchar(50) COLLATE aio_unicode_ci,
-    "performance_type" varchar(50) COLLATE aio_unicode_ci NOT NULL,
+    "performance_name" varchar(100) NOT NULL,
+    "performer" varchar(50),
+    "performance_type" varchar(50) NOT NULL,
     "performance_date" timestamp(0) without time zone NOT NULL,
-    "city" varchar(50) COLLATE aio_unicode_ci NOT NULL,
-    "venue" varchar(100) COLLATE aio_unicode_ci NOT NULL,
+    "city" varchar(50) NOT NULL,
+    "venue" varchar(100) NOT NULL,
     "ticket_price" numeric(10,2) NOT NULL,
-    "seat_info" varchar(100) COLLATE aio_unicode_ci,
-    "duration" integer,
+    "seat_info" varchar(100),
+    "duration_minutes" integer,
     "rating" smallint,
-    "review" text COLLATE aio_unicode_ci,
-    "purchase_platform" varchar(50) COLLATE aio_unicode_ci,
-    "order_number" varchar(50) COLLATE aio_unicode_ci,
+    "review" text,
+    "purchase_platform" varchar(50),
+    "order_number" varchar(50) COLLATE "C",
     "create_user" bigint,
     "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
@@ -1555,7 +1533,7 @@ COMMENT ON COLUMN "performance"."city" IS '演出城市';
 COMMENT ON COLUMN "performance"."venue" IS '演出地点';
 COMMENT ON COLUMN "performance"."ticket_price" IS '票价';
 COMMENT ON COLUMN "performance"."seat_info" IS '座位信息';
-COMMENT ON COLUMN "performance"."duration" IS '演出时长(分钟)';
+COMMENT ON COLUMN "performance"."duration_minutes" IS '演出时长（分钟）';
 COMMENT ON COLUMN "performance"."rating" IS '演出评分(1-5)';
 COMMENT ON COLUMN "performance"."review" IS '演出评价';
 COMMENT ON COLUMN "performance"."purchase_platform" IS '购票平台';
@@ -1570,23 +1548,23 @@ COMMENT ON INDEX "performance_idx_performance_user_deleted" IS '业务检索索�
 
 CREATE TABLE "read_record" (
     "id" bigint NOT NULL,
-    "title" varchar(255) COLLATE aio_unicode_ci NOT NULL,
+    "title" varchar(255) NOT NULL,
     "type" smallint NOT NULL,
-    "author" varchar(100) COLLATE aio_unicode_ci,
-    "url" varchar(500) COLLATE aio_unicode_ci,
-    "status" varchar(32) COLLATE aio_unicode_ci DEFAULT 'not_started',
+    "author" varchar(100),
+    "url" varchar(500),
+    "status" varchar(32) DEFAULT 'not_started',
     "total_progress" integer DEFAULT '0',
     "current_progress" integer DEFAULT '0',
     "start_time" timestamp(0) without time zone,
     "finish_time" timestamp(0) without time zone,
-    "remark" varchar(1000) COLLATE aio_unicode_ci,
+    "remark" varchar(1000),
     "user_id" bigint NOT NULL,
     "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "create_user" bigint,
     "update_user" bigint,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "file_id" varchar(32) COLLATE aio_unicode_ci,
+    "file_id" varchar(32),
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "read_record" IS '阅读记录表';
@@ -1611,81 +1589,17 @@ COMMENT ON COLUMN "read_record"."file_id" IS '封面文件ID(UUID)';
 CREATE INDEX "read_record_idx_user_id" ON "read_record" ("user_id");
 COMMENT ON INDEX "read_record_idx_user_id" IS '业务检索索引：idx_user_id';
 
-CREATE TABLE "record_article" (
-    "id" bigint NOT NULL,
-    "url" varchar(500) COLLATE aio_unicode_ci,
-    "title" varchar(200) COLLATE aio_unicode_ci,
-    "author" varchar(100) COLLATE aio_unicode_ci,
-    "content_html" text COLLATE aio_unicode_ci,
-    "category" varchar(50) COLLATE aio_unicode_ci,
-    "tags" varchar(200) COLLATE aio_unicode_ci,
-    "create_user" bigint,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
-    "update_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
-    "is_deleted" smallint DEFAULT '0' NOT NULL,
-    PRIMARY KEY ("id")
- );
-COMMENT ON TABLE "record_article" IS '收藏文章表';
-COMMENT ON COLUMN "record_article"."id" IS '文章ID';
-COMMENT ON COLUMN "record_article"."url" IS '原文链接';
-COMMENT ON COLUMN "record_article"."title" IS '标题';
-COMMENT ON COLUMN "record_article"."author" IS '作者';
-COMMENT ON COLUMN "record_article"."content_html" IS '文章HTML内容';
-COMMENT ON COLUMN "record_article"."category" IS '分类';
-COMMENT ON COLUMN "record_article"."tags" IS '标签';
-COMMENT ON COLUMN "record_article"."create_user" IS '创建人';
-COMMENT ON COLUMN "record_article"."create_time" IS '创建时间';
-COMMENT ON COLUMN "record_article"."update_user" IS '更新人';
-COMMENT ON COLUMN "record_article"."update_time" IS '更新时间';
-COMMENT ON COLUMN "record_article"."is_deleted" IS '是否删除';
-
-CREATE TABLE "record_article_annotation" (
-    "id" bigint NOT NULL,
-    "article_id" bigint NOT NULL,
-    "selected_text" text COLLATE aio_unicode_ci,
-    "note_content" text COLLATE aio_unicode_ci,
-    "start_container_path" varchar(200) COLLATE aio_unicode_ci,
-    "start_offset" integer,
-    "end_container_path" varchar(200) COLLATE aio_unicode_ci,
-    "end_offset" integer,
-    "color" varchar(20) COLLATE aio_unicode_ci,
-    "create_user" bigint,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
-    "update_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
-    "is_deleted" smallint DEFAULT '0' NOT NULL,
-    PRIMARY KEY ("id")
- );
-COMMENT ON TABLE "record_article_annotation" IS '文章标注表';
-COMMENT ON COLUMN "record_article_annotation"."id" IS '标注ID';
-COMMENT ON COLUMN "record_article_annotation"."article_id" IS '文章ID';
-COMMENT ON COLUMN "record_article_annotation"."selected_text" IS '选中文本';
-COMMENT ON COLUMN "record_article_annotation"."note_content" IS '标注内容';
-COMMENT ON COLUMN "record_article_annotation"."start_container_path" IS '起始容器路径';
-COMMENT ON COLUMN "record_article_annotation"."start_offset" IS '起始偏移量';
-COMMENT ON COLUMN "record_article_annotation"."end_container_path" IS '结束容器路径';
-COMMENT ON COLUMN "record_article_annotation"."end_offset" IS '结束偏移量';
-COMMENT ON COLUMN "record_article_annotation"."color" IS '标注颜色';
-COMMENT ON COLUMN "record_article_annotation"."create_user" IS '创建人';
-COMMENT ON COLUMN "record_article_annotation"."create_time" IS '创建时间';
-COMMENT ON COLUMN "record_article_annotation"."update_user" IS '更新人';
-COMMENT ON COLUMN "record_article_annotation"."update_time" IS '更新时间';
-COMMENT ON COLUMN "record_article_annotation"."is_deleted" IS '是否删除';
-CREATE INDEX "record_article_annotation_idx_article_id" ON "record_article_annotation" ("article_id");
-COMMENT ON INDEX "record_article_annotation_idx_article_id" IS '业务检索索引：idx_article_id';
-
 CREATE TABLE "storage_object" (
     "id" bigint NOT NULL,
-    "bucket" varchar(63) COLLATE aio_unicode_ci NOT NULL,
-    "object_key" varchar(255) COLLATE aio_unicode_ci NOT NULL,
+    "bucket" varchar(63) NOT NULL,
+    "object_key" varchar(255) COLLATE "C" NOT NULL,
     "sha256" char(64) NOT NULL,
     "file_size" bigint NOT NULL,
-    "content_type" varchar(100) COLLATE aio_unicode_ci NOT NULL,
+    "content_type" varchar(100) NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone NOT NULL,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -1708,21 +1622,21 @@ COMMENT ON INDEX "storage_object_uk_storage_key" IS '唯一性约束：uk_storag
 
 CREATE TABLE "sys_activity_log" (
     "id" bigint NOT NULL,
-    "log_type" varchar(16) COLLATE aio_unicode_ci NOT NULL,
+    "log_type" varchar(16) NOT NULL,
     "user_id" bigint,
-    "username" varchar(100) COLLATE aio_unicode_ci DEFAULT '' NOT NULL,
-    "nickname" varchar(100) COLLATE aio_unicode_ci DEFAULT '' NOT NULL,
-    "ip_address" varchar(64) COLLATE aio_unicode_ci DEFAULT '' NOT NULL,
-    "browser" varchar(100) COLLATE aio_unicode_ci DEFAULT '' NOT NULL,
-    "function_name" varchar(200) COLLATE aio_unicode_ci,
-    "function_item" varchar(100) COLLATE aio_unicode_ci,
-    "access_type" varchar(32) COLLATE aio_unicode_ci,
-    "request_path" varchar(255) COLLATE aio_unicode_ci,
-    "request_method" varchar(16) COLLATE aio_unicode_ci,
+    "username" varchar(100) DEFAULT '' NOT NULL,
+    "nickname" varchar(100) DEFAULT '' NOT NULL,
+    "ip_address" varchar(64) DEFAULT '' NOT NULL,
+    "browser" varchar(100) DEFAULT '' NOT NULL,
+    "function_name" varchar(200),
+    "function_item" varchar(100),
+    "access_type" varchar(32),
+    "request_path" varchar(255),
+    "request_method" varchar(16),
     "request_params" jsonb,
     "request_time" timestamp(3) without time zone,
     "duration_ms" integer,
-    "server_ip" varchar(64) COLLATE aio_unicode_ci,
+    "server_ip" varchar(64),
     "success" smallint DEFAULT '1' NOT NULL,
     "create_user" bigint,
     "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -1765,20 +1679,21 @@ CREATE TABLE "sys_dict_data" (
     "dict_code" bigint NOT NULL,
     "dict_id" bigint NOT NULL,
     "sort_order" integer DEFAULT '0',
-    "dict_label" varchar(100) COLLATE aio_unicode_ci DEFAULT '',
-    "dict_value" varchar(100) COLLATE aio_unicode_ci DEFAULT '',
-    "dict_type" varchar(100) COLLATE aio_unicode_ci DEFAULT '',
-    "css_class" varchar(100) COLLATE aio_unicode_ci,
-    "list_class" varchar(100) COLLATE aio_unicode_ci,
-    "is_default" char(1) COLLATE aio_unicode_ci DEFAULT 'N',
+    "dict_label" varchar(100) DEFAULT '',
+    "dict_value" varchar(100) COLLATE "C" DEFAULT '',
+    "dict_type" varchar(100) COLLATE "C" DEFAULT '',
+    "css_class" varchar(100),
+    "list_class" varchar(100),
+    "is_default" char(1) DEFAULT 'N',
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
-    "remark" varchar(500) COLLATE aio_unicode_ci,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "remark" varchar(500),
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "is_enabled" smallint DEFAULT '1',
-    PRIMARY KEY ("dict_code")
+    "is_enabled" smallint DEFAULT 1 NOT NULL,
+    PRIMARY KEY ("dict_code"),
+    CONSTRAINT "ck_sys_dict_data_enabled" CHECK (("is_enabled" in (0,1)))
  );
 COMMENT ON TABLE "sys_dict_data" IS '字典数据表';
 COMMENT ON COLUMN "sys_dict_data"."dict_code" IS '字典编码';
@@ -1796,20 +1711,21 @@ COMMENT ON COLUMN "sys_dict_data"."update_user" IS '更新人';
 COMMENT ON COLUMN "sys_dict_data"."update_time" IS '更新时间';
 COMMENT ON COLUMN "sys_dict_data"."remark" IS '备注';
 COMMENT ON COLUMN "sys_dict_data"."is_deleted" IS '是否删除: 0-未删除, 1-已删除';
-COMMENT ON COLUMN "sys_dict_data"."is_enabled" IS '是否启用：1=启用，0=停用；NULL表示未设置';
+COMMENT ON COLUMN "sys_dict_data"."is_enabled" IS '是否启用：1=启用，0=停用';
 
 CREATE TABLE "sys_dict_type" (
     "dict_id" bigint NOT NULL,
-    "dict_name" varchar(100) COLLATE aio_unicode_ci DEFAULT '',
-    "dict_type" varchar(100) COLLATE aio_unicode_ci DEFAULT '',
+    "dict_name" varchar(100) DEFAULT '',
+    "dict_type" varchar(100) COLLATE "C" DEFAULT '',
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
-    "remark" varchar(500) COLLATE aio_unicode_ci,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "remark" varchar(500),
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "is_enabled" smallint DEFAULT '1',
-    PRIMARY KEY ("dict_id")
+    "is_enabled" smallint DEFAULT 1 NOT NULL,
+    PRIMARY KEY ("dict_id"),
+    CONSTRAINT "ck_sys_dict_type_enabled" CHECK (("is_enabled" in (0,1)))
  );
 COMMENT ON TABLE "sys_dict_type" IS '字典类型表';
 COMMENT ON COLUMN "sys_dict_type"."dict_id" IS '字典主键';
@@ -1821,25 +1737,25 @@ COMMENT ON COLUMN "sys_dict_type"."update_user" IS '更新人';
 COMMENT ON COLUMN "sys_dict_type"."update_time" IS '更新时间';
 COMMENT ON COLUMN "sys_dict_type"."remark" IS '备注';
 COMMENT ON COLUMN "sys_dict_type"."is_deleted" IS '是否删除: 0-未删除, 1-已删除';
-COMMENT ON COLUMN "sys_dict_type"."is_enabled" IS '是否启用：1=启用，0=停用；NULL表示未设置';
+COMMENT ON COLUMN "sys_dict_type"."is_enabled" IS '是否启用：1=启用，0=停用';
 
 CREATE TABLE "sys_menu" (
     "id" bigint NOT NULL,
     "parent_id" bigint DEFAULT '0',
-    "name" varchar(64) COLLATE aio_unicode_ci NOT NULL,
-    "path" varchar(255) COLLATE aio_unicode_ci NOT NULL,
-    "component" varchar(255) COLLATE aio_unicode_ci,
-    "redirect" varchar(255) COLLATE aio_unicode_ci,
-    "icon_color" varchar(7) COLLATE aio_unicode_ci,
+    "name" varchar(64) NOT NULL,
+    "path" varchar(255) COLLATE "C" NOT NULL,
+    "component" varchar(255),
+    "redirect" varchar(255),
+    "icon_color" varchar(7),
     "meta" jsonb,
-    "roles" varchar(255) COLLATE aio_unicode_ci,
+    "roles" varchar(255),
     "sort_order" integer DEFAULT '0' NOT NULL,
     "web_is_enabled" smallint DEFAULT '1' NOT NULL,
     "mobile_is_enabled" smallint DEFAULT '1' NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -1865,21 +1781,21 @@ CREATE INDEX "sys_menu_idx_sys_menu_parent_id" ON "sys_menu" ("parent_id");
 COMMENT ON INDEX "sys_menu_idx_sys_menu_parent_id" IS '业务检索索引：idx_sys_menu_parent_id';
 CREATE INDEX "sys_menu_idx_sys_menu_sort" ON "sys_menu" ("sort_order");
 COMMENT ON INDEX "sys_menu_idx_sys_menu_sort" IS '业务检索索引：idx_sys_menu_sort';
-CREATE UNIQUE INDEX "sys_menu_uk_sys_menu_path" ON "sys_menu" ("path");
-COMMENT ON INDEX "sys_menu_uk_sys_menu_path" IS '唯一性约束：uk_sys_menu_path';
+CREATE UNIQUE INDEX "sys_menu_uk_sys_menu_path" ON "sys_menu" ("path") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "sys_menu_uk_sys_menu_path" IS '有效菜单路由路径唯一，已删除菜单不占用';
 
 CREATE TABLE "sys_scheduled_job" (
     "id" bigint NOT NULL,
-    "job_code" varchar(80) COLLATE aio_unicode_ci NOT NULL,
-    "name" varchar(100) COLLATE aio_unicode_ci NOT NULL,
-    "cron" varchar(100) COLLATE aio_unicode_ci NOT NULL,
-    "zone_id" varchar(40) COLLATE aio_unicode_ci DEFAULT 'Asia/Shanghai' NOT NULL,
+    "job_code" varchar(80) COLLATE "C" NOT NULL,
+    "name" varchar(100) NOT NULL,
+    "cron" varchar(100) NOT NULL,
+    "zone_id" varchar(40) DEFAULT 'Asia/Shanghai' NOT NULL,
     "is_enabled" smallint DEFAULT '1' NOT NULL,
     "revision" integer DEFAULT '0' NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -1896,25 +1812,25 @@ COMMENT ON COLUMN "sys_scheduled_job"."create_time" IS '创建时间';
 COMMENT ON COLUMN "sys_scheduled_job"."update_user" IS '最后更新人用户ID，自动任务为空';
 COMMENT ON COLUMN "sys_scheduled_job"."update_time" IS '最后更新时间';
 COMMENT ON COLUMN "sys_scheduled_job"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
-CREATE UNIQUE INDEX "sys_scheduled_job_uk_sys_scheduled_job_code" ON "sys_scheduled_job" ("job_code");
-COMMENT ON INDEX "sys_scheduled_job_uk_sys_scheduled_job_code" IS '唯一性约束：uk_sys_scheduled_job_code';
+CREATE UNIQUE INDEX "sys_scheduled_job_uk_sys_scheduled_job_code" ON "sys_scheduled_job" ("job_code") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "sys_scheduled_job_uk_sys_scheduled_job_code" IS '有效定时任务编码唯一，已删除任务不占用';
 
 CREATE TABLE "sys_scheduled_job_log" (
     "id" bigint NOT NULL,
     "job_id" bigint NOT NULL,
-    "trigger_key" varchar(80) COLLATE aio_unicode_ci NOT NULL,
-    "trigger_type" varchar(10) COLLATE aio_unicode_ci NOT NULL,
-    "status" varchar(20) COLLATE aio_unicode_ci NOT NULL,
+    "trigger_key" varchar(80) NOT NULL,
+    "trigger_type" varchar(10) NOT NULL,
+    "status" varchar(20) NOT NULL,
     "scheduled_time" timestamp(0) without time zone,
     "start_time" timestamp(0) without time zone NOT NULL,
     "end_time" timestamp(0) without time zone,
     "duration_ms" bigint,
-    "message" varchar(1000) COLLATE aio_unicode_ci,
-    "instance_id" varchar(36) COLLATE aio_unicode_ci NOT NULL,
+    "message" varchar(1000),
+    "instance_id" varchar(36) NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -1945,8 +1861,8 @@ COMMENT ON INDEX "sys_scheduled_job_log_uk_sys_scheduled_job_log_trigger" IS '�
 CREATE TABLE "sys_work_calendar" (
     "calendar_date" date NOT NULL,
     "day_type" smallint NOT NULL,
-    "holiday_name" varchar(50) COLLATE aio_unicode_ci,
-    "source" varchar(50) COLLATE aio_unicode_ci NOT NULL,
+    "holiday_name" varchar(50),
+    "source" varchar(50) NOT NULL,
     "updated_at" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY ("calendar_date"),
     CONSTRAINT "chk_sys_work_calendar_day_type" CHECK (("day_type" in (0,1,2,3)))
@@ -1960,13 +1876,13 @@ COMMENT ON COLUMN "sys_work_calendar"."updated_at" IS '最后更新时间';
 
 CREATE TABLE "system_config" (
     "id" bigint NOT NULL,
-    "config_key" varchar(128) COLLATE aio_unicode_ci NOT NULL,
-    "config_value" text COLLATE aio_unicode_ci,
-    "config_type" varchar(32) COLLATE aio_unicode_ci DEFAULT 'STRING',
-    "description" varchar(512) COLLATE aio_unicode_ci,
+    "config_key" varchar(128) COLLATE "C" NOT NULL,
+    "config_value" text,
+    "config_type" varchar(32) DEFAULT 'STRING',
+    "description" varchar(512),
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "create_time" timestamp(0) without time zone,
-    "update_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "create_user" bigint,
     "update_user" bigint,
     PRIMARY KEY ("id")
@@ -1985,16 +1901,16 @@ COMMENT ON COLUMN "system_config"."update_user" IS '更新人ID';
 
 CREATE TABLE "system_region" (
     "id" bigint NOT NULL,
-    "code" varchar(12) COLLATE aio_unicode_ci NOT NULL,
-    "parent_code" varchar(12) COLLATE aio_unicode_ci NOT NULL,
-    "name" varchar(100) COLLATE aio_unicode_ci NOT NULL,
+    "code" varchar(12) COLLATE "C" NOT NULL,
+    "parent_code" varchar(12) COLLATE "C" NOT NULL,
+    "name" varchar(100) NOT NULL,
     "level" integer NOT NULL,
-    "data_version" varchar(32) COLLATE aio_unicode_ci NOT NULL,
+    "data_version" varchar(32) NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
-    "is_deleted" integer DEFAULT '0' NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id"),
     CONSTRAINT "ck_system_region_level" CHECK (("level" between 1 and 4))
  );
@@ -2012,22 +1928,22 @@ COMMENT ON COLUMN "system_region"."update_time" IS '最后更新时间，未记�
 COMMENT ON COLUMN "system_region"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
 CREATE INDEX "system_region_idx_system_region_parent" ON "system_region" ("parent_code", "is_deleted", "code");
 COMMENT ON INDEX "system_region_idx_system_region_parent" IS '业务检索索引：idx_system_region_parent';
-CREATE UNIQUE INDEX "system_region_uk_system_region_code" ON "system_region" ("code");
-COMMENT ON INDEX "system_region_uk_system_region_code" IS '唯一性约束：uk_system_region_code';
+CREATE UNIQUE INDEX "system_region_uk_system_region_code" ON "system_region" ("code") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "system_region_uk_system_region_code" IS '有效地区编码唯一，已删除版本记录不占用';
 
 CREATE TABLE "task" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "content" varchar(100) COLLATE aio_unicode_ci,
-    "detail" varchar(1000) COLLATE aio_unicode_ci,
+    "content" varchar(100),
+    "detail" varchar(1000),
     "column_id" bigint,
     "due_date" timestamp(0) without time zone,
     "sort_order" integer,
-    "is_deleted" integer DEFAULT '0' NOT NULL,
+    "is_deleted" smallint DEFAULT '0' NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "task" IS '任务表';
@@ -2049,9 +1965,9 @@ COMMENT ON INDEX "task_idx_user_id" IS '业务检索索引：idx_user_id';
 CREATE TABLE "task_column" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "title" varchar(255) COLLATE aio_unicode_ci NOT NULL,
+    "title" varchar(255) NOT NULL,
     "sort_order" integer NOT NULL,
-    "bg_color" varchar(10) COLLATE aio_unicode_ci,
+    "bg_color" varchar(10),
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     "create_user" bigint,
     "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -2076,15 +1992,15 @@ COMMENT ON INDEX "task_column_idx_user_id" IS '业务检索索引：idx_user_id'
 CREATE TABLE "task_detail" (
     "id" bigint NOT NULL,
     "task_id" bigint NOT NULL,
-    "content" varchar(255) COLLATE aio_unicode_ci NOT NULL,
+    "content" varchar(255) NOT NULL,
     "is_completed" smallint DEFAULT '0' NOT NULL,
     "sort_order" integer DEFAULT '0' NOT NULL,
     "priority" integer DEFAULT '20',
     "user_id" bigint NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     "is_starred" integer DEFAULT '0' NOT NULL,
     "start_time" timestamp(0) without time zone,
@@ -2110,11 +2026,11 @@ COMMENT ON COLUMN "task_detail"."end_time" IS '结束时间';
 
 CREATE TABLE "thought" (
     "id" bigint NOT NULL,
-    "content" text COLLATE aio_unicode_ci NOT NULL,
+    "content" text NOT NULL,
     "user_id" bigint NOT NULL,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "create_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     "is_pinned" smallint DEFAULT '0' NOT NULL,
@@ -2136,10 +2052,10 @@ COMMENT ON COLUMN "thought"."hidden_content" IS '是否隐藏内容';
 CREATE TABLE "thought_rela_event" (
     "id" bigint NOT NULL,
     "thought_id" bigint NOT NULL,
-    "content" text COLLATE aio_unicode_ci NOT NULL,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "content" text NOT NULL,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "create_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
@@ -2155,16 +2071,16 @@ COMMENT ON COLUMN "thought_rela_event"."update_user" IS '最后更新人用户ID
 COMMENT ON COLUMN "thought_rela_event"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
 
 CREATE TABLE "time_record" (
-    "id" varchar(32) COLLATE aio_unicode_ci NOT NULL,
+    "id" varchar(32) NOT NULL,
     "user_id" bigint NOT NULL,
     "create_user" bigint,
     "category_id" bigint,
     "date" date NOT NULL,
-    "start_time" integer NOT NULL,
-    "end_time" integer NOT NULL,
-    "title" varchar(100) COLLATE aio_unicode_ci,
-    "description" text COLLATE aio_unicode_ci,
-    "duration" integer NOT NULL,
+    "start_minute" integer NOT NULL,
+    "end_minute" integer NOT NULL,
+    "title" varchar(100),
+    "description" text,
+    "duration_minutes" integer NOT NULL,
     "is_manual" smallint DEFAULT '0' NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -2172,7 +2088,8 @@ CREATE TABLE "time_record" (
     "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "relate_id" bigint,
     "relate_type" smallint,
-    PRIMARY KEY ("id")
+    PRIMARY KEY ("id"),
+    CONSTRAINT "ck_time_record_time_range" CHECK (("start_minute" between 0 and 1439) and ("end_minute" between 0 and 1439) and ("start_minute" <= "end_minute") and ("duration_minutes" = ("end_minute" - "start_minute") + 1))
  );
 COMMENT ON TABLE "time_record" IS '时间段记录表';
 COMMENT ON COLUMN "time_record"."id" IS '记录ID';
@@ -2180,11 +2097,11 @@ COMMENT ON COLUMN "time_record"."user_id" IS '用户ID';
 COMMENT ON COLUMN "time_record"."create_user" IS '创建人';
 COMMENT ON COLUMN "time_record"."category_id" IS '分类ID(关联time_tracker_category.id)';
 COMMENT ON COLUMN "time_record"."date" IS '日期（YYYY-MM-DD格式）';
-COMMENT ON COLUMN "time_record"."start_time" IS '开始时间（分钟，0-1440）';
-COMMENT ON COLUMN "time_record"."end_time" IS '结束时间（分钟，0-1440）';
+COMMENT ON COLUMN "time_record"."start_minute" IS '开始分钟（当天 0:00 起的分钟数，0–1439，包含该分钟）';
+COMMENT ON COLUMN "time_record"."end_minute" IS '结束分钟（当天 0:00 起的分钟数，0–1439，包含该分钟）';
 COMMENT ON COLUMN "time_record"."title" IS '标题';
 COMMENT ON COLUMN "time_record"."description" IS '详细描述';
-COMMENT ON COLUMN "time_record"."duration" IS '时长（分钟）';
+COMMENT ON COLUMN "time_record"."duration_minutes" IS '时长（分钟），闭区间 end_minute - start_minute + 1，由服务端计算';
 COMMENT ON COLUMN "time_record"."is_manual" IS '是否手动创建：0-系统，1-手动';
 COMMENT ON COLUMN "time_record"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
 COMMENT ON COLUMN "time_record"."create_time" IS '创建时间';
@@ -2198,28 +2115,26 @@ COMMENT ON INDEX "time_record_idx_time_record_date" IS '业务检索索引：idx
 CREATE TABLE "time_tracker_category" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "code" varchar(50) COLLATE aio_unicode_ci,
-    "name" varchar(50) COLLATE aio_unicode_ci,
-    "color" varchar(20) COLLATE aio_unicode_ci,
-    "description" varchar(255) COLLATE aio_unicode_ci,
+    "name" varchar(50),
+    "color" varchar(20),
+    "description" varchar(255),
     "is_track_time" smallint DEFAULT '0' NOT NULL,
     "sort_order" integer DEFAULT '0' NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
-    "is_deleted" integer DEFAULT '0' NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "is_deleted" smallint DEFAULT '0' NOT NULL,
     "is_enabled" smallint DEFAULT '1' NOT NULL,
     "template_id" bigint,
     "parent_id" bigint,
-    "icon" varchar(100) COLLATE aio_unicode_ci,
+    "icon" varchar(100),
     "time_type" smallint DEFAULT '1' NOT NULL,
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "time_tracker_category" IS '时间追踪-分类配置表';
 COMMENT ON COLUMN "time_tracker_category"."id" IS '主键ID';
 COMMENT ON COLUMN "time_tracker_category"."user_id" IS '用户ID';
-COMMENT ON COLUMN "time_tracker_category"."code" IS '分类标识(如: rest, work)';
 COMMENT ON COLUMN "time_tracker_category"."name" IS '分类名称';
 COMMENT ON COLUMN "time_tracker_category"."color" IS '颜色值(Hex)';
 COMMENT ON COLUMN "time_tracker_category"."description" IS '描述';
@@ -2239,15 +2154,13 @@ CREATE INDEX "time_tracker_category_idx_category_user_parent" ON "time_tracker_c
 COMMENT ON INDEX "time_tracker_category_idx_category_user_parent" IS '业务检索索引：idx_category_user_parent';
 CREATE INDEX "time_tracker_category_idx_category_user_template" ON "time_tracker_category" ("user_id", "template_id");
 COMMENT ON INDEX "time_tracker_category_idx_category_user_template" IS '业务检索索引：idx_category_user_template';
-CREATE INDEX "time_tracker_category_idx_user_code" ON "time_tracker_category" ("user_id", "code");
-COMMENT ON INDEX "time_tracker_category_idx_user_code" IS '业务检索索引：idx_user_code';
 
-CREATE TABLE "user" (
+CREATE TABLE "sys_user" (
     "id" bigint NOT NULL,
-    "username" varchar(50) COLLATE aio_unicode_ci NOT NULL,
-    "password" varchar(255) COLLATE aio_unicode_ci,
-    "nickname" varchar(50) COLLATE aio_unicode_ci NOT NULL,
-    "policy_version" varchar(32) COLLATE aio_unicode_ci,
+    "username" varchar(50) NOT NULL,
+    "password" varchar(255),
+    "nickname" varchar(50) NOT NULL,
+    "policy_version" varchar(32),
     "policy_accepted_at" timestamp(0) without time zone,
     "erasure_requested_at" timestamp(0) without time zone,
     "erasure_retry_at" timestamp(0) without time zone,
@@ -2256,70 +2169,70 @@ CREATE TABLE "user" (
     "update_user" bigint,
     "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "last_active_at" timestamp(0) without time zone,
-    "email" varchar(50) COLLATE aio_unicode_ci,
-    "avatar_file_id" varchar(32) COLLATE aio_unicode_ci,
-    "password_salt" varchar(32) COLLATE aio_unicode_ci,
-    "role" varchar(50) COLLATE aio_unicode_ci DEFAULT 'user',
-    "introduction" varchar(255) COLLATE aio_unicode_ci,
+    "email" varchar(50),
+    "avatar_file_id" varchar(32),
+    "password_salt" varchar(32),
+    "role" varchar(50) DEFAULT 'user',
+    "introduction" varchar(255),
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "secondary_password" varchar(128) COLLATE aio_unicode_ci,
-    "secondary_password_salt" varchar(64) COLLATE aio_unicode_ci,
-    "phone_country_code" varchar(5) COLLATE aio_unicode_ci,
-    "phone" varchar(20) COLLATE aio_unicode_ci,
+    "secondary_password" varchar(128),
+    "secondary_password_salt" varchar(64),
+    "phone_country_code" varchar(5),
+    "phone" varchar(20),
     "phone_verified_at" timestamp(0) without time zone,
     "wechat_openid" varchar(128),
     "wechat_unionid" varchar(128),
     "active_flag" smallint GENERATED ALWAYS AS ((case when ("is_deleted" = 0) then 1 else NULL end)) STORED,
     PRIMARY KEY ("id"),
-    CONSTRAINT "ck_user_phone_pair" CHECK (((("phone_country_code" is null) and ("phone" is null)) or (("phone_country_code" is not null) and ("phone" is not null) and regexp_like("phone_country_code" COLLATE "C",'^[1-9][0-9]{0,2}$') and regexp_like("phone" COLLATE "C",'^[0-9]{4,14}$') and ((char_length("phone_country_code") + char_length("phone")) <= 15))))
+    CONSTRAINT "ck_sys_user_phone_pair" CHECK (((("phone_country_code" is null) and ("phone" is null)) or (("phone_country_code" is not null) and ("phone" is not null) and regexp_like("phone_country_code" COLLATE "C",'^[1-9][0-9]{0,2}$') and regexp_like("phone" COLLATE "C",'^[0-9]{4,14}$') and ((char_length("phone_country_code") + char_length("phone")) <= 15))))
  );
-COMMENT ON TABLE "user" IS '用户表';
-COMMENT ON COLUMN "user"."id" IS '用户ID';
-COMMENT ON COLUMN "user"."username" IS '用户名';
-COMMENT ON COLUMN "user"."password" IS '密码，NULL表示未设置';
-COMMENT ON COLUMN "user"."nickname" IS '昵称';
-COMMENT ON COLUMN "user"."policy_version" IS '注册时明确同意的隐私政策与服务条款版本';
-COMMENT ON COLUMN "user"."policy_accepted_at" IS '注册协议同意时间，上海时区';
-COMMENT ON COLUMN "user"."erasure_requested_at" IS '自助注销受理时间，非空表示等待不可撤销的数据清理';
-COMMENT ON COLUMN "user"."erasure_retry_at" IS '注销后台清理下次重试时间，上海时区';
-COMMENT ON COLUMN "user"."create_user" IS '创建人';
-COMMENT ON COLUMN "user"."create_time" IS '创建时间';
-COMMENT ON COLUMN "user"."update_user" IS '更新人';
-COMMENT ON COLUMN "user"."update_time" IS '更新时间';
-COMMENT ON COLUMN "user"."last_active_at" IS '最后活跃时间';
-COMMENT ON COLUMN "user"."email" IS '邮箱';
-COMMENT ON COLUMN "user"."avatar_file_id" IS '头像文件ID';
-COMMENT ON COLUMN "user"."password_salt" IS '密码盐值';
-COMMENT ON COLUMN "user"."role" IS '角色类型';
-COMMENT ON COLUMN "user"."introduction" IS '个人简介';
-COMMENT ON COLUMN "user"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
-COMMENT ON COLUMN "user"."secondary_password" IS '二级密码（加盐哈希）';
-COMMENT ON COLUMN "user"."secondary_password_salt" IS '二级密码盐值';
-COMMENT ON COLUMN "user"."phone_country_code" IS '国际电话区号，不含加号';
-COMMENT ON COLUMN "user"."phone" IS '不含国际区号的手机号';
-COMMENT ON COLUMN "user"."phone_verified_at" IS '最近接收可信手机号验证结果的时间';
-COMMENT ON COLUMN "user"."wechat_openid" IS '当前配置小程序的openid';
-COMMENT ON COLUMN "user"."wechat_unionid" IS '微信unionid，可为空，不用于自动合并账号';
-COMMENT ON COLUMN "user"."active_flag" IS '仅有效用户参与凭证唯一约束';
-CREATE INDEX "user_idx_user_avatar_file" ON "user" ("avatar_file_id");
-COMMENT ON INDEX "user_idx_user_avatar_file" IS '业务检索索引：idx_user_avatar_file';
-CREATE INDEX "user_idx_user_erasure_retry" ON "user" ("is_deleted", "erasure_retry_at");
-COMMENT ON INDEX "user_idx_user_erasure_retry" IS '业务检索索引：idx_user_erasure_retry';
-CREATE UNIQUE INDEX "user_uk_user_phone_active" ON "user" ("phone_country_code", "phone", "active_flag");
-COMMENT ON INDEX "user_uk_user_phone_active" IS '唯一性约束：uk_user_phone_active';
-CREATE UNIQUE INDEX "user_uk_user_wechat_active" ON "user" ("wechat_openid", "active_flag");
-COMMENT ON INDEX "user_uk_user_wechat_active" IS '唯一性约束：uk_user_wechat_active';
+COMMENT ON TABLE "sys_user" IS '用户表';
+COMMENT ON COLUMN "sys_user"."id" IS '用户ID';
+COMMENT ON COLUMN "sys_user"."username" IS '用户名';
+COMMENT ON COLUMN "sys_user"."password" IS '密码，NULL表示未设置';
+COMMENT ON COLUMN "sys_user"."nickname" IS '昵称';
+COMMENT ON COLUMN "sys_user"."policy_version" IS '注册时明确同意的隐私政策与服务条款版本';
+COMMENT ON COLUMN "sys_user"."policy_accepted_at" IS '注册协议同意时间，上海时区';
+COMMENT ON COLUMN "sys_user"."erasure_requested_at" IS '自助注销受理时间，非空表示等待不可撤销的数据清理';
+COMMENT ON COLUMN "sys_user"."erasure_retry_at" IS '注销后台清理下次重试时间，上海时区';
+COMMENT ON COLUMN "sys_user"."create_user" IS '创建人';
+COMMENT ON COLUMN "sys_user"."create_time" IS '创建时间';
+COMMENT ON COLUMN "sys_user"."update_user" IS '更新人';
+COMMENT ON COLUMN "sys_user"."update_time" IS '更新时间';
+COMMENT ON COLUMN "sys_user"."last_active_at" IS '最后活跃时间';
+COMMENT ON COLUMN "sys_user"."email" IS '邮箱';
+COMMENT ON COLUMN "sys_user"."avatar_file_id" IS '头像文件ID';
+COMMENT ON COLUMN "sys_user"."password_salt" IS '密码盐值';
+COMMENT ON COLUMN "sys_user"."role" IS '角色类型';
+COMMENT ON COLUMN "sys_user"."introduction" IS '个人简介';
+COMMENT ON COLUMN "sys_user"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
+COMMENT ON COLUMN "sys_user"."secondary_password" IS '二级密码（加盐哈希）';
+COMMENT ON COLUMN "sys_user"."secondary_password_salt" IS '二级密码盐值';
+COMMENT ON COLUMN "sys_user"."phone_country_code" IS '国际电话区号，不含加号';
+COMMENT ON COLUMN "sys_user"."phone" IS '不含国际区号的手机号';
+COMMENT ON COLUMN "sys_user"."phone_verified_at" IS '最近接收可信手机号验证结果的时间';
+COMMENT ON COLUMN "sys_user"."wechat_openid" IS '当前配置小程序的openid';
+COMMENT ON COLUMN "sys_user"."wechat_unionid" IS '微信unionid，可为空，不用于自动合并账号';
+COMMENT ON COLUMN "sys_user"."active_flag" IS '仅有效用户参与凭证唯一约束';
+CREATE INDEX "sys_user_idx_user_avatar_file" ON "sys_user" ("avatar_file_id");
+COMMENT ON INDEX "sys_user_idx_user_avatar_file" IS '业务检索索引：idx_user_avatar_file';
+CREATE INDEX "sys_user_idx_user_erasure_retry" ON "sys_user" ("is_deleted", "erasure_retry_at");
+COMMENT ON INDEX "sys_user_idx_user_erasure_retry" IS '业务检索索引：idx_user_erasure_retry';
+CREATE UNIQUE INDEX "sys_user_uk_user_phone_active" ON "sys_user" ("phone_country_code", "phone", "active_flag");
+COMMENT ON INDEX "sys_user_uk_user_phone_active" IS '唯一性约束：uk_user_phone_active';
+CREATE UNIQUE INDEX "sys_user_uk_user_wechat_active" ON "sys_user" ("wechat_openid", "active_flag");
+COMMENT ON INDEX "sys_user_uk_user_wechat_active" IS '唯一性约束：uk_user_wechat_active';
 
 CREATE TABLE "user_bind" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "platform" varchar(32) COLLATE aio_unicode_ci NOT NULL,
-    "platform_username" varchar(128) COLLATE aio_unicode_ci,
-    "access_token" text COLLATE aio_unicode_ci,
+    "platform" varchar(32) NOT NULL,
+    "platform_username" varchar(128),
+    "access_token" text,
     "meta_fields" jsonb,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "create_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
@@ -2353,18 +2266,18 @@ CREATE TABLE "user_body_profile" (
     "thigh_cm" numeric(5,1),
     "calf_cm" numeric(5,1),
     "inseam_cm" numeric(5,1),
-    "gender" varchar(16) COLLATE aio_unicode_ci,
-    "measurement_side" varchar(16) COLLATE aio_unicode_ci,
-    "arm_state" varchar(16) COLLATE aio_unicode_ci,
-    "shoe_system" varchar(8) COLLATE aio_unicode_ci,
-    "top_size" varchar(32) COLLATE aio_unicode_ci,
-    "trousers_size" varchar(32) COLLATE aio_unicode_ci,
-    "shoe_size" varchar(32) COLLATE aio_unicode_ci,
+    "gender" varchar(16),
+    "measurement_side" varchar(16),
+    "arm_state" varchar(16),
+    "shoe_system" varchar(8),
+    "top_size" varchar(32),
+    "trousers_size" varchar(32),
+    "shoe_size" varchar(32),
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
-    "is_deleted" integer DEFAULT '0' NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id"),
     CONSTRAINT "ck_body_profile_version" CHECK (("version" > 0)),
     CONSTRAINT "ck_body_profile_gender" CHECK (("gender" in ('male','female'))),
@@ -2419,23 +2332,24 @@ CREATE TABLE "user_dict_data" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
     "template_id" bigint,
-    "dict_type" varchar(100) COLLATE aio_unicode_ci DEFAULT '',
+    "dict_type" varchar(100) COLLATE "C" DEFAULT '',
     "sort_order" integer DEFAULT '0',
-    "dict_label" varchar(100) COLLATE aio_unicode_ci DEFAULT '',
-    "dict_value" varchar(100) COLLATE aio_unicode_ci DEFAULT '',
-    "color" varchar(20) COLLATE aio_unicode_ci,
-    "icon" varchar(100) COLLATE aio_unicode_ci,
+    "dict_label" varchar(100) DEFAULT '',
+    "dict_value" varchar(100) COLLATE "C" DEFAULT '',
+    "color" varchar(20),
+    "icon" varchar(100),
     "ext_data" jsonb,
-    "is_default" char(1) COLLATE aio_unicode_ci DEFAULT 'N',
-    "is_readonly" char(1) COLLATE aio_unicode_ci DEFAULT 'N',
+    "is_default" char(1) DEFAULT 'N',
+    "is_readonly" char(1) DEFAULT 'N',
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
-    "remark" varchar(500) COLLATE aio_unicode_ci,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "remark" varchar(500),
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     "is_enabled" smallint DEFAULT '1',
-    PRIMARY KEY ("id")
+    PRIMARY KEY ("id"),
+    CONSTRAINT "ck_user_dict_data_enabled" CHECK ((("is_enabled" is null) or ("is_enabled" in (0,1))))
  );
 COMMENT ON TABLE "user_dict_data" IS '用户字典数据表';
 COMMENT ON COLUMN "user_dict_data"."id" IS '字典主键';
@@ -2462,52 +2376,17 @@ COMMENT ON INDEX "user_dict_data_idx_user_dict_template" IS '业务检索索引�
 CREATE INDEX "user_dict_data_idx_user_dict_type" ON "user_dict_data" ("user_id", "dict_type");
 COMMENT ON INDEX "user_dict_data_idx_user_dict_type" IS '业务检索索引：idx_user_dict_type';
 
-CREATE TABLE "user_dict_type" (
-    "id" bigint NOT NULL,
-    "user_id" bigint NOT NULL,
-    "sys_dict_id" bigint,
-    "dict_name" varchar(100) COLLATE aio_unicode_ci,
-    "dict_type" varchar(100) COLLATE aio_unicode_ci,
-    "icon" varchar(100) COLLATE aio_unicode_ci,
-    "color" varchar(20) COLLATE aio_unicode_ci,
-    "create_user" bigint,
-    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
-    "update_user" bigint,
-    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP,
-    "remark" varchar(500) COLLATE aio_unicode_ci,
-    "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "is_enabled" smallint DEFAULT '1',
-    PRIMARY KEY ("id")
- );
-COMMENT ON TABLE "user_dict_type" IS '用户字典类型表';
-COMMENT ON COLUMN "user_dict_type"."id" IS '主键ID';
-COMMENT ON COLUMN "user_dict_type"."user_id" IS '所属用户ID';
-COMMENT ON COLUMN "user_dict_type"."sys_dict_id" IS '关联的系统字典类型ID';
-COMMENT ON COLUMN "user_dict_type"."dict_name" IS '字典名称';
-COMMENT ON COLUMN "user_dict_type"."dict_type" IS '字典类型';
-COMMENT ON COLUMN "user_dict_type"."icon" IS '图标';
-COMMENT ON COLUMN "user_dict_type"."color" IS '颜色';
-COMMENT ON COLUMN "user_dict_type"."create_user" IS '创建人';
-COMMENT ON COLUMN "user_dict_type"."create_time" IS '创建时间';
-COMMENT ON COLUMN "user_dict_type"."update_user" IS '更新人';
-COMMENT ON COLUMN "user_dict_type"."update_time" IS '更新时间';
-COMMENT ON COLUMN "user_dict_type"."remark" IS '备注';
-COMMENT ON COLUMN "user_dict_type"."is_deleted" IS '是否删除';
-COMMENT ON COLUMN "user_dict_type"."is_enabled" IS '是否启用：1=启用，0=停用；NULL表示未设置';
-CREATE INDEX "user_dict_type_idx_user_dict_type_user" ON "user_dict_type" ("user_id", "dict_type");
-COMMENT ON INDEX "user_dict_type_idx_user_dict_type_user" IS '业务检索索引：idx_user_dict_type_user';
-
 CREATE TABLE "user_home_card_preference" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "card_key" varchar(64) COLLATE aio_unicode_ci NOT NULL,
+    "card_key" varchar(64) NOT NULL,
     "is_enabled" smallint DEFAULT '1' NOT NULL,
     "sort_order" integer DEFAULT '0' NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
-    "is_deleted" integer DEFAULT '0' NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "user_home_card_preference" IS '用户首页卡片偏好';
@@ -2529,10 +2408,10 @@ CREATE TABLE "user_menu_hidden" (
     "user_id" bigint NOT NULL,
     "menu_id" bigint NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
-    "is_deleted" integer DEFAULT '0' NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "user_menu_hidden" IS '用户隐藏菜单';
@@ -2554,9 +2433,9 @@ CREATE TABLE "user_quick_nav" (
     "sort_order" integer DEFAULT '0' NOT NULL,
     "is_enabled" smallint DEFAULT '1' NOT NULL,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -2570,7 +2449,7 @@ COMMENT ON COLUMN "user_quick_nav"."create_user" IS '创建人';
 COMMENT ON COLUMN "user_quick_nav"."create_time" IS '创建时间';
 COMMENT ON COLUMN "user_quick_nav"."update_user" IS '更新人';
 COMMENT ON COLUMN "user_quick_nav"."update_time" IS '更新时间';
-COMMENT ON COLUMN "user_quick_nav"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
+COMMENT ON COLUMN "user_quick_nav"."is_deleted" IS '统一保留字段，固定为0，替换布局使用物理删除';
 CREATE INDEX "user_quick_nav_idx_user_sort" ON "user_quick_nav" ("user_id", "sort_order");
 COMMENT ON INDEX "user_quick_nav_idx_user_sort" IS '业务检索索引：idx_user_sort';
 
@@ -2579,8 +2458,8 @@ CREATE TABLE "user_secondary_lock_menu" (
     "user_id" bigint NOT NULL,
     "menu_id" bigint NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "create_time" timestamp(0) without time zone,
-    "update_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "create_user" bigint,
     "update_user" bigint,
     PRIMARY KEY ("id")
@@ -2599,16 +2478,16 @@ COMMENT ON INDEX "user_secondary_lock_menu_idx_user_id" IS '业务检索索引�
 
 CREATE TABLE "wardrobe_category" (
     "id" bigint NOT NULL,
-    "name" varchar(50) COLLATE aio_unicode_ci NOT NULL,
-    "icon" varchar(50) COLLATE aio_unicode_ci,
+    "name" varchar(50) NOT NULL,
+    "icon" varchar(50),
     "parent_id" bigint,
     "sort_order" integer DEFAULT '0',
     "category_type" smallint DEFAULT '0',
     "user_id" bigint,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -2628,26 +2507,26 @@ COMMENT ON COLUMN "wardrobe_category"."is_deleted" IS '逻辑删除标记：0=�
 
 CREATE TABLE "wardrobe_item" (
     "id" bigint NOT NULL,
-    "name" varchar(100) COLLATE aio_unicode_ci NOT NULL,
+    "name" varchar(100) NOT NULL,
     "category_id" bigint,
-    "color" varchar(50) COLLATE aio_unicode_ci,
-    "brand" varchar(100) COLLATE aio_unicode_ci,
-    "season" varchar(20) COLLATE aio_unicode_ci,
+    "color" varchar(50),
+    "brand" varchar(100),
+    "season" varchar(20),
     "purchase_date" date,
     "price" numeric(10,2),
-    "file_id" varchar(50) COLLATE aio_unicode_ci,
-    "size" varchar(20) COLLATE aio_unicode_ci,
-    "remark" varchar(500) COLLATE aio_unicode_ci,
+    "file_id" varchar(32),
+    "size" varchar(20),
+    "remark" varchar(500),
     "user_id" bigint NOT NULL,
     "source_platform" varchar(16),
-    "source_order_id" varchar(100),
-    "source_product_id" varchar(100),
-    "source_item_id" varchar(128),
+    "source_order_id" varchar(100) COLLATE "C",
+    "source_product_id" varchar(100) COLLATE "C",
+    "source_item_id" varchar(128) COLLATE "C",
     "source_unit_index" integer,
     "create_user" bigint,
-    "create_time" timestamp(0) without time zone,
+    "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
-    "update_time" timestamp(0) without time zone,
+    "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
@@ -2660,7 +2539,7 @@ COMMENT ON COLUMN "wardrobe_item"."brand" IS '品牌';
 COMMENT ON COLUMN "wardrobe_item"."season" IS '适用季节:春,夏,秋,冬';
 COMMENT ON COLUMN "wardrobe_item"."purchase_date" IS '购买日期';
 COMMENT ON COLUMN "wardrobe_item"."price" IS '价格';
-COMMENT ON COLUMN "wardrobe_item"."file_id" IS '图片文件ID';
+COMMENT ON COLUMN "wardrobe_item"."file_id" IS '图片文件ID(UUID)';
 COMMENT ON COLUMN "wardrobe_item"."size" IS '尺码';
 COMMENT ON COLUMN "wardrobe_item"."remark" IS '备注，未填写时为空';
 COMMENT ON COLUMN "wardrobe_item"."user_id" IS '用户ID';
@@ -2681,4 +2560,66 @@ COMMENT ON INDEX "wardrobe_item_idx_user_id" IS '业务检索索引：idx_user_i
 CREATE INDEX "wardrobe_item_idx_wardrobe_item_capture_order" ON "wardrobe_item" ("user_id", "source_platform", "source_order_id", "is_deleted");
 COMMENT ON INDEX "wardrobe_item_idx_wardrobe_item_capture_order" IS '业务检索索引：idx_wardrobe_item_capture_order';
 
-ALTER TABLE "user" ADD CONSTRAINT "fk_user_avatar_file" FOREIGN KEY ("avatar_file_id") REFERENCES "file" ("id");
+-- 有效记录部分唯一索引；已逻辑删除的记录不占用业务键。
+CREATE UNIQUE INDEX "sys_user_uk_user_username_active" ON "sys_user" (lower("username")) WHERE "is_deleted" = 0;
+COMMENT ON INDEX "sys_user_uk_user_username_active" IS '有效用户的用户名忽略大小写唯一，已删除用户不占用';
+CREATE UNIQUE INDEX "sys_user_uk_user_email_active" ON "sys_user" (lower("email")) WHERE "is_deleted" = 0 AND "email" IS NOT NULL AND "email" <> '';
+COMMENT ON INDEX "sys_user_uk_user_email_active" IS '有效用户的邮箱忽略大小写唯一，空邮箱不参与比较，已删除用户不占用';
+CREATE UNIQUE INDEX "uk_user_bind_user_platform" ON "user_bind" ("user_id", "platform") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "uk_user_bind_user_platform" IS '同一用户在同一平台只能有一条有效绑定';
+CREATE UNIQUE INDEX "uk_notification_channel_config_user_channel" ON "notification_channel_config" ("user_id", "channel") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "uk_notification_channel_config_user_channel" IS '同一用户同一通知渠道只能有一条有效配置';
+CREATE UNIQUE INDEX "uk_notification_preference_user_biz_channel" ON "notification_preference" ("user_id", "biz_type", "channel") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "uk_notification_preference_user_biz_channel" IS '同一用户同一业务类型和渠道只能有一条有效偏好';
+CREATE UNIQUE INDEX "uk_api_key_api_key" ON "api_key" ("api_key") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "uk_api_key_api_key" IS '有效 API Key 精确唯一，已删除 Key 可重新使用';
+CREATE UNIQUE INDEX "uk_system_config_config_key" ON "system_config" ("config_key") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "uk_system_config_config_key" IS '有效系统配置键唯一，已删除配置不占用';
+CREATE UNIQUE INDEX "uk_b_video_user_bvid" ON "b_video" ("user_id", "bvid") WHERE "is_deleted" = 0 AND "bvid" IS NOT NULL AND "bvid" <> '';
+COMMENT ON INDEX "uk_b_video_user_bvid" IS '同一用户同一 BV 号只能有一条有效视频记录，未记录 BV 号时为空不参与比较';
+CREATE UNIQUE INDEX "uk_user_dict_data_user_template" ON "user_dict_data" ("user_id", "template_id") WHERE "is_deleted" = 0 AND "template_id" IS NOT NULL;
+COMMENT ON INDEX "uk_user_dict_data_user_template" IS '同一用户对同一公共字典只能有一条有效覆盖记录';
+CREATE UNIQUE INDEX "uk_time_tracker_category_user_template" ON "time_tracker_category" ("user_id", "template_id") WHERE "is_deleted" = 0 AND "template_id" IS NOT NULL;
+COMMENT ON INDEX "uk_time_tracker_category_user_template" IS '同一用户对同一公共分类只能有一条有效覆盖记录';
+CREATE UNIQUE INDEX "uk_bank_card_user_fingerprint" ON "bank_card" ("user_id", "card_no_fingerprint") WHERE "is_deleted" = 0 AND "card_no_fingerprint" IS NOT NULL;
+COMMENT ON INDEX "uk_bank_card_user_fingerprint" IS '同一用户同一卡号指纹只能有一条有效银行卡';
+CREATE UNIQUE INDEX "uk_bank_card_tag_rel_user_card_tag" ON "bank_card_tag_rel" ("user_id", "bank_card_id", "tag_id") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "uk_bank_card_tag_rel_user_card_tag" IS '同一银行卡同一标签只能有一条有效关联';
+CREATE UNIQUE INDEX "uk_sys_dict_type_dict_type" ON "sys_dict_type" ("dict_type") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "uk_sys_dict_type_dict_type" IS '有效系统字典类型编码唯一，已删除类型不占用';
+CREATE UNIQUE INDEX "uk_sys_dict_data_dict_id_value" ON "sys_dict_data" ("dict_id", "dict_value") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "uk_sys_dict_data_dict_id_value" IS '同一字典类型下的有效字典值唯一';
+
+-- 用户维度热点查询索引。
+CREATE INDEX "expense_idx_user_deleted_time" ON "expense" ("user_id", "is_deleted", "exp_time" DESC, "id" DESC);
+COMMENT ON INDEX "expense_idx_user_deleted_time" IS '支出列表：用户、删除标记与支出时间倒序';
+CREATE INDEX "income_idx_user_deleted_date" ON "income" ("user_id", "is_deleted", "inc_date" DESC, "id" DESC);
+COMMENT ON INDEX "income_idx_user_deleted_date" IS '收入列表：用户、删除标记与收入日期倒序';
+CREATE INDEX "time_record_idx_user_date_update" ON "time_record" ("user_id", "is_deleted", "date", "update_time", "id");
+COMMENT ON INDEX "time_record_idx_user_date_update" IS '时迹按日查询：用户、日期与更新时间';
+CREATE INDEX "b_video_idx_user_deleted_update" ON "b_video" ("user_id", "is_deleted", "update_time" DESC NULLS LAST, "id" DESC);
+COMMENT ON INDEX "b_video_idx_user_deleted_update" IS '视频列表：用户、删除标记与更新时间倒序';
+CREATE INDEX "exercise_record_idx_user_deleted_date" ON "exercise_record" ("user_id", "is_deleted", "exercise_date" DESC, "id" DESC);
+COMMENT ON INDEX "exercise_record_idx_user_deleted_date" IS '运动记录列表：用户、删除标记与运动日期倒序';
+CREATE INDEX "exercise_record_idx_user_time" ON "exercise_record" ("user_id", "time_id");
+COMMENT ON INDEX "exercise_record_idx_user_time" IS '运动记录按时迹反查：用户与时迹ID';
+CREATE INDEX "memo_idx_user_deleted_update" ON "memo" ("user_id", "is_deleted", "update_time" DESC NULLS LAST, "id" DESC);
+COMMENT ON INDEX "memo_idx_user_deleted_update" IS '备忘录列表：用户、删除标记与更新时间倒序';
+CREATE INDEX "thought_idx_user_deleted_update" ON "thought" ("user_id", "is_deleted", "update_time" DESC NULLS LAST, "id" DESC);
+COMMENT ON INDEX "thought_idx_user_deleted_update" IS '闪念列表：用户、删除标记与更新时间倒序';
+CREATE INDEX "thought_rela_event_idx_thought" ON "thought_rela_event" ("thought_id", "id");
+COMMENT ON INDEX "thought_rela_event_idx_thought" IS '闪念关联事件：按闪念批量读取';
+CREATE INDEX "task_detail_idx_task_user_status_sort" ON "task_detail" ("task_id", "user_id", "is_completed", "priority" ASC NULLS FIRST, "sort_order", "id");
+COMMENT ON INDEX "task_detail_idx_task_user_status_sort" IS '任务明细：任务、用户、完成状态与排序';
+CREATE INDEX "task_detail_idx_user_starred_status" ON "task_detail" ("user_id", "is_starred", "is_completed", "priority" ASC NULLS FIRST, "sort_order", "id");
+COMMENT ON INDEX "task_detail_idx_user_starred_status" IS '关注明细：用户、关注与完成状态与排序';
+CREATE INDEX "wardrobe_category_idx_type_user_sort" ON "wardrobe_category" ("category_type", "user_id", "sort_order" ASC NULLS FIRST);
+COMMENT ON INDEX "wardrobe_category_idx_type_user_sort" IS '衣柜分类：系统 / 用户分类与排序';
+CREATE INDEX "login_log_idx_user_created" ON "login_log" ("user_id", "created_at");
+COMMENT ON INDEX "login_log_idx_user_created" IS '登录日志按用户与时间清理 / 查询';
+CREATE INDEX "login_log_idx_created" ON "login_log" ("created_at");
+COMMENT ON INDEX "login_log_idx_created" IS '登录日志按时间清理';
+CREATE INDEX "device_idx_user_deleted_purchase" ON "device" ("user_id", "is_deleted", "purchase_date" DESC NULLS LAST, "id" DESC);
+COMMENT ON INDEX "device_idx_user_deleted_purchase" IS '设备列表：用户、删除标记与购买日期倒序';
+CREATE INDEX "performance_idx_user_deleted_date" ON "performance" ("user_id", "is_deleted", "performance_date" DESC, "id" DESC);
+COMMENT ON INDEX "performance_idx_user_deleted_date" IS '演出列表：用户、删除标记与演出日期倒序';

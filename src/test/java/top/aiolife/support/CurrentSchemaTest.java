@@ -37,7 +37,7 @@ class CurrentSchemaTest {
 
         String dictionary = CurrentSchema.table("sys_dict_data");
         assertTrue(dictionary.contains("\"sort_order\""));
-        assertTrue(dictionary.contains("\"is_enabled\" smallint DEFAULT '1'"));
+        assertTrue(dictionary.contains("\"is_enabled\" smallint DEFAULT 1 NOT NULL"));
         assertFalse(dictionary.contains("\"dict_sort\""));
         assertFalse(dictionary.contains("\"status\""));
         assertFalse(dictionary.contains("\"source_item_id\""));

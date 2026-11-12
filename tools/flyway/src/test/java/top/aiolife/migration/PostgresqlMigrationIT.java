@@ -15,37 +15,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class PostgresqlMigrationIT {
     @TempDir Path temporary;
 
-    @Test void 查询菜单增量保留管理员配置和软删除且不启用移动端() throws Exception {
-        try (var container = new GenericContainer<>("postgres:18-alpine")
-                .withEnv("POSTGRES_PASSWORD", "isolated-fixture").withExposedPorts(5432)
-                .waitingFor(Wait.forLogMessage(".*database system is ready to accept connections.*\\n", 2))) {
-            container.start();
-            String url = "jdbc:postgresql://" + container.getHost() + ":" + container.getMappedPort(5432) + "/postgres";
-            Path root = TestProject.copy(temporary);
-            var config = Flyway.configure().dataSource(url, "postgres", "isolated-fixture")
-                    .locations("filesystem:" + root.resolve("sql/migrations"))
-                    .validateMigrationNaming(true).placeholderReplacement(false).callbacks(new MigrationGuard());
-            assertEquals(12, config.target("20261110.02.011").load().migrate().migrationsExecuted);
-            try (var connection = DriverManager.getConnection(url, "postgres", "isolated-fixture")) {
-                try (var statement = connection.createStatement()) {
-                    statement.execute("INSERT INTO goal(id,user_id,title) VALUES(101,1,'preserved')");
-                    statement.execute("INSERT INTO sys_menu(id,parent_id,name,path,component,meta,sort_order,web_is_enabled,mobile_is_enabled,is_deleted) "
-                            + "VALUES(9901,2300,'CustomQuery','/query/workbench','custom/view','{\"title\":\"自定义\"}',99,0,0,1)");
-                }
-                assertEquals(1, config.target("20261111.01").load().migrate().migrationsExecuted);
-                assertEquals("CustomQuery", SchemaSnapshot.rows(connection, "SELECT name FROM sys_menu WHERE id=9901").getFirst().getFirst());
-                assertEquals("1", SchemaSnapshot.rows(connection, "SELECT is_deleted FROM sys_menu WHERE id=9901").getFirst().getFirst());
-                assertEquals("99", SchemaSnapshot.rows(connection, "SELECT sort_order FROM sys_menu WHERE id=9901").getFirst().getFirst());
-                assertEquals("0", SchemaSnapshot.rows(connection, "SELECT mobile_is_enabled FROM sys_menu WHERE path='/query/models'").getFirst().getFirst());
-                try (var statement = connection.createStatement()) {
-                    statement.execute(Files.readString(root.resolve("sql/migrations/V20261111_01__query_workspace_menus.sql")));
-                }
-                assertEquals("2", SchemaSnapshot.rows(connection, "SELECT count(*) FROM sys_menu WHERE path IN ('/query/workbench','/query/models')").getFirst().getFirst());
-                assertEquals("preserved", SchemaSnapshot.rows(connection, "SELECT title FROM goal WHERE id=101").getFirst().getFirst());
-            }
-        }
-    }
-
     @Test void 初始化重复迁移增量事务回滚和结构预检() throws Exception {
         try (var container = new GenericContainer<>("postgres:18-alpine")
                 .withEnv("POSTGRES_PASSWORD", "isolated-fixture")
@@ -59,17 +28,30 @@ class PostgresqlMigrationIT {
                     .locations("filesystem:" + root.resolve("sql/migrations"))
                     .validateMigrationNaming(true).placeholderReplacement(false).callbacks(new MigrationGuard());
             var flyway = configuration.load();
-            assertEquals(21, flyway.migrate().migrationsExecuted);
+            assertEquals(13, flyway.migrate().migrationsExecuted);
             assertEquals(0, flyway.migrate().migrationsExecuted);
             try (var connection = DriverManager.getConnection(url,"postgres","isolated-fixture")) {
                 var snapshot = SchemaSnapshot.read(connection);
                 assertEquals(68, snapshot.sections().get("tables").size());
                 assertTrue(snapshot.sections().get("columns").stream().allMatch(c -> c.get(9)!=null && !c.get(9).isBlank()));
+                assertEquals("2", SchemaSnapshot.rows(connection, "SELECT count(*) FROM sys_menu WHERE path IN ('/query/workbench','/query/models')").getFirst().getFirst());
+                assertEquals("0", SchemaSnapshot.rows(connection, "SELECT mobile_is_enabled FROM sys_menu WHERE path='/query/models'").getFirst().getFirst());
                 Path contract = temporary.resolve("contract.json");
-                SchemaContract.write(contract,root,"20261112.08",connection);
+                SchemaContract.write(contract,root,"20261112.13",connection);
                 SchemaContract.read(contract,root).check(connection);
                 SchemaContract.write(Path.of(System.getProperty("schema.reportDirectory", "target/schema"))
-                        .resolve("schema-contract.json"), MigrationProject.root(), "20261112.08", connection);
+                        .resolve("schema-contract.json"), MigrationProject.root(), "20261112.13", connection);
+                try (var statement = connection.createStatement()) {
+                    statement.execute("INSERT INTO sys_menu(id,name,path) VALUES(9001,'探针A','/CollationProbe')");
+                    statement.execute("INSERT INTO sys_menu(id,name,path) VALUES(9002,'探针B','/collationprobe')");
+                    statement.execute("INSERT INTO system_config(id,config_key,config_value) VALUES(9003,'CollationProbe','upper')");
+                    statement.execute("INSERT INTO system_config(id,config_key,config_value) VALUES(9004,'collationprobe','lower')");
+                }
+                assertEquals("1", SchemaSnapshot.rows(connection, "SELECT count(*) FROM sys_menu WHERE path='/CollationProbe'").getFirst().getFirst());
+                assertEquals("1", SchemaSnapshot.rows(connection, "SELECT count(*) FROM sys_menu WHERE path='/collationprobe'").getFirst().getFirst());
+                assertEquals("1", SchemaSnapshot.rows(connection, "SELECT count(*) FROM sys_menu WHERE path LIKE '/collation%'").getFirst().getFirst());
+                assertEquals("upper", SchemaSnapshot.rows(connection, "SELECT config_value FROM system_config WHERE config_key='CollationProbe'").getFirst().getFirst());
+                assertEquals("lower", SchemaSnapshot.rows(connection, "SELECT config_value FROM system_config WHERE config_key='collationprobe'").getFirst().getFirst());
                 try (var statement = connection.createStatement()) {
                     statement.execute("INSERT INTO goal(id,user_id,title) VALUES(101,1,'fixture')");
                 }

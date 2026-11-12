@@ -28,12 +28,7 @@ class AccountErasureMapperTest {
         var tables = new LinkedHashMap<String, List<String>>();
         var matcher = tablePattern.matcher(Files.readString(Path.of("sql/migrations/V20261110_01__postgresql_schema.sql")));
         while (matcher.find()) {
-            // 增量 V20261112_03 将基线中的 user 重命名为 sys_user，V20261112_04 删除四张死表。
-            String baselineTable = matcher.group(1);
-            if (top.aiolife.support.CurrentSchema.dropped(baselineTable)) {
-                continue;
-            }
-            String table = "user".equals(baselineTable) ? "sys_user" : baselineTable;
+            String table = matcher.group(1);
             var columns = columnPattern.matcher(matcher.group(2)).results().map(m -> m.group(1)).toList();
             tables.put(table, columns);
             var definitions = columns.stream().map(column -> "\"" + column + "\" " +

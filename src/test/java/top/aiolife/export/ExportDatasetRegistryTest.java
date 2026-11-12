@@ -33,16 +33,6 @@ class ExportDatasetRegistryTest {
                 json.readValue(
                         Files.readString(Path.of("src/main/resources/export/excluded-tables.json")),
                         new TypeReference<>() {});
-        for (var item : datasets) {
-            assertFalse(
-                    CurrentSchema.dropped(item.table()),
-                    "Dataset references a dropped table: " + item.table());
-        }
-        for (var table : excluded.keySet()) {
-            assertFalse(
-                    CurrentSchema.dropped(table),
-                    "Excluded table no longer exists: " + table);
-        }
         Set<String> classified = new HashSet<>(excluded.keySet());
         for (var item : datasets) {
             assertTrue(classified.add(item.table()), "Duplicate classification: " + item.table());
@@ -80,13 +70,10 @@ class ExportDatasetRegistryTest {
                                         Path.of(
                                                 "sql/migrations/V20261110_01__postgresql_schema.sql")));
         while (matcher.find()) {
-            String baselineTable = matcher.group(1);
-            if (CurrentSchema.dropped(baselineTable)) {
-                continue;
-            }
+            String table = matcher.group(1);
             assertTrue(
-                    classified.contains(CurrentSchema.currentName(baselineTable)),
-                    "Missing classification: " + CurrentSchema.currentName(baselineTable));
+                    classified.contains(table),
+                    "Missing classification: " + table);
         }
     }
 
@@ -115,9 +102,6 @@ class ExportDatasetRegistryTest {
             Set<String> actual = new HashSet<>();
             var fields = Pattern.compile("(?m)^\\s*\"([^\"]+)\"\\s+").matcher(CurrentSchema.table(dataset.table()));
             while (fields.find()) {
-                if (CurrentSchema.droppedColumn(dataset.table(), fields.group(1))) {
-                    continue;
-                }
                 actual.add(fields.group(1));
             }
             Set<String> classified = new HashSet<>();

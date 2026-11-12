@@ -3,8 +3,7 @@
 -- 影响：插入公共预设，不创建用户账号；源库搬迁仍由独立导入器处理。
 -- 重跑：由 Flyway 版本历史保证只执行一次；失败事务回滚后修正原因再迁移。
 -- 执行：mvn -f tools/flyway/pom.xml compile flyway:migrate flyway:validate。
--- BEGIN ORIGINAL SEED SQL
-INSERT INTO "sys_work_calendar" ("calendar_date", "day_type", "holiday_name", "source", "updated_at") VALUES
+INSERT INTO sys_work_calendar ("calendar_date", "day_type", "holiday_name", "source", "updated_at") VALUES
 ('2026-01-01', 2, '元旦', 'holiday-cn', '2026-11-10 11:39:36'),
 ('2026-01-02', 2, '元旦', 'holiday-cn', '2026-11-10 11:39:36'),
 ('2026-01-03', 2, '元旦', 'holiday-cn', '2026-11-10 11:39:36'),
@@ -205,7 +204,7 @@ INSERT INTO "sys_work_calendar" ("calendar_date", "day_type", "holiday_name", "s
 ('2026-07-17', 0, NULL, 'weekday_rule', '2026-11-10 11:39:36'),
 ('2026-07-18', 1, NULL, 'weekday_rule', '2026-11-10 11:39:36'),
 ('2026-07-19', 1, NULL, 'weekday_rule', '2026-11-10 11:39:36');
-INSERT INTO "sys_work_calendar" ("calendar_date", "day_type", "holiday_name", "source", "updated_at") VALUES
+INSERT INTO sys_work_calendar ("calendar_date", "day_type", "holiday_name", "source", "updated_at") VALUES
 ('2026-07-20', 0, NULL, 'weekday_rule', '2026-11-10 11:39:36'),
 ('2026-07-21', 0, NULL, 'weekday_rule', '2026-11-10 11:39:36'),
 ('2026-07-22', 0, NULL, 'weekday_rule', '2026-11-10 11:39:36'),
