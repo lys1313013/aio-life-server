@@ -1,5 +1,7 @@
 package top.aiolife.sso.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +16,7 @@ import top.aiolife.sso.service.AccountClosureService;
 public class AccountClosureController {
     private final AccountClosureService closure;
 
+    @Operation(summary = "注销当前账号")
     @PostMapping("/auth/account/close")
     public ApiResponse<Void> close(@Valid @RequestBody CloseAccountReq request) {
         closure.close(AccountClosureService.requestUser(), request);

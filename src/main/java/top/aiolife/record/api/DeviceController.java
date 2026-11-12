@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import top.aiolife.core.query.QueryOrder;
@@ -39,6 +41,7 @@ public class DeviceController {
         return eleDeviceMapper;
     }
 
+    @Operation(summary = "分页查询设备")
     @GetMapping("/query")
     public ApiResponse<PageResp<DeviceVO>> query(
             @QueryParams CommonQuery<DeviceQuery> requestQuery) {
@@ -63,6 +66,7 @@ public class DeviceController {
      *
      * @param entity
      */
+    @Operation(summary = "新增设备")
     @PostMapping
     public ApiResponse<Boolean> add(@Valid @RequestBody DeviceCreateReq entityReq) {
         DeviceEntity entity = RecordApiConvertor.INSTANCE.fromDeviceCreateReq(entityReq);
@@ -79,6 +83,7 @@ public class DeviceController {
      * @param id
      * @param entity
      */
+    @Operation(summary = "更新设备")
     @PutMapping("/{id}")
     public ApiResponse<Boolean> update(@PathVariable("id") Long id, @Valid @RequestBody DeviceUpdateReq entityReq) {
         DeviceEntity entity = RecordApiConvertor.INSTANCE.fromDeviceUpdateReq(entityReq);
@@ -98,11 +103,13 @@ public class DeviceController {
      * @param id
      * @return
      */
+    @Operation(summary = "删除设备")
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@PathVariable("id") Long id) {
         return ApiResponse.success(deviceExpenseService.deleteDevice(StpUtil.getLoginIdAsLong(), id));
     }
 
+    @Operation(summary = "查询设备详情")
     @GetMapping("/{id}")
     public ApiResponse<DeviceVO> getDevice(@PathVariable("id") Long id) {
         long userId = StpUtil.getLoginIdAsLong();

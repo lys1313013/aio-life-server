@@ -3,6 +3,8 @@ package top.aiolife.record.pojo.req;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 /** SysDictDataCreateReq：仅包含接口允许写入的字段。 */
@@ -13,6 +15,7 @@ public class SysDictDataCreateReq {
     /**
      * 字典ID
      */
+    @NotNull
     private Long dictId;
 
     /**
@@ -28,6 +31,7 @@ public class SysDictDataCreateReq {
     /**
      * 字典值
      */
+    @NotBlank
     private String dictValue;
 
     /**

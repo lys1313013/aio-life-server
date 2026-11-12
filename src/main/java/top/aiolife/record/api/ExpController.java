@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -67,6 +69,7 @@ public class ExpController {
         return expenseMapper;
     }
 
+    @Operation(summary = "分页查询支出记录")
     @GetMapping("/query")
     public ApiResponse<PageResp<ExpenseVO>> query(
             @QueryParams CommonQuery<ExpenseQuery> query) {
@@ -87,7 +90,6 @@ public class ExpController {
         lambdaQueryWrapper.ge(condition.getStartTime() != null, ExpenseEntity::getExpTime, condition.getStartTime());
         lambdaQueryWrapper.le(condition.getEndTime() != null, ExpenseEntity::getExpTime, condition.getEndTime());
         lambdaQueryWrapper.lt(condition.getEndTimeBefore() != null, ExpenseEntity::getExpTime, condition.getEndTimeBefore());
-        lambdaQueryWrapper.isNull(Boolean.TRUE.equals(condition.getUndated()), ExpenseEntity::getExpTime);
         lambdaQueryWrapper.like(SysUtil.isNotEmpty(condition.getRemark()), ExpenseEntity::getRemark, condition.getRemark());
         lambdaQueryWrapper.like(SysUtil.isNotEmpty(condition.getCounterparty()), ExpenseEntity::getCounterparty, condition.getCounterparty());
         lambdaQueryWrapper.like(SysUtil.isNotEmpty(condition.getExpDesc()), ExpenseEntity::getExpDesc, condition.getExpDesc());
@@ -100,6 +102,7 @@ public class ExpController {
         return ApiResponse.success(result);
     }
 
+    @Operation(summary = "新增支出记录")
     @PostMapping
     public ApiResponse<Boolean> insert(@Valid @RequestBody ExpenseCreateReq entityReq) {
         ExpenseEntity entity = RecordApiConvertor.INSTANCE.fromExpenseCreateReq(entityReq);
@@ -117,6 +120,7 @@ public class ExpController {
         return ApiResponse.success(true);
     }
 
+    @Operation(summary = "更新支出记录")
     @PutMapping
     public ApiResponse<Boolean> update(@Valid @RequestBody ExpenseUpdateReq entityReq) {
         ExpenseEntity entity = RecordApiConvertor.INSTANCE.fromExpenseUpdateReq(entityReq);
@@ -140,6 +144,7 @@ public class ExpController {
     }
 
     // 批量新增
+    @Operation(summary = "批量新增支出记录")
     @PostMapping("/saveBatch")
     public ApiResponse<Boolean> saveBatch(@Valid @RequestBody List<ExpenseCreateReq> requests) {
         List<ExpenseEntity> list = requests.stream().map(RecordApiConvertor.INSTANCE::fromExpenseCreateReq).toList();
@@ -179,11 +184,13 @@ public class ExpController {
         return ApiResponse.success();
     }
 
+    @Operation(summary = "删除支出记录")
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@PathVariable("id") Long id) {
         return ApiResponse.success(deviceExpenseService.deleteExpenses(StpUtil.getLoginIdAsLong(), List.of(id)));
     }
 
+    @Operation(summary = "批量删除支出记录")
     @PostMapping("/deleteBatch")
     public ApiResponse<Boolean> deleteBatch(@RequestBody CommonReq commonReq) {
         return ApiResponse.success(deviceExpenseService.deleteExpenses(StpUtil.getLoginIdAsLong(), commonReq.getIdList() == null ? List.of() : commonReq.getIdList().stream().map(Long::valueOf).toList()));
@@ -192,6 +199,7 @@ public class ExpController {
     /**
      * 按年度统计支出
      */
+    @Operation(summary = "按年度和分类统计支出", description = "统计当前用户全部历史，返回分类名称和金额。")
     @GetMapping("/statisticsByYear")
     public ApiResponse<List<ExpStaticByYearVO>> statisticsByYear() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -222,6 +230,7 @@ public class ExpController {
     /**
      * 按月度统计支出
      */
+    @Operation(summary = "按月份和分类统计支出", description = "统计当前用户全部历史，按年月分组，不接收日期筛选。")
     @GetMapping("/statisticsByMonth")
     public ApiResponse<List<ExpStaticByYearVO>> statisticsByMonth() {
         long userId = StpUtil.getLoginIdAsLong();

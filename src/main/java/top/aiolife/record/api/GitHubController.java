@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +38,7 @@ public class GitHubController {
     /**
      * 获取当前绑定 GitHub 账号的最近提交列表
      */
+    @Operation(summary = "查询 GitHub 最近提交")
     @GetMapping("/recent-commits")
     public ApiResponse<List<GithubCommitVO>> queryRecentCommits(@QueryParams GithubCommitQuery query) {
         query.validatePagination();

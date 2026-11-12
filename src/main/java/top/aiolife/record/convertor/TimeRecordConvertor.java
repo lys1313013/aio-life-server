@@ -10,7 +10,6 @@ import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -26,7 +25,7 @@ public interface TimeRecordConvertor {
 
     @Mapping(target = "categoryId", qualifiedByName = "stringToLongNullable")
     // 时长由服务端计算；归属、审计和删除状态由新增/更新业务分别控制。
-    @Mapping(target = "duration", ignore = true)
+    @Mapping(target = "durationMinutes", ignore = true)
     @Mapping(target = "userId", ignore = true)
     @Mapping(target = "createUser", ignore = true)
     @Mapping(target = "createTime", ignore = true)
@@ -48,20 +47,9 @@ public interface TimeRecordConvertor {
         }
     }
 
-    @Mapping(target = "startTime", qualifiedByName = "minutesToLocalDateTime")
-    @Mapping(target = "endTime", qualifiedByName = "minutesToLocalDateTime")
-    // Controller 按当前用户可见分类和运动明细批量补充。
     @Mapping(target = "categoryName", ignore = true)
     @Mapping(target = "exercises", ignore = true)
     TimeRecordDateRangeVO toDateRangeVO(TimeRecordEntity entity);
 
     List<TimeRecordDateRangeVO> toDateRangeVOList(List<TimeRecordEntity> entities);
-
-    @Named("minutesToLocalDateTime")
-    default LocalDateTime minutesToLocalDateTime(Integer minutes) {
-        if (minutes == null) {
-            return null;
-        }
-        return LocalDateTime.of(1970, 1, 1, minutes / 60, minutes % 60);
-    }
 }

@@ -1,5 +1,7 @@
 package top.aiolife.system.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class SystemConfigController {
     /**
      * 配置列表（按 key 前缀筛选）
      */
+    @Operation(summary = "查询系统配置列表")
     @GetMapping("/list")
     public ApiResponse<List<SystemConfigVO>> list(@RequestParam(required = false) String keyPrefix) {
         return ApiResponse.success(systemConfigService.list(keyPrefix));
@@ -39,6 +42,7 @@ public class SystemConfigController {
     /**
      * 获取单项配置
      */
+    @Operation(summary = "查询指定系统配置")
     @GetMapping("/{key}")
     public ApiResponse<SystemConfigVO> getByKey(@PathVariable String key) {
         SystemConfigVO vo = systemConfigService.getByKey(key);
@@ -51,6 +55,7 @@ public class SystemConfigController {
     /**
      * 更新单项配置
      */
+    @Operation(summary = "更新系统配置")
     @PutMapping("/{key}")
     public ApiResponse<SystemConfigVO> update(@PathVariable String key,
                                               @RequestBody SystemConfigUpdateReq req) {

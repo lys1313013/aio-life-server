@@ -36,19 +36,19 @@ public class TimeRecordSaveReq {
     private LocalDate date;
 
     /**
-     * 开始时间 （分钟）包含开始时间
+     * 开始分钟（当天 0:00 起的分钟数，0–1439，包含该分钟）
      */
-    @Description("开始时间（从 0:00 开始的分钟数）")
+    @Description("开始分钟（从 0:00 开始的分钟数，0–1439，包含该分钟）")
     @NotNull
     @Min(0) @Max(1439)
-    private Integer startTime;
+    private Integer startMinute;
     /**
-     * 结束时间 （分钟） 包含结束时间
+     * 结束分钟（当天 0:00 起的分钟数，0–1439，包含该分钟）
      */
-    @Description("结束时间（从 0:00 开始的分钟数）")
+    @Description("结束分钟（从 0:00 开始的分钟数，0–1439，包含该分钟）")
     @NotNull
     @Min(0) @Max(1439)
-    private Integer endTime;
+    private Integer endMinute;
     /**
      * 标题
      */

@@ -57,12 +57,12 @@ public class HomeSectionService {
         var result = HomeSectionConvertor.INSTANCE.video(row);
         int episodes = Math.max(1, row.getEpisodes() == null ? 1 : row.getEpisodes());
         int current = Math.min(episodes, Math.max(1, row.getCurrentEpisode() == null ? 1 : row.getCurrentEpisode()));
-        int duration = Math.max(0, row.getDuration() == null ? 0 : row.getDuration());
-        int watched = Math.max(0, row.getWatchedDuration() == null ? 0 : row.getWatchedDuration());
+        int duration = Math.max(0, row.getDurationSeconds() == null ? 0 : row.getDurationSeconds());
+        int watched = Math.max(0, row.getWatchedDurationSeconds() == null ? 0 : row.getWatchedDurationSeconds());
         result.setEpisodes(episodes);
         result.setCurrentEpisode(current);
-        result.setDuration(duration);
-        result.setWatchedDuration(watched);
+        result.setDurationSeconds(duration);
+        result.setWatchedDurationSeconds(watched);
         result.setProgressPercent(duration == 0 ? 0 : (int) Math.min(100, Math.round(watched * 100.0 / duration)));
         result.setResumeUrl(resumeUrl(row, current));
         return result;

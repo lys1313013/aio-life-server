@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +42,7 @@ public class PerformanceController {
     /**
      * 分页查询演出记录
      */
+    @Operation(summary = "分页查询演出记录")
     @GetMapping
     public ApiResponse<PageResp<PerformanceVO>> queryPerformances(
             @RequestParam(defaultValue = "1") long page,
@@ -56,6 +59,7 @@ public class PerformanceController {
     /**
      * 新增演出记录
      */
+    @Operation(summary = "新增演出记录")
     @PostMapping
     public ApiResponse<PerformanceVO> createPerformance(@Valid @RequestBody PerformanceCreateReq entityReq) {
         PerformanceEntity entity = RecordApiConvertor.INSTANCE.fromPerformanceCreateReq(entityReq);
@@ -67,6 +71,7 @@ public class PerformanceController {
     /**
      * 更新演出记录
      */
+    @Operation(summary = "更新演出记录")
     @PutMapping
     public ApiResponse<PerformanceVO> updatePerformance(@Valid @RequestBody PerformanceUpdateReq entityReq) {
         PerformanceEntity entity = RecordApiConvertor.INSTANCE.fromPerformanceUpdateReq(entityReq);
@@ -78,6 +83,7 @@ public class PerformanceController {
     /**
      * 删除演出记录
      */
+    @Operation(summary = "删除演出记录")
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> deletePerformance(@PathVariable Long id) {
         boolean b = performanceRecords.delete(id, StpUtil.getLoginIdAsLong());

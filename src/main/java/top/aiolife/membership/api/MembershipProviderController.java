@@ -1,5 +1,7 @@
 package top.aiolife.membership.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -25,12 +27,15 @@ public class MembershipProviderController {
     private final MembershipProviderService service;
     private final MembershipIconCatalog icons;
 
+    @Operation(summary = "查询可选会员平台")
     @GetMapping("/providers")
     public ApiResponse<List<MembershipProviderVO>> providers() { return ApiResponse.success(service.list(true)); }
 
+    @Operation(summary = "查询会员平台可选图标")
     @GetMapping("/provider-icons")
     public ApiResponse<List<MembershipIconCatalog.IconVO>> icons() { return ApiResponse.success(icons.list()); }
 
+    @Operation(summary = "读取会员平台图标")
     @GetMapping("/provider-icons/{key}")
     public ResponseEntity<Resource> icon(@PathVariable String key, @RequestParam(defaultValue = "false") boolean dark) {
         String file;

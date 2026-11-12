@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ import top.aiolife.sso.util.RequestLoginContext;
 public class TencentMapProxyController {
     private final TencentMapProxyClient client;
 
+    @Operation(summary = "代理足迹地图请求")
     @GetMapping({TencentMapProxySessionFilter.PATH, TencentMapProxySessionFilter.PATH + "/checkKey",
             TencentMapProxySessionFilter.PATH + "/oversea"})
     public ResponseEntity<byte[]> proxy(HttpServletRequest request, @RequestParam MultiValueMap<String, String> parameters) {

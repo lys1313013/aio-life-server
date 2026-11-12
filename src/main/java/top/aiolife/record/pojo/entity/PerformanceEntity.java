@@ -71,7 +71,7 @@ public class PerformanceEntity extends BaseEntity {
     /**
      * 演出时长(分钟)
      */
-    private Integer duration;
+    private Integer durationMinutes;
 
     /**
      * 演出评分(1-5)

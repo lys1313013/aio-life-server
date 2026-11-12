@@ -15,7 +15,7 @@ public interface UserMenuHiddenMapper extends BaseMapper<UserMenuHiddenEntity> {
     List<Long> selectHiddenMenuIds(@Param("userId") long userId);
 
     /** 同一用户的保存和恢复默认串行执行，包括首次尚无隐藏记录的情况。 */
-    @Select("SELECT id FROM \"user\" WHERE id = #{userId} AND is_deleted = 0 FOR UPDATE")
+    @Select("SELECT id FROM sys_user WHERE id = #{userId} AND is_deleted = 0 FOR UPDATE")
     Long lockUser(@Param("userId") long userId);
 
     /** 显式 DELETE，不能使用 BaseMapper 的逻辑删除方法。 */

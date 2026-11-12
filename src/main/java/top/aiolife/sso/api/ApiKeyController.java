@@ -1,5 +1,7 @@
 package top.aiolife.sso.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -31,6 +33,7 @@ public class ApiKeyController {
     /**
      * 获取当前用户的所有 API Key (脱敏展示)
      */
+    @Operation(summary = "查询我的 API Key")
     @GetMapping("/list")
     public ApiResponse<List<ApiKeyVO>> list() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -41,6 +44,7 @@ public class ApiKeyController {
     /**
      * 生成新的 API Key
      */
+    @Operation(summary = "生成 API Key")
     @PostMapping("/generate")
     public ApiResponse<ApiKeyCreatedVO> generate(@Valid @RequestBody ApiKeyGenerateReq req) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -48,6 +52,7 @@ public class ApiKeyController {
     }
 
     /** 修改当前用户的 API Key 备注，返回脱敏信息。 */
+    @Operation(summary = "更新 API Key 备注")
     @PutMapping("/{id}")
     public ApiResponse<ApiKeyVO> update(@PathVariable Long id, @Valid @RequestBody ApiKeyUpdateReq req) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -58,6 +63,7 @@ public class ApiKeyController {
     /**
      * 删除 API Key
      */
+    @Operation(summary = "删除 API Key")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();

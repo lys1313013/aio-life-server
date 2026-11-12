@@ -5,12 +5,12 @@
 # 不拉起任何容器，直接使用现有代码与配置（application.yml + AIO_LIFE_* 环境变量）。
 #
 # 用法:
-#   ./start.sh                  校验 MySQL/Redis 连通后启动服务
+#   ./start.sh                  校验 PostgreSQL/Redis 连通后启动服务
 #   ./start.sh --clean          mvn clean 后再启动（清除编译残留）
 #
 # 可选环境变量:
-#   SKIP_DEPS_CHECK=true         跳过 MySQL/Redis/Neo4j 连通性校验（远程库或非常规环境）
-#   AIO_LIFE_DB_URL=...         数据库地址 host:port，默认 127.0.0.1:3306
+#   SKIP_DEPS_CHECK=true         跳过 PostgreSQL/Redis/Neo4j 连通性校验（远程库或非常规环境）
+#   AIO_LIFE_DB_URL=...         数据库地址 host:port，默认 127.0.0.1:5432
 #   AIO_LIFE_REDIS_HOST/PORT    Redis 地址与端口，默认 127.0.0.1:6379
 #   AIO_LIFE_NEO4J_ENABLED=true Neo4j 为可选模块，仅开启时校验其连通性
 #   AIO_LIFE_NEO4J_URI=...      Neo4j 地址 bolt://host:port，默认 bolt://localhost:7687
@@ -33,7 +33,7 @@ done
 # ---------- 工具检查 ----------
 command -v mvn >/dev/null 2>&1 || { echo "[错误] 未找到 mvn，请先安装 Maven（要求 Java 21）" >&2; exit 1; }
 
-# ---------- 校验硬依赖：MySQL / Redis / 可选 Neo4j ----------
+# ---------- 校验硬依赖：PostgreSQL / Redis / 可选 Neo4j ----------
 port_open() {
   if command -v nc >/dev/null 2>&1; then
     nc -z -w 2 "$1" "$2" >/dev/null 2>&1
@@ -57,16 +57,16 @@ wait_port() { # $1 host, $2 port, $3 名称
 }
 
 if [[ "${SKIP_DEPS_CHECK:-}" != "true" ]]; then
-  # 解析数据库地址，兼容 jdbc:mysql://host:port 与 host:port 两种写法
-  DB_ADDR="${AIO_LIFE_DB_URL:-127.0.0.1:3306}"
+  # 解析数据库地址，兼容 jdbc:postgresql://host:port 与 host:port 两种写法
+  DB_ADDR="${AIO_LIFE_DB_URL:-127.0.0.1:5432}"
   DB_ADDR="${DB_ADDR##*://}"
   DB_HOST="${DB_ADDR%%:*}"
   DB_PORT="${DB_ADDR##*:}"
   REDIS_HOST="${AIO_LIFE_REDIS_HOST:-127.0.0.1}"
   REDIS_PORT="${AIO_LIFE_REDIS_PORT:-6379}"
 
-  echo ">>> 检查 MySQL / Redis / Neo4j 连通性"
-  wait_port "$DB_HOST" "$DB_PORT" "MySQL"
+  echo ">>> 检查 PostgreSQL / Redis / Neo4j 连通性"
+  wait_port "$DB_HOST" "$DB_PORT" "PostgreSQL"
   wait_port "$REDIS_HOST" "$REDIS_PORT" "Redis"
 
   # Neo4j 为可选模块：仅当开启时才校验，否则跳过

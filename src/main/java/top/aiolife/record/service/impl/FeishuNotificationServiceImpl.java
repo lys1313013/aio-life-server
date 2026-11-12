@@ -261,6 +261,11 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
         if (req == null || req.getItems() == null) {
             throw new IllegalArgumentException("通知偏好不能为空");
         }
+        Map<String, NotificationPreferenceEntity> saved = preferenceMapper.selectList(
+                        new LambdaQueryWrapper<NotificationPreferenceEntity>()
+                                .eq(NotificationPreferenceEntity::getUserId, userId))
+                .stream()
+                .collect(Collectors.toMap(e -> e.getBizType() + ":" + e.getChannel(), Function.identity()));
         for (NotificationPreferenceUpdateReq.Item item : req.getItems()) {
             NotificationBizType.fromName(item.getBizType());
             if (item.getChannel() == null || !NotificationChannel.ALL.contains(item.getChannel())) {
@@ -270,19 +275,19 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
                     && !NotificationBizType.LEETCODE_REMINDER.name().equals(item.getBizType())) {
                 throw new IllegalArgumentException("微信订阅消息目前仅支持力扣未打卡提醒");
             }
-            NotificationPreferenceEntity existing = findPreference(userId, item.getBizType(), item.getChannel());
-            if (existing == null) {
-                NotificationPreferenceEntity entity = new NotificationPreferenceEntity();
+            NotificationPreferenceEntity entity = saved.get(item.getBizType() + ":" + item.getChannel());
+            if (entity == null) {
+                entity = new NotificationPreferenceEntity();
                 entity.setUserId(userId);
                 entity.setBizType(item.getBizType());
                 entity.setChannel(item.getChannel());
-                entity.setIsEnabled(Integer.valueOf(1).equals(item.getIsEnabled()) ? 1 : 0);
                 entity.fillCreateCommonField(userId);
+                entity.setIsEnabled(Integer.valueOf(1).equals(item.getIsEnabled()) ? 1 : 0);
                 preferenceMapper.insert(entity);
             } else {
-                existing.setIsEnabled(Integer.valueOf(1).equals(item.getIsEnabled()) ? 1 : 0);
-                existing.fillUpdateCommonField(userId);
-                preferenceMapper.updateById(existing);
+                entity.setIsEnabled(Integer.valueOf(1).equals(item.getIsEnabled()) ? 1 : 0);
+                entity.fillUpdateCommonField(userId);
+                preferenceMapper.updateById(entity);
             }
         }
         return listPreferences(userId);

@@ -1,5 +1,7 @@
 package top.aiolife.sso.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.context.SaHolder;
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,40 +31,48 @@ public class WechatWebLoginController {
     @ModelAttribute
     public void noStore(HttpServletResponse response) { response.setHeader("Cache-Control", "no-store"); }
 
+    @Operation(summary = "查询微信网页登录能力")
     @GetMapping("/capabilities")
     public ApiResponse<Map<String, Boolean>> capabilities() { return ApiResponse.success(Map.of("enabled", service.enabled())); }
 
+    @Operation(summary = "创建微信网页登录二维码")
     @PostMapping("/create")
     public ApiResponse<WechatWebLoginService.Challenge> create(HttpServletRequest request) {
         return ApiResponse.success(service.create(request.getRemoteAddr()));
     }
 
+    @Operation(summary = "查询微信网页登录状态")
     @PostMapping("/status")
     public ApiResponse<Map<String, String>> status(@Valid @RequestBody BrowserRequest body) {
         return state(service.status(body.scene(), body.browserSecret()));
     }
 
+    @Operation(summary = "兑换微信网页登录凭据")
     @PostMapping("/exchange")
     public ApiResponse<UserLoginVO> exchange(@Valid @RequestBody BrowserRequest body, HttpServletRequest request) {
         return ApiResponse.success(service.exchange(body.scene(), body.browserSecret(), request.getRemoteAddr()));
     }
 
+    @Operation(summary = "撤销微信网页登录二维码")
     @PostMapping("/revoke")
     public ApiResponse<Void> revoke(@Valid @RequestBody BrowserRequest body) {
         service.revoke(body.scene(), body.browserSecret());
         return ApiResponse.success();
     }
 
+    @Operation(summary = "扫描微信网页登录二维码")
     @PostMapping("/scan")
     public ApiResponse<Map<String, String>> scan(@Valid @RequestBody ScanRequest body) {
         return state(service.scan(body.scene(), requireSession()));
     }
 
+    @Operation(summary = "确认微信网页登录")
     @PostMapping("/confirm")
     public ApiResponse<Map<String, String>> confirm(@Valid @RequestBody ConfirmRequest body, HttpServletRequest request) {
         return state(service.confirm(body.scene(), requireSession(), body.loginCode(), request.getRemoteAddr()));
     }
 
+    @Operation(summary = "拒绝微信网页登录")
     @PostMapping("/cancel")
     public ApiResponse<Map<String, String>> cancel(@Valid @RequestBody ScanRequest body) {
         return state(service.cancel(body.scene(), requireSession()));

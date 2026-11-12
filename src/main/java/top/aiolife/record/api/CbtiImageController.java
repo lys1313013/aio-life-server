@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ public class CbtiImageController {
     private final CbtiConfig cbtiConfig;
     private final ICbtiPersonalityMapper personalities;
 
+    @Operation(summary = "读取 CBTI 人格图片")
     @GetMapping("/cbti/images/{*objectName}")
     public void image(@PathVariable String objectName, HttpServletResponse response) {
         String key = objectName.startsWith("/") ? objectName.substring(1) : objectName;

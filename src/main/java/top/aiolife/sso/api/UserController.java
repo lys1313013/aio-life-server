@@ -1,5 +1,7 @@
 package top.aiolife.sso.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -41,6 +43,7 @@ public class UserController {
      * @author Lys
      * @date 2025/4/4
      */
+    @Operation(summary = "账号密码登录")
     @PostMapping("/auth/login")
     public ApiResponse<UserLoginVO> login(@RequestBody LoginReq loginReq, HttpServletRequest request) {
         String ip = getIp(request);
@@ -50,6 +53,7 @@ public class UserController {
     /**
      * 修改密码
      */
+    @Operation(summary = "修改登录密码")
     @PostMapping("/auth/change-password")
     public ApiResponse<Void> changePassword(@RequestBody ChangePasswordReq changePasswordReq) {
         long id = StpUtil.getLoginIdAsLong();
@@ -60,6 +64,7 @@ public class UserController {
     /**
      * 获取用户信息
      */
+    @Operation(summary = "查询当前登录用户信息")
     @GetMapping("/auth/info")
     public ApiResponse<UserInfoVO> authInfo() {
         return info();
@@ -68,6 +73,7 @@ public class UserController {
     /**
      * 获取用户信息
      */
+    @Operation(summary = "查询当前用户资料")
     @GetMapping("/user/info")
     public ApiResponse<UserInfoVO> info() {
         long id = StpUtil.getLoginIdAsLong();
@@ -77,11 +83,13 @@ public class UserController {
     /**
      * 获取用户基本信息
      */
+    @Operation(summary = "查询指定用户基本信息")
     @GetMapping("/user/{id}/basic")
     public ApiResponse<UserBasicInfoVO> basicInfo(@PathVariable Long id) {
         return ApiResponse.success(userService.getUserBasicInfo(id));
     }
 
+    @Operation(summary = "查询当前用户权限码")
     @GetMapping("/auth/codes")
     public ApiResponse<Void> codes() {
         Map<String, Object> data = new HashMap<>();
@@ -90,6 +98,7 @@ public class UserController {
     }
 
 
+    @Operation(summary = "退出登录")
     @PostMapping("/auth/logout")
     public ApiResponse<Map<String, Object>> logout() {
         StpUtil.logout();
@@ -116,6 +125,7 @@ public class UserController {
     /**
      * 普通更新用户信息
      */
+    @Operation(summary = "更新当前用户资料")
     @PutMapping("/users")
     public ApiResponse<Void> modify(@RequestBody UpdateUserReq req) {
         long id = StpUtil.getLoginIdAsLong();
@@ -132,6 +142,7 @@ public class UserController {
     /**
      * 查询是否已设置二级密码
      */
+    @Operation(summary = "查询二级密码设置状态")
     @GetMapping("/auth/secondary-password/status")
     public ApiResponse<Map<String, Boolean>> secondaryPasswordStatus() {
         long id = StpUtil.getLoginIdAsLong();
@@ -141,6 +152,7 @@ public class UserController {
     /**
      * 设置/修改二级密码
      */
+    @Operation(summary = "设置或修改二级密码")
     @PutMapping("/auth/secondary-password")
     public ApiResponse<Void> setSecondaryPassword(@Valid @RequestBody SetSecondaryPasswordReq req) {
         long id = StpUtil.getLoginIdAsLong();
@@ -151,6 +163,7 @@ public class UserController {
     /**
      * 验证二级密码，解锁菜单
      */
+    @Operation(summary = "验证二级密码并解锁菜单")
     @PostMapping("/auth/secondary-verify")
     public ApiResponse<Map<String, Object>> secondaryVerify(@Valid @RequestBody SecondaryVerifyReq req) {
         long id = StpUtil.getLoginIdAsLong();
@@ -161,6 +174,7 @@ public class UserController {
     /**
      * 获取当前用户锁定的菜单 ID 列表
      */
+    @Operation(summary = "查询已锁定菜单")
     @GetMapping("/auth/secondary-lock/menus")
     public ApiResponse<List<Long>> getSecondaryLockMenus() {
         long id = StpUtil.getLoginIdAsLong();
@@ -170,6 +184,7 @@ public class UserController {
     /**
      * 保存当前用户锁定的菜单 ID 列表
      */
+    @Operation(summary = "保存菜单锁定配置")
     @PutMapping("/auth/secondary-lock/menus")
     public ApiResponse<Void> saveSecondaryLockMenus(@Valid @RequestBody SaveSecondaryLockMenusReq req) {
         long id = StpUtil.getLoginIdAsLong();
@@ -180,6 +195,7 @@ public class UserController {
     /**
      * 发送重置二级密码验证码（发到当前用户绑定的邮箱）
      */
+    @Operation(summary = "发送二级密码重置邮箱验证码")
     @PostMapping("/auth/send-reset-secondary-password-code")
     public ApiResponse<Void> sendResetSecondaryPasswordCode(HttpServletRequest request) {
         long id = StpUtil.getLoginIdAsLong();
@@ -191,6 +207,7 @@ public class UserController {
     /**
      * 通过邮箱验证码重置二级密码
      */
+    @Operation(summary = "通过邮箱验证码重置二级密码")
     @PostMapping("/auth/reset-secondary-password")
     public ApiResponse<Void> resetSecondaryPassword(@Valid @RequestBody ResetSecondaryPasswordReq req) {
         long id = StpUtil.getLoginIdAsLong();

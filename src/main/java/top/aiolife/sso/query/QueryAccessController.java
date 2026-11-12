@@ -1,5 +1,7 @@
 package top.aiolife.sso.query;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.context.SaHolder;
 import cn.dev33.satoken.stp.StpUtil;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -29,6 +31,7 @@ public class QueryAccessController {
     @ModelAttribute
     public void noCache(HttpServletResponse response) { response.setHeader("Cache-Control", "no-store"); }
 
+    @Operation(summary = "签发 Query 查询授权凭据", description = "仅支持登录会话，不接受 API Key。")
     @PostMapping("/query/access-token")
     public ApiResponse<QueryAccessModels.Issued> issue(@Valid @RequestBody QueryAccessModels.IssueRequest body,
                                                      HttpServletRequest request) {
@@ -36,6 +39,7 @@ public class QueryAccessController {
         return ApiResponse.success(service.issue(userId, StpUtil.getTokenValue(), body.appId()));
     }
 
+    @Operation(summary = "撤销 Query 查询授权")
     @DeleteMapping("/query/grants/{id}")
     public ApiResponse<Void> revoke(@PathVariable String id, HttpServletRequest request) {
         service.revoke(requireSession(request), id);

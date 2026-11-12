@@ -1,5 +1,7 @@
 package top.aiolife.record.pojo.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,6 +18,8 @@ public class NotificationChannelConfigEntity extends BaseEntity {
     private Integer isEnabled;
     private String appId;
     private String appSecretCiphertext;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String receiverOpenId;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String receiverName;
 }

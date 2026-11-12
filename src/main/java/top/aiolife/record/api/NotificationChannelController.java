@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,27 +31,32 @@ public class NotificationChannelController {
     private final FeishuNotificationService notificationService;
     private final RedisUtil redisUtil;
 
+    @Operation(summary = "查询飞书通知配置")
     @GetMapping("/channels/feishu")
     public ApiResponse<FeishuChannelConfigVO> getFeishuConfig() {
         return ApiResponse.success(notificationService.getConfig(StpUtil.getLoginIdAsLong()));
     }
 
+    @Operation(summary = "保存飞书通知配置")
     @PutMapping("/channels/feishu")
     public ApiResponse<FeishuChannelConfigVO> saveFeishuConfig(@RequestBody FeishuChannelSaveReq req) {
         return ApiResponse.success(notificationService.saveConfig(StpUtil.getLoginIdAsLong(), req));
     }
 
+    @Operation(summary = "查询飞书通知接收人")
     @GetMapping("/channels/feishu/recipients")
     public ApiResponse<FeishuRecipientListVO> listFeishuRecipients() {
         return ApiResponse.success(notificationService.listRecipients(StpUtil.getLoginIdAsLong()));
     }
 
+    @Operation(summary = "删除飞书通知配置")
     @DeleteMapping("/channels/feishu")
     public ApiResponse<Void> deleteFeishuConfig() {
         notificationService.deleteConfig(StpUtil.getLoginIdAsLong());
         return ApiResponse.success();
     }
 
+    @Operation(summary = "发送飞书测试通知")
     @PostMapping("/channels/feishu/test")
     public ApiResponse<Void> testFeishuConfig() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -60,11 +67,13 @@ public class NotificationChannelController {
         return ApiResponse.success();
     }
 
+    @Operation(summary = "查询业务通知偏好")
     @GetMapping("/preferences")
     public ApiResponse<List<NotificationPreferenceVO>> listPreferences() {
         return ApiResponse.success(notificationService.listPreferences(StpUtil.getLoginIdAsLong()));
     }
 
+    @Operation(summary = "更新业务通知偏好")
     @PutMapping("/preferences")
     public ApiResponse<List<NotificationPreferenceVO>> updatePreferences(
             @RequestBody NotificationPreferenceUpdateReq req) {

@@ -1,5 +1,7 @@
 package top.aiolife.relationship.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +37,7 @@ public class RelationshipController {
     /**
      * 获取图谱数据（节点和边）
      */
+    @Operation(summary = "查询人际关系图谱")
     @GetMapping("/graph")
     public ApiResponse<GraphVO> getGraphData() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -46,6 +49,7 @@ public class RelationshipController {
     /**
      * 获取所有人物
      */
+    @Operation(summary = "查询人际关系人物")
     @GetMapping("/persons")
     public ApiResponse<GraphVO> getAllPersons() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -56,6 +60,7 @@ public class RelationshipController {
     /**
      * 获取人物详情
      */
+    @Operation(summary = "查询人物详情")
     @GetMapping("/persons/{id}")
     public ApiResponse<PersonDetailVO> getPerson(@PathVariable String id) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -65,6 +70,7 @@ public class RelationshipController {
     /**
      * 搜索人物
      */
+    @Operation(summary = "搜索人际关系人物")
     @GetMapping("/persons/search")
     public ApiResponse<List<PersonVO>> searchPersons(@RequestParam String keyword) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -74,6 +80,7 @@ public class RelationshipController {
     /**
      * 创建人物
      */
+    @Operation(summary = "新增人际关系人物")
     @PostMapping("/persons")
     public ApiResponse<PersonVO> createPerson(@RequestBody PersonReq req) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -96,6 +103,7 @@ public class RelationshipController {
     /**
      * 更新人物
      */
+    @Operation(summary = "更新人际关系人物")
     @PutMapping("/persons/{id}")
     public ApiResponse<PersonVO> updatePerson(@PathVariable String id, @RequestBody PersonReq req) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -119,6 +127,7 @@ public class RelationshipController {
     /**
      * 删除人物
      */
+    @Operation(summary = "删除人际关系人物")
     @DeleteMapping("/persons/{id}")
     public ApiResponse<Void> deletePerson(@PathVariable String id) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -131,6 +140,7 @@ public class RelationshipController {
     /**
      * 创建关系
      */
+    @Operation(summary = "新增人物关系")
     @PostMapping
     public ApiResponse<RelationshipVO> createRelationship(@RequestBody RelationshipReq req) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -145,6 +155,7 @@ public class RelationshipController {
     /**
      * 更新关系
      */
+    @Operation(summary = "更新人物关系")
     @PutMapping("/{id}")
     public ApiResponse<RelationshipVO> updateRelationship(@PathVariable String id, @RequestBody RelationshipUpdateReq req) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -159,6 +170,7 @@ public class RelationshipController {
     /**
      * 删除关系
      */
+    @Operation(summary = "删除人物关系")
     @DeleteMapping
     public ApiResponse<Void> deleteRelationship(@RequestBody RelationshipDeleteReq req) {
         long userId = StpUtil.getLoginIdAsLong();

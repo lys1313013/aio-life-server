@@ -1,5 +1,7 @@
 package top.aiolife.scheduling.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
@@ -32,20 +34,24 @@ public class ScheduledJobController {
     private final ScheduledJobService service;
     private final ScheduledJobRuntime runtime;
 
+    @Operation(summary = "管理员查询定时任务")
     @GetMapping
     public ApiResponse<List<ScheduledJobVO>> list() { return ApiResponse.success(service.list()); }
 
+    @Operation(summary = "管理员更新定时任务")
     @PutMapping("/{id}")
     public ApiResponse<ScheduledJobVO> update(@PathVariable @NotNull Long id, @Valid @RequestBody ScheduledJobUpdateReq req) {
         return ApiResponse.success(service.update(id, req, StpUtil.getLoginIdAsLong()));
     }
 
+    @Operation(summary = "管理员立即执行定时任务")
     @PostMapping("/{id}/run")
     public ApiResponse<Void> run(@PathVariable @NotNull Long id) {
         runtime.runNow(id, StpUtil.getLoginIdAsLong());
         return ApiResponse.success(null);
     }
 
+    @Operation(summary = "管理员分页查询定时任务日志")
     @GetMapping("/{id}/logs")
     public ApiResponse<PageResp<ScheduledJobLogVO>> logs(@PathVariable @NotNull Long id,
             @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize) {

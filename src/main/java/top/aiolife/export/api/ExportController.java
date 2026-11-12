@@ -1,5 +1,7 @@
 package top.aiolife.export.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -59,6 +61,7 @@ public class ExportController {
         return userId;
     }
 
+    @Operation(summary = "查询可导出的数据集")
     @GetMapping("/catalog")
     public ApiResponse<Catalog> catalog() {
         long userId = user();
@@ -89,16 +92,19 @@ public class ExportController {
                                 "不可用或锁定模块需处理后再选择")));
     }
 
+    @Operation(summary = "查询数据导出配额")
     @GetMapping("/quota")
     public ApiResponse<ExportQuotaService.Quota> quota() {
         return ApiResponse.success(quota.current(user()));
     }
 
+    @Operation(summary = "验证数据导出凭据并签发授权")
     @PostMapping("/authorizations")
     public ApiResponse<Map<String, String>> authorize(@Valid @RequestBody ExportAuthorizeReq req) {
         return ApiResponse.success(Map.of("grant", authorization.authorize(user(), req)));
     }
 
+    @Operation(summary = "创建数据导出任务")
     @PostMapping
     public ApiResponse<ExportJobVO> create(
             @Valid @RequestBody ExportCreateReq req,
@@ -112,6 +118,7 @@ public class ExportController {
                 ExportJobConvertor.INSTANCE.toVO(jobs.create(userId, req, key, grant)));
     }
 
+    @Operation(summary = "分页查询我的数据导出任务")
     @GetMapping
     public ApiResponse<PageResp<ExportJobVO>> history(
             @RequestParam(defaultValue = "1") int page,
@@ -120,23 +127,27 @@ public class ExportController {
                 jobs.history(user(), page, pageSize).map(ExportJobConvertor.INSTANCE::toVO));
     }
 
+    @Operation(summary = "查询数据导出任务详情")
     @GetMapping("/{id}")
     public ApiResponse<ExportJobVO> detail(@PathVariable long id) {
         return ApiResponse.success(ExportJobConvertor.INSTANCE.toVO(jobs.owned(user(), id)));
     }
 
+    @Operation(summary = "取消数据导出任务")
     @PostMapping("/{id}/cancel")
     public ApiResponse<Void> cancel(@PathVariable long id) {
         jobs.cancel(user(), id);
         return ApiResponse.success();
     }
 
+    @Operation(summary = "删除数据导出文件")
     @DeleteMapping("/{id}/artifact")
     public ApiResponse<Void> delete(@PathVariable long id) {
         jobs.revokeArtifact(user(), id, "DELETED");
         return ApiResponse.success();
     }
 
+    @Operation(summary = "下载数据导出文件")
     @GetMapping("/{id}/download")
     public void download(
             @PathVariable long id,

@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -212,13 +213,17 @@ public class UserServiceImpl implements IUserService {
         clearExternalCredentials(userEntity);
         userEntity.setUpdateTime(LocalDateTime.now());
         if (avatarFileIdSpecified) avatarFiles.validateForBinding(userEntity.getId(), userEntity.getAvatarFileId());
-        if (avatarFileIdSpecified) {
-            userMapper.update(userEntity, new LambdaUpdateWrapper<UserEntity>()
-                    .eq(UserEntity::getId, userEntity.getId())
-                    .set(UserEntity::getAvatarFileId, userEntity.getAvatarFileId()));
-        } else if (userEntity.getNickname() != null || userEntity.getIntroduction() != null
-                || userEntity.getUsername() != null || userEntity.getEmail() != null || userEntity.getRole() != null) {
-            userMapper.updateById(userEntity);
+        try {
+            if (avatarFileIdSpecified) {
+                userMapper.update(userEntity, new LambdaUpdateWrapper<UserEntity>()
+                        .eq(UserEntity::getId, userEntity.getId())
+                        .set(UserEntity::getAvatarFileId, userEntity.getAvatarFileId()));
+            } else if (userEntity.getNickname() != null || userEntity.getIntroduction() != null
+                    || userEntity.getUsername() != null || userEntity.getEmail() != null || userEntity.getRole() != null) {
+                userMapper.updateById(userEntity);
+            }
+        } catch (DuplicateKeyException e) {
+            throw new IllegalStateException("用户名或邮箱已被占用");
         }
     }
 
@@ -337,7 +342,11 @@ public class UserServiceImpl implements IUserService {
         String salt = PasswordUtil.getSalt();
         userEntity.setPasswordSalt(salt);
         userEntity.setPassword(PasswordUtil.encryptPassword(userEntity.getPassword(), salt));
-        userMapper.insert(userEntity);
+        try {
+            userMapper.insert(userEntity);
+        } catch (DuplicateKeyException e) {
+            throw new IllegalStateException("用户名或邮箱已被占用，请更换后重试");
+        }
     }
 
     @Override
@@ -563,7 +572,11 @@ public class UserServiceImpl implements IUserService {
         userEntity.setPassword(PasswordUtil.encryptPassword(userEntity.getPassword(), salt));
 
         LegalPolicyService.recordAcceptance(userEntity);
-        userMapper.insert(userEntity);
+        try {
+            userMapper.insert(userEntity);
+        } catch (DuplicateKeyException e) {
+            throw new IllegalStateException("用户名或邮箱已被注册，请更换后重试");
+        }
     }
 
     @Override

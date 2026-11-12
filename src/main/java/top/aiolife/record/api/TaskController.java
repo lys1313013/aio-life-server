@@ -127,6 +127,7 @@ public class TaskController {
      * 删除
      * @param entity id
      */
+    @Operation(summary = "删除待办主任务")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable("id") Long id) {
         LambdaQueryWrapper<TaskEntity> wrapper = new LambdaQueryWrapper<>();
@@ -141,6 +142,7 @@ public class TaskController {
      *
      * @param list 只传id、columnId和sortOrder
      */
+    @Operation(summary = "调整待办主任务排序")
     @PostMapping("/reSort")
     public ApiResponse<Void> reSort(@NotEmpty @RequestBody List<@NotNull @Valid TaskSortReq> requests) {
         List<TaskEntity> list = requests.stream().map(RecordApiConvertor.INSTANCE::fromTaskSortReq).toList();

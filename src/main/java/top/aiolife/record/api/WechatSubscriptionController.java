@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,11 +21,13 @@ public class WechatSubscriptionController {
     private final WechatSubscriptionService service;
     private final RedisUtil redis;
 
+    @Operation(summary = "查询微信订阅通知配置")
     @GetMapping
     public ApiResponse<WechatSubscriptionService.Config> getConfig() {
         return ApiResponse.success(service.getConfig(StpUtil.getLoginIdAsLong()));
     }
 
+    @Operation(summary = "发送微信订阅测试通知")
     @PostMapping("/test")
     public ApiResponse<Void> sendTest() {
         long userId = StpUtil.getLoginIdAsLong();

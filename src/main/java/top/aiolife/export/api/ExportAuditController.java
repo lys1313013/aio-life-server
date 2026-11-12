@@ -1,5 +1,7 @@
 package top.aiolife.export.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.annotation.SaCheckRole;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -32,6 +34,7 @@ public class ExportAuditController {
     private final ExportAccessGuard access;
     private final SecondaryLockGuard locks;
 
+    @Operation(summary = "管理员分页查询数据导出审计")
     @GetMapping
     public ApiResponse<PageResp<AuditView>> list(
             @RequestParam(defaultValue = "1") int page,

@@ -37,6 +37,7 @@ public class TimeTrackerCategoryController {
     /**
      * 获取当前用户的所有分类（含合并的公共分类）
      */
+    @Operation(summary = "查询当前可见的时迹分类")
     @GetMapping("/list")
     public ApiResponse<List<TimeTrackerCategoryVO>> list() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -44,13 +45,15 @@ public class TimeTrackerCategoryController {
     }
 
     /**
-     * 获取当前用户隐藏的分类列表
+     * 查询合并公共配置后的时迹分类，包含已停用项。
      */
+    @Operation(summary = "查询我的时迹分类配置")
     @GetMapping("/all")
     public ApiResponse<List<TimeTrackerCategoryVO>> all() {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeTrackerCategoryVOList(categoryService.listUserCategories(StpUtil.getLoginIdAsLong())));
     }
 
+    @Operation(summary = "查询已隐藏的时迹分类")
     @GetMapping("/hidden")
     public ApiResponse<List<TimeTrackerCategoryVO>> listHidden() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -60,6 +63,7 @@ public class TimeTrackerCategoryController {
     /**
      * 新增分类
      */
+    @Operation(summary = "新增时迹分类")
     @PostMapping
     public ApiResponse<Boolean> save(@Valid @RequestBody TimeTrackerCategoryCreateReq entityReq) {
         TimeTrackerCategoryEntity entity = RecordApiConvertor.INSTANCE.fromTimeTrackerCategoryCreateReq(entityReq);
@@ -72,6 +76,7 @@ public class TimeTrackerCategoryController {
     /**
      * 更新分类
      */
+    @Operation(summary = "更新时迹分类")
     @PutMapping
     public ApiResponse<Boolean> update(@Valid @RequestBody TimeTrackerCategoryUpdateReq entityReq) {
         TimeTrackerCategoryEntity entity = RecordApiConvertor.INSTANCE.fromTimeTrackerCategoryUpdateReq(entityReq);
@@ -84,6 +89,7 @@ public class TimeTrackerCategoryController {
     /**
      * 删除分类
      */
+    @Operation(summary = "删除或隐藏时迹分类")
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -96,6 +102,7 @@ public class TimeTrackerCategoryController {
      *
      * @param list 传id/templateId和sort
      */
+    @Operation(summary = "调整时迹分类排序")
     @PostMapping("/reSort")
     public ApiResponse<Void> reSort(@Valid @RequestBody List<TimeTrackerCategorySortReq> requests) {
         List<TimeTrackerCategoryEntity> list = requests.stream().map(RecordApiConvertor.INSTANCE::fromTimeTrackerCategorySortReq).toList();
@@ -118,12 +125,14 @@ public class TimeTrackerCategoryController {
     // ================= 管理员 API =================
 
     @SaCheckRole("admin")
+    @Operation(summary = "管理员查询全部时迹分类")
     @GetMapping("/admin/list")
     public ApiResponse<List<TimeTrackerCategoryVO>> adminList() {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeTrackerCategoryVOList(categoryService.listAllCategories()));
     }
 
     @SaCheckRole("admin")
+    @Operation(summary = "管理员新增公共时迹分类")
     @PostMapping("/admin")
     public ApiResponse<Boolean> adminSave(@Valid @RequestBody TimeTrackerCategoryAdminCreateReq entityReq) {
         TimeTrackerCategoryEntity entity = RecordApiConvertor.INSTANCE.fromTimeTrackerCategoryAdminCreateReq(entityReq);
@@ -133,6 +142,7 @@ public class TimeTrackerCategoryController {
     }
 
     @SaCheckRole("admin")
+    @Operation(summary = "管理员更新公共时迹分类")
     @PutMapping("/admin/{id}")
     public ApiResponse<Boolean> adminUpdate(@PathVariable Long id, @Valid @RequestBody TimeTrackerCategoryAdminUpdateReq entityReq) {
         TimeTrackerCategoryEntity entity = RecordApiConvertor.INSTANCE.fromTimeTrackerCategoryAdminUpdateReq(entityReq);
@@ -142,6 +152,7 @@ public class TimeTrackerCategoryController {
     }
 
     @SaCheckRole("admin")
+    @Operation(summary = "管理员删除公共时迹分类")
     @DeleteMapping("/admin/{id}")
     public ApiResponse<Boolean> adminDelete(@PathVariable Long id) {
         categoryService.adminDeleteCategory(id);

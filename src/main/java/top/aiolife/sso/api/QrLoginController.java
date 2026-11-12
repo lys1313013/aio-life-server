@@ -1,5 +1,7 @@
 package top.aiolife.sso.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.context.SaHolder;
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,33 +29,39 @@ public class QrLoginController {
     @ModelAttribute
     public void noCache(HttpServletResponse response) { response.setHeader("Cache-Control", "no-store"); }
 
+    @Operation(summary = "创建扫码登录二维码")
     @PostMapping
     public ApiResponse<Created> create(HttpServletRequest request) {
         return ApiResponse.success(service.create(request.getRemoteAddr(), request.getHeader("User-Agent")));
     }
 
+    @Operation(summary = "查询扫码登录状态")
     @GetMapping("/{id}/status")
     public ApiResponse<Status> status(@PathVariable String id, @RequestHeader("X-QR-Secret") String secret) {
         return ApiResponse.success(service.status(id, secret));
     }
 
+    @Operation(summary = "扫描登录二维码")
     @PostMapping("/scan")
     public ApiResponse<Scanned> scan(@Valid @RequestBody ScanRequest body, HttpServletRequest request) {
         long id = requireSession(request);
         return ApiResponse.success(service.scan(body, id, StpUtil.getTokenValue()));
     }
 
+    @Operation(summary = "确认或拒绝扫码登录")
     @PostMapping("/decision")
     public ApiResponse<Status> decision(@Valid @RequestBody DecisionRequest body, HttpServletRequest request) {
         long id = requireSession(request);
         return ApiResponse.success(service.decide(body, id, StpUtil.getTokenValue()));
     }
 
+    @Operation(summary = "兑换扫码登录凭据")
     @PostMapping("/consume")
     public ApiResponse<UserLoginVO> consume(@Valid @RequestBody BrowserRequest body, HttpServletRequest request) {
         return ApiResponse.success(service.consume(body, request.getRemoteAddr()));
     }
 
+    @Operation(summary = "取消扫码登录")
     @PostMapping("/cancel")
     public ApiResponse<Void> cancel(@Valid @RequestBody BrowserRequest body) {
         service.cancel(body);

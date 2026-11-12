@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,31 +31,37 @@ import top.aiolife.record.service.LifeFootprintService;
 public class LifeFootprintController {
     private final LifeFootprintService service;
 
+    @Operation(summary = "查询生活足迹")
     @GetMapping
     public ApiResponse<List<LifeFootprintVO>> list() {
         return ApiResponse.success(service.list(StpUtil.getLoginIdAsLong()));
     }
 
+    @Operation(summary = "查询生活足迹详情")
     @GetMapping("/{id}")
     public ApiResponse<LifeFootprintVO> get(@PathVariable @Min(1) Long id) {
         return ApiResponse.success(service.get(StpUtil.getLoginIdAsLong(), id));
     }
 
+    @Operation(summary = "新增生活足迹")
     @PostMapping
     public ApiResponse<LifeFootprintVO> create(@Valid @RequestBody LifeFootprintSaveReq request) {
         return ApiResponse.success(service.create(StpUtil.getLoginIdAsLong(), request));
     }
 
+    @Operation(summary = "批量新增生活足迹")
     @PostMapping("/batch")
     public ApiResponse<List<LifeFootprintVO>> saveBatch(@Valid @RequestBody LifeFootprintBatchSaveReq request) {
         return ApiResponse.success(service.saveBatch(StpUtil.getLoginIdAsLong(), request));
     }
 
+    @Operation(summary = "更新生活足迹")
     @PutMapping("/{id}")
     public ApiResponse<LifeFootprintVO> update(@PathVariable @Min(1) Long id, @Valid @RequestBody LifeFootprintSaveReq request) {
         return ApiResponse.success(service.update(StpUtil.getLoginIdAsLong(), id, request));
     }
 
+    @Operation(summary = "删除生活足迹")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable @Min(1) Long id) {
         service.delete(StpUtil.getLoginIdAsLong(), id);

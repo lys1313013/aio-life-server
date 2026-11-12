@@ -221,7 +221,8 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
 
     @Override
     public void updateCategory(Long categoryId, TimeTrackerCategoryEntity updates, Long userId) {
-        if (updates.isParentIdSpecified()) lockHierarchy();
+        // 覆盖记录的首次创建也参与串行化，避免并发插入同一模板的两条覆盖记录。
+        lockHierarchy();
         TimeTrackerCategoryEntity target = this.getById(categoryId);
         if (target == null) {
             throw new RuntimeException("分类不存在");

@@ -46,6 +46,7 @@ public class SysFileController {
     /**
      * 统一文件上传入口。
      */
+    @Operation(summary = "上传文件")
     @PostMapping("/upload")
     public ApiResponse<FileVO> upload(@RequestParam("file") MultipartFile file,
                                       @RequestParam("bizType") String bizType) {
@@ -55,7 +56,7 @@ public class SysFileController {
     }
 
     @GetMapping("/preview/{id:[a-fA-F0-9]{32}}")
-    @Operation(summary = "按文件 ID 预览文件")
+    @Operation(summary = "预览文件")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "文件内容，Content-Type 取决于文件类型；不是 ApiResponse JSON",
             content = @Content(mediaType = "*/*", schema = @Schema(type = "string", format = "binary")))
     public void preview(@Parameter(description = "上传响应中的文件 ID", schema = @Schema(pattern = "^[a-fA-F0-9]{32}$"))
@@ -64,7 +65,7 @@ public class SysFileController {
     }
 
     @GetMapping("/download/{id:[a-fA-F0-9]{32}}")
-    @Operation(summary = "按文件 ID 下载文件")
+    @Operation(summary = "下载文件")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "文件内容，Content-Disposition 为 attachment；不是 ApiResponse JSON",
             content = @Content(mediaType = "*/*", schema = @Schema(type = "string", format = "binary")))
     public void download(@Parameter(description = "上传响应中的文件 ID", schema = @Schema(pattern = "^[a-fA-F0-9]{32}$"))

@@ -167,6 +167,7 @@ public class ThoughtController {
     /**
      * 批量删除
      */
+    @Operation(summary = "批量删除闪念")
     @PostMapping("/batchDelete")
     public ApiResponse<Boolean> delete(@RequestBody CommonReq CommonReq) {
         LambdaUpdateWrapper<ThoughtEntity> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
@@ -179,6 +180,7 @@ public class ThoughtController {
     /**
      * 获取看板展示的闪念列表
      */
+    @Operation(summary = "查询首页闪念")
     @GetMapping("/dashboard")
     public ApiResponse<List<ThoughtRecordVO>> dashboardThoughts() {
         long userId = StpUtil.getLoginIdAsLong();

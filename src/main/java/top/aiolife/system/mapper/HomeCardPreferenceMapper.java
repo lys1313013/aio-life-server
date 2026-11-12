@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Select;
 
 @Mapper
 public interface HomeCardPreferenceMapper extends BaseMapper<HomeCardPreferenceEntity> {
-    @Select("SELECT id FROM \"user\" WHERE id = #{userId} AND is_deleted = 0 FOR UPDATE")
+    @Select("SELECT id FROM sys_user WHERE id = #{userId} AND is_deleted = 0 FOR UPDATE")
     Long lockUser(@Param("userId") long userId);
 
     /** Preferences use physical reset so the unique key remains reusable. */

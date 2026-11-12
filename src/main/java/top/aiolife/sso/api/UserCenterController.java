@@ -1,5 +1,7 @@
 package top.aiolife.sso.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
@@ -26,11 +28,13 @@ public class UserCenterController {
 
     private final IUserService userService;
 
+    @Operation(summary = "管理员分页查询用户")
     @GetMapping("/list")
     public ApiResponse<PageResp<UserVO>> list(@QueryParams CommonQuery<UserQuery> query) {
         return ApiResponse.success(userService.getUserList(query));
     }
 
+    @Operation(summary = "管理员新增用户")
     @PostMapping
     public ApiResponse<Void> add(@Valid @RequestBody UserCreateReq userEntityReq) {
         UserEntity userEntity = SsoApiConvertor.INSTANCE.fromUserCreateReq(userEntityReq);
@@ -38,6 +42,7 @@ public class UserCenterController {
         return ApiResponse.success();
     }
 
+    @Operation(summary = "管理员更新用户")
     @PutMapping
     public ApiResponse<Void> update(@Valid @RequestBody UserUpdateReq userEntityReq) {
         UserEntity userEntity = SsoApiConvertor.INSTANCE.fromUserUpdateReq(userEntityReq);
@@ -46,6 +51,7 @@ public class UserCenterController {
         return ApiResponse.success();
     }
 
+    @Operation(summary = "管理员删除用户")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         userService.deleteUser(id);

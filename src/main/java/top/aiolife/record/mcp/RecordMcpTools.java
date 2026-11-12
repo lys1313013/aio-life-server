@@ -57,7 +57,7 @@ public class RecordMcpTools {
         return timeRecordController.queryByDateRangeForAI(req).getData();
     }
 
-    @Tool("新增时迹；省略起止分钟时追加今天末条记录之后至当前时刻。补记历史日期或指定时段须同时提供 startTime/endTime（0–1439，闭区间）")
+    @Tool("新增时迹；省略起止分钟时追加今天末条记录之后至当前时刻。补记历史日期或指定时段须同时提供 startMinute/endMinute（0–1439，闭区间）")
     public String time_record_save(TimeRecordSaveMcpReq req) {
         TimeRecordReq actualReq = new TimeRecordReq();
         BeanUtil.copyProperties(req, actualReq);
@@ -65,43 +65,42 @@ public class RecordMcpTools {
         long userId = StpUtil.getLoginIdAsLong();
         LocalDate date = req.getDate() != null ? req.getDate() : LocalDate.now();
 
-        if ((req.getStartTime() == null) != (req.getEndTime() == null)) {
-            throw new IllegalArgumentException("startTime 与 endTime 必须同时提供");
+        if ((req.getStartMinute() == null) != (req.getEndMinute() == null)) {
+            throw new IllegalArgumentException("startMinute 与 endMinute 必须同时提供");
         }
-        if (req.getStartTime() == null && !date.equals(LocalDate.now())) {
-            throw new IllegalArgumentException("非今天的记录必须提供 startTime/endTime");
+        if (req.getStartMinute() == null && !date.equals(LocalDate.now())) {
+            throw new IllegalArgumentException("非今天的记录必须提供 startMinute/endMinute");
         }
         // 显式时间直接保存，省略时按今天的最后一段追加。
-        int startTime;
-        int endTime;
-        if (req.getStartTime() != null) {
-            startTime = req.getStartTime();
-            endTime = req.getEndTime();
+        int startMinute;
+        int endMinute;
+        if (req.getStartMinute() != null) {
+            startMinute = req.getStartMinute();
+            endMinute = req.getEndMinute();
         } else {
             // 开始时间自动从数据库中查询，最后一条 + 1
             TimeRecordEntity lastRecord = timeRecordService.lambdaQuery()
                     .eq(TimeRecordEntity::getUserId, userId)
                     .eq(TimeRecordEntity::getDate, date)
-                    .orderByDesc(TimeRecordEntity::getEndTime)
+                    .orderByDesc(TimeRecordEntity::getEndMinute)
                     .last("limit 1")
                     .one();
 
-            startTime = 0;
-            if (lastRecord != null && lastRecord.getEndTime() != null) {
-                startTime = lastRecord.getEndTime() + 1;
+            startMinute = 0;
+            if (lastRecord != null && lastRecord.getEndMinute() != null) {
+                startMinute = lastRecord.getEndMinute() + 1;
             }
 
             // 结束时间为当前时间
             LocalTime now = LocalTime.now();
-            endTime = now.getHour() * 60 + now.getMinute();
+            endMinute = now.getHour() * 60 + now.getMinute();
         }
-        if (startTime < 0 || endTime > 1439 || startTime > endTime) {
+        if (startMinute < 0 || endMinute > 1439 || startMinute > endMinute) {
             throw new IllegalArgumentException("时间范围无效或今天已无可追加时段；起止须在 0–1439 且结束不早于开始");
         }
 
-        actualReq.setStartTime(startTime);
-        actualReq.setEndTime(endTime);
-        actualReq.setDuration(endTime - startTime + 1);
+        actualReq.setStartMinute(startMinute);
+        actualReq.setEndMinute(endMinute);
         if (actualReq.getDate() == null) {
             actualReq.setDate(date);
         }
@@ -109,9 +108,10 @@ public class RecordMcpTools {
         timeRecordController.save(RecordApiConvertor.INSTANCE.toTimeRecordSaveReq(actualReq));
 
         // 格式化时间并返回给大模型
-        String startTimeStr = String.format("%02d:%02d", startTime / 60, startTime % 60);
-        String endTimeStr = String.format("%02d:%02d", endTime / 60, endTime % 60);
-        return String.format("保存成功！开始时间：%s，结束时间：%s，持续时长：%d分钟", startTimeStr, endTimeStr, actualReq.getDuration());
+        String startTimeStr = String.format("%02d:%02d", startMinute / 60, startMinute % 60);
+        String endTimeStr = String.format("%02d:%02d", endMinute / 60, endMinute % 60);
+        return String.format("保存成功！开始时间：%s，结束时间：%s，持续时长：%d分钟",
+                startTimeStr, endTimeStr, endMinute - startMinute + 1);
     }
 
     @Tool("保存一条想法，并可附带多个关联事件")

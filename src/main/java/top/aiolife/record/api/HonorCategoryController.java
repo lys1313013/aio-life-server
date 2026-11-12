@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import top.aiolife.core.query.QueryOrder;
@@ -25,6 +27,7 @@ public class HonorCategoryController {
     private final IHonorCategoryService honorCategoryService;
 
 
+    @Operation(summary = "查询荣誉分类")
     @GetMapping
     public ApiResponse<List<HonorCategoryVO>> queryCategories() {
         long userId = StpUtil.getLoginIdAsLong();

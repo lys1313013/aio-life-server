@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import top.aiolife.core.query.QueryOrder;
@@ -38,6 +40,7 @@ public class MilestoneController {
     }
 
 
+    @Operation(summary = "查询里程碑")
     @GetMapping
     public ApiResponse<List<MilestoneVO>> queryMilestone() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -48,6 +51,7 @@ public class MilestoneController {
     }
 
 
+    @Operation(summary = "新增里程碑")
     @PostMapping
     public ApiResponse<MilestoneVO> createMilestone(@Valid @RequestBody MilestoneCreateReq milestoneEntityReq) {
         MilestoneEntity milestoneEntity = RecordApiConvertor.INSTANCE.fromMilestoneCreateReq(milestoneEntityReq);
@@ -58,6 +62,7 @@ public class MilestoneController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toMilestoneVO(milestoneEntity));
     }
 
+    @Operation(summary = "更新里程碑")
     @PutMapping
     public ApiResponse<MilestoneVO> updateMilestone(@Valid @RequestBody MilestoneUpdateReq milestoneEntityReq) {
         MilestoneEntity milestoneEntity = RecordApiConvertor.INSTANCE.fromMilestoneUpdateReq(milestoneEntityReq);
@@ -71,6 +76,7 @@ public class MilestoneController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toMilestoneVO(milestoneEntity));
     }
 
+    @Operation(summary = "批量删除里程碑")
     @PostMapping("/batchDelete")
     public ApiResponse<Void> deleteMilestone(@RequestBody CommonReq commonReq) {
         long userId = StpUtil.getLoginIdAsLong();

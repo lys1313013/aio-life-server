@@ -60,34 +60,40 @@ public class MovieController {
         return ApiResponse.success();
     }
 
+    @Operation(summary = "删除观影记录")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         movieService.deleteRecord(id);
         return ApiResponse.success();
     }
 
+    @Operation(summary = "查询观影记录详情")
     @GetMapping("/{id}")
     public ApiResponse<MovieVO> getById(@PathVariable Long id) {
         return ApiResponse.success(movieService.getVOById(id));
     }
 
+    @Operation(summary = "解析豆瓣影视信息")
     @GetMapping("/parse-douban")
     public ApiResponse<MovieReq> parseDouban(@RequestParam String url) {
         return ApiResponse.success(movieService.parseDouban(url));
     }
 
+    @Operation(summary = "预览豆瓣观影记录导入")
     @PostMapping("/import/douban/preview")
     public ApiResponse<DoubanMovieImportPreviewVO> previewDoubanImport(
             @RequestBody DoubanMovieImportReq request) {
         return ApiResponse.success(doubanMovieImportService.preview(request));
     }
 
+    @Operation(summary = "导入豆瓣观影记录")
     @PostMapping("/import/douban")
     public ApiResponse<DoubanMovieImportResultVO> importDouban(
             @RequestBody DoubanMovieImportReq request) {
         return ApiResponse.success(doubanMovieImportService.importRecords(request));
     }
 
+    @Operation(summary = "查询待看及在看记录")
     @GetMapping("/active")
     public ApiResponse<List<MovieVO>> listActive() {
         return ApiResponse.success(movieService.listActive());

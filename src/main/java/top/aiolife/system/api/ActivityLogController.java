@@ -1,5 +1,8 @@
 package top.aiolife.system.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+
 import cn.dev33.satoken.annotation.SaCheckRole;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -22,18 +25,21 @@ import top.aiolife.system.service.ActivityLogService;
 public class ActivityLogController {
     private final ActivityLogService service;
 
+    @Operation(summary = "管理员分页查询操作或访问日志")
     @GetMapping("/{type:operation|access}")
-    public ApiResponse<PageResp<ActivityLogVO>> list(@PathVariable String type, ActivityLogQuery query) {
+    public ApiResponse<PageResp<ActivityLogVO>> list(@Parameter(description = "日志类型：operation 操作、access 访问") @PathVariable String type, ActivityLogQuery query) {
         return ApiResponse.success(SystemApiConvertor.INSTANCE.toActivityLogVOPage(service.list(type.toUpperCase(Locale.ROOT), query)));
     }
 
+    @Operation(summary = "管理员查询操作日志详情")
     @GetMapping("/operation/{id}")
     public ApiResponse<ActivityLogDetailVO> detail(@PathVariable Long id) {
         return ApiResponse.success(SystemApiConvertor.INSTANCE.toActivityLogDetailVO(service.detail(id)));
     }
 
+    @Operation(summary = "管理员导出操作或访问日志")
     @GetMapping("/{type:operation|access}/export")
-    public void export(@PathVariable String type, ActivityLogQuery query, HttpServletResponse response) throws IOException {
+    public void export(@Parameter(description = "日志类型：operation 操作、access 访问") @PathVariable String type, ActivityLogQuery query, HttpServletResponse response) throws IOException {
         query.validateRange();
         response.setContentType("text/csv;charset=UTF-8");
         response.setHeader("Content-Disposition", "attachment; filename=\"" + type + "-logs.csv\"");

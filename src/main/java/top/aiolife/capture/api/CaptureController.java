@@ -38,7 +38,7 @@ public class CaptureController {
     private final CaptureSecurity access;
 
     @PostMapping("/douban/preview")
-    @Operation(summary = "预览豆瓣书影并查询现有记录", description = "只解析元数据，不上传封面、不创建业务记录。")
+    @Operation(summary = "预览豆瓣书影采集信息", description = "只解析元数据，不上传封面、不创建业务记录。")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
             content =
@@ -65,7 +65,7 @@ public class CaptureController {
 
     @PostMapping("/douban/commit")
     @Operation(
-            summary = "确认保存阅读或观影",
+            summary = "保存采集的阅读或观影记录",
             description =
                     "直接写入read_record/movie；更新只修改明确提供字段，需existingId和version。Redis提供24小时请求重试保护。")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -94,7 +94,7 @@ public class CaptureController {
 
     @PostMapping("/douban/sync")
     @Operation(
-            summary = "同步豆瓣原生想看、看过或取消标记",
+            summary = "同步豆瓣观影标记",
             description =
                     "仅在豆瓣已确认操作成功后调用；状态not_started/completed/removed，removed逻辑删除当前用户对应影片。无记录时创建原movie记录，已有记录仅同步状态、必要进度及完成时间，同状态返回unchanged。")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -121,7 +121,7 @@ public class CaptureController {
     }
 
     @PostMapping("/purchase/preview")
-    @Operation(summary = "预览购物页面物品", description = "页面只是预填来源，返回draft/warnings/existingAssets，按来源订单和商品查询已保存设备／衣物，不保存订单正文。")
+    @Operation(summary = "预览购物页面采集信息", description = "页面只是预填来源，返回draft/warnings/existingAssets，按来源订单和商品查询已保存设备／衣物，不保存订单正文。")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
             content =
@@ -147,7 +147,7 @@ public class CaptureController {
 
     @PostMapping("/purchase/commit")
     @Operation(
-            summary = "直接创建设备或衣物",
+            summary = "保存采集的设备或衣物",
             description =
                     "按选择批量写入现有device/wardrobe_item，事务保证全部成功或回滚；不新建支出；保存平台、订单ID和商品ID，同一订单商品跨设备／衣柜按已有数量查重，已有记录不覆盖。")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -174,6 +174,7 @@ public class CaptureController {
         return ApiResponse.success(purchase.commit(StpUtil.getLoginIdAsLong(), request));
     }
 
+    @Operation(summary = "查询采集可选配置")
     @GetMapping("/options")
     public ApiResponse<Map<String, Object>> options() {
         long user = StpUtil.getLoginIdAsLong();

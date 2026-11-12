@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -10,6 +12,7 @@ import jakarta.validation.Valid;
 import java.util.Collection;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,7 +56,11 @@ public class SysDictDataController {
         return sysDictDataMapper;
     }
 
+    /**
+     * 管理员分页查询系统字典数据，支持按字典类型和标签筛选。
+     */
     @SaCheckRole("admin")
+    @Operation(summary = "管理员分页查询系统字典数据")
     @GetMapping("/query")
     public ApiResponse<PageResp<SysDictDataRecordVO>> query(
             @QueryParams CommonQuery<SysDictTypeQuery> query) {
@@ -106,18 +113,30 @@ public class SysDictDataController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toSysDictDataRecordVOPage(objectPageResp));
     }
 
+    /**
+     * 管理员新增系统字典数据。
+     */
     @SaCheckRole("admin")
+    @Operation(summary = "管理员新增系统字典数据")
     @PostMapping
     public ApiResponse<Boolean> add(@Valid @RequestBody SysDictDataCreateReq entityReq) {
         SysDictDataEntity entity = RecordApiConvertor.INSTANCE.fromSysDictDataCreateReq(entityReq);
         entity.setDictCode(null);
         entity.setCreateUser(StpUtil.getLoginIdAsLong());
         entity.setUpdateUser(StpUtil.getLoginIdAsLong());
-        return ApiResponse.success(getBaseMapper().insert(entity) > 0);
+        try {
+            return ApiResponse.success(getBaseMapper().insert(entity) > 0);
+        } catch (DuplicateKeyException e) {
+            return ApiResponse.error("该字典类型下字典值已存在");
+        }
     }
 
+    /**
+     * 管理员修改系统字典数据。
+     */
     @SaCheckRole("admin")
     @Transactional
+    @Operation(summary = "管理员更新系统字典数据")
     @PutMapping("/{dictCode}")
     public ApiResponse<Boolean> update(@PathVariable("dictCode") Long dictCode, @Valid @RequestBody SysDictDataUpdateReq entityReq) {
         SysDictDataEntity entity = RecordApiConvertor.INSTANCE.fromSysDictDataUpdateReq(entityReq);
@@ -125,11 +144,19 @@ public class SysDictDataController {
         entity.setDictCode(dictCode);
         entity.setCreateUser(null);
         entity.setUpdateUser(StpUtil.getLoginIdAsLong());
-        return ApiResponse.success(getBaseMapper().updateById(entity) > 0);
+        try {
+            return ApiResponse.success(getBaseMapper().updateById(entity) > 0);
+        } catch (DuplicateKeyException e) {
+            throw new IllegalStateException("该字典类型下字典值已存在");
+        }
     }
 
+    /**
+     * 管理员删除系统字典数据。
+     */
     @SaCheckRole("admin")
     @Transactional
+    @Operation(summary = "管理员删除系统字典数据")
     @DeleteMapping("/{dictCode}")
     public ApiResponse<Boolean> delete(@PathVariable("dictCode") Long dictCode) {
         bankCardGuard.checkBankChange(dictCode, null, true);

@@ -1,5 +1,8 @@
 package top.aiolife.system.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+
 import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
@@ -38,8 +41,9 @@ public class QuickNavController {
     /**
      * 获取当前用户可访问、且适合作为快捷入口的菜单叶子列表。
      */
+    @Operation(summary = "查询快捷导航可选菜单")
     @GetMapping("/candidates")
-    public ApiResponse<List<QuickNavCandidateVO>> candidates(@RequestParam(defaultValue = "web") String client) {
+    public ApiResponse<List<QuickNavCandidateVO>> candidates(@Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
         return ApiResponse.success(quickNavService.listCandidates(currentRoles(), MenuClient.parse(client)));
     }
 
@@ -48,8 +52,9 @@ public class QuickNavController {
      *
      * <p>未保存任何项时返回空数组（前端展示空态）。</p>
      */
+    @Operation(summary = "查询我的快捷导航")
     @GetMapping("/my")
-    public ApiResponse<List<QuickNavItemVO>> my(@RequestParam(defaultValue = "web") String client) {
+    public ApiResponse<List<QuickNavItemVO>> my(@Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
         long userId = StpUtil.getLoginIdAsLong();
         return ApiResponse.success(quickNavService.listMy(userId, currentRoles(), MenuClient.parse(client)));
     }
@@ -57,8 +62,9 @@ public class QuickNavController {
     /**
      * 覆盖保存当前端布局（可传空数组清空当前端；保留另一端独有项）。
      */
+    @Operation(summary = "保存当前端快捷导航")
     @PostMapping("/my")
-    public ApiResponse<List<QuickNavItemVO>> save(@RequestBody QuickNavSaveReq req, @RequestParam(defaultValue = "web") String client) {
+    public ApiResponse<List<QuickNavItemVO>> save(@RequestBody QuickNavSaveReq req, @Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
         long userId = StpUtil.getLoginIdAsLong();
         return ApiResponse.success(quickNavService.saveMy(userId, currentRoles(), req, MenuClient.parse(client)));
     }

@@ -1,9 +1,12 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
@@ -60,6 +63,7 @@ public class BVideoController {
         return bVideoMapper;
     }
 
+    @Operation(summary = "分页查询哔哩哔哩视频记录")
     @GetMapping("/query")
     public ApiResponse<PageResp<BVideoVO>> query(
             @QueryParams CommonQuery<BVideoQuery> requestQuery) {
@@ -81,6 +85,7 @@ public class BVideoController {
     }
 
     /** 插件按 BV 号读取本人标记；未标记返回空，复用视频业务的二级锁。 */
+    @Operation(summary = "按 BV 号查询我的视频标记")
     @GetMapping("/by-bvid")
     public ApiResponse<BVideoVO> byBvid(
             @RequestParam @Pattern(regexp = "BV[0-9A-Za-z]{10}") String bvid) {
@@ -89,6 +94,7 @@ public class BVideoController {
     }
 
     /** 按本人 ID 获取完整编辑详情，复用视频业务的二级锁。 */
+    @Operation(summary = "查询哔哩哔哩视频详情")
     @GetMapping("/{id}")
     public ApiResponse<BVideoVO> detail(@PathVariable Long id) {
         var entity = bVideoMapper.selectOne(new LambdaQueryWrapper<BVideoEntity>()
@@ -97,33 +103,32 @@ public class BVideoController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toBVideoVO(entity));
     }
 
+    @Operation(summary = "新增哔哩哔哩视频记录")
     @PostMapping
     @Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> insert(@Valid @RequestBody BVideoCreateReq entityReq) {
         BVideoEntity entity = RecordApiConvertor.INSTANCE.fromBVideoCreateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
 
-        LambdaQueryWrapper<BVideoEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(BVideoEntity::getBvid, entity.getBvid());
-        queryWrapper.eq(BVideoEntity::getUserId, userId);
-        Long count = getBaseMapper().selectCount(queryWrapper);
-        if (count > 0) {
-            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "该视频已存在，无法重复添加");
-        }
-
         entity.setUserId(userId);
         entity.fillCreateCommonField(userId);
+        if (entity.getId() == null) {
+            entity.setId(IdWorker.getId());
+        }
         if (entity.getStatus() == null) {
             entity.setStatus(ProgressStatusEnum.IN_PROGRESS);
         }
         if (entity.getStatus() == ProgressStatusEnum.COMPLETED) {
-            entity.setWatchedDuration(entity.getDuration());
+            entity.setWatchedDurationSeconds(entity.getDurationSeconds());
         }
-        boolean b = getBaseMapper().insert(entity) > 0;
-        if (b) videoCovers.enqueue(entity.getId(), userId, entity.getCover(), false);
-        return ApiResponse.success(b);
+        if (getBaseMapper().insertIgnoreActive(entity) == 0) {
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "该视频已存在，无法重复添加");
+        }
+        videoCovers.enqueue(entity.getId(), userId, entity.getCover(), false);
+        return ApiResponse.success(true);
     }
 
+    @Operation(summary = "更新哔哩哔哩视频记录")
     @PutMapping("/{id}")
     @Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> update(@PathVariable Long id, @Valid @RequestBody BVideoUpdateReq entityReq) {
@@ -146,7 +151,7 @@ public class BVideoController {
         entity.setUpdateUser(userId);
         entity.setUpdateTime(LocalDateTime.now());
         if (entity.getStatus() == ProgressStatusEnum.COMPLETED) {
-            entity.setWatchedDuration(entity.getDuration());
+            entity.setWatchedDurationSeconds(entity.getDurationSeconds());
         }
 
         boolean b = getBaseMapper().update(entity, wrapper) > 0;
@@ -154,6 +159,7 @@ public class BVideoController {
     }
 
 
+    @Operation(summary = "删除哔哩哔哩视频记录")
     @DeleteMapping("/{id}")
     @Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> delete(@PathVariable Long id) {
@@ -171,6 +177,7 @@ public class BVideoController {
     }
 
     /** 只读取导入状态，不发起外网下载；批量限制防止无限 IN 查询。 */
+    @Operation(summary = "查询视频封面导入状态")
     @GetMapping("/covers")
     public ApiResponse<List<BVideoCoverVO>> covers(@RequestParam List<Long> ids) {
         if (ids.isEmpty() || ids.size() > 100) throw new IllegalArgumentException("每次最多查询100张封面");
@@ -181,12 +188,14 @@ public class BVideoController {
                 v.getId(), v.getCoverFileId(), v.getCoverState())).toList());
     }
 
+    @Operation(summary = "重试导入视频封面")
     @PostMapping("/{id}/cover/retry")
     public ApiResponse<Void> retryCover(@PathVariable Long id) {
         videoCovers.retry(id, StpUtil.getLoginIdAsLong());
         return ApiResponse.success();
     }
 
+    @Operation(summary = "统计视频观看状态数量")
     @GetMapping("/getStatusCount")
     public ApiResponse<Map<String, Integer>> getStatusCount() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -196,6 +205,7 @@ public class BVideoController {
         return ApiResponse.success(map);
     }
 
+    @Operation(summary = "查询视频观看统计")
     @GetMapping("/statistics")
     public ApiResponse<BVideoStatisticsVO> statistics() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -215,32 +225,28 @@ public class BVideoController {
         return ApiResponse.success(statisticsVO);
     }
 
+    @Operation(summary = "标记哔哩哔哩视频")
     @PostMapping("/tagVideo")
     @Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> tagVideo(@Valid @RequestBody BVideoCreateReq entityReq) {
         BVideoEntity entity = RecordApiConvertor.INSTANCE.fromBVideoCreateReq(entityReq);
         long userId = StpUtil.getLoginIdAsLong();
         entity.setUserId(userId);
-
-        LambdaQueryWrapper<BVideoEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(BVideoEntity::getBvid, entity.getBvid());
-        queryWrapper.eq(BVideoEntity::getUserId, userId);
-        if (getBaseMapper().selectCount(queryWrapper) > 0) {
-            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "该视频已存在，无法重复添加");
+        entity.fillCreateCommonField(userId);
+        if (entity.getId() == null) {
+            entity.setId(IdWorker.getId());
         }
-
-        entity.setCreateUser(userId);
-        entity.setCreateTime(LocalDateTime.now());
-        entity.setUpdateUser(userId);
-        entity.setUpdateTime(LocalDateTime.now());
         if (entity.getStatus() == null) {
             entity.setStatus(ProgressStatusEnum.IN_PROGRESS);
         }
-        getBaseMapper().insert(entity);
+        if (getBaseMapper().insertIgnoreActive(entity) == 0) {
+            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "该视频已存在，无法重复添加");
+        }
         videoCovers.enqueue(entity.getId(), userId, entity.getCover(), false);
         return ApiResponse.success();
     }
 
+    @Operation(summary = "同步视频观看进度")
     @PostMapping("/syncProgress")
     @Transactional(rollbackFor = Exception.class)
     public ApiResponse<Boolean> syncProgress(@Valid @RequestBody BVideoProgressReq entityReq) {
@@ -248,37 +254,51 @@ public class BVideoController {
         long userId = StpUtil.getLoginIdAsLong();
         entity.setUserId(userId);
         log.info("bvid: {}, currentEpisode: {}, watchedDuration: {}", entity.getBvid(),
-                entity.getCurrentEpisode(), entity.getWatchedDuration());
+                entity.getCurrentEpisode(), entity.getWatchedDurationSeconds());
 
-        LambdaQueryWrapper<BVideoEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(BVideoEntity::getUserId, userId);
-        queryWrapper.eq(BVideoEntity::getBvid, entity.getBvid());
-        BVideoEntity exist = getBaseMapper().selectOne(queryWrapper);
-
+        BVideoEntity exist = getBaseMapper().findOwnedByBvid(userId, entity.getBvid());
+        Long videoId;
         if (exist != null) {
-            if (entityReq.getCover() != null) videoCovers.enqueue(exist.getId(), userId, entityReq.getCover(), false);
-            LambdaUpdateWrapper<BVideoEntity> updateWrapper = new LambdaUpdateWrapper<>();
-            updateWrapper.set(BVideoEntity::getCurrentEpisode, entity.getCurrentEpisode());
-            updateWrapper.set(BVideoEntity::getWatchedDuration, entity.getWatchedDuration());
-            updateWrapper.set(BVideoEntity::getLastWatched, LocalDateTime.now());
-            updateWrapper.set(BVideoEntity::getUpdateTime, LocalDateTime.now());
-            updateWrapper.set(BVideoEntity::getUpdateUser, userId);
-            updateWrapper.eq(BVideoEntity::getId, exist.getId());
-            getBaseMapper().update(null, updateWrapper);
-            log.info("syncProgress updated, id: {}", exist.getId());
+            updateProgress(exist.getId(), userId, entity);
+            videoId = exist.getId();
+            log.info("syncProgress updated, id: {}", videoId);
         } else {
-            entity.setCreateUser(userId);
-            entity.setCreateTime(LocalDateTime.now());
-            entity.setUpdateUser(userId);
-            entity.setUpdateTime(LocalDateTime.now());
-            entity.setLastWatched(LocalDateTime.now());
+            entity.fillCreateCommonField(userId);
+            if (entity.getId() == null) {
+                entity.setId(IdWorker.getId());
+            }
             if (entity.getStatus() == null) {
                 entity.setStatus(ProgressStatusEnum.IN_PROGRESS);
             }
-            getBaseMapper().insert(entity);
-            videoCovers.enqueue(entity.getId(), userId, entity.getCover(), false);
-            log.info("syncProgress inserted, bvid: {}", entity.getBvid());
+            entity.setLastWatched(LocalDateTime.now());
+            if (getBaseMapper().insertIgnoreActive(entity) > 0) {
+                videoId = entity.getId();
+                log.info("syncProgress inserted, bvid: {}", entity.getBvid());
+            } else {
+                // 并发创建同一 BV 号时后到请求改为更新已提交记录。
+                exist = getBaseMapper().findOwnedByBvid(userId, entity.getBvid());
+                if (exist == null) {
+                    throw new IllegalStateException("视频记录写入冲突，请稍后重试");
+                }
+                updateProgress(exist.getId(), userId, entity);
+                videoId = exist.getId();
+                log.info("syncProgress updated after concurrent insert, id: {}", videoId);
+            }
+        }
+        if (entityReq.getCover() != null) {
+            videoCovers.enqueue(videoId, userId, entityReq.getCover(), false);
         }
         return ApiResponse.success();
+    }
+
+    private void updateProgress(Long id, long userId, BVideoEntity entity) {
+        LambdaUpdateWrapper<BVideoEntity> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.set(BVideoEntity::getCurrentEpisode, entity.getCurrentEpisode());
+        updateWrapper.set(BVideoEntity::getWatchedDurationSeconds, entity.getWatchedDurationSeconds());
+        updateWrapper.set(BVideoEntity::getLastWatched, LocalDateTime.now());
+        updateWrapper.set(BVideoEntity::getUpdateTime, LocalDateTime.now());
+        updateWrapper.set(BVideoEntity::getUpdateUser, userId);
+        updateWrapper.eq(BVideoEntity::getId, id);
+        getBaseMapper().update(null, updateWrapper);
     }
 }

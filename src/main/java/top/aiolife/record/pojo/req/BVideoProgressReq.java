@@ -24,12 +24,12 @@ public class BVideoProgressReq {
     /**
      * 视频时长（单位秒）
      */
-    private Integer duration;
+    private Integer durationSeconds;
 
     /**
-     * 观看时长
+     * 已观看时长（秒）
      */
-    private Integer watchedDuration;
+    private Integer watchedDurationSeconds;
 
     private Integer episodes;
 

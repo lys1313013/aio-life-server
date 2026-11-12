@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
@@ -33,6 +35,7 @@ public class MbtiController {
     private final IMbtiResultService mbtiResultService;
     private final ObjectMapper objectMapper;
 
+    @Operation(summary = "创建 MBTI 测试")
     @PostMapping("/test")
     public ApiResponse<Map<String, Object>> createTest() {
         Map<String, Object> result = mbtiResultService.createTest();
@@ -44,12 +47,14 @@ public class MbtiController {
         }
     }
 
+    @Operation(summary = "查询 MBTI 测试进度及结果")
     @GetMapping("/test/{testId}")
     public ApiResponse<Map<String, Object>> checkTest(@PathVariable String testId) {
         Map<String, Object> result = mbtiResultService.checkTest(testId);
         return ApiResponse.success(result);
     }
 
+    @Operation(summary = "保存 MBTI 测试结果")
     @PostMapping("/result")
     public ApiResponse<Void> saveResult(@Valid @RequestBody MbtiResultSaveReq body) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -76,6 +81,7 @@ public class MbtiController {
         return ApiResponse.success();
     }
 
+    @Operation(summary = "查询 MBTI 测试历史")
     @GetMapping("/results")
     public ApiResponse<List<MbtiResultVO>> getHistory() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -83,6 +89,7 @@ public class MbtiController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toMbtiResultVOList(history));
     }
 
+    @Operation(summary = "查询 MBTI 测试结果详情")
     @GetMapping("/result/{id}")
     public ApiResponse<MbtiResultDetailVO> getById(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -112,6 +119,7 @@ public class MbtiController {
         return ApiResponse.success(response);
     }
 
+    @Operation(summary = "删除 MBTI 测试结果")
     @DeleteMapping("/result/{id}")
     public ApiResponse<Void> deleteResult(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();

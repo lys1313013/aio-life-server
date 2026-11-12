@@ -1,5 +1,7 @@
 package top.aiolife.mcp.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +22,7 @@ public class McpController {
     private final McpToolRegistry toolRegistry;
     private final McpToolInvoker toolInvoker;
 
+    @Operation(summary = "查询 MCP 工具及参数定义")
     @GetMapping("/tools")
     public ApiResponse<List<Map<String, Object>>> listTools() {
         var tools = toolRegistry.getAllTools().stream()
@@ -35,6 +38,7 @@ public class McpController {
         return ApiResponse.success(tools);
     }
 
+    @Operation(summary = "调用 MCP 工具")
     @PostMapping("/tools/call")
     public ApiResponse<Map<String, Object>> callTool(@RequestBody ToolCallRequest request) {
         McpToolRegistry.RegisteredMcpTool tool = toolRegistry.getTool(request.name());

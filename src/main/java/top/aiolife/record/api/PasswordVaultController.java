@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import top.aiolife.core.query.QueryOrder;
@@ -43,6 +45,7 @@ public class PasswordVaultController {
     /**
      * 查询密码列表
      */
+    @Operation(summary = "查询密码库记录")
     @GetMapping("/list")
     public ApiResponse<List<PasswordVaultVO>> list() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -56,6 +59,7 @@ public class PasswordVaultController {
     /**
      * 获取单条密码详情
      */
+    @Operation(summary = "查询密码库记录详情")
     @GetMapping("/{id}")
     public ApiResponse<PasswordVaultVO> getById(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -69,6 +73,7 @@ public class PasswordVaultController {
     /**
      * 新增密码
      */
+    @Operation(summary = "新增密码库记录")
     @PostMapping
     public ApiResponse<Boolean> save(@Valid @RequestBody PasswordVaultCreateReq entityReq) {
         PasswordVaultEntity entity = RecordApiConvertor.INSTANCE.fromPasswordVaultCreateReq(entityReq);
@@ -89,6 +94,7 @@ public class PasswordVaultController {
     /**
      * 编辑密码
      */
+    @Operation(summary = "更新密码库记录")
     @PutMapping("/{id}")
     public ApiResponse<Boolean> update(@PathVariable Long id, @Valid @RequestBody PasswordVaultUpdateReq entityReq) {
         PasswordVaultEntity entity = RecordApiConvertor.INSTANCE.fromPasswordVaultUpdateReq(entityReq);
@@ -110,6 +116,7 @@ public class PasswordVaultController {
     /**
      * 删除密码
      */
+    @Operation(summary = "删除密码库记录")
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@PathVariable Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
@@ -123,6 +130,7 @@ public class PasswordVaultController {
     /**
      * 获取分类列表
      */
+    @Operation(summary = "查询密码库分类")
     @GetMapping("/categories")
     public ApiResponse<List<String>> categories() {
         long userId = StpUtil.getLoginIdAsLong();

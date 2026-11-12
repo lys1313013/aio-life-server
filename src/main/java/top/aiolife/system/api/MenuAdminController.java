@@ -1,5 +1,7 @@
 package top.aiolife.system.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
@@ -38,6 +40,7 @@ public class MenuAdminController {
      *
      * @return 统一返回结构，data 为菜单树
      */
+    @Operation(summary = "管理员查询菜单树")
     @GetMapping("/tree")
     public ApiResponse<List<MenuAdminVO>> tree() {
         return ApiResponse.success(menuService.getAdminMenuTree());
@@ -50,6 +53,7 @@ public class MenuAdminController {
      *
      * @return 统一返回结构，data 为去重后的角色字符串数组
      */
+    @Operation(summary = "查询菜单可选角色")
     @GetMapping("/role-options")
     public ApiResponse<List<String>> roleOptions() {
         return ApiResponse.success(userService.listRoleOptions());
@@ -61,6 +65,7 @@ public class MenuAdminController {
      * @param req 菜单保存请求体
      * @return 统一返回结构，data 为新增后的菜单节点
      */
+    @Operation(summary = "管理员新增菜单")
     @PostMapping
     public ApiResponse<MenuAdminVO> create(@RequestBody MenuSaveReq req) throws Exception {
         long userId = StpUtil.getLoginIdAsLong();
@@ -74,6 +79,7 @@ public class MenuAdminController {
      * @param req 菜单保存请求体
      * @return 统一返回结构，data 为更新后的菜单节点
      */
+    @Operation(summary = "管理员更新菜单")
     @PutMapping("/{id}")
     public ApiResponse<MenuAdminVO> update(@PathVariable long id, @RequestBody MenuSaveReq req) throws Exception {
         long userId = StpUtil.getLoginIdAsLong();
@@ -87,6 +93,7 @@ public class MenuAdminController {
      * @param body 请求体，包含 webIsEnabled（0禁用，1启用）
      * @return 统一返回结构，data 为更新后的菜单节点
      */
+    @Operation(summary = "管理员设置 Web 菜单启用状态")
     @PutMapping("/{id}/status")
     public ApiResponse<MenuAdminVO> updateStatus(@PathVariable long id, @Valid @RequestBody MenuStatusUpdateReq body) throws Exception {
         long userId = StpUtil.getLoginIdAsLong();
@@ -94,12 +101,14 @@ public class MenuAdminController {
     }
 
     /** 更新移动端启用状态，与 Web 端独立。 */
+    @Operation(summary = "管理员设置移动端菜单启用状态")
     @PutMapping("/{id}/mobile-status")
     public ApiResponse<MenuAdminVO> updateMobileStatus(@PathVariable long id, @Valid @RequestBody MenuStatusUpdateReq body) throws Exception {
         return ApiResponse.success(menuService.updateMobileStatus(id, body.getIsEnabled(), StpUtil.getLoginIdAsLong()));
     }
 
     /** 更新菜单排序。 */
+    @Operation(summary = "管理员调整菜单排序")
     @PutMapping("/{id}/sort")
     public ApiResponse<MenuAdminVO> updateSort(@PathVariable long id, @Valid @RequestBody MenuSortUpdateReq body) throws Exception {
         long userId = StpUtil.getLoginIdAsLong();
@@ -112,6 +121,7 @@ public class MenuAdminController {
      * @param id 菜单ID
      * @return 统一返回结构
      */
+    @Operation(summary = "管理员删除菜单")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable long id) {
         long userId = StpUtil.getLoginIdAsLong();

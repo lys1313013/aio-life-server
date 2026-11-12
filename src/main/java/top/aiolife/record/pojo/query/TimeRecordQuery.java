@@ -2,6 +2,7 @@ package top.aiolife.record.pojo.query;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import lombok.Data;
@@ -12,6 +13,7 @@ import lombok.Data;
 public class TimeRecordQuery {
 
     @NotNull(message = "date 不能为空")
+    @Schema(description = "时迹日期，yyyy-MM-dd")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;
 }

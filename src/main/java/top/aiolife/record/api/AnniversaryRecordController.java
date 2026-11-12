@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import top.aiolife.core.query.QueryOrder;
@@ -31,6 +33,7 @@ public class AnniversaryRecordController {
 
     private final IAnniversaryRecordService anniversaryRecordService;
 
+    @Operation(summary = "查询纪念日列表")
     @GetMapping
     public ApiResponse<List<AnniversaryRecordVO>> queryAnniversaryRecords(@RequestParam(required = false) Integer isPinned) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -49,6 +52,7 @@ public class AnniversaryRecordController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toAnniversaryRecordVOList(anniversaryRecordService.list(queryWrapper)));
     }
 
+    @Operation(summary = "查询纪念日详情")
     @GetMapping("/{id}")
     public ApiResponse<AnniversaryRecordVO> getAnniversaryRecord(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -58,6 +62,7 @@ public class AnniversaryRecordController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toAnniversaryRecordVO(anniversaryRecordService.getOne(queryWrapper)));
     }
 
+    @Operation(summary = "新增纪念日")
     @PostMapping
     public ApiResponse<AnniversaryRecordVO> createAnniversaryRecord(@Valid @RequestBody AnniversaryRecordCreateReq entityReq) {
         AnniversaryRecordEntity entity = RecordApiConvertor.INSTANCE.fromAnniversaryRecordCreateReq(entityReq);
@@ -66,6 +71,7 @@ public class AnniversaryRecordController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toAnniversaryRecordVO(entity));
     }
 
+    @Operation(summary = "更新纪念日")
     @PutMapping
     public ApiResponse<AnniversaryRecordVO> updateAnniversaryRecord(@Valid @RequestBody AnniversaryRecordUpdateReq entityReq) {
         AnniversaryRecordEntity entity = RecordApiConvertor.INSTANCE.fromAnniversaryRecordUpdateReq(entityReq);
@@ -74,6 +80,7 @@ public class AnniversaryRecordController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toAnniversaryRecordVO(entity));
     }
 
+    @Operation(summary = "批量删除纪念日")
     @PostMapping("/batchDelete")
     public ApiResponse<Void> deleteAnniversaryRecords(@RequestBody CommonReq commonReq) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -81,12 +88,14 @@ public class AnniversaryRecordController {
         return ApiResponse.success();
     }
 
+    @Operation(summary = "设置纪念日置顶状态")
     @PutMapping("/{id}/pin")
     public ApiResponse<AnniversaryRecordVO> setPinned(@PathVariable Long id, @Valid @RequestBody HomePinReq request) {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toAnniversaryRecordVO(
                 anniversaryRecordService.setPinned(StpUtil.getLoginIdAsLong(), id, request.getIsPinned())));
     }
 
+    @Operation(summary = "调整置顶纪念日排序")
     @PutMapping("/pinned-order")
     public ApiResponse<Void> reorderPinned(@Valid @RequestBody HomePinnedOrderReq request) {
         anniversaryRecordService.reorderPinned(StpUtil.getLoginIdAsLong(), request.getIds());

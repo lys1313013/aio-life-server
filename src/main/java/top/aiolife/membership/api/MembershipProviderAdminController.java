@@ -1,5 +1,7 @@
 package top.aiolife.membership.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
@@ -25,16 +27,20 @@ import top.aiolife.membership.service.MembershipProviderService;
 public class MembershipProviderAdminController {
     private final MembershipProviderService service;
 
+    @Operation(summary = "管理员查询会员平台")
     @GetMapping
     public ApiResponse<List<MembershipProviderVO>> list() { return ApiResponse.success(service.list(false)); }
+    @Operation(summary = "管理员新增会员平台")
     @PostMapping
     public ApiResponse<MembershipProviderVO> create(@Valid @RequestBody MembershipProviderReq req) {
         return ApiResponse.success(service.save(StpUtil.getLoginIdAsLong(), null, req));
     }
+    @Operation(summary = "管理员更新会员平台")
     @PutMapping("/{id}")
     public ApiResponse<MembershipProviderVO> update(@PathVariable Long id, @Valid @RequestBody MembershipProviderReq req) {
         return ApiResponse.success(service.save(StpUtil.getLoginIdAsLong(), id, req));
     }
+    @Operation(summary = "管理员删除会员平台")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         service.delete(StpUtil.getLoginIdAsLong(), id);

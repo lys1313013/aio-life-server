@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import top.aiolife.core.query.QueryOrder;
@@ -38,6 +40,7 @@ public class HonorRecordController {
     private final IFileService fileService;
 
 
+    @Operation(summary = "查询荣誉记录")
     @GetMapping
     public ApiResponse<List<HonorRecordVO>> queryHonorRecords() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -54,6 +57,7 @@ public class HonorRecordController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toHonorRecordVOList(list));
     }
 
+    @Operation(summary = "查询荣誉记录详情")
     @GetMapping("/{id}")
     public ApiResponse<HonorRecordVO> getHonorRecord(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -68,6 +72,7 @@ public class HonorRecordController {
     }
 
 
+    @Operation(summary = "新增荣誉记录")
     @PostMapping
     public ApiResponse<HonorRecordVO> createHonorRecord(@Valid @RequestBody HonorRecordCreateReq honorRecordEntityReq) {
         HonorRecordEntity honorRecordEntity = RecordApiConvertor.INSTANCE.fromHonorRecordCreateReq(honorRecordEntityReq);
@@ -82,6 +87,7 @@ public class HonorRecordController {
     }
 
 
+    @Operation(summary = "更新荣誉记录")
     @PutMapping
     @Transactional(rollbackFor = Exception.class)
     public ApiResponse<HonorRecordVO> updateHonorRecord(@Valid @RequestBody HonorRecordUpdateReq honorRecordEntityReq) {
@@ -113,6 +119,7 @@ public class HonorRecordController {
     }
 
 
+    @Operation(summary = "批量删除荣誉记录")
     @PostMapping("/batchDelete")
     public ApiResponse<Void> deleteHonorRecords(@RequestBody CommonReq commonReq) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -127,6 +134,7 @@ public class HonorRecordController {
     }
 
 
+    @Operation(summary = "切换荣誉置顶状态")
     @PostMapping("/toggleTop/{id}")
     public ApiResponse<Void> toggleTop(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();

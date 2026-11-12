@@ -1,5 +1,8 @@
 package top.aiolife.system.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+
 import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
@@ -42,15 +45,17 @@ public class MenuController {
      *
      * @return 统一返回结构，data 为 RouteRecordStringComponent 结构的数组
      */
+    @Operation(summary = "查询当前用户可访问菜单")
     @GetMapping("/all")
-    public ApiResponse<List<MenuRouteVO>> all(@RequestParam(defaultValue = "web") String client) {
+    public ApiResponse<List<MenuRouteVO>> all(@Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
         long userId = StpUtil.getLoginIdAsLong();
         List<String> roles = parseRoles(userService.getRole(userId));
         return ApiResponse.success(menuService.getAccessibleMenuTree(roles, MenuClient.parse(client)));
     }
 
+    @Operation(summary = "查询业务图标和颜色")
     @GetMapping("/visuals")
-    public ApiResponse<MenuVisualsVO> visuals(@RequestParam(defaultValue = "web") String client) {
+    public ApiResponse<MenuVisualsVO> visuals(@Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
         return ApiResponse.success(visuals.get(StpUtil.getLoginIdAsLong(), MenuClient.parse(client)));
     }
 

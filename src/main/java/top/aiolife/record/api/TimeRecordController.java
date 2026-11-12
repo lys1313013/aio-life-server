@@ -71,6 +71,7 @@ public class TimeRecordController {
     }
 
     /** 查询当前用户指定日期的全部记录，不分页。 */
+    @Operation(summary = "查询指定日期的时迹")
     @GetMapping("/query")
     public ApiResponse<List<TimeRecordListVO>> query(@Valid @QueryParams TimeRecordQuery requestQuery) {
         return ApiResponse.success(timeRecordService.queryDay(
@@ -81,6 +82,7 @@ public class TimeRecordController {
      * 查询指定日期的记录
      * @param query 查询参数
      */
+    @Operation(summary = "查询日期范围内的时迹")
     @GetMapping("/queryByDateRange")
     public ApiResponse<List<TimeRecordListVO>> queryByDateRange(
             @QueryParams CommonQuery<TimeWeekQuery> query) {
@@ -92,6 +94,7 @@ public class TimeRecordController {
      * 查询指定日期的记录（格式化时间返回）
      * @param req 查询参数（包含startDate和endDate）
      */
+    @Operation(summary = "查询时迹及格式化时间")
     @GetMapping("/queryByDateRangeForAI")
     public ApiResponse<List<TimeRecordDateRangeVO>> queryByDateRangeForAI(
             @QueryParams TimeRecordDateRangeMcpReq req) {
@@ -131,7 +134,7 @@ public class TimeRecordController {
         // 按日期和时间从晚到早排序
         voList.sort(Comparator
                 .comparing(TimeRecordDateRangeVO::getDate, Comparator.reverseOrder())
-                .thenComparing(TimeRecordDateRangeVO::getStartTime, Comparator.reverseOrder()));
+                .thenComparing(TimeRecordDateRangeVO::getStartMinute, Comparator.reverseOrder()));
 
         return ApiResponse.success(voList);
     }
@@ -202,8 +205,8 @@ public class TimeRecordController {
         lambdaQueryWrapper.select(TimeRecordEntity::getId,
                 TimeRecordEntity::getCategoryId,
                 TimeRecordEntity::getDate,
-                TimeRecordEntity::getStartTime,
-                TimeRecordEntity::getEndTime,
+                TimeRecordEntity::getStartMinute,
+                TimeRecordEntity::getEndMinute,
                 TimeRecordEntity::getTitle);
         lambdaQueryWrapper.eq(TimeRecordEntity::getUserId, userId);
         lambdaQueryWrapper.between(TimeRecordEntity::getDate, req.getStartDate(), req.getEndDate());
@@ -228,8 +231,8 @@ public class TimeRecordController {
         lambdaQueryWrapper.select(TimeRecordEntity::getId,
                 TimeRecordEntity::getCategoryId,
                 TimeRecordEntity::getDate,
-                TimeRecordEntity::getStartTime,
-                TimeRecordEntity::getEndTime,
+                TimeRecordEntity::getStartMinute,
+                TimeRecordEntity::getEndMinute,
                 TimeRecordEntity::getTitle,
                 TimeRecordEntity::getRelateId,
                 TimeRecordEntity::getRelateType);
@@ -244,6 +247,7 @@ public class TimeRecordController {
      * 根据 id 查询
      * @param id id
      */
+    @Operation(summary = "查询时迹详情")
     @GetMapping("/{id}")
     public ApiResponse<TimeRecordVO> getById(@PathVariable("id") String id) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -269,7 +273,7 @@ public class TimeRecordController {
     }
 
     @PostMapping
-    @Operation(summary = "新增时迹时间记录")
+    @Operation(summary = "新增时迹")
     public ApiResponse<String> save(@Valid @RequestBody TimeRecordSaveReq request) {
         if (request.getDate() == null) request.setDate(LocalDate.now());
         TimeRecordReq timeRecordReq = RecordApiConvertor.INSTANCE.fromTimeRecordSaveReq(request);
@@ -277,7 +281,7 @@ public class TimeRecordController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "更新时迹时间记录")
+    @Operation(summary = "更新时迹")
     public ApiResponse<Boolean> update(@PathVariable("id") String id, @Valid @RequestBody TimeRecordUpdateReq request) {
         TimeRecordReq timeRecordReq = RecordApiConvertor.INSTANCE.fromTimeRecordUpdateReq(request);
         timeRecordReq.setId(id);
@@ -289,6 +293,7 @@ public class TimeRecordController {
      * 删除
      * @param entity id
      */
+    @Operation(summary = "删除时迹")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable("id") String id) {
         timeRecordService.removeById(id, StpUtil.getLoginIdAsLong());
@@ -299,6 +304,7 @@ public class TimeRecordController {
      * 删除
      * @param entity id
      */
+    @Operation(summary = "删除指定日期的时迹")
     @PostMapping("/deleteByDate")
     public ApiResponse<Void> deleteByDay(@Valid @RequestBody TimeRecordDeleteByDateReq entityReq) {
         TimeRecordEntity entity = RecordApiConvertor.INSTANCE.fromTimeRecordDeleteByDateReq(entityReq);
@@ -316,6 +322,7 @@ public class TimeRecordController {
      * @param time 目标时刻距当天 00:00 的分钟数，范围 0～1439，例如 600 表示 10:00；不是时长或时间戳
      * @return 成功响应的 data 为分类 ID 字符串；无推荐时 data 为 ""，仍返回成功码 "0"
      */
+    @Operation(summary = "推荐指定时刻的时迹分类")
     @GetMapping("/recommendType")
     public ApiResponse<String> recommendType(String date, int time) {
         // 从登录上下文确定用户，推荐所用的分类和历史记录均按该用户查询。
@@ -333,6 +340,7 @@ public class TimeRecordController {
      * 推荐下一个时间块
      * @param date 日期 yyyy-MM-dd
      */
+    @Operation(summary = "推荐下一个时迹时间块")
     @GetMapping("/recommendNext")
     public ApiResponse<TimeRecordRecommendationVO> recommendNext(String date) {
         long userId = RequestLoginContext.requireUserId();
@@ -345,7 +353,7 @@ public class TimeRecordController {
             return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeRecordRecommendationVO(result));
         }
 
-        Long categoryId = timeRecordService.recommendType(userId, date, recommend.getStartTime());
+        Long categoryId = timeRecordService.recommendType(userId, date, recommend.getStartMinute());
         recommend.setCategoryId(categoryId);
 
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeRecordRecommendationVO(result));
@@ -354,6 +362,7 @@ public class TimeRecordController {
     /**
      * 获取关联业务类型列表
      */
+    @Operation(summary = "查询时迹可关联业务类型")
     @GetMapping("/relateTypes")
     public ApiResponse<List<Map<String, Object>>> getRelateTypes() {
         return ApiResponse.success(RelateTypeEnum.toList());

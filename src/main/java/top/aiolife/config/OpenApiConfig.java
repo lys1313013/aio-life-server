@@ -48,9 +48,9 @@ import java.util.stream.Collectors;
 public class OpenApiConfig {
 
     private static final String BEARER_AUTH = "bearerAuth";
-    // 对应 SaTokenConfig 的匿名认证入口；文件接口另有对象级访问控制。
+    // 对应 SaTokenConfig 的匿名入口；文件接口另有对象级访问控制。
     private static final Set<String> PUBLIC_AUTH_PATHS = Set.of(
-            "/auth/login", "/auth/register", "/auth/sendEmailCode",
+            "/auth/legal", "/auth/login", "/auth/register", "/auth/sendEmailCode",
             "/auth/sendResetPasswordCode", "/auth/resetPassword");
 
     static {
@@ -122,6 +122,7 @@ public class OpenApiConfig {
                 operation.setOperationId(method.name().toLowerCase(Locale.ROOT)
                         + path.replaceAll("[^a-zA-Z0-9]+", "_").replaceAll("_$", ""));
                 if (PUBLIC_AUTH_PATHS.contains(path) || path.startsWith("/cbti/images/")
+                        || path.startsWith("/public/images/") || path.startsWith("/membership/provider-icons/")
                         || Arrays.asList(WechatAuthController.PUBLIC_PATHS).contains(path)
                         || Arrays.asList(top.aiolife.sso.api.QrLoginController.PUBLIC_PATHS).contains(path)
                         || path.equals("/auth/qr-login/{id}/status")

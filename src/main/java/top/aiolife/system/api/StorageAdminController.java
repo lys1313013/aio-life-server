@@ -1,5 +1,8 @@
 package top.aiolife.system.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+
 import cn.dev33.satoken.annotation.SaCheckRole;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -22,24 +25,28 @@ import top.aiolife.system.service.StorageAdminService;
 public class StorageAdminController {
     private final StorageAdminService service;
 
+    @Operation(summary = "管理员分页查询存储对象")
     @GetMapping("/objects")
     public ApiResponse<StoragePageVO> list(@Valid StorageObjectQuery query, HttpServletResponse response) throws Exception {
         response.setHeader("Cache-Control", "no-store");
         return ApiResponse.success(service.list(query));
     }
 
+    @Operation(summary = "管理员预览存储对象")
     @GetMapping("/preview")
-    public void preview(@RequestParam String key, HttpServletResponse response) throws Exception {
+    public void preview(@Parameter(description = "存储对象完整路径") @RequestParam String key, HttpServletResponse response) throws Exception {
         service.read(key, false, response);
     }
 
+    @Operation(summary = "管理员下载存储对象")
     @GetMapping("/download")
-    public void download(@RequestParam String key, HttpServletResponse response) throws Exception {
+    public void download(@Parameter(description = "存储对象完整路径") @RequestParam String key, HttpServletResponse response) throws Exception {
         service.read(key, true, response);
     }
 
+    @Operation(summary = "管理员删除存储对象")
     @DeleteMapping("/object")
-    public ApiResponse<Void> delete(@RequestParam String key) throws Exception {
+    public ApiResponse<Void> delete(@Parameter(description = "存储对象完整路径") @RequestParam String key) throws Exception {
         service.delete(key);
         return ApiResponse.success();
     }

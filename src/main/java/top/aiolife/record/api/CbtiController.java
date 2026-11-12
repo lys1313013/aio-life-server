@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
@@ -44,6 +46,7 @@ public class CbtiController {
      *
      * @return 统一返回结构，data 包含 questions/hiddenQuestions/dimensionDefs
      */
+    @Operation(summary = "查询 CBTI 题库和维度")
     @GetMapping("/questions")
     public ApiResponse<Map<String, Object>> questions() {
         try {
@@ -60,6 +63,7 @@ public class CbtiController {
      *
      * @return 统一返回结构，data 为人格列表
      */
+    @Operation(summary = "查询 CBTI 人格类型")
     @GetMapping("/personalities")
     public ApiResponse<List<Map<String, Object>>> personalities() {
         List<CbtiPersonalityEntity> list = cbtiService.listPersonalities();
@@ -75,6 +79,7 @@ public class CbtiController {
      * @param code 人格代码
      * @return 统一返回结构，data 为人格详情
      */
+    @Operation(summary = "查询 CBTI 人格详情")
     @GetMapping("/personalities/{code}")
     public ApiResponse<Map<String, Object>> personality(@PathVariable String code) {
         CbtiPersonalityEntity entity = cbtiService.getPersonalityByCode(code);
@@ -92,6 +97,7 @@ public class CbtiController {
      * @param body 请求体，包含 answers（题号->选项值）与 hiddenAnswers（彩蛋答案）
      * @return 统一返回结构，data 为测试结果（人格、匹配度、维度结果、匹配排行等）
      */
+    @Operation(summary = "计算并保存 CBTI 测试结果")
     @PostMapping("/test")
     public ApiResponse<Map<String, Object>> test(@Valid @RequestBody CbtiTestReq body) throws Exception {
         long userId = StpUtil.getLoginIdAsLong();
@@ -116,6 +122,7 @@ public class CbtiController {
      *
      * @return 统一返回结构，data 为历史列表
      */
+    @Operation(summary = "查询 CBTI 测试历史")
     @GetMapping("/results")
     public ApiResponse<List<Map<String, Object>>> results() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -137,6 +144,7 @@ public class CbtiController {
      * @param id 历史记录ID
      * @return 统一返回结构，data 为历史详情
      */
+    @Operation(summary = "查询 CBTI 测试结果详情")
     @GetMapping("/result/{id}")
     public ApiResponse<Map<String, Object>> resultDetail(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -158,6 +166,7 @@ public class CbtiController {
      * @param id 历史记录ID
      * @return 是否删除成功
      */
+    @Operation(summary = "删除 CBTI 测试结果")
     @DeleteMapping("/result/{id}")
     public ApiResponse<Boolean> deleteResult(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();

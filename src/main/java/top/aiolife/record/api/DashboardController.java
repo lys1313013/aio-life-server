@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.pojo.vo.DashboardCardVO;
@@ -39,10 +41,9 @@ public class DashboardController {
     }
 
     /**
-     * 1. 获取任务列表
-     * 前端拿到后，可以立即渲染占位图（Skeleton Screen）
-     * 只返回静态配置信息（标题、图标等），不查询实时数据
+     * 查询可见首页卡片配置，不含实时业务数据。
      */
+    @Operation(summary = "查询首页卡片配置")
     @GetMapping("/tasks")
     public ApiResponse<List<DashboardCardVO>> getTasks() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -65,9 +66,9 @@ public class DashboardController {
     }
 
     /**
-     * 2. 根据类型获取单个卡片详情
-     * 前端并发调用：/card/EXERCISE, /card/LEETCODE ...
+     * 查询指定类型的首页卡片数据。
      */
+    @Operation(summary = "查询指定首页卡片数据")
     @GetMapping("/card/{type}")
     public ApiResponse<DashboardCardVO> getCardDetail(@PathVariable String type) {
         DashboardCardProvider provider = providerMap.get(type);

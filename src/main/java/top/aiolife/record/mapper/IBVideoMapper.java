@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Constants;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -21,20 +22,39 @@ import java.util.List;
  */
 public interface IBVideoMapper extends BaseMapper<BVideoEntity> {
     /**
-     * 使用 idx_bvid 缩小范围，再按字节精确比较 BV 号，避免默认排序规则忽略大小写。
-     * 重复标记沿列表状态顺序、更新时间取首条，ID 用于同一更新时间的稳定排序。
+     * 按用户和 BV 号读取一条有效视频记录；bvid 使用确定性排序，按精确值匹配。
      */
     @Select("""
             SELECT * FROM b_video
             WHERE user_id = #{userId} AND is_deleted = 0 AND bvid = #{bvid}
-              AND CAST(bvid AS bytea) = CAST(CAST(#{bvid} AS text) AS bytea)
-            ORDER BY CASE status
-                WHEN 'not_started' THEN 1 WHEN 'in_progress' THEN 2
-                WHEN 'on_hold' THEN 3 WHEN 'completed' THEN 4 ELSE 0 END,
-                update_time DESC NULLS LAST, id DESC
+            ORDER BY update_time DESC NULLS LAST, id DESC
             LIMIT 1
             """)
     BVideoEntity findOwnedByBvid(@Param("userId") long userId, @Param("bvid") String bvid);
+
+    /**
+     * 写入视频；并发创建同一用户同一 BV 号时由唯一索引忽略后到记录。
+     *
+     * @return 1 表示已插入，0 表示已存在有效记录
+     */
+    @Insert("""
+            INSERT INTO b_video (
+              id, cover_file_id, cover_state, cover_version, title, url, cover, duration_seconds,
+              watched_duration_seconds, episodes, current_episode, status, last_watched, notes,
+              bvid, aid, description, owner_name, pages_info, user_id,
+              create_user, create_time, update_user, update_time, is_deleted
+            ) VALUES (
+              #{id}, #{coverFileId}, COALESCE(#{coverState}, 'NONE'), COALESCE(#{coverVersion}, 0),
+              #{title}, #{url}, #{cover}, #{durationSeconds},
+              COALESCE(#{watchedDurationSeconds}, 0), #{episodes}, #{currentEpisode},
+              COALESCE(#{status.code}, 'in_progress'), #{lastWatched}, #{notes},
+              #{bvid}, #{aid}, #{description}, #{ownerName},
+              CAST(#{pagesInfo} AS jsonb), #{userId},
+              #{createUser}, #{createTime}, #{updateUser}, #{updateTime}, 0
+            )
+            ON CONFLICT (user_id, bvid) WHERE is_deleted = 0 AND bvid IS NOT NULL AND bvid <> '' DO NOTHING
+            """)
+    int insertIgnoreActive(BVideoEntity entity);
 
     @Select("SELECT * FROM b_video WHERE id=#{id} AND user_id=#{userId} AND is_deleted=0 FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)

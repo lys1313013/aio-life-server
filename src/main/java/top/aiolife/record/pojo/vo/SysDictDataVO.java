@@ -13,7 +13,7 @@ import lombok.Setter;
 @Setter
 public class SysDictDataVO {
 
-    private Integer id;
+    private Long id;
 
     /**
      * 实际存储值

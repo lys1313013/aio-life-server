@@ -8,7 +8,7 @@ import top.aiolife.sso.pojo.entity.UserEntity;
 /** 注销只物理清理明确归属的个人记录；系统预设与共享资源保留。 */
 @Mapper
 public interface AccountErasureMapper {
-    @Update("UPDATE \"user\" SET is_deleted=1, avatar_file_id=NULL, erasure_requested_at=#{now}, erasure_retry_at=#{retryAt} WHERE id=#{userId} AND is_deleted=0")
+    @Update("UPDATE sys_user SET is_deleted=1, avatar_file_id=NULL, erasure_requested_at=#{now}, erasure_retry_at=#{retryAt} WHERE id=#{userId} AND is_deleted=0")
     int request(@Param("userId") long userId, @Param("now") LocalDateTime now, @Param("retryAt") LocalDateTime retryAt);
 
     @Update("UPDATE data_export_job SET cancel_requested=1 WHERE user_id=#{userId}")
@@ -17,14 +17,14 @@ public interface AccountErasureMapper {
     @Update("UPDATE notification_delivery SET status='FAILED', payload_ciphertext='' WHERE user_id=#{userId} AND status IN ('PENDING','RETRY')")
     int cancelNotifications(@Param("userId") long userId);
 
-    @Select("SELECT id FROM \"user\" WHERE is_deleted=1 AND erasure_requested_at IS NOT NULL AND erasure_retry_at <= #{now} ORDER BY erasure_retry_at LIMIT 10")
+    @Select("SELECT id FROM sys_user WHERE is_deleted=1 AND erasure_requested_at IS NOT NULL AND erasure_retry_at <= #{now} ORDER BY erasure_retry_at LIMIT 10")
     List<Long> pending(@Param("now") LocalDateTime now);
 
-    @Select("SELECT * FROM \"user\" WHERE id=#{userId} AND is_deleted=1 AND erasure_requested_at IS NOT NULL FOR UPDATE")
+    @Select("SELECT * FROM sys_user WHERE id=#{userId} AND is_deleted=1 AND erasure_requested_at IS NOT NULL FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
     UserEntity lockPending(@Param("userId") long userId);
 
-    @Update("UPDATE \"user\" SET erasure_retry_at=#{retryAt} WHERE id=#{userId} AND erasure_requested_at IS NOT NULL")
+    @Update("UPDATE sys_user SET erasure_retry_at=#{retryAt} WHERE id=#{userId} AND erasure_requested_at IS NOT NULL")
     int retry(@Param("userId") long userId, @Param("retryAt") LocalDateTime retryAt);
 
     @Select("SELECT COUNT(*) FROM data_export_job WHERE user_id=#{userId} AND status='RUNNING' AND lease_until > #{now}")
@@ -46,7 +46,7 @@ public interface AccountErasureMapper {
     @Delete("DELETE FROM storage_object WHERE id=#{id} AND NOT EXISTS (SELECT 1 FROM file WHERE storage_object_id=#{id})")
     int purgeStoredObject(@Param("id") long id);
 
-    @Delete("DELETE FROM \"user\" WHERE id=#{userId} AND is_deleted=1 AND erasure_requested_at IS NOT NULL")
+    @Delete("DELETE FROM sys_user WHERE id=#{userId} AND is_deleted=1 AND erasure_requested_at IS NOT NULL")
     int finish(@Param("userId") long userId);
 
     record StoredObject(Long id, String bucket, String objectKey) {}
@@ -57,12 +57,6 @@ public interface AccountErasureMapper {
     @Delete("DELETE FROM thought_rela_event WHERE create_user = #{userId} OR thought_id IN (SELECT id FROM thought WHERE user_id = #{userId})")
     int purgeThoughtEvents(@Param("userId") long userId, @Param("email") String email);
 
-    @Delete("DELETE FROM record_article_annotation WHERE create_user = #{userId} OR article_id IN (SELECT id FROM record_article WHERE create_user = #{userId})")
-    int purgeAnnotations(@Param("userId") long userId, @Param("email") String email);
-
-    @Delete("DELETE FROM record_article WHERE create_user = #{userId}")
-    int purgeArticles(@Param("userId") long userId, @Param("email") String email);
-
     @Delete("DELETE FROM api_key_log WHERE api_key_id IN (SELECT id FROM api_key WHERE user_id = #{userId})")
     int purgeApiLogs(@Param("userId") long userId, @Param("email") String email);
 
@@ -72,10 +66,10 @@ public interface AccountErasureMapper {
     @Delete("DELETE FROM message WHERE receiver_id = #{userId} OR sender_id = #{userId}")
     int purgeMessages(@Param("userId") long userId, @Param("email") String email);
 
-    @Delete("DELETE FROM login_log WHERE user_id = #{userId} OR (username = (SELECT username FROM \"user\" WHERE id = #{userId}) AND created_at <= (SELECT erasure_requested_at FROM \"user\" WHERE id = #{userId}))")
+    @Delete("DELETE FROM login_log WHERE user_id = #{userId} OR (username = (SELECT username FROM sys_user WHERE id = #{userId}) AND created_at <= (SELECT erasure_requested_at FROM sys_user WHERE id = #{userId}))")
     int purgeLoginLogs(@Param("userId") long userId, @Param("email") String email);
 
-    @Delete("DELETE FROM mail_log WHERE send_to = #{email} AND create_time <= (SELECT erasure_requested_at FROM \"user\" WHERE id = #{userId})")
+    @Delete("DELETE FROM mail_log WHERE send_to = #{email} AND create_time <= (SELECT erasure_requested_at FROM sys_user WHERE id = #{userId})")
     int purgeMailLogs(@Param("userId") long userId, @Param("email") String email);
 
     @Delete("DELETE FROM file WHERE create_user = #{userId} AND (biz_type IS NULL OR biz_type <> 'bank_card_template_cover')")
@@ -104,9 +98,6 @@ public interface AccountErasureMapper {
 
     @Delete("DELETE FROM \"user_dict_data\" WHERE user_id = #{userId}")
     int purgeUserDictData(@Param("userId") long userId, @Param("email") String email);
-
-    @Delete("DELETE FROM \"user_dict_type\" WHERE user_id = #{userId}")
-    int purgeUserDictType(@Param("userId") long userId, @Param("email") String email);
 
     @Delete("DELETE FROM \"feedback\" WHERE user_id = #{userId}")
     int purgeFeedback(@Param("userId") long userId, @Param("email") String email);
@@ -225,8 +216,6 @@ public interface AccountErasureMapper {
     default void purgePersonalRecords(long userId, String email) {
         purgeFeedbackReplies(userId, email);
         purgeThoughtEvents(userId, email);
-        purgeAnnotations(userId, email);
-        purgeArticles(userId, email);
         purgeApiLogs(userId, email);
         purgeImageTasks(userId, email);
         purgeMessages(userId, email);
@@ -241,7 +230,6 @@ public interface AccountErasureMapper {
         purgeApiKey(userId, email);
         purgeSysActivityLog(userId, email);
         purgeUserDictData(userId, email);
-        purgeUserDictType(userId, email);
         purgeFeedback(userId, email);
         purgeTimeTrackerCategory(userId, email);
         purgeTimeRecord(userId, email);

@@ -1,5 +1,7 @@
 package top.aiolife.membership.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import java.time.LocalDate;
@@ -33,6 +35,7 @@ public class MembershipController {
     private final MembershipRecordWriteService recordWriter;
     private final MembershipProviderService providers;
 
+    @Operation(summary = "查询我的会员订阅")
     @GetMapping("/list")
     public ApiResponse<List<MembershipVO>> list() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -45,12 +48,14 @@ public class MembershipController {
         return ApiResponse.success(voList);
     }
 
+    @Operation(summary = "查询会员订阅统计")
     @GetMapping("/stats")
     public ApiResponse<MembershipStatsVO> stats() {
         long userId = StpUtil.getLoginIdAsLong();
         return ApiResponse.success(recordWriter.stats(userId));
     }
 
+    @Operation(summary = "查询会员订阅详情")
     @GetMapping("/{id}")
     public ApiResponse<MembershipVO> detail(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -58,6 +63,7 @@ public class MembershipController {
         return ApiResponse.success(toVO(entity, LocalDate.now()));
     }
 
+    @Operation(summary = "新增会员订阅")
     @PostMapping
     public ApiResponse<MembershipVO> create(@RequestBody MembershipCreateReq request) {
         MembershipReq req = MembershipApiConvertor.INSTANCE.fromMembershipCreateReq(request);
@@ -67,6 +73,7 @@ public class MembershipController {
         return ApiResponse.success(toVO(entity, LocalDate.now()));
     }
 
+    @Operation(summary = "更新会员订阅")
     @PutMapping
     public ApiResponse<MembershipVO> update(@RequestBody MembershipReq req) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -75,6 +82,7 @@ public class MembershipController {
         return ApiResponse.success(toVO(updated, LocalDate.now()));
     }
 
+    @Operation(summary = "删除会员订阅")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();

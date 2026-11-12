@@ -2,7 +2,7 @@
   {
     "key": "user",
     "title": "个人资料",
-    "table": "user",
+    "table": "sys_user",
     "ownerColumn": "id",
     "menus": [],
     "parents": [],
@@ -367,71 +367,6 @@
     ]
   },
   {
-    "key": "user_dict_type",
-    "title": "个人字典类型",
-    "table": "user_dict_type",
-    "ownerColumn": "user_id",
-    "menus": [],
-    "parents": [],
-    "columns": [
-      {
-        "key": "id",
-        "label": "主键ID",
-        "type": "TEXT"
-      },
-      {
-        "key": "user_id",
-        "label": "所属用户ID",
-        "type": "TEXT"
-      },
-      {
-        "key": "sys_dict_id",
-        "label": "关联的系统字典类型ID",
-        "type": "TEXT"
-      },
-      {
-        "key": "dict_name",
-        "label": "字典名称",
-        "type": "TEXT"
-      },
-      {
-        "key": "dict_type",
-        "label": "字典类型",
-        "type": "TEXT"
-      },
-      {
-        "key": "icon",
-        "label": "图标",
-        "type": "TEXT"
-      },
-      {
-        "key": "color",
-        "label": "颜色",
-        "type": "TEXT"
-      },
-      {
-        "key": "is_enabled",
-        "label": "是否启用（1启用、0停用）",
-        "type": "NUMBER"
-      },
-      {
-        "key": "create_time",
-        "label": "创建时间",
-        "type": "TEXT"
-      },
-      {
-        "key": "update_time",
-        "label": "更新时间",
-        "type": "TEXT"
-      },
-      {
-        "key": "remark",
-        "label": "备注",
-        "type": "TEXT"
-      }
-    ]
-  },
-  {
     "key": "user_dict_data",
     "title": "个人字典值",
     "table": "user_dict_data",
@@ -771,11 +706,6 @@
         "type": "TEXT"
       },
       {
-        "key": "code",
-        "label": "分类标识(如: rest, work)",
-        "type": "TEXT"
-      },
-      {
         "key": "name",
         "label": "分类名称",
         "type": "TEXT"
@@ -868,13 +798,13 @@
         "type": "TEXT"
       },
       {
-        "key": "start_time",
-        "label": "开始时间（分钟",
+        "key": "start_minute",
+        "label": "开始分钟（0–1439，包含该分钟）",
         "type": "NUMBER"
       },
       {
-        "key": "end_time",
-        "label": "结束时间（分钟",
+        "key": "end_minute",
+        "label": "结束分钟（0–1439，包含该分钟）",
         "type": "NUMBER"
       },
       {
@@ -888,7 +818,7 @@
         "type": "TEXT"
       },
       {
-        "key": "duration",
+        "key": "duration_minutes",
         "label": "时长（分钟）",
         "type": "NUMBER"
       },
@@ -1355,11 +1285,6 @@
         "key": "update_time",
         "label": "更新时间",
         "type": "TEXT"
-      },
-      {
-        "key": "file_id",
-        "label": "证书/奖牌图片文件ID(UUID)",
-        "type": "TEXT"
       }
     ]
   },
@@ -1631,137 +1556,6 @@
       {
         "key": "content",
         "label": "内容",
-        "type": "TEXT"
-      }
-    ]
-  },
-  {
-    "key": "record_article",
-    "title": "文章",
-    "table": "record_article",
-    "ownerColumn": "create_user",
-    "menus": [
-      "/my-hub/article"
-    ],
-    "parents": [],
-    "columns": [
-      {
-        "key": "id",
-        "label": "文章ID",
-        "type": "TEXT"
-      },
-      {
-        "key": "url",
-        "label": "原文链接",
-        "type": "TEXT"
-      },
-      {
-        "key": "title",
-        "label": "标题",
-        "type": "TEXT"
-      },
-      {
-        "key": "author",
-        "label": "作者",
-        "type": "TEXT"
-      },
-      {
-        "key": "content_html",
-        "label": "文章HTML内容",
-        "type": "TEXT"
-      },
-      {
-        "key": "category",
-        "label": "分类",
-        "type": "TEXT"
-      },
-      {
-        "key": "tags",
-        "label": "标签",
-        "type": "TEXT"
-      },
-      {
-        "key": "create_time",
-        "label": "创建时间",
-        "type": "TEXT"
-      },
-      {
-        "key": "update_time",
-        "label": "更新时间",
-        "type": "TEXT"
-      }
-    ]
-  },
-  {
-    "key": "record_article_annotation",
-    "title": "文章标注",
-    "table": "record_article_annotation",
-    "ownerColumn": "create_user",
-    "menus": [
-      "/my-hub/article"
-    ],
-    "parents": [
-      {
-        "table": "record_article",
-        "localColumn": "article_id",
-        "targetColumn": "id",
-        "ownerColumn": "create_user"
-      }
-    ],
-    "columns": [
-      {
-        "key": "id",
-        "label": "标注ID",
-        "type": "TEXT"
-      },
-      {
-        "key": "article_id",
-        "label": "文章ID",
-        "type": "TEXT"
-      },
-      {
-        "key": "selected_text",
-        "label": "选中文本",
-        "type": "TEXT"
-      },
-      {
-        "key": "note_content",
-        "label": "标注内容",
-        "type": "TEXT"
-      },
-      {
-        "key": "start_container_path",
-        "label": "起始容器路径",
-        "type": "TEXT"
-      },
-      {
-        "key": "start_offset",
-        "label": "起始偏移量",
-        "type": "NUMBER"
-      },
-      {
-        "key": "end_container_path",
-        "label": "结束容器路径",
-        "type": "TEXT"
-      },
-      {
-        "key": "end_offset",
-        "label": "结束偏移量",
-        "type": "NUMBER"
-      },
-      {
-        "key": "color",
-        "label": "标注颜色",
-        "type": "TEXT"
-      },
-      {
-        "key": "create_time",
-        "label": "创建时间",
-        "type": "TEXT"
-      },
-      {
-        "key": "update_time",
-        "label": "更新时间",
         "type": "TEXT"
       }
     ]
@@ -2153,11 +1947,6 @@
         "type": "TEXT"
       },
       {
-        "key": "purchase_company",
-        "label": "购买公司",
-        "type": "TEXT"
-      },
-      {
         "key": "end_date",
         "label": "结束日期（用于计算日均费用）",
         "type": "TEXT"
@@ -2465,13 +2254,13 @@
         "type": "TEXT"
       },
       {
-        "key": "duration",
+        "key": "duration_seconds",
         "label": "视频时长（秒）",
         "type": "NUMBER"
       },
       {
-        "key": "watched_duration",
-        "label": "观看时长",
+        "key": "watched_duration_seconds",
+        "label": "观看时长（秒）",
         "type": "NUMBER"
       },
       {
@@ -2602,7 +2391,7 @@
         "type": "TEXT"
       },
       {
-        "key": "duration",
+        "key": "duration_minutes",
         "label": "演出时长(分钟)",
         "type": "NUMBER"
       },

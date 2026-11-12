@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -41,6 +43,10 @@ public class UserDictDataController {
     private UserDictDataMapper userDictDataMapper;
     private UserDictDataService userDictDataService;
 
+    /**
+     * 分页查询当前用户可见的字典数据，包含公共模板、个人配置和已停用项。
+     */
+    @Operation(summary = "分页查询可见用户字典")
     @GetMapping("/query")
     public ApiResponse<PageResp<UserDictDataVO>> query(@QueryParams CommonQuery<UserDictDataQuery> requestQuery) {
         CommonQuery<UserDictDataEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromUserDictDataQuery);
@@ -82,6 +88,11 @@ public class UserDictDataController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserDictDataVOPage(pageResp));
     }
 
+    /**
+     * 按 ID 查询当前用户或公共模板的字典数据，用于解析业务关联 ID 对应的分类名称等信息。
+     * 返回原始记录，不合并个人覆盖配置；需要当前用户的展示配置时按字典类型查询可见数据。
+     */
+    @Operation(summary = "按 ID 查询原始用户字典数据")
     @GetMapping("/{id}")
     public ApiResponse<UserDictDataVO> getById(@PathVariable("id") Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
@@ -91,6 +102,10 @@ public class UserDictDataController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserDictDataVO(userDictDataMapper.selectOne(queryWrapper)));
     }
 
+    /**
+     * 新增当前用户的字典数据。
+     */
+    @Operation(summary = "新增用户字典数据")
     @PostMapping
     public ApiResponse<Boolean> insert(@Valid @RequestBody UserDictDataCreateReq entityReq) {
         UserDictDataEntity entity = RecordApiConvertor.INSTANCE.fromUserDictDataCreateReq(entityReq);
@@ -99,6 +114,10 @@ public class UserDictDataController {
         return ApiResponse.success(true);
     }
 
+    /**
+     * 修改当前用户的字典数据或个人覆盖配置。
+     */
+    @Operation(summary = "更新用户字典配置")
     @PutMapping
     public ApiResponse<Boolean> update(@Valid @RequestBody UserDictDataUpdateReq entityReq) {
         UserDictDataEntity entity = RecordApiConvertor.INSTANCE.fromUserDictDataUpdateReq(entityReq);
@@ -107,6 +126,10 @@ public class UserDictDataController {
         return ApiResponse.success(true);
     }
 
+    /**
+     * 删除当前用户的字典数据；公共字典仅对当前用户隐藏。
+     */
+    @Operation(summary = "删除或隐藏用户字典数据")
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@PathVariable("id") Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
@@ -116,7 +139,11 @@ public class UserDictDataController {
 
     // ================= 管理员 API =================
 
+    /**
+     * 管理员分页查询公共基础字典数据。
+     */
     @SaCheckRole("admin")
+    @Operation(summary = "管理员分页查询公共字典数据")
     @GetMapping("/admin/query")
     public ApiResponse<PageResp<UserDictDataVO>> adminQuery(@QueryParams CommonQuery<UserDictDataQuery> requestQuery) {
         CommonQuery<UserDictDataEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromUserDictDataQuery);
@@ -145,21 +172,33 @@ public class UserDictDataController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserDictDataVOPage(pageResp));
     }
 
+    /**
+     * 管理员新增公共基础字典数据。
+     */
     @SaCheckRole("admin")
+    @Operation(summary = "管理员新增公共字典数据")
     @PostMapping("/admin")
     public ApiResponse<Boolean> adminInsert(@Valid @RequestBody UserDictDataAdminCreateReq entityReq) {
         UserDictDataEntity entity = RecordApiConvertor.INSTANCE.fromUserDictDataAdminCreateReq(entityReq);
         return ApiResponse.success(userDictDataService.createBaseDictData(entity));
     }
 
+    /**
+     * 管理员修改公共基础字典数据。
+     */
     @SaCheckRole("admin")
+    @Operation(summary = "管理员更新公共字典数据")
     @PutMapping("/admin/{id}")
     public ApiResponse<Boolean> adminUpdate(@PathVariable("id") Long id, @Valid @RequestBody UserDictDataAdminUpdateReq entityReq) {
         UserDictDataEntity entity = RecordApiConvertor.INSTANCE.fromUserDictDataAdminUpdateReq(entityReq);
         return ApiResponse.success(userDictDataService.updateBaseDictData(id, entity));
     }
 
+    /**
+     * 管理员调整同类型公共基础字典数据的排序。
+     */
     @SaCheckRole("admin")
+    @Operation(summary = "管理员调整公共字典排序")
     @PostMapping("/admin/reSort")
     public ApiResponse<List<UserDictDataSortVO>> adminReSort(@RequestBody UserDictDataReSortReq req) {
         List<UserDictDataSortVO> result = userDictDataService.reSortBaseDictData(
@@ -170,7 +209,11 @@ public class UserDictDataController {
         return ApiResponse.success(result);
     }
 
+    /**
+     * 管理员删除公共基础字典数据。
+     */
     @SaCheckRole("admin")
+    @Operation(summary = "管理员删除公共字典数据")
     @DeleteMapping("/admin/{id}")
     public ApiResponse<Boolean> adminDelete(@PathVariable("id") Long id) {
         return ApiResponse.success(userDictDataService.deleteBaseDictData(id));

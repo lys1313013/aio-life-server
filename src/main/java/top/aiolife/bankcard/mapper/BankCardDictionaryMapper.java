@@ -10,7 +10,7 @@ public interface BankCardDictionaryMapper {
     @Select("SELECT d.dict_code AS id,d.dict_label AS name,d.dict_value AS code,CASE WHEN d.is_enabled=1 AND t.is_enabled=1 THEN 1 ELSE 0 END AS is_enabled FROM sys_dict_data d JOIN sys_dict_type t ON t.dict_id=d.dict_id WHERE t.dict_type='bank' AND t.is_deleted=0 AND d.is_deleted=0 ORDER BY d.sort_order NULLS FIRST,d.dict_code")
     List<BankCardVO.Bank> selectBanks();
 
-    @Select("SELECT id FROM \"user\" WHERE id=#{userId} AND is_deleted=0 FOR UPDATE")
+    @Select("SELECT id FROM sys_user WHERE id=#{userId} AND is_deleted=0 FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
     Long lockUser(@Param("userId") long userId);
 

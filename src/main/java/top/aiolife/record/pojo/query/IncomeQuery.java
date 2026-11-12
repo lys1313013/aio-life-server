@@ -31,7 +31,4 @@ public class IncomeQuery {
     private String endTime;
     /** 结束日期（不包含），格式 yyyy-MM-dd。 */
     private String endTimeBefore;
-
-    /** 仅查询未填写收入日期的记录。 */
-    private Boolean undated;
 }

@@ -47,6 +47,7 @@ public class TaskDetailController {
      * @param taskId 任务ID
      * @return 详情列表
      */
+    @Operation(summary = "查询待办子任务")
     @GetMapping
     public ApiResponse<List<TaskDetailVO>> list(@RequestParam Long taskId) {
         Long userId = StpUtil.getLoginIdAsLong();
@@ -64,6 +65,7 @@ public class TaskDetailController {
      *
      * @param list 只传id和sort
      */
+    @Operation(summary = "调整待办子任务排序")
     @PostMapping("/reSort")
     public ApiResponse<Void> reSort(@NotEmpty @RequestBody List<@NotNull @Valid TaskDetailSortReq> requests) {
         List<TaskDetailEntity> list = requests.stream().map(RecordApiConvertor.INSTANCE::fromTaskDetailSortReq).toList();
@@ -86,6 +88,7 @@ public class TaskDetailController {
      * @param entity 详情实体
      * @return 创建后的实体
      */
+    @Operation(summary = "新增待办子任务")
     @PostMapping
     public ApiResponse<TaskDetailVO> create(@Valid @RequestBody TaskDetailCreateReq entityReq) {
         TaskDetailEntity entity = RecordApiConvertor.INSTANCE.fromTaskDetailCreateReq(entityReq);
@@ -102,6 +105,7 @@ public class TaskDetailController {
      * @param entity 详情实体
      * @return 是否成功
      */
+    @Operation(summary = "更新待办子任务")
     @PutMapping
     public ApiResponse<Boolean> update(@Valid @RequestBody TaskDetailUpdateReq entityReq) {
         TaskDetailEntity entity = RecordApiConvertor.INSTANCE.fromTaskDetailUpdateReq(entityReq);
@@ -123,6 +127,7 @@ public class TaskDetailController {
      * @param id 详情ID
      * @return 空响应
      */
+    @Operation(summary = "删除待办子任务")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
@@ -139,6 +144,7 @@ public class TaskDetailController {
      * @param id 详情ID
      * @return 是否成功
      */
+    @Operation(summary = "关注待办子任务")
     @PostMapping("/star/{id}")
     public ApiResponse<Boolean> star(@PathVariable Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
@@ -157,6 +163,7 @@ public class TaskDetailController {
      * @param id 详情ID
      * @return 是否成功
      */
+    @Operation(summary = "取消关注待办子任务")
     @PostMapping("/unstar/{id}")
     public ApiResponse<Boolean> unstar(@PathVariable Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
@@ -174,6 +181,7 @@ public class TaskDetailController {
      *
      * @return 关注的明细列表
      */
+    @Operation(summary = "查询已关注的待办子任务")
     @GetMapping("/watched")
     public ApiResponse<List<TaskDetailVO>> getWatched() {
         Long userId = StpUtil.getLoginIdAsLong();

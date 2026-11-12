@@ -42,12 +42,12 @@ public class BVideoMcpVO {
     /**
      * 视频总时长（秒）
      */
-    private Integer duration;
+    private Integer durationSeconds;
 
     /**
      * 已观看时长（秒）
      */
-    private Integer watchedDuration;
+    private Integer watchedDurationSeconds;
 
     /**
      * 总集数

@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -54,6 +56,7 @@ public class ExerciseRecordController {
     /**
      * 查询运动记录列表
      */
+    @Operation(summary = "分页查询运动记录")
     @GetMapping("/query")
     public ApiResponse<PageResp<ExerciseRecordVO>> query(
             @QueryParams CommonQuery<ExerciseRecordQuery> requestQuery) {
@@ -79,6 +82,7 @@ public class ExerciseRecordController {
     /**
      * 新增运动记录
      */
+    @Operation(summary = "新增运动记录")
     @PostMapping
     public ApiResponse<Boolean> add(@Valid @RequestBody ExerciseRecordCreateReq exerciseRecordReq) {
         ExerciseRecordEntity exerciseRecord = RecordApiConvertor.INSTANCE.fromExerciseRecordCreateReq(exerciseRecordReq);
@@ -91,6 +95,7 @@ public class ExerciseRecordController {
     /**
      * 修改运动记录
      */
+    @Operation(summary = "更新运动记录")
     @PutMapping("/{id}")
     public ApiResponse<Boolean> update(@PathVariable("id") Long id, @Valid @RequestBody ExerciseRecordUpdateReq exerciseRecordReq) {
         ExerciseRecordEntity exerciseRecord = RecordApiConvertor.INSTANCE.fromExerciseRecordUpdateReq(exerciseRecordReq);
@@ -107,6 +112,7 @@ public class ExerciseRecordController {
     }
 
     // 批量删除
+    @Operation(summary = "批量删除运动记录")
     @PostMapping("/deleteBatch")
     public ApiResponse<Boolean> deleteBatch(@RequestBody CommonReq commonReq) {
         LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -119,6 +125,7 @@ public class ExerciseRecordController {
     /**
      * 获取运动记录详情
      */
+    @Operation(summary = "查询运动记录详情")
     @GetMapping("/get/{id}")
     public ApiResponse<ExerciseRecordVO> get(@PathVariable Long id) {
         LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -128,6 +135,7 @@ public class ExerciseRecordController {
     }
 
     /** 完整运动统计：未指定日期时统计全部历史，同日同类型合并为一个运动次数。 */
+    @Operation(summary = "按日期和类型汇总运动量")
     @GetMapping("/statistics/summary")
     public ApiResponse<List<ExerciseStatisticsPointVO>> getStatisticsSummary(@QueryParams ExerciseStatisticsQuery params) {
         return ApiResponse.success(exerciseRecordMapper.selectStatisticsSummary(
@@ -138,6 +146,7 @@ public class ExerciseRecordController {
      * 获取运动记录统计数据（限制时间范围和数据量），用于统计图表
      * 返回业务字段，不包含所属用户或审计字段
      */
+    @Operation(summary = "查询运动统计明细", description = "无筛选时取最近一年；最多返回 1000 条，完整汇总请使用 statistics/summary。")
     @GetMapping("/statistics")
     public ApiResponse<List<ExerciseRecordVO>> getStatistics(@QueryParams ExerciseStatisticsQuery params) {
         Long userId = StpUtil.getLoginIdAsLong();
@@ -177,6 +186,7 @@ public class ExerciseRecordController {
     /**
      * 获取轻量级运动记录统计数据，仅包含统计所需字段
      */
+    @Operation(summary = "查询轻量运动统计明细", description = "无筛选时取最近一年；最多返回 1000 条，仅含统计字段。")
     @GetMapping("/statistics/light")
     public ApiResponse<List<ExerciseStatisticsDTO>> getLightStatistics(@QueryParams ExerciseStatisticsQuery params) {
         Long userId = StpUtil.getLoginIdAsLong();
@@ -230,6 +240,7 @@ public class ExerciseRecordController {
      * @param lastDate 上一页返回的最早日期的前一天；首次传 null 表示从今天（含）开始
      * @param limit    每页返回的不重复日期数量上限（默认 7）
      */
+    @Operation(summary = "分页查询每日运动汇总")
     @GetMapping("/dashboardSummary")
     public ApiResponse<ExerciseDashboardSummaryVO> getDashboardSummary(
             @RequestParam(required = false) String lastDate,

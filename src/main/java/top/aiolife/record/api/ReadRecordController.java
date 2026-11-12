@@ -35,7 +35,7 @@ public class ReadRecordController {
     }
 
     @PostMapping
-    @Operation(summary = "新增阅读记录并返回字符串 ID；相同豆瓣条目返回已有 ID")
+    @Operation(summary = "新增阅读记录", description = "返回字符串 ID；相同豆瓣条目返回已有记录 ID。")
     public ApiResponse<String> save(@Valid @RequestBody ReadRecordCreateReq request) {
         ReadRecordReq req = RecordApiConvertor.INSTANCE.fromReadRecordCreateReq(request);
         return ApiResponse.success(String.valueOf(readRecordService.saveRecord(req)));
@@ -48,6 +48,7 @@ public class ReadRecordController {
         return ApiResponse.success();
     }
 
+    @Operation(summary = "删除阅读记录")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         readRecordService.deleteRecord(id);
@@ -55,7 +56,7 @@ public class ReadRecordController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "读取阅读记录详情")
+    @Operation(summary = "查询阅读记录详情")
     public ApiResponse<ReadRecordVO> getById(@PathVariable Long id) {
         return ApiResponse.success(readRecordService.getVOById(id));
     }

@@ -5,12 +5,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * 时间记录查询结果 VO（日期范围查询专用）
- * startTime 和 endTime 格式化为 HH:mm
+ * startMinute 和 endMinute 为当天 0:00 起的分钟数，闭区间
  *
  * @author Lys
  * @date 2026-04-26
@@ -24,11 +23,15 @@ public class TimeRecordDateRangeVO {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;
 
-    @JsonFormat(pattern = "HH:mm")
-    private LocalDateTime startTime;
+    /**
+     * 开始分钟（当天 0:00 起的分钟数，0–1439，包含该分钟）
+     */
+    private Integer startMinute;
 
-    @JsonFormat(pattern = "HH:mm")
-    private LocalDateTime endTime;
+    /**
+     * 结束分钟（当天 0:00 起的分钟数，0–1439，包含该分钟）
+     */
+    private Integer endMinute;
 
     private String title;
 

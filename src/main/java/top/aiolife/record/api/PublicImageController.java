@@ -30,7 +30,7 @@ public class PublicImageController {
     private final MinioConfig config;
 
     @GetMapping("/public/images/{id:[a-fA-F0-9]{32}}.{extension:png|jpg|webp|gif|bmp}")
-    @Operation(summary = "读取已发布的公共图片（无需登录）")
+    @Operation(summary = "读取公共图片", description = "匿名读取已发布图片。")
     @ApiResponse(responseCode = "200", description = "图片二进制内容，不是 ApiResponse JSON",
             content = @Content(mediaType = "image/*",
                     schema = @Schema(type = "string", format = "binary")))

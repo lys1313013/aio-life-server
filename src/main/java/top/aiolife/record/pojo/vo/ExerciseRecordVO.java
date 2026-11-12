@@ -18,7 +18,7 @@ public class ExerciseRecordVO {
     private Long exerciseTypeId;
 
     /**
-     * 运动数量
+     * 运动日期
      */
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate exerciseDate;

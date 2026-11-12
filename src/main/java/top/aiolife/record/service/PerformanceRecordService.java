@@ -25,7 +25,9 @@ public class PerformanceRecordService {
 
     public PageResp<PerformanceEntity> list(long userId, long page, long pageSize) {
         var result = performanceMapper.selectPage(new Page<PerformanceEntity>(page, pageSize),
-                new LambdaQueryWrapper<PerformanceEntity>().eq(PerformanceEntity::getUserId, userId));
+                new LambdaQueryWrapper<PerformanceEntity>()
+                        .eq(PerformanceEntity::getUserId, userId)
+                        .orderByDesc(PerformanceEntity::getPerformanceDate, PerformanceEntity::getId));
         if (result.getRecords() != null) {
             for (PerformanceEntity entity : result.getRecords()) {
                 entity.setFiles(fileService.getByBiz(BIZ_TYPE, entity.getId()));

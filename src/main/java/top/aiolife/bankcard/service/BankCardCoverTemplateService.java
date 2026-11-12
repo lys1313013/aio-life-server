@@ -80,7 +80,7 @@ public class BankCardCoverTemplateService {
         dictionaryMapper.selectBankTypeIds().forEach(guard::lockType);
     }
     private List<Long> references(long id) {
-        // 当前读，避免 MySQL REPEATABLE READ 的历史快照漏掉刚提交的引用。
+        // 当前读，避免 REPEATABLE READ 的历史快照漏掉刚提交的引用。
         return cardMapper.lockTemplateReferences(id);
     }
     @Transactional(rollbackFor=Exception.class)

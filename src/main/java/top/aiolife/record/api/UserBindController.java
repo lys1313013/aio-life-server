@@ -1,9 +1,12 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.record.client.DoubanAccountClient;
@@ -45,6 +48,7 @@ public class UserBindController {
     /**
      * 获取当前用户的绑定列表
      */
+    @Operation(summary = "查询第三方账号绑定")
     @GetMapping("/list")
     public ApiResponse<List<UserBindVO>> list(@RequestParam(required = false) Boolean includeToken) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -61,6 +65,7 @@ public class UserBindController {
     /**
      * 根据豆瓣账号 ID 查询公开主页昵称，仅用于辅助用户确认账号。
      */
+    @Operation(summary = "查询豆瓣账号公开昵称")
     @GetMapping("/douban/verify")
     public ApiResponse<DoubanAccountVO> verifyDoubanAccount(@RequestParam String accountId) {
         return ApiResponse.success(doubanAccountClient.verify(accountId));
@@ -69,6 +74,7 @@ public class UserBindController {
     /**
      * 新增绑定
      */
+    @Operation(summary = "新增第三方账号绑定")
     @PostMapping
     public ApiResponse<Boolean> add(@Valid @RequestBody UserBindCreateReq userBindEntityReq) {
         UserBindEntity userBindEntity = RecordApiConvertor.INSTANCE.fromUserBindCreateReq(userBindEntityReq);
@@ -92,7 +98,12 @@ public class UserBindController {
         }
 
         userBindEntity.fillCreateCommonField(userId);
-        boolean success = userBindService.save(userBindEntity);
+        boolean success;
+        try {
+            success = userBindService.save(userBindEntity);
+        } catch (DuplicateKeyException e) {
+            return ApiResponse.error("该平台账号已绑定，请勿重复添加");
+        }
         evictGithubVisibleCache(userId, userBindEntity.getPlatform());
         return ApiResponse.success(success);
     }
@@ -100,6 +111,7 @@ public class UserBindController {
     /**
      * 更新绑定
      */
+    @Operation(summary = "更新第三方账号绑定")
     @PutMapping
     public ApiResponse<Boolean> update(@Valid @RequestBody UserBindUpdateReq userBindEntityReq) {
         UserBindEntity userBindEntity = RecordApiConvertor.INSTANCE.fromUserBindUpdateReq(userBindEntityReq);
@@ -133,7 +145,12 @@ public class UserBindController {
             userBindEntity.setAccessToken(exist.getAccessToken());
         }
 
-        boolean success = userBindService.updateById(userBindEntity);
+        boolean success;
+        try {
+            success = userBindService.updateById(userBindEntity);
+        } catch (DuplicateKeyException e) {
+            return ApiResponse.error("该平台账号已绑定，请勿重复添加");
+        }
         evictGithubVisibleCache(userId, exist.getPlatform());
         return ApiResponse.success(success);
     }
@@ -141,6 +158,7 @@ public class UserBindController {
     /**
      * 删除绑定
      */
+    @Operation(summary = "删除第三方账号绑定")
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();

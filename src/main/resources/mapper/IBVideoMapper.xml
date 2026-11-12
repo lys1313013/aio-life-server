@@ -25,13 +25,13 @@
 
 
     <select id="getWatchTime" resultType="java.lang.Integer">
-        SELECT sum(watched_duration) AS count
+        SELECT sum(watched_duration_seconds) AS count
         FROM b_video
         WHERE is_deleted = 0 and user_id = #{userId} AND status = #{completedStatus}
     </select>
 
     <select id="getTotalTime" resultType="java.lang.Integer">
-        SELECT sum(duration) AS count
+        SELECT sum(duration_seconds) AS count
         FROM b_video
         WHERE is_deleted = 0 and user_id = #{userId}
     </select>

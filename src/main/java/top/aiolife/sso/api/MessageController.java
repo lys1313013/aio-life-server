@@ -1,5 +1,7 @@
 package top.aiolife.sso.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
@@ -29,6 +31,7 @@ public class MessageController {
 
     private final IMessageService messageService;
 
+    @Operation(summary = "查询我的消息")
     @GetMapping("/list")
     public ApiResponse<List<MessageVO>> list(
             @RequestParam(required = false) Boolean isRead) {
@@ -37,6 +40,7 @@ public class MessageController {
         return ApiResponse.success(SsoApiConvertor.INSTANCE.toMessageVOList(messages));
     }
 
+    @Operation(summary = "分页查询我的消息")
     @GetMapping("/page")
     public ApiResponse<PageResp<MessageVO>> queryPage(@QueryParams MessagePageQuery query) {
         query.validatePagination();
@@ -50,6 +54,7 @@ public class MessageController {
                 messageService.pageByUserId(userId, isRead, current, size)));
     }
 
+    @Operation(summary = "查询未读消息数量")
     @GetMapping("/unread-count")
     public ApiResponse<Map<String, Integer>> unreadCount() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -59,6 +64,7 @@ public class MessageController {
         return ApiResponse.success(result);
     }
 
+    @Operation(summary = "标记消息已读")
     @PutMapping("/read/{id}")
     public ApiResponse<Void> markAsRead(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -66,6 +72,7 @@ public class MessageController {
         return ApiResponse.success();
     }
 
+    @Operation(summary = "标记全部消息已读")
     @PutMapping("/read-all")
     public ApiResponse<Void> markAllAsRead() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -73,6 +80,7 @@ public class MessageController {
         return ApiResponse.success();
     }
 
+    @Operation(summary = "创建消息")
     @PostMapping
     public ApiResponse<MessageVO> create(@Valid @RequestBody MessageCreateReq messageReq) {
         MessageEntity message = SsoApiConvertor.INSTANCE.fromMessageCreateReq(messageReq);
@@ -83,6 +91,7 @@ public class MessageController {
         return ApiResponse.success(SsoApiConvertor.INSTANCE.toMessageVO(messageService.createMessage(message)));
     }
 
+    @Operation(summary = "删除我的消息")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -91,6 +100,7 @@ public class MessageController {
     }
 
     @SaCheckRole("admin")
+    @Operation(summary = "管理员分页查询消息")
     @GetMapping("/admin/list")
     public ApiResponse<PageResp<MessageVO>> queryAdminPage(@QueryParams MessageAdminPageQuery query) {
         query.validatePagination();
@@ -103,6 +113,7 @@ public class MessageController {
     }
 
     @SaCheckRole("admin")
+    @Operation(summary = "管理员发送消息")
     @PostMapping("/admin/send")
     public ApiResponse<Void> adminSend(@Valid @RequestBody MessageCreateReq messageReq) {
         MessageEntity message = SsoApiConvertor.INSTANCE.fromMessageCreateReq(messageReq);
@@ -114,6 +125,7 @@ public class MessageController {
     }
 
     @SaCheckRole("admin")
+    @Operation(summary = "管理员删除消息")
     @DeleteMapping("/admin/{id}")
     public ApiResponse<Void> adminDelete(@PathVariable Long id) {
         messageService.adminDelete(id);

@@ -94,13 +94,13 @@ public class BVideoMcpTools {
         vo.setOwnerName(entity.getOwnerName());
         vo.setBvid(entity.getBvid());
         vo.setStatus(statusLabel(entity.getStatus()));
-        vo.setDuration(entity.getDuration());
-        vo.setWatchedDuration(entity.getWatchedDuration());
+        vo.setDurationSeconds(entity.getDurationSeconds());
+        vo.setWatchedDurationSeconds(entity.getWatchedDurationSeconds());
         vo.setEpisodes(entity.getEpisodes());
         vo.setCurrentEpisode(entity.getCurrentEpisode());
         vo.setProgressPercentage(percentage(
-                entity.getWatchedDuration() == null ? 0 : entity.getWatchedDuration(),
-                entity.getDuration() == null ? 0 : entity.getDuration()));
+                entity.getWatchedDurationSeconds() == null ? 0 : entity.getWatchedDurationSeconds(),
+                entity.getDurationSeconds() == null ? 0 : entity.getDurationSeconds()));
         vo.setLastWatched(entity.getLastWatched());
         vo.setNotes(entity.getNotes());
         return vo;

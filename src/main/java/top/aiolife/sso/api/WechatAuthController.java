@@ -1,5 +1,7 @@
 package top.aiolife.sso.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.context.SaHolder;
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,6 +26,7 @@ public class WechatAuthController {
     private final WechatMiniClient client;
 
     /** 登录页按服务端配置展示入口，不暴露 AppSecret。 */
+    @Operation(summary = "查询微信小程序登录能力")
     @GetMapping("/capabilities")
     public ApiResponse<Map<String, Boolean>> capabilities() {
         boolean enabled = client.enabled();
@@ -31,24 +34,28 @@ public class WechatAuthController {
     }
 
     /** 校验 loginCode，已绑定则登录，否则返回五分钟临时票据。 */
+    @Operation(summary = "微信小程序登录")
     @PostMapping("/login")
     public ApiResponse<WechatLoginVO> login(@Valid @RequestBody WechatAuthRequests.Login body, HttpServletRequest request) {
         return ApiResponse.success(service.login(body.loginCode(), request.getRemoteAddr()));
     }
 
     /** 用户明确选择注册后，仅使用已验证的微信身份创建账号，手机号可选。 */
+    @Operation(summary = "通过微信小程序注册账号")
     @PostMapping("/register")
     public ApiResponse<WechatLoginVO> register(@Valid @RequestBody WechatAuthRequests.Register body, HttpServletRequest request) {
         return ApiResponse.success(service.register(body, request.getRemoteAddr()));
     }
 
     /** 使用当前业务会话及原账号密码，绑定已验证的微信身份。 */
+    @Operation(summary = "绑定微信小程序身份")
     @PostMapping("/bind")
     public ApiResponse<WechatLoginVO> bind(@Valid @RequestBody WechatAuthRequests.Bind body, HttpServletRequest request) {
         return ApiResponse.success(service.bind(requireSession(), body, request.getRemoteAddr()));
     }
 
     /** 无密码账号通过新鲜微信凭证首次设置密码，不能覆盖已有密码。 */
+    @Operation(summary = "为微信账号首次设置登录密码")
     @PostMapping("/password")
     public ApiResponse<Void> initializePassword(@Valid @RequestBody WechatAuthRequests.InitializePassword body, HttpServletRequest request) {
         service.initializePassword(requireSession(), body, request.getRemoteAddr());

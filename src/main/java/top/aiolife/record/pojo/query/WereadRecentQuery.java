@@ -9,6 +9,7 @@ import lombok.Data;
 /** 微信读书保留游标分页语义，统一单页条数名称。 */
 @Data
 public class WereadRecentQuery {
+    @Schema(description = "上一批返回的 nextCursor；首次不传")
     private String cursor;
     @NotNull @Min(1) @Max(20)
     @Schema(description = "每批图书数量，最多 20", defaultValue = "6")

@@ -14,7 +14,7 @@ import top.aiolife.sso.pojo.entity.UserEntity;
  */
 public interface UserMapper extends BaseMapper<UserEntity> {
     /** 绑定及首次设密时锁定账号，避免并发覆盖已有凭证。 */
-    @Select("SELECT * FROM \"user\" WHERE id = #{id} AND is_deleted = 0 FOR UPDATE")
+    @Select("SELECT * FROM sys_user WHERE id = #{id} AND is_deleted = 0 FOR UPDATE")
     @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
     UserEntity selectForAuthUpdate(@Param("id") long id);
 }

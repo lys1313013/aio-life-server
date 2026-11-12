@@ -73,8 +73,8 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         Objects.requireNonNull(date, "date");
         List<TimeRecordEntity> records = timeRecordMapper.selectList(new LambdaQueryWrapper<TimeRecordEntity>()
                 .select(TimeRecordEntity::getId, TimeRecordEntity::getDate,
-                        TimeRecordEntity::getCategoryId, TimeRecordEntity::getStartTime,
-                        TimeRecordEntity::getEndTime, TimeRecordEntity::getTitle,
+                        TimeRecordEntity::getCategoryId, TimeRecordEntity::getStartMinute,
+                        TimeRecordEntity::getEndMinute, TimeRecordEntity::getTitle,
                         TimeRecordEntity::getRelateId, TimeRecordEntity::getRelateType)
                 .eq(TimeRecordEntity::getUserId, userId)
                 .eq(TimeRecordEntity::getDate, date)
@@ -217,8 +217,8 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         entity.setUpdateTime(LocalDateTime.now());
 
         // 起止时间和时长作为一个整体保存；未提交的端点取锁定后的当前值。
-        if (entity.getStartTime() == null) entity.setStartTime(existing.getStartTime());
-        if (entity.getEndTime() == null) entity.setEndTime(existing.getEndTime());
+        if (entity.getStartMinute() == null) entity.setStartMinute(existing.getStartMinute());
+        if (entity.getEndMinute() == null) entity.setEndMinute(existing.getEndMinute());
         calculateDuration(entity);
 
         if (!this.updateById(entity)) throw new IllegalStateException("更新时间记录失败");
@@ -231,8 +231,8 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
     /** 分钟采用闭区间；时长只由有效起止时间计算，不能由请求独立写入。 */
     private void calculateDuration(TimeRecordEntity entity) {
-        Integer start = entity.getStartTime();
-        Integer end = entity.getEndTime();
+        Integer start = entity.getStartMinute();
+        Integer end = entity.getEndMinute();
         if (start == null || end == null) {
             throw new IllegalArgumentException("开始时间和结束时间不能为空");
         }
@@ -242,7 +242,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         if (end < start) {
             throw new IllegalArgumentException("结束时间不能早于开始时间");
         }
-        entity.setDuration(end - start + 1);
+        entity.setDurationMinutes(end - start + 1);
     }
 
     /** 按完整明细列表同步：已有 ID 原位更新，无 ID 新增，未提交的旧明细逻辑删除。 */
@@ -451,7 +451,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     public RecommendNextVO recommendNext(long userId, String date) {
         LocalDate targetDate = LocalDate.parse(date);
         LambdaQueryWrapper<TimeRecordEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.select(TimeRecordEntity::getStartTime, TimeRecordEntity::getEndTime, TimeRecordEntity::getCategoryId)
+        queryWrapper.select(TimeRecordEntity::getStartMinute, TimeRecordEntity::getEndMinute, TimeRecordEntity::getCategoryId)
                 .eq(TimeRecordEntity::getUserId, userId)
                 .eq(TimeRecordEntity::getDate, targetDate);
         List<TimeRecordEntity> records = new ArrayList<>(recommendationDataCache.get("nextRecords",
@@ -469,7 +469,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
      * @return 推荐时间块；当天没有剩余分钟时返回 null
      */
     public TimeRecordEntity calculateRecommendNext(List<TimeRecordEntity> records, LocalDate targetDate) {
-        records.sort(Comparator.comparingInt(TimeRecordEntity::getStartTime));
+        records.sort(Comparator.comparingInt(TimeRecordEntity::getStartMinute));
 
         boolean isToday = LocalDate.now().equals(targetDate);
         int lastEndTime = -1;
@@ -478,13 +478,13 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         boolean foundGap = false;
 
         for (TimeRecordEntity record : records) {
-            if (record.getStartTime() > lastEndTime + 1) {
+            if (record.getStartMinute() > lastEndTime + 1) {
                 startTime = lastEndTime + 1;
-                endTime = record.getStartTime() - 1;
+                endTime = record.getStartMinute() - 1;
                 foundGap = true;
                 break;
             }
-            lastEndTime = Math.max(lastEndTime, record.getEndTime());
+            lastEndTime = Math.max(lastEndTime, record.getEndMinute());
         }
 
         if (!foundGap) {
@@ -510,10 +510,10 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         }
 
         TimeRecordEntity result = new TimeRecordEntity();
-        result.setStartTime(startTime);
-        result.setEndTime(endTime);
+        result.setStartMinute(startTime);
+        result.setEndMinute(endTime);
         result.setDate(targetDate);
-        result.setDuration(endTime - startTime + 1);
+        result.setDurationMinutes(endTime - startTime + 1);
 
         return result;
     }

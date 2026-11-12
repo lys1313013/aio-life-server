@@ -29,8 +29,8 @@ public final class HomeSectionVO {
         private String title;
         private Integer currentEpisode;
         private Integer episodes;
-        private Integer watchedDuration;
-        private Integer duration;
+        private Integer watchedDurationSeconds;
+        private Integer durationSeconds;
         private Integer progressPercent;
         private String resumeUrl;
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

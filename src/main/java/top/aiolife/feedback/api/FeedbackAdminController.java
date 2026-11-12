@@ -1,5 +1,7 @@
 package top.aiolife.feedback.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import java.util.List;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
@@ -38,6 +40,7 @@ public class FeedbackAdminController {
     /**
      * 全部反馈列表（分页 + 筛选）
      */
+    @Operation(summary = "管理员分页查询反馈")
     @GetMapping("/list")
     public ApiResponse<PageResp<FeedbackVO>> list(CommonQuery<FeedbackAdminQuery> query) {
         return ApiResponse.success(feedbackService.listAdmin(query));
@@ -46,6 +49,7 @@ public class FeedbackAdminController {
     /**
      * 反馈详情（含评论）
      */
+    @Operation(summary = "管理员查询反馈及评论")
     @GetMapping("/{id}")
     public ApiResponse<FeedbackDetailVO> detail(@PathVariable("id") long id) {
         return ApiResponse.success(feedbackService.getAdminDetail(id));
@@ -54,6 +58,7 @@ public class FeedbackAdminController {
     /**
      * 管理员回复
      */
+    @Operation(summary = "管理员回复反馈")
     @PostMapping("/{id}/reply")
     public ApiResponse<FeedbackCommentVO> reply(@PathVariable("id") long id,
                                                  @RequestBody FeedbackCommentCreateReq req) {
@@ -64,6 +69,7 @@ public class FeedbackAdminController {
     /**
      * 变更状态
      */
+    @Operation(summary = "管理员更新反馈状态")
     @PutMapping("/{id}/status")
     public ApiResponse<FeedbackVO> updateStatus(@PathVariable("id") long id,
                                                  @RequestBody FeedbackStatusUpdateReq req) {
@@ -74,6 +80,7 @@ public class FeedbackAdminController {
     /**
      * 批量操作
      */
+    @Operation(summary = "管理员批量处理反馈")
     @PostMapping("/batch")
     public ApiResponse<Void> batch(@RequestBody FeedbackBatchReq req) {
         long adminId = StpUtil.getLoginIdAsLong();
@@ -84,6 +91,7 @@ public class FeedbackAdminController {
     /**
      * 管理员用户列表（用于配置通知接收人下拉）
      */
+    @Operation(summary = "查询反馈通知可选管理员")
     @GetMapping("/admin-users")
     public ApiResponse<List<AdminUserVO>> adminUsers() {
         List<AdminUserVO> result = userService.listAdminUsers().stream().map(u -> {

@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import top.aiolife.core.lock.StorageObjectLock;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
@@ -62,6 +64,7 @@ public class CbtiAdminController {
      *
      * @return 统一返回结构，data 为人格列表（含 imageUrl）
      */
+    @Operation(summary = "管理员查询 CBTI 人格类型")
     @GetMapping("/personalities")
     public ApiResponse<List<CbtiPersonalityAdminVO>> list() {
         LambdaQueryWrapper<CbtiPersonalityEntity> wrapper = new LambdaQueryWrapper<>();
@@ -78,6 +81,7 @@ public class CbtiAdminController {
      * @param req 人格信息请求体
      * @return 统一返回结构，data 为新增后的人格详情
      */
+    @Operation(summary = "管理员新增 CBTI 人格类型")
     @PostMapping("/personalities")
     public ApiResponse<CbtiPersonalityAdminVO> create(@RequestBody CbtiPersonalitySaveReq req) {
         try {
@@ -106,6 +110,7 @@ public class CbtiAdminController {
      * @param req 人格信息请求体
      * @return 统一返回结构，data 为更新后的人格详情
      */
+    @Operation(summary = "管理员更新 CBTI 人格类型")
     @PutMapping("/personalities/{id}")
     public ApiResponse<CbtiPersonalityAdminVO> update(@PathVariable Long id, @RequestBody CbtiPersonalitySaveReq req) {
         try {
@@ -141,6 +146,7 @@ public class CbtiAdminController {
      * @param id 人格记录ID
      * @return 统一返回结构，data 为是否删除成功
      */
+    @Operation(summary = "管理员删除 CBTI 人格类型")
     @DeleteMapping("/personalities/{id}")
     public ApiResponse<Boolean> delete(@PathVariable Long id) {
         if (id == null) {
@@ -166,6 +172,7 @@ public class CbtiAdminController {
      * @param file 上传图片文件（multipart/form-data，字段名为 file）
      * @return 统一返回结构，data 包含 imageObject 与 imageUrl
      */
+    @Operation(summary = "管理员上传 CBTI 人格图片")
     @PostMapping("/personalities/{code}/image")
     public ApiResponse<Map<String, Object>> uploadImage(@PathVariable String code, @RequestParam("file") MultipartFile file) {
         if (!StringUtils.hasText(code)) {
@@ -212,6 +219,7 @@ public class CbtiAdminController {
      *
      * @return 统一返回结构，data 为是否触发成功
      */
+    @Operation(summary = "管理员初始化 CBTI 人格图片")
     @PostMapping("/personalities/init-images")
     public ApiResponse<Boolean> initImages() {
         try {

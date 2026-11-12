@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import top.aiolife.core.query.QueryOrder;
@@ -47,6 +49,7 @@ public class MemoController {
     /**
      * 查询列表
      */
+    @Operation(summary = "分页查询备忘")
     @GetMapping("/query")
     public ApiResponse<PageResp<MemoVO>> query(@QueryParams CommonQuery<MemoQuery> requestQuery) {
         CommonQuery<MemoEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromMemoQuery);
@@ -67,6 +70,7 @@ public class MemoController {
     }
 
     /** 完整编辑详情只按本人 ID 获取；首页摘要不包含正文。 */
+    @Operation(summary = "查询备忘详情")
     @GetMapping("/{id}")
     public ApiResponse<MemoVO> detail(@PathVariable Long id) {
         MemoEntity entity = memoMapper.selectOne(new LambdaQueryWrapper<MemoEntity>()
@@ -78,6 +82,7 @@ public class MemoController {
     /**
      * 新增
      */
+    @Operation(summary = "新增备忘")
     @PostMapping
     public ApiResponse<Boolean> save(@Valid @RequestBody MemoCreateReq entityReq) {
         MemoEntity entity = RecordApiConvertor.INSTANCE.fromMemoCreateReq(entityReq);
@@ -92,6 +97,7 @@ public class MemoController {
     /**
      * 更新
      */
+    @Operation(summary = "更新备忘")
     @PutMapping("/{id}")
     public ApiResponse<Boolean> update(@PathVariable("id") Long id, @Valid @RequestBody MemoUpdateReq entityReq) {
         MemoEntity entity = RecordApiConvertor.INSTANCE.fromMemoUpdateReq(entityReq);
@@ -116,6 +122,7 @@ public class MemoController {
     /**
      * 删除
      */
+    @Operation(summary = "删除备忘")
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@PathVariable("id") Long id) {
         LambdaQueryWrapper<MemoEntity> wrapper = new LambdaQueryWrapper<>();

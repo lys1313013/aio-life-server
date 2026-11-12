@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import top.aiolife.core.resq.ApiResponse;
@@ -20,8 +22,9 @@ public class LeetcodeController {
     private ILeetcodeService leetcodeService;
 
     /**
-     * 没啥地方使用，只是用来手动触发
+     * 手动发送力扣每日一题通知。
      */
+    @Operation(summary = "管理员发送力扣每日一题通知")
     @PostMapping("/notifyTodayQuestion")
     @SaCheckRole("admin")
     public ApiResponse<Void> notifyTodayQuestion() throws MessagingException {

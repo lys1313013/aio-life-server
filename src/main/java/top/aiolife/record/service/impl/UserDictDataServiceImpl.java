@@ -50,8 +50,8 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
             UserDictDataEntity overrideRecord = overrideMap.get(publicCategory.getId());
 
             if (overrideRecord != null) {
-                // 业务页（includeDisabled=false）：如果覆盖记录标记为停用，则隐藏该公共分类
-                if (!includeDisabled && Integer.valueOf(0).equals(overrideRecord.getIsEnabled())) {
+                // 业务页（includeDisabled=false）：如果覆盖记录标记为停用，则隐藏该公共分类。
+                if (!includeDisabled && isDisabled(overrideRecord.getIsEnabled())) {
                     continue;
                 }
                 // 应用覆盖属性
@@ -74,7 +74,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
                 result.add(merged);
             } else {
                 // 没有覆盖记录
-                if (!includeDisabled && Integer.valueOf(0).equals(publicCategory.getIsEnabled())) {
+                if (!includeDisabled && isDisabled(publicCategory.getIsEnabled())) {
                     continue;
                 }
                 // 原样展示公共分类
@@ -82,10 +82,10 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
             }
         }
 
-        // 4. 添加用户纯原创的私有分类
+        // 4. 添加用户纯原创的私有分类；NULL 未显式停用，按启用处理。
         List<UserDictDataEntity> privateCategories = userRecords.stream()
                 .filter(record -> record.getTemplateId() == null
-                        && (includeDisabled || Integer.valueOf(1).equals(record.getIsEnabled())))
+                        && (includeDisabled || !isDisabled(record.getIsEnabled())))
                 .collect(Collectors.toList());
         result.addAll(privateCategories);
 
@@ -94,6 +94,11 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
                 .thenComparing(UserDictDataEntity::getId, Comparator.nullsLast(Long::compareTo)));
 
         return result;
+    }
+
+    /** NULL 表示继承基础值，未显式停用即视为启用。 */
+    private static boolean isDisabled(Integer isEnabled) {
+        return Integer.valueOf(0).equals(isEnabled);
     }
 
     private void rejectBankTag(String type) {
@@ -118,6 +123,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateDictData(Long id, UserDictDataEntity updates, Long userId) {
         rejectBankTag(updates.getDictType());
         UserDictDataEntity target = this.getById(id);
@@ -127,6 +133,8 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
 
         rejectBankTag(target.getDictType());
         if (target.getUserId() == 0L) {
+            // 锁定公共项，避免并发首次覆盖各插入一条记录。
+            this.getBaseMapper().lockTemplate(id);
             // 目标是公共字典，生成或更新覆盖记录
             if ("Y".equals(target.getIsReadonly())) {
                 // 如果是只读的，只允许用户修改状态，清空其他属性的修改
@@ -175,6 +183,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteDictData(Long id, Long userId) {
         UserDictDataEntity target = this.getById(id);
         if (target == null) {
@@ -183,6 +192,8 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
 
         rejectBankTag(target.getDictType());
         if (target.getUserId() == 0L) {
+            // 锁定公共项，避免并发首次隐藏各插入一条记录。
+            this.getBaseMapper().lockTemplate(id);
             // 目标是公共分类，生成隐藏记录
             UserDictDataEntity existingOverride = this.getOne(new LambdaQueryWrapper<UserDictDataEntity>()
                     .eq(UserDictDataEntity::getUserId, userId)

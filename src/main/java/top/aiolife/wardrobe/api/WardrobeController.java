@@ -1,5 +1,7 @@
 package top.aiolife.wardrobe.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,7 @@ public class WardrobeController {
     /**
      * 查询衣物列表
      */
+    @Operation(summary = "查询衣物列表")
     @GetMapping("/items")
     public ApiResponse<List<WardrobeItemVO>> listItems(
             @RequestParam(required = false) Long categoryId,
@@ -47,6 +50,7 @@ public class WardrobeController {
     /**
      * 获取衣物详情
      */
+    @Operation(summary = "查询衣物详情")
     @GetMapping("/items/{id}")
     public ApiResponse<WardrobeItemVO> getItem(@PathVariable Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
@@ -57,6 +61,7 @@ public class WardrobeController {
     /**
      * 保存衣物
      */
+    @Operation(summary = "新增衣物")
     @PostMapping("/items")
     public ApiResponse<Void> saveItem(@RequestBody WardrobeItemSaveReq request) {
         WardrobeItemReq req = WardrobeApiConvertor.INSTANCE.fromWardrobeItemSaveReq(request);
@@ -67,6 +72,7 @@ public class WardrobeController {
     /**
      * 更新衣物
      */
+    @Operation(summary = "更新衣物")
     @PutMapping("/items/{id}")
     public ApiResponse<Void> updateItem(@PathVariable Long id, @RequestBody WardrobeItemSaveReq request) {
         WardrobeItemReq req = WardrobeApiConvertor.INSTANCE.fromWardrobeItemSaveReq(request);
@@ -78,6 +84,7 @@ public class WardrobeController {
     /**
      * 删除衣物
      */
+    @Operation(summary = "删除衣物")
     @DeleteMapping("/items/{id}")
     public ApiResponse<Void> deleteItem(@PathVariable Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
@@ -88,6 +95,7 @@ public class WardrobeController {
     /**
      * 获取统计数据
      */
+    @Operation(summary = "查询衣柜统计")
     @GetMapping("/stats")
     public ApiResponse<WardrobeStatsVO> getStats() {
         Long userId = StpUtil.getLoginIdAsLong();
@@ -100,6 +108,7 @@ public class WardrobeController {
     /**
      * 获取分类列表
      */
+    @Operation(summary = "查询衣物分类")
     @GetMapping("/categories")
     public ApiResponse<List<CategoryVO>> listCategories() {
         Long userId = StpUtil.getLoginIdAsLong();
@@ -110,6 +119,7 @@ public class WardrobeController {
     /**
      * 保存分类
      */
+    @Operation(summary = "新增衣物分类")
     @PostMapping("/categories")
     public ApiResponse<Void> saveCategory(@RequestBody WardrobeCategorySaveReq request) {
         CategoryReq req = WardrobeApiConvertor.INSTANCE.fromWardrobeCategorySaveReq(request);
@@ -120,6 +130,7 @@ public class WardrobeController {
     /**
      * 更新分类
      */
+    @Operation(summary = "更新衣物分类")
     @PutMapping("/categories/{id}")
     public ApiResponse<Void> updateCategory(@PathVariable Long id, @RequestBody WardrobeCategorySaveReq request) {
         CategoryReq req = WardrobeApiConvertor.INSTANCE.fromWardrobeCategorySaveReq(request);
@@ -131,6 +142,7 @@ public class WardrobeController {
     /**
      * 删除分类
      */
+    @Operation(summary = "删除衣物分类")
     @DeleteMapping("/categories/{id}")
     public ApiResponse<Void> deleteCategory(@PathVariable Long id) {
         Long userId = StpUtil.getLoginIdAsLong();

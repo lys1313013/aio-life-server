@@ -1,5 +1,8 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+
 import java.time.LocalDateTime;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
@@ -11,6 +14,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.bankcard.service.BankCardDictionaryGuard;
@@ -51,8 +55,12 @@ public class SysDictTypeController {
         return sysDictTypeMapper;
     }
 
+    /**
+     * 按字典类型标识查询系统字典类型及字典数据明细。
+     */
+    @Operation(summary = "查询系统字典类型及明细")
     @GetMapping("/getByDictType")
-    public ApiResponse<SysDictTypeDetailVO> queryById(String dictType) {
+    public ApiResponse<SysDictTypeDetailVO> queryById(@Parameter(description = "系统字典类型标识") String dictType) {
         // 根据类型英文名称查询类型id
         LambdaQueryWrapper<SysDictTypeEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(SysDictTypeEntity::getDictType, dictType);
@@ -74,7 +82,11 @@ public class SysDictTypeController {
         return ApiResponse.success(sysDictTypeDetailVO);
     }
 
+    /**
+     * 管理员分页查询系统字典类型。
+     */
     @SaCheckRole("admin")
+    @Operation(summary = "管理员分页查询系统字典类型")
     @GetMapping("/query")
     public ApiResponse<PageResp<SysDictTypeVO>> query(
             @QueryParams CommonQuery<SysDictTypeFilterQuery> requestQuery) {
@@ -95,18 +107,30 @@ public class SysDictTypeController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toSysDictTypeVOPage(objectPageResp));
     }
 
+    /**
+     * 管理员新增系统字典类型。
+     */
     @SaCheckRole("admin")
+    @Operation(summary = "管理员新增系统字典类型")
     @PostMapping
     public ApiResponse<Boolean> add(@Valid @RequestBody SysDictTypeCreateReq entityReq) {
         SysDictTypeEntity entity = RecordApiConvertor.INSTANCE.fromSysDictTypeCreateReq(entityReq);
         entity.setDictId(null);
         entity.setCreateUser(StpUtil.getLoginIdAsLong());
         entity.setUpdateUser(StpUtil.getLoginIdAsLong());
-        return ApiResponse.success(getBaseMapper().insert(entity) > 0);
+        try {
+            return ApiResponse.success(getBaseMapper().insert(entity) > 0);
+        } catch (DuplicateKeyException e) {
+            return ApiResponse.error("字典类型已存在");
+        }
     }
 
+    /**
+     * 管理员修改系统字典类型。
+     */
     @SaCheckRole("admin")
     @Transactional
+    @Operation(summary = "管理员更新系统字典类型")
     @PutMapping("/{dictId}")
     public ApiResponse<Boolean> update(@PathVariable("dictId") Long dictId, @Valid @RequestBody SysDictTypeUpdateReq entityReq) {
         SysDictTypeEntity entity = RecordApiConvertor.INSTANCE.fromSysDictTypeUpdateReq(entityReq);
@@ -115,11 +139,19 @@ public class SysDictTypeController {
         entity.setCreateUser(null);
         entity.setUpdateUser(StpUtil.getLoginIdAsLong());
         entity.setUpdateTime(LocalDateTime.now());
-        return ApiResponse.success(getBaseMapper().updateById(entity) > 0);
+        try {
+            return ApiResponse.success(getBaseMapper().updateById(entity) > 0);
+        } catch (DuplicateKeyException e) {
+            throw new IllegalStateException("字典类型已存在");
+        }
     }
 
+    /**
+     * 管理员删除系统字典类型。
+     */
     @SaCheckRole("admin")
     @Transactional
+    @Operation(summary = "管理员删除系统字典类型")
     @DeleteMapping("/{dictId}")
     public ApiResponse<Boolean> delete(@PathVariable("dictId") Long dictId) {
         bankCardGuard.checkTypeChange(dictId, null, true);

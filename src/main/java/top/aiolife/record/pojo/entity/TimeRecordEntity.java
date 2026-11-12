@@ -30,16 +30,19 @@ public class TimeRecordEntity extends AuditEntity {
     private LocalDate date;
 
     /**
-     * 开始时间 （分钟）包含开始时间
+     * 开始分钟（当天 0:00 起的分钟数，0–1439，包含该分钟）
      */
-    private Integer startTime;
+    private Integer startMinute;
     /**
-     * 结束时间 （分钟） 包含结束时间
+     * 结束分钟（当天 0:00 起的分钟数，0–1439，包含该分钟）
      */
-    private Integer endTime;
+    private Integer endMinute;
     private String title;
     private String description;
-    private Integer duration;
+    /**
+     * 时长（分钟），闭区间 endMinute - startMinute + 1，由服务端计算
+     */
+    private Integer durationMinutes;
 
     /**
      * 关联业务类型，对应 RelateTypeEnum
@@ -54,7 +57,7 @@ public class TimeRecordEntity extends AuditEntity {
     /**
      * 是否手动添加
      */
-    private Long isManual;
+    private Integer isManual;
 
     @TableId(type = IdType.ASSIGN_ID)
     private String id;

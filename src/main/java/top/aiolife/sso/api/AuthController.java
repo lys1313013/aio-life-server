@@ -1,5 +1,7 @@
 package top.aiolife.sso.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
@@ -30,6 +32,7 @@ public class AuthController {
      *
      * @param body 邮箱参数
      */
+    @Operation(summary = "发送注册邮箱验证码")
     @PostMapping("/sendEmailCode")
     public ApiResponse<Void> sendEmailCode(@RequestBody SendEmailCodeReq body, HttpServletRequest request) {
         validateEmail(body);
@@ -43,6 +46,7 @@ public class AuthController {
      *
      * @param body 邮箱参数
      */
+    @Operation(summary = "发送密码重置邮箱验证码")
     @PostMapping("/sendResetPasswordCode")
     public ApiResponse<Void> sendResetPasswordCode(@RequestBody SendEmailCodeReq body, HttpServletRequest request) {
         validateEmail(body);
@@ -79,6 +83,7 @@ public class AuthController {
      *
      * @param resetPasswordReq 重置密码参数
      */
+    @Operation(summary = "通过邮箱验证码重置登录密码")
     @PostMapping("/resetPassword")
     public ApiResponse<Void> resetPassword(@RequestBody ResetPasswordReq resetPasswordReq) {
         userService.resetPassword(resetPasswordReq);
@@ -90,6 +95,7 @@ public class AuthController {
      *
      * @param registerReq 注册参数
      */
+    @Operation(summary = "注册账号")
     @PostMapping("/register")
     public ApiResponse<Void> register(@Valid @RequestBody RegisterReq registerReq) {
         userService.register(registerReq);

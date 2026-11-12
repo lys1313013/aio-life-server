@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -53,6 +55,7 @@ public class TaskColumnController {
         return taskColumnMapper;
     }
 
+    @Operation(summary = "查询待办分组")
     @GetMapping("/query")
     public ApiResponse<PageResp<TaskColumnVO>> query(
             @QueryParams CommonQuery<TaskColumnQuery> requestQuery) {
@@ -74,6 +77,7 @@ public class TaskColumnController {
      *
      * @param entity
      */
+    @Operation(summary = "新增待办分组")
     @PostMapping
     public ApiResponse<TaskColumnVO> save(@Valid @RequestBody TaskColumnCreateReq entityReq) {
         TaskColumnEntity entity = RecordApiConvertor.INSTANCE.fromTaskColumnCreateReq(entityReq);
@@ -100,6 +104,7 @@ public class TaskColumnController {
      *
      * @param entity
      */
+    @Operation(summary = "更新待办分组")
     @PutMapping("/{id}")
     public ApiResponse<Boolean> update(@PathVariable("id") Long id, @Valid @RequestBody TaskColumnUpdateReq entityReq) {
         TaskColumnEntity entity = RecordApiConvertor.INSTANCE.fromTaskColumnUpdateReq(entityReq);
@@ -121,6 +126,7 @@ public class TaskColumnController {
      *
      * @param entity id
      */
+    @Operation(summary = "删除待办分组")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable("id") Long id) {
         LambdaQueryWrapper<TaskColumnEntity> wrapper = new LambdaQueryWrapper<>();
@@ -135,6 +141,7 @@ public class TaskColumnController {
      *
      * @param list 只传id和sortOrder
      */
+    @Operation(summary = "调整待办分组排序")
     @PostMapping("/reSort")
     public ApiResponse<Void> reSort(@NotEmpty @RequestBody List<@NotNull @Valid TaskColumnSortReq> requests) {
         List<TaskColumnEntity> list = requests.stream().map(RecordApiConvertor.INSTANCE::fromTaskColumnSortReq).toList();

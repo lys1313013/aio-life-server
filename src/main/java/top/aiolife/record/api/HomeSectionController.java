@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,21 +24,25 @@ public class HomeSectionController {
     private final HomeSectionService service;
     private final WereadStatsService wereadStatsService;
 
+    @Operation(summary = "查询首页备忘摘要")
     @GetMapping("/memo")
     public ApiResponse<HomeSectionVO.Items<HomeSectionVO.Memo>> memos() {
         return ApiResponse.success(service.memos(StpUtil.getLoginIdAsLong()));
     }
 
+    @Operation(summary = "查询首页视频摘要")
     @GetMapping("/video")
     public ApiResponse<HomeSectionVO.Items<HomeSectionVO.Video>> videos() {
         return ApiResponse.success(service.videos(StpUtil.getLoginIdAsLong()));
     }
 
+    @Operation(summary = "查询首页设备摘要")
     @GetMapping("/device")
     public ApiResponse<HomeSectionVO.Items<HomeSectionVO.Device>> devices() {
         return ApiResponse.success(service.devices(StpUtil.getLoginIdAsLong()));
     }
 
+    @Operation(summary = "查询首页微信读书统计")
     @GetMapping("/weread-stats")
     public ApiResponse<WereadStatsVO> wereadStats(@Valid @QueryParams WereadStatsQuery query) {
         return ApiResponse.success(

@@ -1,5 +1,7 @@
 package top.aiolife.record.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -57,6 +59,7 @@ public class IncomeController {
     }
 
 
+    @Operation(summary = "分页查询收入记录")
     @GetMapping("/query")
     public ApiResponse<PageResp<IncomeVO>> query(
             @QueryParams CommonQuery<IncomeQuery> query) {
@@ -74,7 +77,6 @@ public class IncomeController {
         lambdaQueryWrapper.ge(SysUtil.isNotEmpty(condition.getStartTime()), IncomeEntity::getIncDate, condition.getStartTime());
         lambdaQueryWrapper.le(SysUtil.isNotEmpty(condition.getEndTime()), IncomeEntity::getIncDate, condition.getEndTime());
         lambdaQueryWrapper.lt(SysUtil.isNotEmpty(condition.getEndTimeBefore()), IncomeEntity::getIncDate, condition.getEndTimeBefore());
-        lambdaQueryWrapper.isNull(Boolean.TRUE.equals(condition.getUndated()), IncomeEntity::getIncDate);
         lambdaQueryWrapper.orderByDesc(IncomeEntity::getIncDate, IncomeEntity::getId);
         Page<IncomeEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<IncomeEntity> iPage = incomeMapper.selectPage(page, lambdaQueryWrapper);
@@ -83,6 +85,7 @@ public class IncomeController {
     }
 
 
+    @Operation(summary = "新增收入记录")
     @PostMapping
     public ApiResponse<Boolean> add(@Validated @RequestBody IncomeCreateReq entityReq) {
         IncomeEntity entity = RecordApiConvertor.INSTANCE.fromIncomeCreateReq(entityReq);
@@ -91,6 +94,7 @@ public class IncomeController {
         return ApiResponse.success(getBaseMapper().insert(entity) > 0);
     }
 
+    @Operation(summary = "更新收入记录")
     @PutMapping("/{incomeId}")
     public ApiResponse<Boolean> update(@PathVariable("incomeId") Long incomeId, @Validated @RequestBody IncomeUpdateReq entityReq) {
         IncomeEntity entity = RecordApiConvertor.INSTANCE.fromIncomeUpdateReq(entityReq);
@@ -105,6 +109,7 @@ public class IncomeController {
         return ApiResponse.success(getBaseMapper().update(entity, wrapper) > 0);
     }
 
+    @Operation(summary = "删除收入记录")
     @DeleteMapping("/{incomeId}")
     public ApiResponse<Boolean> delete(@PathVariable("incomeId") Long incomeId) {
         LambdaQueryWrapper<IncomeEntity> wrapper = new LambdaQueryWrapper<>();
@@ -114,6 +119,7 @@ public class IncomeController {
         return ApiResponse.success(b);
     }
 
+    @Operation(summary = "按年度和分类统计收入", description = "统计当前用户全部历史，返回分类名称和金额。")
     @GetMapping("/statisticsByYear")
     public ApiResponse<List<IncStaticByYearVO>> statisticsByYear() {
         long userId = StpUtil.getLoginIdAsLong();
@@ -141,6 +147,7 @@ public class IncomeController {
         return ApiResponse.success(ans);
     }
 
+    @Operation(summary = "按月份和分类统计收入", description = "统计当前用户全部历史，按年月分组，不接收日期筛选。")
     @GetMapping("/statisticsByMonth")
     public ApiResponse<List<IncStaticByYearVO>> statisticsByMonth() {
         long userId = StpUtil.getLoginIdAsLong();

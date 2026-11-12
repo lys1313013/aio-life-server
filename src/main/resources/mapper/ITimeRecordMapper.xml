@@ -2,10 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="top.aiolife.record.mapper.ITimeRecordMapper">
     <select id="findReferenceRecords" resultType="top.aiolife.record.pojo.entity.TimeRecordEntity">
-        SELECT date, start_time, end_time, category_id
+        SELECT date, start_minute, end_minute, category_id
         FROM time_record
         WHERE is_deleted = 0 AND user_id = #{userId} AND date = #{date}
-          AND start_time >= 0 AND start_time &lt;= #{time}
-          AND end_time >= #{time} AND end_time &lt; #{endBefore}
+          AND start_minute >= 0 AND start_minute &lt;= #{time}
+          AND end_minute >= #{time} AND end_minute &lt; #{endBefore}
     </select>
 </mapper>

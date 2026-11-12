@@ -11,7 +11,7 @@ public interface ScheduledJobMapper extends BaseMapper<ScheduledJobEntity> {
     @Insert("""
         INSERT INTO sys_scheduled_job (id, job_code, name, cron, zone_id, is_enabled, revision, is_deleted, create_user, create_time, update_user, update_time)
         VALUES (#{id}, #{jobCode}, #{name}, #{cron}, #{zoneId}, #{isEnabled}, #{revision}, #{isDeleted}, #{createUser}, #{createTime}, #{updateUser}, #{updateTime})
-        ON CONFLICT (job_code) DO NOTHING
+        ON CONFLICT (job_code) WHERE is_deleted = 0 DO NOTHING
         """)
     int insertIfAbsent(ScheduledJobEntity entity);
 }

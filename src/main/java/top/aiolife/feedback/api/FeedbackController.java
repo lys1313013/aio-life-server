@@ -1,5 +1,7 @@
 package top.aiolife.feedback.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +33,7 @@ public class FeedbackController {
     /**
      * 提交反馈
      */
+    @Operation(summary = "提交反馈")
     @PostMapping
     public ApiResponse<FeedbackVO> create(@RequestBody FeedbackCreateReq req) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -40,6 +43,7 @@ public class FeedbackController {
     /**
      * 我的反馈列表
      */
+    @Operation(summary = "查询我的反馈")
     @GetMapping("/my")
     public ApiResponse<PageResp<FeedbackVO>> listMy(@QueryParams CommonQuery<FeedbackAdminQuery> query) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -49,6 +53,7 @@ public class FeedbackController {
     /**
      * 我的反馈详情
      */
+    @Operation(summary = "查询我的反馈详情")
     @GetMapping("/my/{id}")
     public ApiResponse<FeedbackDetailVO> getMyDetail(@PathVariable("id") long id) {
         long userId = StpUtil.getLoginIdAsLong();
@@ -58,6 +63,7 @@ public class FeedbackController {
     /**
      * 追加评论
      */
+    @Operation(summary = "追加反馈评论")
     @PostMapping("/{id}/comment")
     public ApiResponse<FeedbackCommentVO> addComment(@PathVariable("id") long id,
                                                      @RequestBody FeedbackCommentCreateReq req) {
@@ -68,6 +74,7 @@ public class FeedbackController {
     /**
      * 撤销反馈（仅 PENDING）
      */
+    @Operation(summary = "撤销待处理反馈")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> cancel(@PathVariable("id") long id) {
         long userId = StpUtil.getLoginIdAsLong();

@@ -112,26 +112,18 @@ public class FinanceCalendarService {
                 end == null ? null : end.atStartOfDay(), granularity);
         List<Bucket> buckets = new ArrayList<>();
         Map<LocalDate, BigDecimal> amounts = new TreeMap<>();
-        BigDecimal undated = BigDecimal.ZERO;
-        boolean hasUndated = false;
         for (var point : points) {
-            if (point.date() == null) {
-                undated = undated.add(point.amount());
-                hasUndated = true;
-            } else {
-                LocalDate key = switch (granularity) {
-                    case "year" -> point.date().withDayOfYear(1);
-                    case "month" -> point.date().withDayOfMonth(1);
-                    default -> point.date();
-                };
-                amounts.merge(key, point.amount(), BigDecimal::add);
-            }
+            LocalDate key = switch (granularity) {
+                case "year" -> point.date().withDayOfYear(1);
+                case "month" -> point.date().withDayOfMonth(1);
+                default -> point.date();
+            };
+            amounts.merge(key, point.amount(), BigDecimal::add);
         }
         if (granularity.equals("year")) {
             if (amounts.isEmpty()) amounts.put(today.withDayOfYear(1), BigDecimal.ZERO);
             amounts.forEach((key, amount) -> buckets.add(bucket(key, key.plusYears(1),
                     key.getYear() + "年", amount, today)));
-            if (hasUndated) buckets.add(new Bucket("undated", "未填日期", null, null, undated, false));
         } else {
             for (LocalDate cursor = start; cursor.isBefore(end);) {
                 LocalDate next;

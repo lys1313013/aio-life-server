@@ -17,7 +17,7 @@ public interface HomeSectionMapper {
     List<MemoEntity> recentMemos(@Param("userId") long userId);
 
     @Select("""
-        SELECT id, title, url, bvid, current_episode, episodes, watched_duration, duration, last_watched, cover_file_id, cover_state
+        SELECT id, title, url, bvid, current_episode, episodes, watched_duration_seconds, duration_seconds, last_watched, cover_file_id, cover_state
         FROM b_video WHERE user_id = #{userId} AND is_deleted = 0 AND status = 'in_progress'
         ORDER BY COALESCE(last_watched, update_time, create_time) DESC NULLS LAST, id DESC LIMIT 3
         """)

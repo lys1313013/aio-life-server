@@ -46,17 +46,17 @@ public class JevCategoryRecommendationService {
         List<LocalDate> dates = new ArrayList<>(List.of(date));
         if (reference != null) dates.add(reference);
         var query = new LambdaQueryWrapper<TimeRecordEntity>()
-                .select(TimeRecordEntity::getDate, TimeRecordEntity::getStartTime,
-                        TimeRecordEntity::getEndTime, TimeRecordEntity::getCategoryId)
+                .select(TimeRecordEntity::getDate, TimeRecordEntity::getStartMinute,
+                        TimeRecordEntity::getEndMinute, TimeRecordEntity::getCategoryId)
                 .eq(TimeRecordEntity::getUserId, userId)
                 .in(TimeRecordEntity::getDate, dates)
                 .le(TimeRecordEntity::getDate, now.toLocalDate())
                 .and(q -> q.lt(TimeRecordEntity::getDate, date)
-                        .or(t -> t.eq(TimeRecordEntity::getDate, date).lt(TimeRecordEntity::getEndTime, minute)))
+                        .or(t -> t.eq(TimeRecordEntity::getDate, date).lt(TimeRecordEntity::getEndMinute, minute)))
                 .and(q -> q.lt(TimeRecordEntity::getDate, now.toLocalDate())
                         .or(t -> t.eq(TimeRecordEntity::getDate, now.toLocalDate())
-                                .lt(TimeRecordEntity::getEndTime, now.getHour() * 60 + now.getMinute())))
-                .orderByAsc(TimeRecordEntity::getDate, TimeRecordEntity::getStartTime)
+                                .lt(TimeRecordEntity::getEndMinute, now.getHour() * 60 + now.getMinute())))
+                .orderByAsc(TimeRecordEntity::getDate, TimeRecordEntity::getStartMinute)
                 .last("LIMIT 2881");
         var records = input.putArray("records");
         var history = dataCache.get("jevHistory", () -> mapper.selectList(query),
@@ -64,17 +64,17 @@ public class JevCategoryRecommendationService {
         // 每日最多 1440 个有效分钟块；异常数据不截断后交给模型误判。
         if (history.size() > 2880) return skip(userId, date, minute, "HISTORY_LIMIT_EXCEEDED");
         history.forEach(record -> {
-            if (record.getDate() == null || record.getStartTime() == null || record.getEndTime() == null
+            if (record.getDate() == null || record.getStartMinute() == null || record.getEndMinute() == null
                     || record.getCategoryId() == null || !criteria.has(record.getCategoryId().toString())
-                    || record.getStartTime() < 0 || record.getEndTime() > 1439
-                    || record.getStartTime() > record.getEndTime()) return;
+                    || record.getStartMinute() < 0 || record.getEndMinute() > 1439
+                    || record.getStartMinute() > record.getEndMinute()) return;
             if (record.getDate().isAfter(now.toLocalDate())
                     || (record.getDate().equals(now.toLocalDate())
-                        && record.getEndTime() >= now.getHour() * 60 + now.getMinute())) return;
+                        && record.getEndMinute() >= now.getHour() * 60 + now.getMinute())) return;
             if (!record.getDate().equals(date) && !record.getDate().equals(reference)) return;
-            if (record.getDate().equals(date) && record.getEndTime() >= minute) return;
+            if (record.getDate().equals(date) && record.getEndMinute() >= minute) return;
             records.addObject().put("date", record.getDate().toString())
-                    .put("startMinute", record.getStartTime()).put("endMinute", record.getEndTime())
+                    .put("startMinute", record.getStartMinute()).put("endMinute", record.getEndMinute())
                     .put("categoryId", record.getCategoryId().toString());
         });
         if (records.isEmpty()) return skip(userId, date, minute, "NO_VALID_HISTORY");

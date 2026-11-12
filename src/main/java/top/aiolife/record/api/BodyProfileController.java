@@ -23,13 +23,13 @@ public class BodyProfileController {
     private final BodyProfileService service;
 
     @GetMapping
-    @Operation(summary = "读取自己的当前身体数据")
+    @Operation(summary = "查询当前身体数据")
     public ApiResponse<BodyProfileVO> get() {
         return ApiResponse.success(service.get(StpUtil.getLoginIdAsLong()));
     }
 
     @PutMapping
-    @Operation(summary = "完整替换自己的当前身体数据", description = "可空字段传 null 清空，不保存历史记录；version 必须与读取结果相同。BMI 自动计算。")
+    @Operation(summary = "替换当前身体数据", description = "可空字段传 null 清空，不保存历史记录；version 必须与读取结果相同。BMI 自动计算。")
     public ApiResponse<BodyProfileVO> save(@Valid @RequestBody BodyProfileSaveReq request) {
         return ApiResponse.success(service.save(StpUtil.getLoginIdAsLong(), request));
     }

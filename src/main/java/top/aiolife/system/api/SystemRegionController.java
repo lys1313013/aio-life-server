@@ -1,5 +1,7 @@
 package top.aiolife.system.api;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import jakarta.validation.constraints.Pattern;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +22,13 @@ import top.aiolife.system.service.SystemRegionService;
 @RequiredArgsConstructor
 public class SystemRegionController {
     private final SystemRegionService service;
+    @Operation(summary = "查询下级行政区划")
     @GetMapping
     public ApiResponse<List<SystemRegionVO>> children(
             @RequestParam(defaultValue = "0") @Pattern(regexp = "[0-9]{0,12}") String parentCode) {
         return ApiResponse.success(service.children(parentCode));
     }
+    @Operation(summary = "查询行政区划完整路径")
     @GetMapping("/{code}/path")
     public ApiResponse<List<SystemRegionVO>> path(
             @PathVariable @Pattern(regexp = "[0-9]{2,12}") String code) {

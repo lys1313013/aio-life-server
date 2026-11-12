@@ -47,7 +47,7 @@ public class GoalController {
     private final GoalProgressService progressService;
 
     @GetMapping
-    @Operation(summary = "查询当前用户的目标", description = "返回目标列表，支持目标类型、进度状态及关键词筛选，按创建时间倒序。")
+    @Operation(summary = "查询目标列表", description = "返回目标列表，支持目标类型、进度状态及关键词筛选，按创建时间倒序。")
     public ApiResponse<List<GoalVO>> queryGoals(
             @Parameter(description = "目标周期类型", schema = @Schema(implementation = GoalTypeEnum.class))
             @RequestParam(required = false) Integer type,
@@ -88,7 +88,7 @@ public class GoalController {
     }
 
     @PostMapping
-    @Operation(summary = "创建目标", description = "用户归属和审计信息由服务端设置；parentId 可关联父目标。响应返回创建后的目标及 ID。")
+    @Operation(summary = "新增目标", description = "用户归属和审计信息由服务端设置；parentId 可关联父目标。响应返回创建后的目标及 ID。")
     public ApiResponse<GoalVO> createGoal(@Valid @RequestBody GoalCreateReq goalEntityReq) {
         GoalEntity goalEntity = RecordApiConvertor.INSTANCE.fromGoalCreateReq(goalEntityReq);
         long userId = StpUtil.getLoginIdAsLong();
@@ -107,7 +107,7 @@ public class GoalController {
     }
 
     @PostMapping("/progress/preview")
-    @Operation(summary = "预览自定义 GraphQL 目标进度", description = "使用当前用户凭据执行查询，返回数值、达标结果与绑定后的变量，不保存目标。")
+    @Operation(summary = "预览 GraphQL 目标进度", description = "使用当前用户凭据执行查询，返回数值、达标结果与绑定后的变量，不保存目标。")
     public ApiResponse<GoalProgressPreviewVO> previewProgress(@Valid @RequestBody GoalProgressPreviewReq request) {
         return ApiResponse.success(progressEvaluator.evaluate(RecordApiConvertor.INSTANCE.fromGoalCreateReq(request), StpUtil.getTokenValue()));
     }
@@ -127,12 +127,14 @@ public class GoalController {
         return ApiResponse.success();
     }
 
+    @Operation(summary = "设置目标置顶状态")
     @PutMapping("/{id}/pin")
     public ApiResponse<GoalVO> setPinned(@PathVariable Long id, @Valid @RequestBody HomePinReq request) {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toGoalVO(
                 goalService.setPinned(StpUtil.getLoginIdAsLong(), id, request.getIsPinned())));
     }
 
+    @Operation(summary = "调整置顶目标排序")
     @PutMapping("/pinned-order")
     public ApiResponse<Void> reorderPinned(@Valid @RequestBody HomePinnedOrderReq request) {
         goalService.reorderPinned(StpUtil.getLoginIdAsLong(), request.getIds());

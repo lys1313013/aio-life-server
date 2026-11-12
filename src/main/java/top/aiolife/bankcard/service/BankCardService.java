@@ -5,6 +5,7 @@ import java.net.URI;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.bankcard.mapper.*;
@@ -152,7 +153,11 @@ public class BankCardService {
             if (tag==null || (!Integer.valueOf(1).equals(tag.isEnabled()) && !oldTags.contains(tagId))) throw new IllegalArgumentException("标签不存在、已停用或不属于当前用户");
         }
         if (req.getCoverFileIds().isEmpty()) card.setCoverSourceUrl(null);
-        cardMapper.save(card,existing==null);
+        try {
+            cardMapper.save(card, existing == null);
+        } catch (DuplicateKeyException e) {
+            throw new IllegalArgumentException("该银行卡已添加");
+        }
         tagRelMapper.deleteByCard(userId, card.getId());
         for (Long tagId : tagIds) {
             var relation = new BankCardTagRelEntity();

@@ -42,15 +42,15 @@ public class TimeRecordReq {
     private LocalDate date;
 
     /**
-     * 开始时间 （分钟）包含开始时间
+     * 开始分钟（当天 0:00 起的分钟数，0–1439，包含该分钟）
      */
-    @Description("开始时间（从 0:00 开始的分钟数）")
-    private Integer startTime;
+    @Description("开始分钟（从 0:00 开始的分钟数，0–1439，包含该分钟）")
+    private Integer startMinute;
     /**
-     * 结束时间 （分钟） 包含结束时间
+     * 结束分钟（当天 0:00 起的分钟数，0–1439，包含该分钟）
      */
-    @Description("结束时间（从 0:00 开始的分钟数）")
-    private Integer endTime;
+    @Description("结束分钟（从 0:00 开始的分钟数，0–1439，包含该分钟）")
+    private Integer endMinute;
     /**
      * 标题
      */
@@ -61,12 +61,6 @@ public class TimeRecordReq {
      */
     @Description("描述")
     private String description;
-    /**
-     * 时长（分钟）
-     */
-    @Description("时长（分钟）")
-    private Integer duration;
-
     /**
      * 关联业务类型，对应 RelateTypeEnum
      */
