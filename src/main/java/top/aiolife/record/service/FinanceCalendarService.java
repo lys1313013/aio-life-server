@@ -113,6 +113,8 @@ public class FinanceCalendarService {
         List<Bucket> buckets = new ArrayList<>();
         Map<LocalDate, BigDecimal> amounts = new TreeMap<>();
         for (var point : points) {
+            // 历史无日期账目不参与按日期分桶，也不计入日历合计。
+            if (point.date() == null) continue;
             LocalDate key = switch (granularity) {
                 case "year" -> point.date().withDayOfYear(1);
                 case "month" -> point.date().withDayOfMonth(1);

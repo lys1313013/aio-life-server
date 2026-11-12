@@ -52,7 +52,7 @@ public interface IBVideoMapper extends BaseMapper<BVideoEntity> {
               CAST(#{pagesInfo} AS jsonb), #{userId},
               #{createUser}, #{createTime}, #{updateUser}, #{updateTime}, 0
             )
-            ON CONFLICT (user_id, bvid) WHERE is_deleted = 0 AND bvid IS NOT NULL AND bvid <> '' DO NOTHING
+            ON CONFLICT DO NOTHING
             """)
     int insertIgnoreActive(BVideoEntity entity);
 

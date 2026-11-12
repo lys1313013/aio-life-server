@@ -36,7 +36,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
     private ITimeRecordMapper timeRecordMapper;
 
     /** 分类规模很小，按主键顺序锁定分类关系，避免并发移动/新增造成第三级或环。 */
-    void lockHierarchy() {
+    public void lockHierarchy() {
         this.list(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
                 .select(TimeTrackerCategoryEntity::getId)
                 .orderByAsc(TimeTrackerCategoryEntity::getId).last("FOR UPDATE"));
