@@ -31,6 +31,8 @@ class QuickNavClientStatusTest {
             return item;
         }).toList());
         assertDoesNotThrow(() -> service.saveMy(7L, List.of("user"), req, MenuClient.MOBILE));
+        verify(rows).physicalDeleteByUserId(7L);
+        verify(rows, never()).delete(any());
         verify(rows, times(15)).insert(any(UserQuickNavEntity.class));
         var extra = new QuickNavSaveReq.Item(); extra.setMenuId(16L); extra.setSortOrder(15); extra.setIsEnabled(1);
         req.setItems(java.util.stream.Stream.concat(req.getItems().stream(), java.util.stream.Stream.of(extra)).toList());
@@ -53,6 +55,8 @@ class QuickNavClientStatusTest {
         assertEquals(List.of(2L), service.listMy(7L, List.of("user"), MenuClient.MOBILE).stream().map(m -> m.getMenuId()).toList());
         var req = new QuickNavSaveReq(); req.setItems(List.of());
         service.saveMy(7L, List.of("user"), req, MenuClient.MOBILE);
+        verify(rows).physicalDeleteByUserId(7L);
+        verify(rows, never()).delete(any());
         var inserted = ArgumentCaptor.forClass(UserQuickNavEntity.class);
         verify(rows).insert(inserted.capture());
         assertEquals(1L, inserted.getValue().getMenuId());

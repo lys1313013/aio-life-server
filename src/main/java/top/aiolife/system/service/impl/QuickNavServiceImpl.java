@@ -112,9 +112,9 @@ public class QuickNavServiceImpl implements IQuickNavService {
         }
         if (merged.size() > MAX_ITEMS) throw new IllegalArgumentException("快捷导航两端合计最多 " + MAX_ITEMS + " 项");
 
-        // 先逻辑删除旧布局；请求内 menuId 去重校验保证新布局不存在重复有效记录。
-        userQuickNavMapper.delete(new LambdaQueryWrapper<UserQuickNavEntity>()
-                .eq(UserQuickNavEntity::getUserId, userId));
+        // 先物理删除旧布局：配置表不保留历史，逻辑删除只会让行随保存次数累积。
+        // 请求内 menuId 去重校验保证新布局不存在重复有效记录。
+        userQuickNavMapper.physicalDeleteByUserId(userId);
 
         // 批量插入新记录
         if (!merged.isEmpty()) {

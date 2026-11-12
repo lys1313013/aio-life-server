@@ -9,7 +9,7 @@ import top.aiolife.core.pojo.entity.BaseEntity;
  * 用户首页快捷导航布局实体
  *
  * <p>存放用户最终保存的快捷导航布局；title/icon/color/url 不冗余存储，
- * 渲染时 JOIN sys_menu 实时取。</p>
+ * 渲染时 JOIN sys_menu 实时取。保留统一字段，替换布局时使用物理删除。</p>
  *
  * @author Ethan
  * @date 2026/06/05
