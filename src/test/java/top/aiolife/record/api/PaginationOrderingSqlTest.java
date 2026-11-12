@@ -7,21 +7,25 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
-import org.h2.jdbcx.JdbcDataSource;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.postgresql.ds.PGSimpleDataSource;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import top.aiolife.bankcard.service.BankCardDictionaryGuard;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.config.MybatisPlusConfig;
@@ -47,22 +51,28 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** H2 + 生产表结构及分页插件：同排序值跨页不能遗漏/重复记录。 */
+/** 自建 PostgreSQL 18、生产表结构及分页插件：同排序值跨页不能遗漏/重复记录。 */
 class PaginationOrderingSqlTest {
-    private JdbcTemplate jdbc;
-    private SqlSession session;
+    private static final GenericContainer<?> POSTGRES = new GenericContainer<>("postgres:18-alpine")
+            .withEnv("POSTGRES_PASSWORD", "isolated-pagination")
+            .withEnv("POSTGRES_DB", "fixture").withExposedPorts(5432)
+            .waitingFor(Wait.forLogMessage(".*database system is ready to accept connections.*\\n", 2))
+            .withStartupTimeout(Duration.ofMinutes(2));
+    private static JdbcTemplate jdbc;
+    private static SqlSession session;
     private final ObjectMapper json = new JsonConfig().jacksonObjectMapper(Jackson2ObjectMapperBuilder.json());
 
-    @BeforeEach
-    void setUp() throws Exception {
-        var source = new JdbcDataSource();
-        source.setURL("jdbc:h2:mem:pagination_order_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
+    @BeforeAll
+    static void 启动数据库() throws Exception {
+        POSTGRES.start();
+        var source = new PGSimpleDataSource();
+        source.setURL("jdbc:postgresql://" + POSTGRES.getHost() + ":" + POSTGRES.getMappedPort(5432)
+                + "/fixture?stringtype=unspecified");
+        source.setUser("postgres");
+        source.setPassword("isolated-pagination");
         jdbc = new JdbcTemplate(source);
         for (String table : List.of("task", "task_column", "memo", "sys_dict_type", "sys_dict_data")) {
-            jdbc.execute(CurrentSchema.table(table)
-                    .replaceAll(" COLLATE [a-zA-Z0-9_]+", "")
-                    .replaceAll(" CHARACTER SET [a-zA-Z0-9_]+", "")
-                    .replace("KEY \"idx_", "KEY \"" + table + "_idx_"));
+            jdbc.execute(CurrentSchema.table(table));
         }
         var configuration = new MybatisConfiguration();
         configuration.setEnvironment(new Environment("test", new JdbcTransactionFactory(), source));
@@ -71,6 +81,16 @@ class PaginationOrderingSqlTest {
         for (Class<?> mapper : List.of(ITaskMapper.class, ITaskColumnMapper.class, IMemoMapper.class,
                 ISysDictDataMapper.class, ISysDictTypeMapper.class)) configuration.addMapper(mapper);
         session = new MybatisSqlSessionFactoryBuilder().build(configuration).openSession();
+    }
+
+    @AfterAll
+    static void 停止数据库() {
+        if (session != null) session.close();
+        POSTGRES.stop();
+    }
+
+    @BeforeEach
+    void 插入夹具() {
         for (int id : List.of(5, 3, 1, 4, 2)) {
             jdbc.update("INSERT INTO task(id,user_id,content,column_id,sort_order) VALUES (?,7,'任务',?,0)", id, id % 2);
             jdbc.update("INSERT INTO task_column(id,user_id,title,sort_order) VALUES (?,7,'任务栏',0)", id);
@@ -81,9 +101,8 @@ class PaginationOrderingSqlTest {
     }
 
     @AfterEach
-    void tearDown() {
-        if (session != null) session.close();
-        if (jdbc != null) jdbc.execute("DROP ALL OBJECTS");
+    void 清空夹具() {
+        jdbc.execute("TRUNCATE task, task_column, memo, sys_dict_type, sys_dict_data");
     }
 
     private MockMvc mvc(Object controller) {
