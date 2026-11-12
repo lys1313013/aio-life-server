@@ -59,25 +59,25 @@ class PostgresqlMigrationIT {
                     .locations("filesystem:" + root.resolve("sql/migrations"))
                     .validateMigrationNaming(true).placeholderReplacement(false).callbacks(new MigrationGuard());
             var flyway = configuration.load();
-            assertEquals(13, flyway.migrate().migrationsExecuted);
+            assertEquals(21, flyway.migrate().migrationsExecuted);
             assertEquals(0, flyway.migrate().migrationsExecuted);
             try (var connection = DriverManager.getConnection(url,"postgres","isolated-fixture")) {
                 var snapshot = SchemaSnapshot.read(connection);
-                assertEquals(72, snapshot.sections().get("tables").size());
+                assertEquals(68, snapshot.sections().get("tables").size());
                 assertTrue(snapshot.sections().get("columns").stream().allMatch(c -> c.get(9)!=null && !c.get(9).isBlank()));
                 Path contract = temporary.resolve("contract.json");
-                SchemaContract.write(contract,root,"20261111.01",connection);
+                SchemaContract.write(contract,root,"20261112.08",connection);
                 SchemaContract.read(contract,root).check(connection);
                 SchemaContract.write(Path.of(System.getProperty("schema.reportDirectory", "target/schema"))
-                        .resolve("schema-contract.json"), MigrationProject.root(), "20261111.01", connection);
+                        .resolve("schema-contract.json"), MigrationProject.root(), "20261112.08", connection);
                 try (var statement = connection.createStatement()) {
                     statement.execute("INSERT INTO goal(id,user_id,title) VALUES(101,1,'fixture')");
                 }
-                Files.writeString(root.resolve("sql/migrations/V20261111_02__fixture.sql"),
+                Files.writeString(root.resolve("sql/migrations/V20261113_01__fixture.sql"),
                         "ALTER TABLE goal ADD COLUMN test_value integer DEFAULT 7; COMMENT ON COLUMN goal.test_value IS '测试字段';");
                 assertEquals(1, configuration.load().migrate().migrationsExecuted);
                 assertEquals("7", SchemaSnapshot.rows(connection,"SELECT test_value FROM goal WHERE id=101").getFirst().getFirst());
-                Files.writeString(root.resolve("sql/migrations/V20261111_03__failure.sql"),
+                Files.writeString(root.resolve("sql/migrations/V20261113_02__failure.sql"),
                         "CREATE TABLE rolled_back(id bigint); SELECT 1/0;");
                 assertThrows(Exception.class, () -> configuration.load().migrate());
                 assertNull(SchemaSnapshot.rows(connection,"SELECT to_regclass('rolled_back')").getFirst().getFirst());

@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class SchemaContractTest {
     private SchemaSnapshot fixture() {
         Map<String, List<List<String>>> sections = new HashMap<>();
-        sections.put("tables", List.of(List.of("t", "InnoDB", "utf8mb4_unicode_ci", "中文表")));
+        sections.put("tables", List.of(List.of("t", "p", "UTF8", "中文表")));
         sections.put("columns", List.of(Arrays.asList("t", "c", "bigint", "YES", null, "", "", null, null, "中文字段")));
         sections.put("indexes", List.of(Arrays.asList("t", "i", "1", "1", "c", null, "BTREE", "A", "YES", null)));
         sections.put("checks", List.of(List.of("t", "positive", "(`c` > 0)", "YES")));
