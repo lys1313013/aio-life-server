@@ -80,7 +80,8 @@ class PaginationOrderingSqlTest {
         configuration.addInterceptor(new MybatisPlusConfig().mybatisPlusInterceptor());
         for (Class<?> mapper : List.of(ITaskMapper.class, ITaskColumnMapper.class, IMemoMapper.class,
                 ISysDictDataMapper.class, ISysDictTypeMapper.class)) configuration.addMapper(mapper);
-        session = new MybatisSqlSessionFactoryBuilder().build(configuration).openSession();
+        // 自动提交，避免查询事务的共享锁阻塞清空夹具的 TRUNCATE。
+        session = new MybatisSqlSessionFactoryBuilder().build(configuration).openSession(true);
     }
 
     @AfterAll
