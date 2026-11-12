@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
@@ -58,7 +59,7 @@ public class MemoController {
         lambdaQueryWrapper.eq(MemoEntity::getUserId, userId);
 
         if (query.getCondition() != null && query.getCondition().getContent() != null) {
-            lambdaQueryWrapper.like(MemoEntity::getContent, query.getCondition().getContent());
+            IlikeQuery.anyOf(lambdaQueryWrapper, query.getCondition().getContent(), MemoEntity::getContent);
         }
 
         QueryOrder.descNullsLast(lambdaQueryWrapper, MemoEntity::getUpdateTime, MemoEntity::getId);

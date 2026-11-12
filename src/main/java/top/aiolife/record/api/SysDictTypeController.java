@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -95,8 +96,8 @@ public class SysDictTypeController {
 
         SysDictTypeEntity condition = query.getCondition();
         if (condition != null) {
-            lambdaQueryWrapper.like(SysUtil.isNotEmpty(condition.getDictName()),
-                    SysDictTypeEntity::getDictName , condition.getDictName());
+            IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(condition.getDictName()),
+                    condition.getDictName(), SysDictTypeEntity::getDictName);
         }
 
         lambdaQueryWrapper.orderByAsc(SysDictTypeEntity::getDictId);

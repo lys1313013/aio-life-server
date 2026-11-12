@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -52,8 +53,8 @@ public class DeviceController {
         DeviceEntity condition = query.getCondition();
         lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getType()), DeviceEntity::getType,
                 condition.getType());
-        lambdaQueryWrapper.like(SysUtil.isNotEmpty(requestQuery.getCondition().getName()),
-                DeviceEntity::getName, requestQuery.getCondition().getName());
+        IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(requestQuery.getCondition().getName()),
+                requestQuery.getCondition().getName(), DeviceEntity::getName);
         QueryOrder.descNullsLast(lambdaQueryWrapper, DeviceEntity::getPurchaseDate).orderByDesc(DeviceEntity::getId);        // 分页
         Page<DeviceEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<DeviceEntity> iPage = getBaseMapper().selectPage(page, lambdaQueryWrapper);

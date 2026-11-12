@@ -1,30 +1,17 @@
 package top.aiolife.record.api;
 
-import io.swagger.v3.oas.annotations.Operation;
-
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.constant.StatusConst;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
@@ -41,9 +28,16 @@ import top.aiolife.record.pojo.req.ExpenseUpdateReq;
 import top.aiolife.record.pojo.vo.ExpStaByYearVO;
 import top.aiolife.record.pojo.vo.ExpStaticByYearVO;
 import top.aiolife.record.pojo.vo.ExpenseVO;
-import top.aiolife.record.service.IExpenseService;
 import top.aiolife.record.service.DeviceExpenseService;
+import top.aiolife.record.service.IExpenseService;
 import top.aiolife.record.service.UserDictDataService;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 类功能描述
@@ -90,9 +84,9 @@ public class ExpController {
         lambdaQueryWrapper.ge(condition.getStartTime() != null, ExpenseEntity::getExpTime, condition.getStartTime());
         lambdaQueryWrapper.le(condition.getEndTime() != null, ExpenseEntity::getExpTime, condition.getEndTime());
         lambdaQueryWrapper.lt(condition.getEndTimeBefore() != null, ExpenseEntity::getExpTime, condition.getEndTimeBefore());
-        lambdaQueryWrapper.like(SysUtil.isNotEmpty(condition.getRemark()), ExpenseEntity::getRemark, condition.getRemark());
-        lambdaQueryWrapper.like(SysUtil.isNotEmpty(condition.getCounterparty()), ExpenseEntity::getCounterparty, condition.getCounterparty());
-        lambdaQueryWrapper.like(SysUtil.isNotEmpty(condition.getExpDesc()), ExpenseEntity::getExpDesc, condition.getExpDesc());
+        IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(condition.getRemark()), condition.getRemark(), ExpenseEntity::getRemark);
+        IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(condition.getCounterparty()), condition.getCounterparty(), ExpenseEntity::getCounterparty);
+        IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(condition.getExpDesc()), condition.getExpDesc(), ExpenseEntity::getExpDesc);
         lambdaQueryWrapper.orderByDesc(ExpenseEntity::getExpTime, ExpenseEntity::getId);
         Page<ExpenseEntity> page = new Page<>(query.getPage(), query.getPageSize());
         IPage<ExpenseEntity> iPage = expenseMapper.selectPage(page, lambdaQueryWrapper);

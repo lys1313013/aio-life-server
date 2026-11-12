@@ -1,6 +1,7 @@
 package top.aiolife.feedback.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -361,9 +362,8 @@ public class FeedbackServiceImpl implements IFeedbackService {
             wrapper.eq(FeedbackEntity::getUserId, condition.getUserId());
         }
         if (StringUtils.hasText(condition.getKeyword())) {
-            wrapper.and(w -> w.like(FeedbackEntity::getTitle, condition.getKeyword())
-                    .or()
-                    .like(FeedbackEntity::getContent, condition.getKeyword()));
+            wrapper.and(w -> IlikeQuery.anyOf(w, condition.getKeyword(),
+                    FeedbackEntity::getTitle, FeedbackEntity::getContent));
         }
         if (StringUtils.hasText(condition.getStartTime())) {
             wrapper.ge(FeedbackEntity::getCreateTime, condition.getStartTime());

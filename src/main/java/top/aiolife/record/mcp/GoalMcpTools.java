@@ -3,6 +3,7 @@ package top.aiolife.record.mcp;
 import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -53,11 +54,8 @@ public class GoalMcpTools {
         }
         if (StringUtils.hasText(req.getKeyword())) {
             String keyword = req.getKeyword().trim();
-            queryWrapper.and(wrapper -> wrapper.like(GoalEntity::getTitle, keyword)
-                    .or()
-                    .like(GoalEntity::getDescription, keyword)
-                    .or()
-                    .like(GoalEntity::getTags, keyword));
+            queryWrapper.and(wrapper -> IlikeQuery.anyOf(wrapper, keyword,
+                    GoalEntity::getTitle, GoalEntity::getDescription, GoalEntity::getTags));
         }
         if (req.getYear() != null) {
             queryWrapper.eq(GoalEntity::getYear, req.getYear());

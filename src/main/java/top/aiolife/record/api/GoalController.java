@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.QueryOrder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -67,13 +68,8 @@ public class GoalController {
             queryWrapper.eq(GoalEntity::getStatus, ProgressStatusEnum.fromCode(status));
         }
         if (keyword != null && !keyword.trim().isEmpty()) {
-            queryWrapper.and(wrapper ->
-                wrapper.like(GoalEntity::getTitle, keyword)
-                       .or()
-                       .like(GoalEntity::getDescription, keyword)
-                       .or()
-                       .like(GoalEntity::getTags, keyword)
-            );
+            queryWrapper.and(wrapper -> IlikeQuery.anyOf(wrapper, keyword,
+                    GoalEntity::getTitle, GoalEntity::getDescription, GoalEntity::getTags));
         }
         if (isPinned != null) {
             if (isPinned != 0 && isPinned != 1) throw new IllegalArgumentException("固定状态仅支持 0 或 1");

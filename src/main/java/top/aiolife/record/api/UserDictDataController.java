@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
@@ -156,8 +157,8 @@ public class UserDictDataController {
         if (condition != null) {
             lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getDictType()),
                     UserDictDataEntity::getDictType, condition.getDictType());
-            lambdaQueryWrapper.like(SysUtil.isNotEmpty(condition.getDictLabel()),
-                    UserDictDataEntity::getDictLabel, condition.getDictLabel());
+            IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(condition.getDictLabel()),
+                    condition.getDictLabel(), UserDictDataEntity::getDictLabel);
             lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getIsEnabled()),
                     UserDictDataEntity::getIsEnabled, condition.getIsEnabled());
         }

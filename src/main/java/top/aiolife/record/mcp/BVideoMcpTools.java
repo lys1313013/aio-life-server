@@ -2,6 +2,7 @@ package top.aiolife.record.mcp;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import dev.langchain4j.agent.tool.Tool;
@@ -42,7 +43,7 @@ public class BVideoMcpTools {
         LambdaQueryWrapper<BVideoEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(BVideoEntity::getUserId, userId);
         if (StringUtils.hasText(req.getTitle())) {
-            queryWrapper.like(BVideoEntity::getTitle, req.getTitle().trim());
+            IlikeQuery.anyOf(queryWrapper, req.getTitle().trim(), BVideoEntity::getTitle);
         }
         if (StringUtils.hasText(req.getStatus())) {
             queryWrapper.eq(BVideoEntity::getStatus, ProgressStatusEnum.fromCode(req.getStatus()));

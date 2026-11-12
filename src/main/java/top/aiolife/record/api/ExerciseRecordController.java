@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
@@ -70,7 +71,7 @@ public class ExerciseRecordController {
         ExerciseRecordQuery filters = requestQuery.getCondition();
         lambdaQueryWrapper.ge(filters.getStartDate() != null, ExerciseRecordEntity::getExerciseDate, filters.getStartDate());
         lambdaQueryWrapper.le(filters.getEndDate() != null, ExerciseRecordEntity::getExerciseDate, filters.getEndDate());
-        lambdaQueryWrapper.like(SysUtil.isNotEmpty(filters.getDescription()), ExerciseRecordEntity::getDescription, filters.getDescription());
+        IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(filters.getDescription()), filters.getDescription(), ExerciseRecordEntity::getDescription);
         lambdaQueryWrapper.orderByDesc(ExerciseRecordEntity::getExerciseDate, ExerciseRecordEntity::getId);
         // 分页
         Page<ExerciseRecordEntity> page = new Page<>(query.getPage(), query.getPageSize());
@@ -159,7 +160,7 @@ public class ExerciseRecordController {
             Long exerciseTypeId = params.getExerciseTypeId();
             lambdaQueryWrapper.eq(exerciseTypeId != null, ExerciseRecordEntity::getExerciseTypeId, exerciseTypeId);
 
-            lambdaQueryWrapper.like(SysUtil.isNotEmpty(params.getDescription()), ExerciseRecordEntity::getDescription, params.getDescription());
+            IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(params.getDescription()), params.getDescription(), ExerciseRecordEntity::getDescription);
             // 日期区间
             String startDate = params.getStartDate();
             String endDate = params.getEndDate();
@@ -199,7 +200,7 @@ public class ExerciseRecordController {
             Long exerciseTypeId = params.getExerciseTypeId();
             lambdaQueryWrapper.eq(exerciseTypeId != null, ExerciseRecordEntity::getExerciseTypeId, exerciseTypeId);
 
-            lambdaQueryWrapper.like(SysUtil.isNotEmpty(params.getDescription()), ExerciseRecordEntity::getDescription, params.getDescription());
+            IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(params.getDescription()), params.getDescription(), ExerciseRecordEntity::getDescription);
             // 日期区间
             String startDate = params.getStartDate();
             String endDate = params.getEndDate();

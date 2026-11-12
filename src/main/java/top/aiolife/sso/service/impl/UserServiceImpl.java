@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import top.aiolife.sso.service.SecondaryLockMenuResolver;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.record.service.IMailService;
@@ -95,7 +96,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public UserLoginVO login(LoginReq loginReq, String ip) {
         LambdaQueryWrapper<UserEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(UserEntity::getUsername, loginReq.getUsername());
+        IlikeQuery.lowerEquals(lambdaQueryWrapper, UserEntity::getUsername, loginReq.getUsername());
 
         UserEntity userEntity = userMapper.selectOne(lambdaQueryWrapper);
 
@@ -254,9 +255,8 @@ public class UserServiceImpl implements IUserService {
         LambdaQueryWrapper<UserEntity> wrapper = new LambdaQueryWrapper<>();
         String keyword = query.getCondition() == null ? null : query.getCondition().getKeyword();
         if (StringUtils.hasText(keyword)) {
-            wrapper.and(where -> where.like(UserEntity::getUsername, keyword.trim())
-                    .or().like(UserEntity::getNickname, keyword.trim())
-                    .or().like(UserEntity::getEmail, keyword.trim()));
+            wrapper.and(where -> IlikeQuery.anyOf(where, keyword.trim(),
+                    UserEntity::getUsername, UserEntity::getNickname, UserEntity::getEmail));
         }
         wrapper.orderByDesc(UserEntity::getCreateTime);
         userMapper.selectPage(page, wrapper);
@@ -370,7 +370,7 @@ public class UserServiceImpl implements IUserService {
         }
         // 校验邮箱是否已注册
         LambdaQueryWrapper<UserEntity> emailWrapper = new LambdaQueryWrapper<>();
-        emailWrapper.eq(UserEntity::getEmail, email);
+        IlikeQuery.lowerEquals(emailWrapper, UserEntity::getEmail, email);
         if (userMapper.selectCount(emailWrapper) > 0) {
             throw new RuntimeException("邮箱已被注册");
         }
@@ -397,7 +397,7 @@ public class UserServiceImpl implements IUserService {
         }
         // 校验邮箱是否已注册
         LambdaQueryWrapper<UserEntity> emailWrapper = new LambdaQueryWrapper<>();
-        emailWrapper.eq(UserEntity::getEmail, email);
+        IlikeQuery.lowerEquals(emailWrapper, UserEntity::getEmail, email);
         if (userMapper.selectCount(emailWrapper) == 0) {
             throw new RuntimeException("邮箱未注册");
         }
@@ -523,7 +523,7 @@ public class UserServiceImpl implements IUserService {
         verifyEmailCode("reset:code:" + resetPasswordReq.getEmail(), resetPasswordReq.getCode());
 
         LambdaQueryWrapper<UserEntity> emailWrapper = new LambdaQueryWrapper<>();
-        emailWrapper.eq(UserEntity::getEmail, resetPasswordReq.getEmail());
+        IlikeQuery.lowerEquals(emailWrapper, UserEntity::getEmail, resetPasswordReq.getEmail());
         UserEntity userEntity = userMapper.selectOne(emailWrapper);
         if (userEntity == null) {
             throw new RuntimeException("用户不存在");
@@ -548,14 +548,14 @@ public class UserServiceImpl implements IUserService {
         verifyEmailCode("register:code:" + registerReq.getEmail(), registerReq.getCode());
         // 校验用户名是否已存在
         LambdaQueryWrapper<UserEntity> usernameWrapper = new LambdaQueryWrapper<>();
-        usernameWrapper.eq(UserEntity::getUsername, registerReq.getUsername());
+        IlikeQuery.lowerEquals(usernameWrapper, UserEntity::getUsername, registerReq.getUsername());
         if (userMapper.selectCount(usernameWrapper) > 0) {
             throw new RuntimeException("用户名已存在");
         }
 
         // 校验邮箱是否已存在（双重检查）
         LambdaQueryWrapper<UserEntity> emailWrapper = new LambdaQueryWrapper<>();
-        emailWrapper.eq(UserEntity::getEmail, registerReq.getEmail());
+        IlikeQuery.lowerEquals(emailWrapper, UserEntity::getEmail, registerReq.getEmail());
         if (userMapper.selectCount(emailWrapper) > 0) {
             throw new RuntimeException("邮箱已被注册");
         }

@@ -3,7 +3,7 @@
 <mapper namespace="top.aiolife.system.mapper.ActivityLogMapper">
     <sql id="operationFilter">
         log_type = 'OPERATION' AND is_deleted = 0
-        <if test="query.usernameLike != null">AND username LIKE #{query.usernameLike}</if>
+        <if test="query.usernameLike != null">AND username ILIKE #{query.usernameLike}</if>
         <if test="query.startDate != null">
             AND request_time &gt;= #{query.startDate}
         </if>

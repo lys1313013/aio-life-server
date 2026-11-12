@@ -2,6 +2,7 @@ package top.aiolife.wardrobe.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.AllArgsConstructor;
@@ -93,9 +94,8 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
             queryWrapper.like(WardrobeItemEntity::getSeason, season);
         }
         if (keyword != null && !keyword.isEmpty()) {
-            queryWrapper.and(w -> w.like(WardrobeItemEntity::getName, keyword)
-                    .or().like(WardrobeItemEntity::getColor, keyword)
-                    .or().like(WardrobeItemEntity::getBrand, keyword));
+            queryWrapper.and(w -> IlikeQuery.anyOf(w, keyword,
+                    WardrobeItemEntity::getName, WardrobeItemEntity::getColor, WardrobeItemEntity::getBrand));
         }
 
         QueryOrder.descNullsLast(queryWrapper, WardrobeItemEntity::getCreateTime, WardrobeItemEntity::getId);

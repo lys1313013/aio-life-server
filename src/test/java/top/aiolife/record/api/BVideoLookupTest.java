@@ -29,7 +29,7 @@ class BVideoLookupTest {
     @BeforeEach
     void setUp() throws Exception {
         database = new HomeDetailTestSupport();
-        // 模拟生产 aio_unicode_ci 的不区分大小写比较，确保二进制条件实际生效。
+        // bvid 使用确定性精确比较，大小写不同的 BV 号不得命中。
         mvc = database.mvc(new BVideoController(database.session.getMapper(IBVideoMapper.class), mock(VideoCoverService.class)));
     }
 

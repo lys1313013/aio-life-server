@@ -75,13 +75,13 @@ SELECT 92626001,'银行','bank',1,0,0,0
 WHERE NOT EXISTS(SELECT 1 FROM sys_dict_type WHERE dict_type='bank');
 
 DROP TABLE IF EXISTS tmp_nfra_bank_dictionary;
--- 临时导入表与业务列使用一致的文本比较规则。
+-- 临时导入表与业务列使用一致的文本比较规则：银行值是机器标识，其余为展示文本。
 CREATE TEMPORARY TABLE tmp_nfra_bank_dictionary (
   seed_id BIGINT PRIMARY KEY,
   sort_order INT NOT NULL,
-  label VARCHAR(100) COLLATE aio_unicode_ci NOT NULL,
-  bank_value VARCHAR(100) COLLATE aio_unicode_ci NOT NULL UNIQUE,
-  full_name VARCHAR(100) COLLATE aio_unicode_ci NOT NULL,
+  label VARCHAR(100) NOT NULL,
+  bank_value VARCHAR(100) COLLATE "C" NOT NULL UNIQUE,
+  full_name VARCHAR(100) NOT NULL,
   source_remark VARCHAR(500) NOT NULL
 );
 """

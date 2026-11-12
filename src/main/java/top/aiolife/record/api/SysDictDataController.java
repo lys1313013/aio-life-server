@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -69,7 +70,7 @@ public class SysDictDataController {
 
         SysDictTypeQuery condition = query.getCondition();
         if (condition != null && SysUtil.isNotEmpty(condition.getDictLabel())) {
-            lambdaQueryWrapper.like(SysDictDataEntity::getDictLabel, condition.getDictLabel());
+            IlikeQuery.anyOf(lambdaQueryWrapper, condition.getDictLabel(), SysDictDataEntity::getDictLabel);
         }
 
         // 字典名称使用字典类型表过滤查询

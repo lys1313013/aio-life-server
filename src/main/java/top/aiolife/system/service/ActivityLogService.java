@@ -9,6 +9,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.system.mapper.ActivityLogMapper;
 import top.aiolife.system.pojo.entity.ActivityLogEntity;
@@ -111,7 +112,7 @@ public class ActivityLogService {
         if (StringUtils.hasText(query.getUsername())) {
             // 将通配符视为账号字面值。
             String account = query.getUsername().trim().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-            wrapper.like(ActivityLogEntity::getUsername, account);
+            IlikeQuery.anyOf(wrapper, account, ActivityLogEntity::getUsername);
         }
         if (query.getStartDate() != null) wrapper.ge(ActivityLogEntity::getCreateTime, query.getStartDate().atStartOfDay());
         if (query.getEndDate() != null) wrapper.lt(ActivityLogEntity::getCreateTime, query.getEndDate().plusDays(1).atStartOfDay());

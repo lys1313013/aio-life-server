@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import top.aiolife.record.service.ThoughtCreationService;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -75,8 +76,8 @@ public class ThoughtController {
             lambdaQueryWrapper.eq(condition.getIsPinned() != null, ThoughtEntity::getIsPinned, condition.getIsPinned());
             lambdaQueryWrapper.eq(condition.getHiddenContent() != null, ThoughtEntity::getHiddenContent,
                     condition.getHiddenContent());
-            lambdaQueryWrapper.like(SysUtil.isNotEmpty(condition.getContent()), ThoughtEntity::getContent,
-                    condition.getContent());
+            IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(condition.getContent()),
+                    condition.getContent(), ThoughtEntity::getContent);
         }
 
         QueryOrder.descNullsLast(lambdaQueryWrapper, ThoughtEntity::getUpdateTime, ThoughtEntity::getId);

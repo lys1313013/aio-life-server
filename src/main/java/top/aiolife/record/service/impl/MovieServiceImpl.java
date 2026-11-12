@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.capture.service.DoubanSourceGuard;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.pojo.entity.BaseEntity;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.RandomUtil;
@@ -65,13 +66,11 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             wrapper.in(MovieEntity::getStatus, query.getStatuses());
         }
         if (StrUtil.isNotBlank(query.getTitle())) {
-            wrapper.and(condition -> condition
-                    .like(MovieEntity::getTitle, query.getTitle())
-                    .or()
-                    .like(MovieEntity::getDirector, query.getTitle()));
+            wrapper.and(condition -> IlikeQuery.anyOf(condition, query.getTitle(),
+                    MovieEntity::getTitle, MovieEntity::getDirector));
         }
         if (StrUtil.isNotBlank(query.getDirector())) {
-            wrapper.like(MovieEntity::getDirector, query.getDirector());
+            IlikeQuery.anyOf(wrapper, query.getDirector(), MovieEntity::getDirector);
         }
         IMovieMapper.applyPageOrder(wrapper, Boolean.TRUE.equals(query.getInProgressFirst()));
 

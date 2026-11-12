@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.capture.service.DoubanSourceGuard;
+import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.pojo.entity.BaseEntity;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
@@ -57,10 +58,8 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
             wrapper.in(ReadRecordEntity::getStatus, query.getStatuses());
         }
         if (StrUtil.isNotBlank(query.getTitle())) {
-            wrapper.and(condition -> condition
-                    .like(ReadRecordEntity::getTitle, query.getTitle())
-                    .or()
-                    .like(ReadRecordEntity::getAuthor, query.getTitle()));
+            wrapper.and(condition -> IlikeQuery.anyOf(condition, query.getTitle(),
+                    ReadRecordEntity::getTitle, ReadRecordEntity::getAuthor));
         }
         ReadRecordMapper.applyPageOrder(wrapper, Boolean.TRUE.equals(query.getInProgressFirst()));
 
