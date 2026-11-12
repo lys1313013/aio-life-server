@@ -61,6 +61,12 @@ class GoalProgressEvaluatorTest {
         when(client.execute(anyString(), any(), anyString())).thenReturn(json.readTree("{\"progress\":{}}"));
         assertThrows(IllegalArgumentException.class, () -> evaluator.evaluate(goal(), "fixture"));
     }
+    @Test void 配置比较忽略JSON键顺序与空白() {
+        assertTrue(evaluator.sameJson("{\"a\":1,\"b\":2}", "{\"b\":2, \"a\":1}"));
+        assertTrue(evaluator.sameJson(null, "  "));
+        assertFalse(evaluator.sameJson("{\"a\":1}", "{\"a\":2}"));
+        assertFalse(evaluator.sameJson("{\"a\":1}", "非法"));
+    }
     @Test void 严格超过在相等时最多99百分比且巨大比值不会溢出() throws Exception {
         var goal = goal(); goal.setTargetOperator("gt");
         when(client.execute(anyString(), any(), anyString())).thenReturn(json.readTree("{\"progress\":{\"value\":100}}"));

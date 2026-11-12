@@ -69,8 +69,8 @@ public class GoalServiceImpl extends ServiceImpl<IGoalMapper, GoalEntity> implem
             entity.setCurrentValue(null);
             boolean changed = !"graphql".equals(existing.getProgressMode())
                     || !Objects.equals(entity.getProgressQuery(), existing.getProgressQuery())
-                    || !Objects.equals(entity.getProgressVariables(), existing.getProgressVariables())
-                    || !Objects.equals(entity.getProgressVariableBindings(), existing.getProgressVariableBindings())
+                    || !progress.sameJson(entity.getProgressVariables(), existing.getProgressVariables())
+                    || !progress.sameJson(entity.getProgressVariableBindings(), existing.getProgressVariableBindings())
                     || !Objects.equals(entity.getProgressValuePath(), existing.getProgressValuePath())
                     || !Objects.equals(entity.getStartDate(), existing.getStartDate())
                     || !Objects.equals(entity.getEndDate(), existing.getEndDate());

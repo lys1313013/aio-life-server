@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -36,6 +37,16 @@ public class GoalProgressEvaluator {
         if (goal.getProgressValuePath() == null || !goal.getProgressValuePath().matches("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)*") || goal.getProgressValuePath().length() > 256)
             throw new IllegalArgumentException("请填写有效的结果路径，如 progress.exerciseCount.max");
         variables(goal);
+    }
+
+    /** 按 JSON 语义比较配置文本，忽略键顺序与空白；空白与 NULL 视为同一空对象。 */
+    public boolean sameJson(String left, String right) {
+        if (Objects.equals(left, right)) return true;
+        try {
+            return object(left).equals(object(right));
+        } catch (IllegalArgumentException error) {
+            return false;
+        }
     }
 
     public ObjectNode variables(GoalEntity goal) {
