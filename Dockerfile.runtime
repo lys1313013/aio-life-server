@@ -1,4 +1,4 @@
-# CI 使用测试任务生成的 JAR；两个目标架构共用同一份 Java 字节码。
+# CI 使用测试任务生成的 JAR；镜像只构建 linux/amd64。
 # 与 Dockerfile 同步固定 Agent 版本和多架构镜像摘要。
 FROM apache/skywalking-java-agent:9.8.0-alpine@sha256:805086f04157b5e9046854fe385f73928e802a16be7606e67eb6d6e602941d2a AS skywalking-agent
 
