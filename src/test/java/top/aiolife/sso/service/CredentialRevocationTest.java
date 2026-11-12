@@ -10,6 +10,7 @@ import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.Cookie;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
@@ -265,6 +266,7 @@ class CredentialRevocationTest {
         }
     }
 
+    @Hidden
     @RestController
     private static class ProbeController {
         private final FilePreviewGuard files;
