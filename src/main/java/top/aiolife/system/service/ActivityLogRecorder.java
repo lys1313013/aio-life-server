@@ -1,7 +1,8 @@
 package top.aiolife.system.service;
 
-import cn.hutool.http.useragent.UserAgentUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+
+import cn.hutool.http.useragent.UserAgentUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Comparator;
 import java.util.List;
@@ -53,8 +54,7 @@ public class ActivityLogRecorder {
     private String resolveTitle(String pagePath, String fallback) {
         if (pagePath == null || !pagePath.startsWith("/")) return fallback;
         if (System.currentTimeMillis() >= menusExpireAt) {
-            menus = menuMapper.selectList(new LambdaQueryWrapper<SysMenuEntity>()
-                    .eq(SysMenuEntity::getWebIsEnabled, 1)).stream()
+            menus = menuMapper.selectEnabledForAccessControl().stream()
                     .filter(menu -> menu.getPath() != null && menu.getComponent() != null
                             && !"BasicLayout".equals(menu.getComponent()))
                     .sorted(Comparator.comparingInt((SysMenuEntity menu) -> menu.getPath().length()).reversed()).toList();

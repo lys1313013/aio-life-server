@@ -55,11 +55,6 @@ public class TimeTrackerCategoryUpdateReq {
     private Integer isEnabled;
 
     /**
-     * 时间类型：1-必须时间，2-积极时间，3-消极时间
-     */
-    private Integer timeType;
-
-    /**
      * 模板ID，指向被覆盖的公共分类ID
      */
     private Long templateId;

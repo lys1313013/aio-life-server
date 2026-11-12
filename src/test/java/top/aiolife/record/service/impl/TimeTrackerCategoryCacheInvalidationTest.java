@@ -266,7 +266,6 @@ class TimeTrackerCategoryCacheInvalidationTest {
         row.setIsEnabled(1);
         row.setIsDeleted(0);
         row.setIsTrackTime(1);
-        row.setTimeType(1);
         return row;
     }
 

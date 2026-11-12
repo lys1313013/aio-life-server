@@ -2,6 +2,7 @@ package top.aiolife.record.pojo.req;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.Data;
@@ -10,6 +11,13 @@ import lombok.Data;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ExpenseCreateReq {
+
+    /** 新增时关联的已有设备，与 newDevice 二选一；均为空时不关联。 */
+    private Long deviceId;
+
+    /** 随支出一起创建并关联的设备。 */
+    @Valid
+    private DeviceCreateReq newDevice;
 
     private BigDecimal transactionAmt;
 

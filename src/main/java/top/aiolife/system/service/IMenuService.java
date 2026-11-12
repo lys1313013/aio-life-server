@@ -43,7 +43,7 @@ public interface IMenuService {
     /**
      * 获取当前用户可访问的"叶子菜单"扁平列表。
      *
-     * <p>叶子判定：component 非空、不是 BasicLayout/IFrameView、meta.hideInMenu != true。
+     * <p>叶子判定：component 非空、不是 BasicLayout/IFrameView、meta.hideInMenu != true，且自身和父级的 visibleClients 包含当前端。
      * 返回的 Map 字段：menuId, title, icon, color, path, target。</p>
      *
      * @param roles 当前用户角色列表
@@ -87,14 +87,12 @@ public interface IMenuService {
      * 更新菜单启用状态。
      *
      * @param id 菜单ID
-     * @param webIsEnabled 状态（1启用，0禁用）
+     * @param visibleClients 展示端位掩码（1=Web，2=移动端）
      * @param userId 操作人ID
      * @return 更新后的菜单节点
      * @throws Exception 参数或持久化异常
      */
-    MenuAdminVO updateStatus(long id, int webIsEnabled, long userId) throws Exception;
-
-    MenuAdminVO updateMobileStatus(long id, int webIsEnabled, long userId) throws Exception;
+    MenuAdminVO updateVisibleClients(long id, int visibleClients, long userId);
 
     MenuAdminVO updateSort(long id, int sort, long userId) throws Exception;
 

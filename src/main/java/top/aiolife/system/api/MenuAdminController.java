@@ -13,7 +13,7 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.sso.service.IUserService;
 import top.aiolife.system.pojo.req.MenuSaveReq;
 import top.aiolife.system.pojo.req.MenuSortUpdateReq;
-import top.aiolife.system.pojo.req.MenuStatusUpdateReq;
+import top.aiolife.system.pojo.req.MenuVisibilityUpdateReq;
 import top.aiolife.system.pojo.vo.MenuAdminVO;
 import top.aiolife.system.service.IMenuService;
 
@@ -86,25 +86,12 @@ public class MenuAdminController {
         return ApiResponse.success(menuService.update(id, req, userId));
     }
 
-    /**
-     * 更新菜单启用状态。
-     *
-     * @param id 菜单ID
-     * @param body 请求体，包含 webIsEnabled（0禁用，1启用）
-     * @return 统一返回结构，data 为更新后的菜单节点
-     */
-    @Operation(summary = "管理员设置 Web 菜单启用状态")
-    @PutMapping("/{id}/status")
-    public ApiResponse<MenuAdminVO> updateStatus(@PathVariable long id, @Valid @RequestBody MenuStatusUpdateReq body) throws Exception {
-        long userId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(menuService.updateStatus(id, body.getIsEnabled(), userId));
-    }
-
-    /** 更新移动端启用状态，与 Web 端独立。 */
-    @Operation(summary = "管理员设置移动端菜单启用状态")
-    @PutMapping("/{id}/mobile-status")
-    public ApiResponse<MenuAdminVO> updateMobileStatus(@PathVariable long id, @Valid @RequestBody MenuStatusUpdateReq body) throws Exception {
-        return ApiResponse.success(menuService.updateMobileStatus(id, body.getIsEnabled(), StpUtil.getLoginIdAsLong()));
+    /** 更新菜单展示端位掩码。 */
+    @Operation(summary = "管理员设置菜单展示端")
+    @PutMapping("/{id}/visible-clients")
+    public ApiResponse<MenuAdminVO> updateVisibleClients(@PathVariable long id,
+            @Valid @RequestBody MenuVisibilityUpdateReq body) {
+        return ApiResponse.success(menuService.updateVisibleClients(id, body.getVisibleClients(), StpUtil.getLoginIdAsLong()));
     }
 
     /** 更新菜单排序。 */

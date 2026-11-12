@@ -18,6 +18,11 @@
 - [V20261110_02_011__wardrobe_categories.sql](migrations/V20261110_02_011__wardrobe_categories.sql)：衣柜分类。
 - [V20261112_13__align_check_constraint_expressions.sql](migrations/V20261112_13__align_check_constraint_expressions.sql)：把已有库的 7 个 CHECK 约束表达式对齐到基线写法，语义不变。
 
+- [V20261112_14__drop_time_category_time_type.sql](migrations/V20261112_14__drop_time_category_time_type.sql)：删除时迹分类时间类型，保留分类、覆盖、层级与时迹记录。
+
+- [V20261112_15__relocate_category_menus.sql](migrations/V20261112_15__relocate_category_menus.sql)：个人分类归入个人中心分类管理，管理员时迹分类移至系统管理，保留菜单 ID 和页面路径。
+- [V20261112_16__menu_visible_clients.sql](migrations/V20261112_16__menu_visible_clients.sql)：将 Web、移动端启用列合并为展示端位掩码并删除旧列，保留各端设置，时迹取消移动端菜单重复入口。
+
 新库先用独立 Flyway 入口迁移，再启动应用；应用启动不自动建表或导入种子。后续结构、菜单和数据变更新增更高版本 `V`，不改写已执行文件。
 
 ## 公共来源与后续维护

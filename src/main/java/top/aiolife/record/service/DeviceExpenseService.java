@@ -22,6 +22,7 @@ import top.aiolife.record.pojo.entity.DeviceExpenseEntity;
 import top.aiolife.record.pojo.entity.DeviceEntity;
 import top.aiolife.record.pojo.entity.ExpenseEntity;
 import top.aiolife.record.pojo.req.DeviceCreateReq;
+import top.aiolife.record.pojo.req.ExpenseCreateReq;
 import top.aiolife.record.pojo.vo.DeviceVO;
 import top.aiolife.record.pojo.vo.ExpenseDeviceContextVO;
 import top.aiolife.record.pojo.vo.ExpenseDeviceVO;
@@ -34,6 +35,43 @@ public class DeviceExpenseService {
     private final IExpenseMapper expenses;
     private final IDeviceMapper devices;
     private final SecondaryLockGuard locks;
+    private final IExpenseService expenseService;
+
+    /** 支出、设备和关联统一提交，任一步失败均回滚。 */
+    @Transactional(rollbackFor = Exception.class)
+    public boolean createExpenses(long userId, List<ExpenseCreateReq> requests) {
+        if (requests.isEmpty()) return true;
+        for (var request : requests) {
+            if (request.getDeviceId() != null && request.getNewDevice() != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "已有设备与新建设备只能选择一种");
+            }
+            if (request.getDeviceId() != null || request.getNewDevice() != null) {
+                locks.checkMenus(userId, "/my-hub/device");
+            }
+        }
+        var rows = requests.stream().map(request -> {
+            var row = RecordApiConvertor.INSTANCE.fromExpenseCreateReq(request);
+            row.setUserId(userId);
+            row.setIsDeleted(0);
+            row.setCreateUser(userId);
+            row.setUpdateUser(userId);
+            row.setCreateTime(LocalDateTime.now());
+            row.setUpdateTime(row.getCreateTime());
+            if (row.getTransactionAmt() == null) row.setTransactionAmt(row.getAmt());
+            if (row.getAmt() == null) row.setAmt(row.getTransactionAmt());
+            return row;
+        }).toList();
+        if (!expenseService.saveBatch(rows)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "支出未保存，请重试");
+        }
+        for (int index = 0; index < requests.size(); index++) {
+            var request = requests.get(index);
+            long expenseId = rows.get(index).getId();
+            if (request.getDeviceId() != null) bind(userId, expenseId, request.getDeviceId());
+            else if (request.getNewDevice() != null) createAndBind(userId, expenseId, request.getNewDevice());
+        }
+        return true;
+    }
 
     public ExpenseDeviceContextVO context(long userId, long expenseId) {
         var expense = expenses.selectOne(new LambdaQueryWrapper<ExpenseEntity>()

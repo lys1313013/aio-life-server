@@ -11,6 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import top.aiolife.sso.service.SecondaryLockMenuResolver;
 import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
+import top.aiolife.sso.mapper.UserMapper;
+import top.aiolife.sso.pojo.entity.UserEntity;
+import top.aiolife.system.mapper.UserMenuHiddenMapper;
 import top.aiolife.sso.pojo.entity.UserSecondaryLockMenuEntity;
 import top.aiolife.system.mapper.ISysMenuMapper;
 import top.aiolife.system.pojo.req.MenuSaveReq;
@@ -36,7 +39,7 @@ class MenuClientStatusTest {
                 CREATE TABLE sys_menu (
                     id BIGINT PRIMARY KEY, parent_id BIGINT, name VARCHAR(64), path VARCHAR(255),
                     component VARCHAR(255), redirect VARCHAR(255), icon_color VARCHAR(7), meta VARCHAR(2000),
-                    roles VARCHAR(255), sort_order INT, web_is_enabled INT, mobile_is_enabled INT, is_deleted INT,
+                    roles VARCHAR(255), sort_order INT, visible_clients INT NOT NULL DEFAULT 3, is_deleted INT,
                     create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP)
                 """);
         var config = new MybatisConfiguration();
@@ -53,12 +56,12 @@ class MenuClientStatusTest {
         service = new MenuServiceImpl(mapper, new ObjectMapper(), reader);
         locks = new SecondaryLockMenuResolver(lockMapper, reader);
         jdbc.update("""
-                INSERT INTO sys_menu(id,parent_id,name,path,component,sort_order,web_is_enabled,mobile_is_enabled,is_deleted) VALUES
-                (1,0,'Group','/group','BasicLayout',0,0,1,0),
-                (2,1,'Child','/group/child','sample/index',0,1,1,0),
-                (3,0,'Web','/web','sample/index',0,1,0,0),
-                (4,0,'Neither','/neither','sample/index',0,0,0,0),
-                (5,0,'Removed','/removed','sample/index',0,1,1,1)
+                INSERT INTO sys_menu(id,parent_id,name,path,component,sort_order,visible_clients,is_deleted) VALUES
+                (1,0,'Group','/group','BasicLayout',0,2,0),
+                (2,1,'Child','/group/child','sample/index',0,3,0),
+                (3,0,'Web','/web','sample/index',0,1,0),
+                (4,0,'Neither','/neither','sample/index',0,0,0),
+                (5,0,'Removed','/removed','sample/index',0,3,1)
                 """);
     }
 
@@ -76,32 +79,51 @@ class MenuClientStatusTest {
         assertEquals(4, service.getAdminMenuTree().stream().mapToInt(m -> 1 + (m.getChildren() == null ? 0 : m.getChildren().size())).sum());
     }
 
-    @Test void 单独更新不覆盖另一端或其他菜单属性且锁始终有效() throws Exception {
-        assertEquals(java.util.Set.of("/group"), locks.findMatchedPaths(7L, "/group/child"));
-        var web = service.updateStatus(1L, 1, 7L);
-        assertEquals(1, web.getMobileIsEnabled());
-        var mobile = service.updateMobileStatus(1L, 0, 7L);
-        assertEquals(1, mobile.getWebIsEnabled());
-        assertEquals(0, mobile.getMobileIsEnabled());
-        assertEquals("Group", mobile.getName());
-        assertEquals(7L, mapper.selectById(1L).getUpdateUser());
-        service.updateStatus(1L, 0, 7L);
-        assertEquals(java.util.Set.of("/group"), locks.findMatchedPaths(7L, "/group/child"));
-        assertThrows(IllegalArgumentException.class, () -> service.updateMobileStatus(1L, 2, 7L));
-        assertThrows(IllegalArgumentException.class, () -> service.updateMobileStatus(999L, 1, 7L));
+    @Test void 单字段更新保留菜单其他属性且任何展示组合都不能绕过二级锁() {
+        for (int mask : List.of(0, 1, 2, 3)) {
+            var saved = service.updateVisibleClients(1L, mask, 7L);
+            assertEquals(mask, saved.getVisibleClients());
+            assertEquals("Group", saved.getName());
+            assertEquals(7L, mapper.selectById(1L).getUpdateUser());
+            assertEquals(java.util.Set.of("/group"), locks.findMatchedPaths(7L, "/group/child"));
+            for (MenuClient client : MenuClient.values()) {
+                boolean visible = client.isVisible(mask);
+                assertEquals(visible, service.getAccessibleMenuIds(List.of("user"), client).contains(2L));
+                assertEquals(visible, service.listAccessibleLeaves(List.of("user"), client).stream()
+                        .anyMatch(menu -> menu.get("menuId").equals(2L)));
+            }
+        }
+        assertThrows(IllegalArgumentException.class, () -> service.updateVisibleClients(1L, 4, 7L));
+        assertThrows(IllegalArgumentException.class, () -> service.updateVisibleClients(999L, 1, 7L));
     }
 
-    @Test void 新增复制Web状态但未传移动开关时编辑保留移动状态() throws Exception {
-        var req = new MenuSaveReq(); req.setName("New"); req.setPath("/new"); req.setWebIsEnabled(0);
+    @Test void 新增默认双端展示且缺省更新保留原位掩码() throws Exception {
+        var req = new MenuSaveReq(); req.setName("New"); req.setPath("/new");
         var created = service.create(req, 7L);
-        assertEquals(0, created.getMobileIsEnabled());
-        service.updateMobileStatus(created.getId(), 1, 7L);
-        assertEquals(1, service.update(created.getId(), req, 7L).getMobileIsEnabled());
-        req.setMobileIsEnabled(0);
-        assertEquals(0, service.update(created.getId(), req, 7L).getMobileIsEnabled());
-        req.setMobileIsEnabled(9);
-        assertThrows(IllegalArgumentException.class, () -> service.update(created.getId(), req, 7L));
+        assertEquals(3, created.getVisibleClients());
+        service.updateVisibleClients(created.getId(), 0, 7L);
+        assertEquals(0, service.update(created.getId(), req, 7L).getVisibleClients());
+        for (int mask : List.of(0, 1, 2, 3)) {
+            req.setVisibleClients(mask);
+            assertEquals(mask, service.update(created.getId(), req, 7L).getVisibleClients());
+        }
+        for (int invalid : List.of(-1, 4, 5)) {
+            req.setVisibleClients(invalid);
+            assertThrows(IllegalArgumentException.class, () -> service.update(created.getId(), req, 7L));
+        }
         assertEquals(MenuClient.MOBILE, MenuClient.parse("mobile"));
         assertThrows(IllegalArgumentException.class, () -> MenuClient.parse("unknown"));
+    }
+
+    @Test void 隐藏父级后个人目录不保留空分组() {
+        var users = mock(UserMapper.class);
+        var user = new UserEntity(); user.setId(7L); user.setRole("user");
+        when(users.selectById(7L)).thenReturn(user);
+        var hidden = mock(UserMenuHiddenMapper.class);
+        when(hidden.selectHiddenMenuIds(7L)).thenReturn(List.of());
+        var preferences = new UserMenuPreferenceService(service, users, hidden);
+        service.updateVisibleClients(1L, 1, 7L);
+        assertTrue(preferences.get(7L, MenuClient.MOBILE).menus().isEmpty());
+        assertFalse(preferences.get(7L, MenuClient.WEB).menus().isEmpty());
     }
 }

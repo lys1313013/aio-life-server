@@ -386,7 +386,7 @@ class TimeTrackerCategoryCacheRedisTest {
         var row = new TimeTrackerCategoryEntity();
         row.setId(7L); row.setUserId(owner); row.setParentId(0L);
         row.setName(name); row.setIsEnabled(1); row.setIsDeleted(0);
-        row.setSortOrder(10); row.setIsTrackTime(1); row.setTimeType(1);
+        row.setSortOrder(10); row.setIsTrackTime(1);
         return row;
     }
 }

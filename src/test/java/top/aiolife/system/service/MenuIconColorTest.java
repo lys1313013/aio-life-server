@@ -30,7 +30,7 @@ class MenuIconColorTest {
                 CREATE TABLE sys_menu (
                     id BIGINT PRIMARY KEY, parent_id BIGINT, name VARCHAR(64), path VARCHAR(255),
                     component VARCHAR(255), redirect VARCHAR(255), icon_color VARCHAR(7), meta VARCHAR(2000),
-                    roles VARCHAR(255), sort_order INT, mobile_is_enabled INT DEFAULT 1, web_is_enabled INT, is_deleted INT,
+                    roles VARCHAR(255), sort_order INT, visible_clients INT NOT NULL DEFAULT 3, is_deleted INT,
                     create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP
                 )
                 """);

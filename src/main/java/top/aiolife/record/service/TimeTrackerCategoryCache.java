@@ -17,7 +17,7 @@ import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 @RequiredArgsConstructor
 @CacheConfig(cacheNames = TimeTrackerCategoryCache.CACHE_NAME, cacheManager = "cacheManager")
 public class TimeTrackerCategoryCache {
-    public static final String CACHE_NAME = "timeTrackerCategory:v2";
+    public static final String CACHE_NAME = "timeTrackerCategory:v3";
     private final ApplicationEventPublisher events;
 
     // 独立 Bean 供业务服务通过代理调用；写事务内查询不读取或发布共享缓存。

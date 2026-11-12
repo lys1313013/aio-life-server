@@ -18,6 +18,7 @@ import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.system.pojo.entity.SysMenuEntity;
+import top.aiolife.system.service.MenuClient;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -112,7 +113,7 @@ public class ExportAccessGuard {
         Set<Long> visited = new HashSet<>();
         SysMenuEntity cursor = leaf;
         while (cursor != null && visited.add(cursor.getId())) {
-            if (!Integer.valueOf(1).equals(mobile ? cursor.getMobileIsEnabled() : cursor.getWebIsEnabled())
+            if (!(mobile ? MenuClient.MOBILE : MenuClient.WEB).isVisible(cursor.getVisibleClients())
                     || !allowedRole(cursor.getRoles(), roles)) return false;
             if (cursor.getParentId() == null || cursor.getParentId() == 0L) return true;
             cursor = menus.get(cursor.getParentId());

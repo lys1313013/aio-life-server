@@ -53,7 +53,6 @@ class TimeTrackerCategoryControllerIntegrationTest extends BaseIntegrationTest {
         entity.setIsDeleted(0);
         entity.setSortOrder(0);
         entity.setIsTrackTime(1);
-        entity.setTimeType(1);
         entity.fillCreateCommonField(TEST_USER_ID);
         return entity;
     }

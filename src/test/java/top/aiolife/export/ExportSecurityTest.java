@@ -40,10 +40,9 @@ class ExportSecurityTest {
         var dataset = dataset();
         assertDoesNotThrow(() -> guard.check(7L, List.of(dataset), true));
         var parent = security.menus().get(1);
-        parent.setWebIsEnabled(0);
-        parent.setMobileIsEnabled(0);
+        parent.setVisibleClients(0);
         assertThrows(ExportException.class, () -> guard.check(7L, List.of(dataset), true));
-        parent.setWebIsEnabled(1);
+        parent.setVisibleClients(1);
         parent.setRoles("admin");
         assertThrows(ExportException.class, () -> guard.check(7L, List.of(dataset), true));
     }
@@ -124,8 +123,7 @@ class ExportSecurityTest {
         menu.setId(id);
         menu.setParentId(parent);
         menu.setPath(path);
-        menu.setWebIsEnabled(1);
-        menu.setMobileIsEnabled(1);
+        menu.setVisibleClients(3);
         return menu;
     }
 

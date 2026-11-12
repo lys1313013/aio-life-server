@@ -25,7 +25,9 @@ import top.aiolife.record.pojo.entity.DeviceEntity;
 import top.aiolife.record.pojo.entity.DeviceExpenseEntity;
 import top.aiolife.record.pojo.entity.ExpenseEntity;
 import top.aiolife.record.pojo.req.DeviceCreateReq;
+import top.aiolife.record.pojo.req.ExpenseCreateReq;
 import top.aiolife.record.service.DeviceExpenseService;
+import top.aiolife.record.service.impl.ExpenseServiceImpl;
 import top.aiolife.sso.service.SecondaryLockGuard;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,7 +38,7 @@ import static org.mockito.ArgumentMatchers.any;
 @ActiveProfiles("test")
 @SpringBootTest(classes = PhysicalTableEntitySelectIntegrationTest.DatabaseMapperTestApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@Import(DeviceExpenseService.class)
+@Import({DeviceExpenseService.class, ExpenseServiceImpl.class})
 @Transactional
 class DeviceExpenseIntegrationTest {
     @Autowired private DeviceExpenseService service;
@@ -45,6 +47,64 @@ class DeviceExpenseIntegrationTest {
     @MockitoSpyBean private DeviceExpenseMapper links;
     @Autowired private PlatformTransactionManager transactions;
     @MockitoBean private SecondaryLockGuard locks;
+
+    @Test void 新增支出同时关联已有设备或新建设备并保留普通录入() {
+        var device = device(1L);
+        var existing = draftExpense(); existing.setDeviceId(device.getId());
+        var fresh = draftExpense();
+        var newDevice = new DeviceCreateReq(); newDevice.setName("随支出新建的设备");
+        newDevice.setPurchasePrice(new BigDecimal("42.50"));
+        fresh.setNewDevice(newDevice);
+        assertTrue(service.createExpenses(1L, List.of(existing, fresh, draftExpense())));
+        var rows = expenses.selectList(new LambdaQueryWrapper<ExpenseEntity>()
+                .eq(ExpenseEntity::getUserId, 1L).eq(ExpenseEntity::getRemark, "新增关联测试").orderByAsc(ExpenseEntity::getId));
+        assertEquals(3, rows.size());
+        assertEquals(device.getId(), service.context(1L, rows.get(0).getId()).getDevice().getId());
+        assertEquals("随支出新建的设备", service.context(1L, rows.get(1).getId()).getDevice().getName());
+        assertNull(service.context(1L, rows.get(2).getId()).getDevice());
+        assertEquals(new BigDecimal("42.50"), rows.getFirst().getTransactionAmt());
+        assertEquals(new BigDecimal("100.00"), devices.selectById(device.getId()).getPurchasePrice());
+    }
+
+    @Test void 新增关联互斥且设备锁定时不写入支出() {
+        long before = expenses.selectCount(null);
+        var request = draftExpense(); request.setDeviceId(99L); request.setNewDevice(new DeviceCreateReq());
+        assertThrows(ResponseStatusException.class, () -> service.createExpenses(1L, List.of(request)));
+        request.setNewDevice(null);
+        doThrow(new SecondaryLockRequiredException("/my-hub/device")).when(locks).checkMenus(1L, "/my-hub/device");
+        assertThrows(SecondaryLockRequiredException.class, () -> service.createExpenses(1L, List.of(request)));
+        assertEquals(before, expenses.selectCount(null));
+        assertTrue(service.createExpenses(1L, List.of(draftExpense())));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void 新增关联失败回滚整笔支出和新设备且不可关联其他用户设备() {
+        long expenseCount = expenses.selectCount(null), deviceCount = devices.selectCount(null);
+        var request = draftExpense(); request.setDeviceId(Long.MAX_VALUE);
+        assertThrows(ResponseStatusException.class, () -> service.createExpenses(1L, List.of(request)));
+        assertEquals(expenseCount, expenses.selectCount(null));
+        var transaction = new TransactionTemplate(transactions);
+        var foreign = transaction.execute(status -> device(2L));
+        try {
+            request.setDeviceId(foreign.getId());
+            assertThrows(ResponseStatusException.class, () -> service.createExpenses(1L, List.of(request)));
+            assertEquals(expenseCount, expenses.selectCount(null));
+            request.setDeviceId(null);
+            var draft = new DeviceCreateReq(); draft.setName("不应保存的设备"); request.setNewDevice(draft);
+            doThrow(new IllegalStateException("模拟关联写入失败")).when(links).bind(any(DeviceExpenseEntity.class));
+            assertThrows(IllegalStateException.class, () -> service.createExpenses(1L, List.of(request)));
+            assertEquals(expenseCount, expenses.selectCount(null));
+            assertEquals(deviceCount + 1, devices.selectCount(null));
+        } finally { transaction.executeWithoutResult(status -> devices.deleteById(foreign.getId())); }
+    }
+
+    private ExpenseCreateReq draftExpense() {
+        var request = new ExpenseCreateReq();
+        request.setAmt(new BigDecimal("42.50")); request.setExpTypeId(81L); request.setPayTypeId(82L);
+        request.setExpTime(LocalDateTime.of(2026, 11, 12, 12, 0)); request.setRemark("新增关联测试");
+        return request;
+    }
 
     @Test void 多笔支出绑定同一设备并支持更换及反复解绑重绑() {
         var first = expense(1L); var second = expense(1L);

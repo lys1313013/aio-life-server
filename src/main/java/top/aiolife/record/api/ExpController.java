@@ -99,19 +99,7 @@ public class ExpController {
     @Operation(summary = "新增支出记录")
     @PostMapping
     public ApiResponse<Boolean> insert(@Valid @RequestBody ExpenseCreateReq entityReq) {
-        ExpenseEntity entity = RecordApiConvertor.INSTANCE.fromExpenseCreateReq(entityReq);
-        Long userId = StpUtil.getLoginIdAsLong();
-        entity.setUserId(userId);
-        // 新增时，交易金额为空时，默认设置为记账金额
-        if (entity.getTransactionAmt() == null) {
-            entity.setTransactionAmt(entity.getAmt());
-        }
-        // amt 为空的时候，默认transactionAmt
-        if (entity.getAmt() == null) {
-            entity.setAmt(entity.getTransactionAmt());
-        }
-        getBaseMapper().insert(entity);
-        return ApiResponse.success(true);
+        return ApiResponse.success(deviceExpenseService.createExpenses(StpUtil.getLoginIdAsLong(), List.of(entityReq)));
     }
 
     @Operation(summary = "更新支出记录")
@@ -140,7 +128,7 @@ public class ExpController {
     // 批量新增
     @Operation(summary = "批量新增支出记录")
     @PostMapping("/saveBatch")
-    public ApiResponse<Boolean> saveBatch(@Valid @RequestBody List<ExpenseCreateReq> requests) {
+    public ApiResponse<Boolean> saveBatch(@Valid @RequestBody List<@Valid ExpenseCreateReq> requests) {
         List<ExpenseEntity> list = requests.stream().map(RecordApiConvertor.INSTANCE::fromExpenseCreateReq).toList();
         long userId = StpUtil.getLoginIdAsLong();
 
@@ -167,14 +155,7 @@ public class ExpController {
             }
         }
 
-        for (ExpenseEntity entity : list) {
-            entity.setUserId(userId);
-            entity.setCreateUser(userId);
-            entity.setUpdateUser(userId);
-
-            log.info("entity:{}", entity);
-        }
-        expenseService.saveBatch(list);
+        deviceExpenseService.createExpenses(userId, requests);
         return ApiResponse.success();
     }
 

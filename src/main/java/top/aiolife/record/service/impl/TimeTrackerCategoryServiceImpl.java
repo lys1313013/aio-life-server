@@ -116,7 +116,6 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
                 merged.setDescription(overrideRecord.getDescription() != null ? overrideRecord.getDescription() : publicCategory.getDescription());
                 merged.setIsTrackTime(overrideRecord.getIsTrackTime() != null ? overrideRecord.getIsTrackTime() : publicCategory.getIsTrackTime());
                 merged.setSortOrder(overrideRecord.getSortOrder() != null ? overrideRecord.getSortOrder() : publicCategory.getSortOrder());
-                merged.setTimeType(overrideRecord.getTimeType() != null ? overrideRecord.getTimeType() : publicCategory.getTimeType());
                 merged.setIsDeleted(0);
                 merged.setIsEnabled(Objects.equals(publicCategory.getIsEnabled(), 0) ? 0
                         : valueOrTemplate(overrideRecord.getIsEnabled(), 1));
@@ -291,7 +290,6 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         override.setIsTrackTime(valueOrTemplate(updates.getIsTrackTime(), template.getIsTrackTime()));
         override.setSortOrder(valueOrTemplate(updates.getSortOrder(), template.getSortOrder()));
         override.setIsEnabled(valueOrTemplate(updates.getIsEnabled(), template.getIsEnabled()));
-        override.setTimeType(valueOrTemplate(updates.getTimeType(), template.getTimeType()));
         override.setCreateUser(userId);
         override.setUpdateUser(userId);
         override.setIsDeleted(0);
@@ -331,9 +329,6 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         }
         if (updates.getIsEnabled() != null) {
             wrapper.set(TimeTrackerCategoryEntity::getIsEnabled, updates.getIsEnabled());
-        }
-        if (updates.getTimeType() != null) {
-            wrapper.set(TimeTrackerCategoryEntity::getTimeType, updates.getTimeType());
         }
         wrapper.set(TimeTrackerCategoryEntity::getUpdateUser, userId);
         wrapper.set(TimeTrackerCategoryEntity::getUpdateTime, LocalDateTime.now());
@@ -441,9 +436,6 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         }
         if (category.getIsEnabled() == null) {
             category.setIsEnabled(1);
-        }
-        if (category.getTimeType() == null) {
-            category.setTimeType(1);
         }
     }
 

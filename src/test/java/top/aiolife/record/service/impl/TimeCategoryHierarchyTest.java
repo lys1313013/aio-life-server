@@ -41,7 +41,7 @@ class TimeCategoryHierarchyTest {
         var c = new TimeTrackerCategoryEntity();
         c.setId(id); c.setUserId(owner); c.setParentId(parent);
         c.setName("分类" + id); c.setIsDeleted(0); c.setIsEnabled(1);
-        c.setSortOrder(0); c.setTimeType(1); c.setIsTrackTime(0);
+        c.setSortOrder(0); c.setIsTrackTime(0);
         return c;
     }
 

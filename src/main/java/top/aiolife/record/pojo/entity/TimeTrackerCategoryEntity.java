@@ -67,8 +67,4 @@ public class TimeTrackerCategoryEntity extends BaseEntity {
      * 是否启用：1-启用，0-禁用
      */
     private Integer isEnabled;
-    /**
-     * 时间类型：1-必须时间，2-积极时间，3-消极时间
-     */
-    private Integer timeType;
 }

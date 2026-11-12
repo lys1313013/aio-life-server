@@ -155,33 +155,16 @@ public class MenuServiceImpl implements IMenuService {
     }
 
     @Override
-    public MenuAdminVO updateStatus(long id, int webIsEnabled, long userId) throws Exception {
-        if (webIsEnabled != 0 && webIsEnabled != 1) {
-            throw new IllegalArgumentException("webIsEnabled 只能为 0 或 1");
-        }
+    public MenuAdminVO updateVisibleClients(long id, int visibleClients, long userId) {
+        validateVisibleClients(visibleClients);
         SysMenuEntity exist = sysMenuMapper.selectById(id);
         if (exist == null || !Objects.equals(exist.getIsDeleted(), 0)) {
             throw new IllegalArgumentException("菜单不存在");
         }
-        // 只更新目标字段，避免两个端的并发切换相互覆盖。
         SysMenuEntity patch = new SysMenuEntity();
         patch.fillUpdateCommonField(userId);
         sysMenuMapper.update(null, new LambdaUpdateWrapper<SysMenuEntity>()
-                .eq(SysMenuEntity::getId, id).set(SysMenuEntity::getWebIsEnabled, webIsEnabled)
-                .set(SysMenuEntity::getUpdateUser, patch.getUpdateUser())
-                .set(SysMenuEntity::getUpdateTime, patch.getUpdateTime()));
-        return toAdminVo(sysMenuMapper.selectById(id));
-    }
-
-    @Override
-    public MenuAdminVO updateMobileStatus(long id, int webIsEnabled, long userId) throws Exception {
-        if (webIsEnabled != 0 && webIsEnabled != 1) throw new IllegalArgumentException("webIsEnabled 只能为 0 或 1");
-        SysMenuEntity exist = sysMenuMapper.selectById(id);
-        if (exist == null || !Objects.equals(exist.getIsDeleted(), 0)) throw new IllegalArgumentException("菜单不存在");
-        SysMenuEntity patch = new SysMenuEntity();
-        patch.fillUpdateCommonField(userId);
-        sysMenuMapper.update(null, new LambdaUpdateWrapper<SysMenuEntity>()
-                .eq(SysMenuEntity::getId, id).set(SysMenuEntity::getMobileIsEnabled, webIsEnabled)
+                .eq(SysMenuEntity::getId, id).set(SysMenuEntity::getVisibleClients, visibleClients)
                 .set(SysMenuEntity::getUpdateUser, patch.getUpdateUser())
                 .set(SysMenuEntity::getUpdateTime, patch.getUpdateTime()));
         return toAdminVo(sysMenuMapper.selectById(id));
@@ -247,16 +230,17 @@ public class MenuServiceImpl implements IMenuService {
         return sysMenuMapper.selectCount(wrapper) > 0;
     }
 
-    private void validateStatus(Integer webIsEnabled) {
-        if (webIsEnabled != null && webIsEnabled != 0 && webIsEnabled != 1) throw new IllegalArgumentException("启用状态只能为 0 或 1");
+    private void validateVisibleClients(Integer visibleClients) {
+        if (visibleClients != null && (visibleClients < 0 || (visibleClients & ~MenuClient.ALL) != 0)) {
+            throw new IllegalArgumentException("展示端只能包含 Web 和移动端");
+        }
     }
 
     private void validateReq(MenuSaveReq req, boolean isUpdate) {
         if (req == null) {
             throw new IllegalArgumentException("请求体不能为空");
         }
-        validateStatus(req.getWebIsEnabled());
-        validateStatus(req.getMobileIsEnabled());
+        validateVisibleClients(req.getVisibleClients());
         if (!isUpdate) {
             if (!StringUtils.hasText(req.getPath())) {
                 throw new IllegalArgumentException("path 不能为空");
@@ -307,14 +291,10 @@ public class MenuServiceImpl implements IMenuService {
         entity.setRedirect(StringUtils.hasText(req.getRedirect()) ? req.getRedirect().trim() : null);
         entity.setRoles(StringUtils.hasText(req.getRoles()) ? req.getRoles().trim() : null);
         entity.setSortOrder(req.getSortOrder() == null ? 0 : req.getSortOrder());
-        if (req.getWebIsEnabled() != null || entity.getWebIsEnabled() == null) {
-            entity.setWebIsEnabled(req.getWebIsEnabled() == null ? 1 : req.getWebIsEnabled());
-        }
-        // 局部更新时缺省字段不覆盖；新增时未指定则从 Web 状态初始化。
-        if (req.getMobileIsEnabled() != null || entity.getMobileIsEnabled() == null) {
-            entity.setMobileIsEnabled(req.getMobileIsEnabled() == null ? entity.getWebIsEnabled() : req.getMobileIsEnabled());
-        }
         entity.setMeta(req.getMeta() == null ? null : objectMapper.writeValueAsString(req.getMeta()));
+        if (req.getVisibleClients() != null || entity.getVisibleClients() == null) {
+            entity.setVisibleClients(req.getVisibleClients() == null ? MenuClient.ALL : req.getVisibleClients());
+        }
     }
 
     private List<MenuRouteVO> buildTree(List<SysMenuEntity> list) {
@@ -401,8 +381,7 @@ public class MenuServiceImpl implements IMenuService {
         vo.setMeta(readMeta(entity.getMeta()));
         vo.setRoles(entity.getRoles());
         vo.setSortOrder(entity.getSortOrder());
-        vo.setWebIsEnabled(entity.getWebIsEnabled());
-        vo.setMobileIsEnabled(entity.getMobileIsEnabled());
+        vo.setVisibleClients(entity.getVisibleClients());
         return vo;
     }
 

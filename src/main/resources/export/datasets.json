@@ -759,11 +759,6 @@
         "key": "icon",
         "label": "图标名称(Iconify格式)",
         "type": "TEXT"
-      },
-      {
-        "key": "time_type",
-        "label": "时间类型: 1-必须, 2-积极, 3-休闲",
-        "type": "NUMBER"
       }
     ]
   },

@@ -60,7 +60,6 @@ class TimeTrackerCategoryServiceImplTest {
         assertEquals(1009, newCategory.getSortOrder());
         assertEquals(0, newCategory.getIsTrackTime());
         assertEquals(1, newCategory.getIsEnabled());
-        assertEquals(1, newCategory.getTimeType());
     }
 
     @Test
@@ -78,7 +77,6 @@ class TimeTrackerCategoryServiceImplTest {
         assertEquals(150, newCategory.getSortOrder());
         assertEquals(0, newCategory.getIsTrackTime());
         assertEquals(1, newCategory.getIsEnabled());
-        assertEquals(1, newCategory.getTimeType());
     }
 
     @Test
@@ -104,7 +102,6 @@ class TimeTrackerCategoryServiceImplTest {
         assertNull(saved.getColor());
         assertEquals(0, saved.getIsTrackTime());
         assertEquals(template.getSortOrder(), saved.getSortOrder());
-        assertEquals(template.getTimeType(), saved.getTimeType());
         assertEquals(template.getIsEnabled(), saved.getIsEnabled());
         assertEquals(0, saved.getIsDeleted());
     }
@@ -125,7 +122,6 @@ class TimeTrackerCategoryServiceImplTest {
         ArgumentCaptor<TimeTrackerCategoryEntity> captor = ArgumentCaptor.forClass(TimeTrackerCategoryEntity.class);
         verify(service).save(captor.capture());
         assertEquals(0, captor.getValue().getSortOrder());
-        assertEquals(template.getTimeType(), captor.getValue().getTimeType());
     }
 
     @Test
@@ -165,7 +161,6 @@ class TimeTrackerCategoryServiceImplTest {
         category.setIsTrackTime(1);
         category.setSortOrder(110);
         category.setIsEnabled(1);
-        category.setTimeType(3);
         category.setIsDeleted(0);
         return category;
     }

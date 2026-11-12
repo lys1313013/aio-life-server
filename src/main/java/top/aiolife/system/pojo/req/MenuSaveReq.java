@@ -31,10 +31,7 @@ public class MenuSaveReq {
 
     private Integer sortOrder;
 
-    /** Web 端启用状态。 */
-    private Integer webIsEnabled;
-
-    /** 移动端启用状态。 */
-    private Integer mobileIsEnabled;
+    /** 菜单展示端位掩码：1=Web，2=移动端，3=两端，0=均不展示。 */
+    private Integer visibleClients;
 }
 
