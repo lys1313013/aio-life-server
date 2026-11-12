@@ -23,7 +23,6 @@ import top.aiolife.record.pojo.req.ExerciseRecordReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.vo.RecommendNextVO;
 import top.aiolife.record.pojo.vo.TimeRecordListVO;
-import top.aiolife.record.prediction.JevCategoryRecommendationService;
 import top.aiolife.record.prediction.RecommendationDataCache;
 import top.aiolife.record.service.*;
 import top.aiolife.sso.service.SecondaryLockGuard;
@@ -59,7 +58,6 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     private final IReadRecordService readRecordService;
     private final IMovieService movieService;
     private final IWorkCalendarService workCalendarService;
-    private final JevCategoryRecommendationService jevRecommendationService;
     private final RecommendationDataCache recommendationDataCache;
     private final ITimeTrackerCategoryService timeTrackerCategoryService;
     private final SecondaryLockGuard secondaryLockGuard;
@@ -388,11 +386,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         LocalDate targetDate = recommendationDataCache.get("comparableDate",
                 () -> workCalendarService.findPreviousComparableDate(localDate), localDate);
 
-        // 优先使用 Jev AI，结合用户可见分类、目标日该时刻之前及参考日的有效历史记录预测。
-        Long predicted = jevRecommendationService.recommend(userId, localDate, time, isWorkday, targetDate);
-        if (predicted != null) return logRecommendation(userId, date, time, "JEV", predicted);
-
-        // AI 未给出分类时，尝试参考日同一时刻的记录；没有唯一有效记录则返回 null。
+        // 尝试参考日同一时刻的记录；没有唯一有效记录则返回 null。
         return recommendFromReferenceDay(userId, localDate, time, targetDate, LocalDateTime.now());
     }
 

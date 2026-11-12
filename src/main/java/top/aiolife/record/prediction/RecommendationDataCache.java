@@ -5,7 +5,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import top.aiolife.system.service.IntegrationSystemConfigService;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -15,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-/** 推荐链路数据库查询缓存。没有 Jev 结果或完整接口响应缓存。 */
+/** 推荐链路数据库查询缓存。不缓存推荐结果或完整接口响应。 */
 @Component
 public class RecommendationDataCache {
     private final LongSupplier ttl;
@@ -25,8 +24,8 @@ public class RecommendationDataCache {
     private record Key(long generation, String query, List<?> parameters) {}
 
     @Autowired
-    public RecommendationDataCache(IntegrationSystemConfigService configuration) {
-        this(() -> configuration.typesafe().dataCacheTtlMs());
+    public RecommendationDataCache(RecommendationCacheProperties properties) {
+        this(() -> properties.getTtlMs());
     }
 
     public RecommendationDataCache(long ttlMs) {
@@ -37,6 +36,7 @@ public class RecommendationDataCache {
     RecommendationDataCache(LongSupplier ttl) { this.ttl = ttl; }
 
     private synchronized CacheState cache(long ttlMs) {
+        if (ttlMs < 0) throw new IllegalStateException("recommendation-cache.ttl-ms must be non-negative");
         if (state == null || state.ttlMs() != ttlMs) {
             // 换实例隔离旧请求；各节点下一次读取配置时均生效，无需广播本地缓存失效。
             state = new CacheState(ttlMs, Caffeine.newBuilder().maximumSize(2000)

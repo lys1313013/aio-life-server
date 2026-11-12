@@ -52,33 +52,30 @@ class IntegrationSystemConfigServiceTest {
     }
 
     @Test void testConfig_首次保存后以数据库为准且所有管理读取脱敏() throws Exception {
-        defaults.getTypesafe().setApiKey("environment-secret");
-        defaults.getTypesafe().setModel("old-model");
+        defaults.getMbti().setApiKey("environment-secret");
+        defaults.getMbti().setBaseUrl("https://old.example.com");
         var registry = new SystemConfigServiceImpl(mapper, mock(WechatSystemConfigService.class), service,
                 mock(FootprintMapConfigService.class), mock(FootprintTencentConfigService.class));
-        assertEquals(1, registry.list("typesafe.").size());
-        assertEquals("environment-secret", service.typesafe().apiKey());
+        assertEquals(1, registry.list("mbti.").size());
+        assertEquals("environment-secret", service.mbti().apiKey());
         SystemConfigUpdateReq update = new SystemConfigUpdateReq();
         update.setConfigValue("""
-                {"enabled":false,"model":"new-model","requestTimeoutMs":2300,"dataCacheTtlMs":0,"apiKey":""}
+                {"baseUrl":"https://new.example.com","apiKey":"new-secret"}
                 """);
-        registry.update(IntegrationSystemConfigService.TYPESAFE_KEY, update, 9L);
-        var row = rows.get(IntegrationSystemConfigService.TYPESAFE_KEY);
+        registry.update(IntegrationSystemConfigService.MBTI_KEY, update, 9L);
+        var row = rows.get(IntegrationSystemConfigService.MBTI_KEY);
         assertEquals(9L, row.getCreateUser());
-        assertFalse(row.getConfigValue().contains("environment-secret"));
+        assertFalse(row.getConfigValue().contains("new-secret"));
         assertFalse(json.readTree(row.getConfigValue()).has("apiKey"));
-        assertEquals("environment-secret", crypto.decrypt(json.readTree(row.getConfigValue()).get("apiKeyCiphertext").asText()));
-        defaults.getTypesafe().setApiKey("changed-environment");
-        defaults.getTypesafe().setModel("changed-environment");
-        var snapshot = service.typesafe();
-        assertEquals("environment-secret", snapshot.apiKey());
-        assertEquals("new-model", snapshot.model());
-        assertEquals(2300, snapshot.requestTimeoutMs());
-        assertEquals(0, snapshot.dataCacheTtlMs());
-        assertFalse(snapshot.enabled());
-        for (String value : List.of(registry.getValueByKey(IntegrationSystemConfigService.TYPESAFE_KEY),
-                registry.getByKey(IntegrationSystemConfigService.TYPESAFE_KEY).getConfigValue(),
-                registry.list("typesafe.").getFirst().getConfigValue())) {
+        assertEquals("new-secret", crypto.decrypt(json.readTree(row.getConfigValue()).get("apiKeyCiphertext").asText()));
+        defaults.getMbti().setApiKey("changed-environment");
+        defaults.getMbti().setBaseUrl("https://changed.example.com");
+        var snapshot = service.mbti();
+        assertEquals("new-secret", snapshot.apiKey());
+        assertEquals("https://new.example.com", snapshot.baseUrl());
+        for (String value : List.of(registry.getValueByKey(IntegrationSystemConfigService.MBTI_KEY),
+                registry.getByKey(IntegrationSystemConfigService.MBTI_KEY).getConfigValue(),
+                registry.list("mbti.").getFirst().getConfigValue())) {
             assertFalse(value.contains("secret"));
             assertFalse(value.contains("Ciphertext"));
             assertTrue(json.readTree(value).get("apiKeyConfigured").asBoolean());
@@ -89,11 +86,11 @@ class IntegrationSystemConfigServiceTest {
         for (String key : IntegrationSystemConfigService.KEYS) {
             service.save(key, "{\"apiKey\":\"first-secret\"}", 9L);
             service.save(key, "{\"apiKey\":\"\"}", 10L);
-            assertEquals("first-secret", secret(key));
+            assertEquals("first-secret", service.mbti().apiKey());
             service.save(key, "{\"apiKey\":\"replacement-secret\"}", 10L);
-            assertEquals("replacement-secret", secret(key));
+            assertEquals("replacement-secret", service.mbti().apiKey());
             service.save(key, "{\"clearApiKey\":true}", 10L);
-            assertEquals("", secret(key));
+            assertEquals("", service.mbti().apiKey());
             assertEquals(10L, rows.get(key).getUpdateUser());
             assertFalse(rows.get(key).getConfigValue().contains("clearApiKey"));
             assertFalse(rows.get(key).getConfigValue().contains("Ciphertext"));
@@ -102,11 +99,8 @@ class IntegrationSystemConfigServiceTest {
 
     @Test void testSave_拒绝非法参数与密文注入() {
         for (String input : List.of("null", "[]", "not-json", "{\"apiKeyCiphertext\":null}",
-                "{\"apiKey\":\"a b\"}", "{\"apiKey\":\"secret\",\"clearApiKey\":true}",
-                "{\"enabled\":\"false\"}", "{\"requestTimeoutMs\":0}", "{\"requestTimeoutMs\":60001}",
-                "{\"requestTimeoutMs\":1.5}", "{\"requestTimeoutMs\":\"1000\"}",
-                "{\"dataCacheTtlMs\":-1}", "{\"dataCacheTtlMs\":604800001}", "{\"model\":\"\"}")) {
-            assertThrows(IllegalArgumentException.class, () -> service.save(IntegrationSystemConfigService.TYPESAFE_KEY, input, 9L), input);
+                "{\"apiKey\":\"a b\"}", "{\"apiKey\":\"secret\",\"clearApiKey\":true}")) {
+            assertThrows(IllegalArgumentException.class, () -> service.save(IntegrationSystemConfigService.MBTI_KEY, input, 9L), input);
         }
         for (String url : List.of("http://example.com", "https://user:pass@example.com", "https://example.com?a=b", "https://example.com/#x", "file:///tmp/key")) {
             assertThrows(IllegalArgumentException.class, () -> service.save(IntegrationSystemConfigService.MBTI_KEY,
@@ -133,9 +127,5 @@ class IntegrationSystemConfigServiceTest {
         var invalid = new IntegrationSystemConfigService(mapper, new NotificationCryptoService(""), json, locks, defaults);
         assertThrows(IllegalStateException.class, () -> invalid.save(IntegrationSystemConfigService.MBTI_KEY, "{\"apiKey\":\"secret\"}", 9L));
         verify(mapper, never()).insert(any(SystemConfigEntity.class));
-    }
-
-    private String secret(String key) {
-        return IntegrationSystemConfigService.TYPESAFE_KEY.equals(key) ? service.typesafe().apiKey() : service.mbti().apiKey();
     }
 }

@@ -48,13 +48,13 @@ public interface ITimeRecordService extends IService<TimeRecordEntity> {
     /**
      * 根据用户的历史时间记录，为指定日期、指定时刻推荐时迹分类。
      *
-     * <p>优先使用 Jev AI 推荐；未得到分类时，尝试采用最近一个同类日（工作日或非工作日）
-     * 覆盖目标时刻的唯一有效记录的分类。该方法只计算推荐，不保存时间记录。</p>
+     * <p>采用最近一个同类日（工作日或非工作日）覆盖目标时刻的唯一有效记录的分类。
+     * 该方法只计算推荐，不保存时间记录。</p>
      *
      * @param userId             用户 ID，仅使用该用户可见的分类和该用户的历史记录
      * @param date               目标日期，格式 yyyy-MM-dd
      * @param time               目标时刻距当天 00:00 的分钟数，范围 0～1439，例如 600 表示 10:00
-     * @return 推荐分类 ID；目标日期的日历缺失，或 AI 与参考日兜底均未得到有效分类时返回 null
+     * @return 推荐分类 ID；目标日期的日历缺失，或参考日兜底未得到有效分类时返回 null
      * @throws IllegalArgumentException time 不在 0～1439 范围内
      * @throws java.time.format.DateTimeParseException date 无法解析为日期
      */

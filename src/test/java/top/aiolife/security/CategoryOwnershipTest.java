@@ -37,7 +37,7 @@ class CategoryOwnershipTest {
     @Test
     void foreignTimeCategory_isRejectedBeforeRecordSave() {
         var categories = mock(ITimeTrackerCategoryService.class);
-        var service = spy(new TimeRecordServiceImpl(null, null, null, null, null, null, null,
+        var service = spy(new TimeRecordServiceImpl(null, null, null, null, null, null,
                 categories, mock(SecondaryLockGuard.class)));
         var req = new TimeRecordReq(); req.setCategoryId("22");
         req.setStartMinute(60); req.setEndMinute(119);
@@ -58,7 +58,7 @@ class CategoryOwnershipTest {
         when(categories.count(anyWrapper())).thenReturn(1L);
         var visible = new TimeTrackerCategoryEntity(); visible.setId(22L);
         when(categories.listUserVisibleCategories(11L)).thenReturn(List.of(visible));
-        var service = spy(new TimeRecordServiceImpl(null, null, null, null, null, null, null,
+        var service = spy(new TimeRecordServiceImpl(null, null, null, null, null, null,
                 categories, mock(SecondaryLockGuard.class)));
         doAnswer(call -> {
             TimeRecordEntity entity = call.getArgument(0);

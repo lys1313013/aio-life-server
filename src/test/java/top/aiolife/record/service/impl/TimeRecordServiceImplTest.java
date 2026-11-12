@@ -20,7 +20,6 @@ import top.aiolife.record.mapper.ITimeRecordMapper;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.pojo.req.TimeRecordReq;
-import top.aiolife.record.prediction.JevCategoryRecommendationService;
 import top.aiolife.record.prediction.RecommendationDataCache;
 import top.aiolife.record.service.ITimeTrackerCategoryService;
 import top.aiolife.sso.service.SecondaryLockGuard;
@@ -53,27 +52,12 @@ class TimeRecordServiceImplTest {
     private IWorkCalendarService calendar;
 
     @Mock
-    private JevCategoryRecommendationService jev;
-
-    @Mock
     private ITimeTrackerCategoryService categories;
 
     @BeforeEach
-    void setupJevFallback() {
+    void setupCache() {
         ReflectionTestUtils.setField(timeRecordService, "recommendationDataCache",
                 new RecommendationDataCache(15000));
-        lenient().when(jev.recommend(anyLong(), any(), anyInt(), anyBoolean(), any())).thenReturn(null);
-    }
-
-    @Test
-    void testRecommendType_Jev命中直接返回且允许延续上一分类() {
-        var date = LocalDate.of(2026, 9, 21);
-        var reference = date.minusDays(1);
-        when(calendar.isWorkday(date)).thenReturn(true);
-        when(calendar.findPreviousComparableDate(date)).thenReturn(reference);
-        when(jev.recommend(1L, date, 600, true, reference)).thenReturn(104L);
-        assertEquals(104L, timeRecordService.recommendType(1L, date.toString(), 600));
-        verifyNoInteractions(mapper);
     }
 
     @Test

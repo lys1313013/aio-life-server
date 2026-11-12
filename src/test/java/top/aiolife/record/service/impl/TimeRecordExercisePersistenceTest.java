@@ -38,7 +38,6 @@ import top.aiolife.record.mapper.IExerciseRecordMapper;
 import top.aiolife.record.mapper.ITimeRecordMapper;
 import top.aiolife.record.pojo.req.ExerciseRecordReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
-import top.aiolife.record.prediction.JevCategoryRecommendationService;
 import top.aiolife.record.prediction.RecommendationDataCache;
 import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IReadRecordService;
@@ -98,7 +97,7 @@ class TimeRecordExercisePersistenceTest {
         guard = mock(SecondaryLockGuard.class);
         var categories = mock(ITimeTrackerCategoryService.class);
         var target = new TimeRecordServiceImpl(mapper, exercises, mock(IReadRecordService.class),
-                mock(IMovieService.class), mock(IWorkCalendarService.class), mock(JevCategoryRecommendationService.class),
+                mock(IMovieService.class), mock(IWorkCalendarService.class),
                 new RecommendationDataCache(15000), categories, guard);
         ReflectionTestUtils.setField(target, "baseMapper", mapper);
         ReflectionTestUtils.setField(target, "timeRecordCacheManager", new ConcurrentMapCacheManager("timeRecordDay:v1"));

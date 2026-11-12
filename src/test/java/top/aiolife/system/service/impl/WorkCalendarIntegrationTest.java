@@ -15,7 +15,6 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 import top.aiolife.record.mapper.ITimeRecordMapper;
 import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
-import top.aiolife.record.prediction.JevCategoryRecommendationService;
 import top.aiolife.record.prediction.RecommendationDataCache;
 import top.aiolife.record.service.ITimeTrackerCategoryService;
 import top.aiolife.record.service.impl.TimeRecordServiceImpl;
@@ -108,7 +107,7 @@ class WorkCalendarIntegrationTest {
                         category.setName("分类" + id);
                         return category;
                     }).toList());
-            var service = new TimeRecordServiceImpl(timeMapper, null, null, null, calendar, Mockito.mock(JevCategoryRecommendationService.class, invocation -> null), new RecommendationDataCache(15000), categories, Mockito.mock(SecondaryLockGuard.class));
+            var service = new TimeRecordServiceImpl(timeMapper, null, null, null, calendar, new RecommendationDataCache(15000), categories, Mockito.mock(SecondaryLockGuard.class));
             ReflectionTestUtils.setField(service, "baseMapper", timeMapper);
             try (var clock = mockStatic(LocalDateTime.class, CALLS_REAL_METHODS)) {
                 var now = LocalDateTime.of(2026, 12, 31, 12, 0);

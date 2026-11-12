@@ -11,18 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "aio.life.server")
 public class IntegrationConfigProperties {
-    private Typesafe typesafe = new Typesafe();
     private Mbti mbti = new Mbti();
-
-    @Getter
-    @Setter
-    public static class Typesafe {
-        private boolean enabled = true;
-        private String apiKey = "";
-        private String model = "jev-latest";
-        private int requestTimeoutMs = 1500;
-        private int dataCacheTtlMs = 18000000;
-    }
 
     @Getter
     @Setter

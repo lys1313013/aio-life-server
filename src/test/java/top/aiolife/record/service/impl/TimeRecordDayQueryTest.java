@@ -62,7 +62,7 @@ class TimeRecordDayQueryTest {
         @Bean
         TimeRecordServiceImpl records(ITimeRecordMapper mapper) {
             var service = spy(new TimeRecordServiceImpl(mapper, mock(IExerciseRecordService.class),
-                    null, null, null, null, null, null, null));
+                    null, null, null, null, null, null));
             ReflectionTestUtils.setField(service, "baseMapper", mapper);
             ReflectionTestUtils.setField(service, "entityClass", TimeRecordEntity.class);
             return service;

@@ -46,23 +46,17 @@ class IntegrationConfigPersistenceTest {
              var readerSession = factory.getObject().openSession(true)) {
             var writer = new IntegrationSystemConfigService(writerSession.getMapper(ISystemConfigMapper.class), crypto, json, locks, defaults);
             var reader = new IntegrationSystemConfigService(readerSession.getMapper(ISystemConfigMapper.class), crypto, json, locks, defaults);
-            assertEquals("jev-latest", reader.typesafe().model());
-            writer.save(IntegrationSystemConfigService.TYPESAFE_KEY,
-                    "{\"apiKey\":\"synthetic-secret\",\"model\":\"new-model\",\"requestTimeoutMs\":2500,\"dataCacheTtlMs\":0}", 7L);
-            assertEquals("new-model", reader.typesafe().model());
-            assertEquals("synthetic-secret", reader.typesafe().apiKey());
-            assertEquals(2500, reader.typesafe().requestTimeoutMs());
-            assertEquals(0, reader.typesafe().dataCacheTtlMs());
+            assertEquals("https://api.devil.ai", reader.mbti().baseUrl());
+            writer.save(IntegrationSystemConfigService.MBTI_KEY,
+                    "{\"apiKey\":\"synthetic-secret\",\"baseUrl\":\"https://api.example.com\"}", 7L);
+            assertEquals("https://api.example.com", reader.mbti().baseUrl());
+            assertEquals("synthetic-secret", reader.mbti().apiKey());
             String stored = jdbc.queryForObject("SELECT config_value FROM system_config WHERE config_key = ?", String.class,
-                    IntegrationSystemConfigService.TYPESAFE_KEY);
+                    IntegrationSystemConfigService.MBTI_KEY);
             assertFalse(stored.contains("synthetic-secret"));
             assertTrue(stored.contains("apiKeyCiphertext"));
-            writer.save(IntegrationSystemConfigService.TYPESAFE_KEY, "{\"enabled\":false,\"clearApiKey\":true}", 8L);
-            assertFalse(reader.typesafe().enabled());
-            assertEquals("", reader.typesafe().apiKey());
-            writer.save(IntegrationSystemConfigService.MBTI_KEY, "{\"apiKey\":\"mbti-secret\",\"baseUrl\":\"https://api.example.com\"}", 8L);
-            assertEquals("https://api.example.com", reader.mbti().baseUrl());
-            assertEquals("mbti-secret", reader.mbti().apiKey());
+            writer.save(IntegrationSystemConfigService.MBTI_KEY, "{\"clearApiKey\":true}", 8L);
+            assertEquals("", reader.mbti().apiKey());
             var mapWriter = new FootprintMapConfigService(writerSession.getMapper(ISystemConfigMapper.class), crypto, json, locks, new FootprintMapProperties());
             var mapReader = new FootprintMapConfigService(readerSession.getMapper(ISystemConfigMapper.class), crypto, json, locks, new FootprintMapProperties());
             assertEquals(5000, mapReader.timeoutMs());
@@ -70,7 +64,7 @@ class IntegrationConfigPersistenceTest {
             assertEquals(1500, mapReader.timeoutMs());
             mapWriter.save("{\"timeoutMs\":8000}", 8L);
             assertEquals(8000, mapReader.timeoutMs());
-            assertEquals(3, jdbc.queryForObject("SELECT COUNT(*) FROM system_config", Integer.class));
+            assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM system_config", Integer.class));
         }
     }
 }

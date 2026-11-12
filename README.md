@@ -215,11 +215,11 @@ Web 使用腾讯 GL，H5 使用 Leaflet 底图，微信和 App 使用原生 GCJ0
 
 省市区县乡镇目录由 `system_region` 提供，接口为 `/system/regions` 与 `/system/regions/{code}/path`，需登录但不需要地图 Key。当前为固定 2023 快照，不涵盖港澳台及海外；手填地址与选点仍可使用。来源、许可及更新方式见[地区数据](docs/data/china-regions.md)。
 
-### Typesafe 与 MBTI
+### MBTI 接口配置
 
-「系统管理 → 系统配置」维护 `typesafe.recommendation` 与 `mbti.api`，保存后即时生效。首次保存前读取 `AIO_LIFE_TYPESAFE_*` / `AIO_LIFE_MBTI_*` 初始值，此后以数据库为准；清除密钥不会重新回退环境变量。Typesafe 缺少密钥时使用日历规则，MBTI 缺少密钥时提示管理员配置。
+「系统管理 → 系统配置」维护 `mbti.api`，保存后即时生效。首次保存前读取 `AIO_LIFE_MBTI_*` 初始值，此后以数据库为准；清除密钥不会重新回退环境变量，MBTI 缺少密钥时提示管理员配置。
 
-密钥留空保留、填写替换、显式清除；接口只返回是否已配置。修改 MBTI 服务地址时须重新填写密钥或明确清除，避免向新地址发送原密钥。加密依赖稳定的 `AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY`。Jev 推荐联调见[测试与接入说明](docs/Jev时迹分类测试用例.md)。
+密钥留空保留、填写替换、显式清除；接口只返回是否已配置。修改 MBTI 服务地址时须重新填写密钥或明确清除，避免向新地址发送原密钥。加密依赖稳定的 `AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY`。
 
 ## 代码与文档结构
 
