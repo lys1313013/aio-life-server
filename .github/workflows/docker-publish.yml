@@ -54,13 +54,17 @@ jobs:
       matrix:
         include:
           - postgresql: '18-alpine'
-            shard: record
-            tests: 'top.aiolife.record.**'
-            upload-jar: 'false'
+            shard: record-api
+            tests: 'top.aiolife.record.api.**,top.aiolife.scheduling.**,top.aiolife.export.**'
+            package: 'true'
           - postgresql: '18-alpine'
-            shard: others
-            tests: 'top.aiolife.core.**,top.aiolife.system.**,top.aiolife.sso.**,top.aiolife.database.**,top.aiolife.export.**,top.aiolife.bankcard.**,top.aiolife.config.**,top.aiolife.security.**,top.aiolife.membership.**,top.aiolife.capture.**,top.aiolife.wardrobe.**,top.aiolife.relationship.**,top.aiolife.support.**,top.aiolife.scheduling.**,top.aiolife.mcp.**,top.aiolife.docs.**'
-            upload-jar: 'true'
+            shard: record-rest
+            tests: 'top.aiolife.record.service.**,top.aiolife.record.mcp.**,top.aiolife.record.client.**,top.aiolife.record.notification.**,top.aiolife.record.provider.**,top.aiolife.record.weread.**,top.aiolife.record.filter.**,top.aiolife.record.prediction.**,top.aiolife.record.mapper.**,top.aiolife.record.pojo.**,top.aiolife.record.util.**,top.aiolife.record.enums.**,top.aiolife.record.convertor.**,top.aiolife.system.**,top.aiolife.core.**,top.aiolife.database.**,top.aiolife.bankcard.**,top.aiolife.support.**,top.aiolife.docs.**,top.aiolife.capture.**,top.aiolife.relationship.**,top.aiolife.mcp.**,top.aiolife.wardrobe.**,top.aiolife.membership.**'
+            package: 'false'
+          - postgresql: '18-alpine'
+            shard: sso-config
+            tests: 'top.aiolife.sso.**,top.aiolife.config.**,top.aiolife.security.**'
+            package: 'false'
     timeout-minutes: 10
     permissions:
       contents: read
@@ -116,10 +120,15 @@ jobs:
           mvn -B -ntp -f tools/flyway/pom.xml compile flyway:migrate flyway:validate
 
       - name: Test and package
+        if: matrix.package == 'true'
         run: mvn package -B -ntp -Dtest='${{ matrix.tests }}' -Dtest.excludedGroups=external,integration
 
+      - name: Test
+        if: matrix.package != 'true'
+        run: mvn test -B -ntp -Dtest='${{ matrix.tests }}' -Dtest.excludedGroups=external,integration
+
       - name: Upload application JAR
-        if: matrix.upload-jar == 'true'
+        if: matrix.package == 'true'
         uses: actions/upload-artifact@v6
         with:
           name: application-jar
