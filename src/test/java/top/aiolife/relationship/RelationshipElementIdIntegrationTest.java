@@ -7,6 +7,7 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
@@ -33,6 +34,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** 自建隔离 Neo4j，验证 elementId 在驱动、HTTP 响应及更新路径间完整往返。 */
+@Tag("integration")
 class RelationshipElementIdIntegrationTest {
     private static final GenericContainer<?> NEO4J = new GenericContainer<>(
             System.getProperty("aio.life.test.neo4j.image", "neo4j:5.26.0"))

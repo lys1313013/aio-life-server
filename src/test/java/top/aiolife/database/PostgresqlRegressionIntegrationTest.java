@@ -17,6 +17,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.postgresql.ds.PGSimpleDataSource;
@@ -104,6 +105,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /** 自建 PostgreSQL 18、生产 DDL、真实 Mapper 与分页插件；不读取本机/业务库连接。 */
+@Tag("integration")
 class PostgresqlRegressionIntegrationTest {
     private static final GenericContainer<?> POSTGRES = new GenericContainer<>("postgres:18-alpine")
             .withEnv("POSTGRES_PASSWORD", "isolated-regression")

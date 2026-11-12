@@ -310,7 +310,7 @@
                     <!-- 启动时加载 Mockito，避免 Java 21+ 动态挂载代理。 -->
                     <argLine>@{argLine} -javaagent:"${org.mockito:mockito-core:jar}"</argLine>
                     <excludedGroups>${test.excludedGroups}</excludedGroups>
-                    <forkedProcessTimeoutInSeconds>900</forkedProcessTimeoutInSeconds>
+                    <forkedProcessTimeoutInSeconds>180</forkedProcessTimeoutInSeconds>
                     <systemPropertyVariables>
                         <spring.profiles.active>${spring.profiles.active}</spring.profiles.active>
                         <net.bytebuddy.experimental>true</net.bytebuddy.experimental>

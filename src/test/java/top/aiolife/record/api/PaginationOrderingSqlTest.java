@@ -17,6 +17,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
@@ -52,6 +53,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /** 自建 PostgreSQL 18、生产表结构及分页插件：同排序值跨页不能遗漏/重复记录。 */
+@Tag("integration")
 class PaginationOrderingSqlTest {
     private static final GenericContainer<?> POSTGRES = new GenericContainer<>("postgres:18-alpine")
             .withEnv("POSTGRES_PASSWORD", "isolated-pagination")
