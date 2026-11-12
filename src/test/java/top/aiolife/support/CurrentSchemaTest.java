@@ -53,6 +53,22 @@ class CurrentSchemaTest {
     }
 
     @Test
+    void table_应用时长与起止列改名() throws IOException {
+        String record = CurrentSchema.table("time_record");
+        assertTrue(record.contains("\"start_minute\""));
+        assertTrue(record.contains("\"end_minute\""));
+        assertTrue(record.contains("\"duration_minutes\""));
+        assertFalse(record.contains("\"start_time\""));
+
+        String video = CurrentSchema.table("b_video");
+        assertTrue(video.contains("\"duration_seconds\""));
+        assertTrue(video.contains("\"watched_duration_seconds\""));
+        assertFalse(video.contains("\"watched_duration\""));
+
+        assertTrue(CurrentSchema.table("performance").contains("\"duration_minutes\""));
+    }
+
+    @Test
     void table_无条件建表语句同样属于当前结构() throws IOException {
         String sql = CurrentSchema.table("device_expense");
         assertTrue(sql.startsWith("CREATE TABLE \"device_expense\""));

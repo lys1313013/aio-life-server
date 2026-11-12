@@ -104,8 +104,8 @@ class QueryHasuraEndToEndTest {
             db.update("INSERT INTO exercise_record(id,user_id,exercise_type_id,exercise_date,exercise_count,is_deleted,description) VALUES(?,?,9007199254740993,'2026-09-15',?,?,?)",id,user,(index+1)*10,deleted,"私有描述");
             db.update("INSERT INTO read_record(id,user_id,title,type,status,current_progress,total_progress,start_time,finish_time,create_time,is_deleted,remark) VALUES(?,?,?,1,?,20,100,'2026-09-10','2026-09-20','2026-09-01',?,?)",id,user,"book-"+index,status,deleted,"私有备注");
             db.update("INSERT INTO movie(id,user_id,title,type,status,current_progress,total_progress,rating,start_time,finish_time,create_time,is_deleted,remark) VALUES(?,?,?,1,?,1,2,5,'2026-09-10','2026-09-20','2026-09-01',?,?)",id,user,"movie-"+index,status,deleted,"私有短评");
-            db.update("INSERT INTO b_video(id,user_id,title,url,duration,watched_duration,status,last_watched,create_time,is_deleted,notes) VALUES(?,?,?,'https://example.invalid/video',120,60,?,'2026-09-20','2026-09-01',?,?)",id,user,"video-"+index,status,deleted,"私有笔记");
-            db.update("INSERT INTO performance(id,user_id,create_user,performance_name,performance_type,performance_date,city,venue,ticket_price,duration,rating,is_deleted,order_number) VALUES(?,?,?,?,'concert','2026-09-15 19:30:00','city','venue',?,60,5,?,?)",id,user,userIds.get(1),"show-"+index,index==0 ? "19.99" : "20.02",deleted,"私有订单号");
+            db.update("INSERT INTO b_video(id,user_id,title,url,duration_seconds,watched_duration_seconds,status,last_watched,create_time,is_deleted,notes) VALUES(?,?,?,'https://example.invalid/video',120,60,?,'2026-09-20','2026-09-01',?,?)",id,user,"video-"+index,status,deleted,"私有笔记");
+            db.update("INSERT INTO performance(id,user_id,create_user,performance_name,performance_type,performance_date,city,venue,ticket_price,duration_minutes,rating,is_deleted,order_number) VALUES(?,?,?,?,'concert','2026-09-15 19:30:00','city','venue',?,60,5,?,?)",id,user,userIds.get(1),"show-"+index,index==0 ? "19.99" : "20.02",deleted,"私有订单号");
         }
     }
 
@@ -117,7 +117,7 @@ class QueryHasuraEndToEndTest {
     }
 
     private void row(String id, long user, int minutes, int deleted) {
-        db.update("INSERT INTO time_record(id,user_id,category_id,date,start_time,end_time,duration,is_deleted,title) VALUES(?,?,?,'2026-09-15',0,?,?,?,?)",
+        db.update("INSERT INTO time_record(id,user_id,category_id,date,start_minute,end_minute,duration_minutes,is_deleted,title) VALUES(?,?,?,'2026-09-15',0,?,?,?,?)",
                 prefix + id, user, 9007199254740993L, minutes, minutes, deleted, "不得暴露的标题");
     }
     private HttpResponse<String> call(String method, String url, String token, Object body) throws Exception {
@@ -156,7 +156,7 @@ class QueryHasuraEndToEndTest {
         assertEquals("2", stats.path("count").textValue()); assertEquals("90", stats.path("durationMinutes").path("sum").textValue());
         var empty = result(tokenA, "query Q { timeRecordStats(where:{date:{_gte:\"2026-08-01\",_lt:\"2026-09-01\"}}){count durationMinutes{sum}}}").path("timeRecordStats");
         assertEquals("0", empty.path("count").textValue()); assertTrue(empty.path("durationMinutes").path("sum").isNull());
-        var ownFields = result(tokenA, "query Q { timeRecords(" + where + ") { userId isDeleted startTime endTime title description } }").path("timeRecords");
+        var ownFields = result(tokenA, "query Q { timeRecords(" + where + ") { userId isDeleted startMinute endMinute title description } }").path("timeRecords");
         for (var row : ownFields) {
             assertEquals(userIds.getFirst().toString(), row.path("userId").asText());
             assertEquals(0, row.path("isDeleted").asInt());
@@ -266,6 +266,6 @@ class QueryHasuraEndToEndTest {
     @AfterAll void cleanup() throws Exception {
         if (gateway != null) { gateway.destroy(); if (!gateway.waitFor(10, TimeUnit.SECONDS)) gateway.destroyForcibly(); }
         apiKeyIds.forEach(apiKeys::removeById); sessions.forEach(StpUtil::logoutByTokenValue);
-        for (Long id : userIds) { for(String table:List.of("time_record","exercise_record","read_record","movie","b_video","performance")) db.update("DELETE FROM "+table+" WHERE user_id=?",id); db.update("DELETE FROM \"user\" WHERE id=?", id); }
+        for (Long id : userIds) { for(String table:List.of("time_record","exercise_record","read_record","movie","b_video","performance")) db.update("DELETE FROM "+table+" WHERE user_id=?",id); db.update("DELETE FROM sys_user WHERE id=?", id); }
     }
 }

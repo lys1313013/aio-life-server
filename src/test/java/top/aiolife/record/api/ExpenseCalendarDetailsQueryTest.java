@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class ExpenseCalendarDetailsQueryTest {
-    @Test void 明细范围排除结束边界且分页隔离归属和未填日期() throws Exception {
+    @Test void 明细范围排除结束边界且分页隔离归属() throws Exception {
         var source = new JdbcDataSource();
         source.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         var jdbc = new JdbcTemplate(source);
@@ -43,7 +43,7 @@ class ExpenseCalendarDetailsQueryTest {
         jdbc.execute("INSERT INTO expense(id,user_id,amt,exp_time,is_deleted) VALUES "
                 + "(1,7,10,'2026-08-12 00:00:00',0),(2,7,20,'2026-08-12 00:00:00',0),"
                 + "(3,7,30,'2026-08-13 00:00:00',0),(4,8,999,'2026-08-12 12:00:00',0),"
-                + "(5,7,999,'2026-08-12 12:00:00',1),(6,7,40,NULL,0),"
+                + "(5,7,999,'2026-08-12 12:00:00',1),"
                 + "(7,7,50,'2026-08-11 23:59:59',0)");
         var config = new MybatisConfiguration();
         config.setMapUnderscoreToCamelCase(true);
@@ -72,16 +72,10 @@ class ExpenseCalendarDetailsQueryTest {
             query.setPage(3);
             assertTrue(controller.query(query).getData().getItems().isEmpty());
             filter = new ExpenseQuery();
-            filter.setUndated(true);
-            query.setCondition(filter);
-            query.setPage(1);
-            var undated = controller.query(query).getData();
-            assertEquals(1L, undated.getTotal());
-            assertEquals(6L, undated.getItems().getFirst().getId());
-            filter = new ExpenseQuery();
             filter.setStartTime(LocalDateTime.of(2026, 8, 13, 0, 0));
             filter.setEndTime(LocalDateTime.of(2026, 8, 13, 0, 0));
             query.setCondition(filter);
+            query.setPage(1);
             assertEquals(List.of(3L), controller.query(query).getData().getItems().stream().map(row -> row.getId()).toList());
         } finally {
             jdbc.execute("DROP ALL OBJECTS");

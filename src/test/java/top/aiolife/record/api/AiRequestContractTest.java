@@ -24,12 +24,12 @@ class AiRequestContractTest {
         var controller = new TimeRecordController(null, service, null, null, null);
         var mvc = MockMvcBuilders.standaloneSetup(controller).build();
         mvc.perform(post("/timeRecord").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"startTime\":600,\"endTime\":659}"))
+                .content("{\"startMinute\":600,\"endMinute\":659}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data").value("9007199254740993"));
         var captured = ArgumentCaptor.forClass(TimeRecordReq.class);
         verify(service).saveTimeRecord(captured.capture());
         assertEquals(LocalDate.now(), captured.getValue().getDate());
-        for (String body : new String[]{"{}", "{\"startTime\":600}", "{\"startTime\":0,\"endTime\":1440}"}) {
+        for (String body : new String[]{"{}", "{\"startMinute\":600}", "{\"startMinute\":0,\"endMinute\":1440}"}) {
             mvc.perform(post("/timeRecord").contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isBadRequest());
         }
@@ -37,8 +37,8 @@ class AiRequestContractTest {
                 .content("{\"title\":\"只改标题\"}")).andExpect(status().isOk());
         verify(service).updateTimeRecord(captured.capture());
         assertEquals("9007199254740993", captured.getValue().getId());
-        assertNull(captured.getValue().getStartTime());
-        assertNull(captured.getValue().getEndTime());
+        assertNull(captured.getValue().getStartMinute());
+        assertNull(captured.getValue().getEndMinute());
     }
 
     @Test

@@ -73,7 +73,7 @@ class BVideoMcpToolsIntegrationTest extends BaseIntegrationTest {
     void testBVideoQuery_未观看进度为0() {
         Long id = System.currentTimeMillis() % 1000000 + 900000L;
         BVideoEntity entity = createVideo(id, "MCP测试视频-未观看", ProgressStatusEnum.NOT_STARTED);
-        entity.setWatchedDuration(null);
+        entity.setWatchedDurationSeconds(null);
         bVideoMapper.insert(entity);
 
         BVideoQueryMcpReq req = new BVideoQueryMcpReq();
@@ -110,8 +110,8 @@ class BVideoMcpToolsIntegrationTest extends BaseIntegrationTest {
         entity.setTitle(title);
         entity.setBvid("BV" + id);
         entity.setUrl("https://www.bilibili.com/video/BV" + id);
-        entity.setDuration(600);
-        entity.setWatchedDuration(300);
+        entity.setDurationSeconds(600);
+        entity.setWatchedDurationSeconds(300);
         entity.setStatus(status);
         entity.setLastWatched(LocalDateTime.now());
         entity.setIsDeleted(0);

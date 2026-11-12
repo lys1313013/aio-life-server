@@ -21,7 +21,7 @@ class PersistenceArchitectureTest {
             "\\b(?:SELECT\\s+.+?\\s+FROM|INSERT\\s+INTO|UPDATE\\s+\\w+\\s+SET|DELETE\\s+FROM)\\b",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
     private static final Pattern WRAPPER_SQL = Pattern.compile("\\.(?:setSql|apply)\\s*\\(\\s*\"");
-    private static final Pattern MYSQL_FUNCTION = Pattern.compile(
+    private static final Pattern LEGACY_SQL_FUNCTION = Pattern.compile(
             "\\b(?:JSON_SET|JSON_REMOVE|JSON_EXTRACT|JSON_UNQUOTE|IFNULL|DATE_FORMAT|FIND_IN_SET|GROUP_CONCAT|TIMESTAMPDIFF)\\s*\\(",
             Pattern.CASE_INSENSITIVE);
 
@@ -57,12 +57,12 @@ class PersistenceArchitectureTest {
     }
 
     @Test
-    void 生产查询不能重新引入MySQL专属函数() throws Exception {
+    void 生产查询不能重新引入旧库专属函数() throws Exception {
         var violations = new ArrayList<String>();
         for (var root : List.of(SOURCE, Path.of("src/main/resources/mapper"))) {
             try (var paths = Files.walk(root)) {
                 for (var file : paths.filter(Files::isRegularFile).toList()) {
-                    if (MYSQL_FUNCTION.matcher(Files.readString(file)).find()) violations.add(file.toString());
+                    if (LEGACY_SQL_FUNCTION.matcher(Files.readString(file)).find()) violations.add(file.toString());
                 }
             }
         }

@@ -63,7 +63,7 @@ class BVideoControllerIntegrationTest extends BaseIntegrationTest {
         entity.setBvid("BV1test" + videoId);
         entity.setTitle("测试视频");
         entity.setUrl("https://www.bilibili.com/video/BV1test" + videoId);
-        entity.setDuration(3600);
+        entity.setDurationSeconds(3600);
         entity.setStatus(ProgressStatusEnum.NOT_STARTED);
         entity.setIsDeleted(0);
         return entity;

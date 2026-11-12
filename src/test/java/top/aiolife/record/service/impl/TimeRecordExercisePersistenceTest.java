@@ -73,7 +73,7 @@ class TimeRecordExercisePersistenceTest {
         jdbc.execute("""
                 CREATE TABLE time_record (
                     id VARCHAR(32) PRIMARY KEY, user_id BIGINT, category_id BIGINT, date DATE,
-                    start_time INT, end_time INT, title VARCHAR(255), description VARCHAR(255), duration INT,
+                    start_minute INT, end_minute INT, title VARCHAR(255), description VARCHAR(255), duration_minutes INT,
                     relate_type INT, relate_id BIGINT, is_manual BIGINT, is_deleted INT DEFAULT 0,
                     create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP)
                 """);
@@ -114,7 +114,7 @@ class TimeRecordExercisePersistenceTest {
         login = mockStatic(StpUtil.class);
         login.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
         jdbc.update("""
-                INSERT INTO time_record (id, user_id, date, title, start_time, end_time, duration)
+                INSERT INTO time_record (id, user_id, date, title, start_minute, end_minute, duration_minutes)
                 VALUES ('time-1', 1, ?, '原始时迹', 540, 599, 60)
                 """, DATE);
         addExercise(FIRST_ID, 1L, "time-1");
@@ -132,18 +132,16 @@ class TimeRecordExercisePersistenceTest {
     void update_合并未提交端点并保存闭区间时长(Integer start, Integer end, int duration) {
         var request = timeRequest(start, end);
         request.setId("time-1");
-        request.setDuration(999);
         service.updateTimeRecord(request);
         assertTime(start == null ? 540 : start, end == null ? 599 : end, duration);
     }
 
     @Test
     void update_只改标题也从原起止时间修正失配时长() {
-        jdbc.update("UPDATE time_record SET duration = 999 WHERE id = 'time-1'");
+        jdbc.update("UPDATE time_record SET duration_minutes = 999 WHERE id = 'time-1'");
         var request = timeRequest(null, null);
         request.setId("time-1");
         request.setTitle("新标题");
-        request.setDuration(1);
         service.updateTimeRecord(request);
         assertTime(540, 599, 60);
         assertEquals("新标题", jdbc.queryForObject("SELECT title FROM time_record WHERE id = 'time-1'", String.class));
@@ -162,11 +160,10 @@ class TimeRecordExercisePersistenceTest {
 
     @ParameterizedTest
     @CsvSource({"0,0,1", "0,1439,1440", "540,599,60"})
-    void save_忽略传入时长并按闭区间保存(int start, int end, int duration) {
+    void save_按闭区间保存时长(int start, int end, int duration) {
         var request = timeRequest(start, end);
-        request.setDuration(999);
         String id = service.saveTimeRecord(request);
-        assertEquals(duration, jdbc.queryForObject("SELECT duration FROM time_record WHERE id = ?", Integer.class, id));
+        assertEquals(duration, jdbc.queryForObject("SELECT duration_minutes FROM time_record WHERE id = ?", Integer.class, id));
     }
 
     @ParameterizedTest
@@ -241,16 +238,16 @@ class TimeRecordExercisePersistenceTest {
     private TimeRecordReq timeRequest(Integer start, Integer end) {
         var request = new TimeRecordReq();
         request.setDate(DATE);
-        request.setStartTime(start);
-        request.setEndTime(end);
+        request.setStartMinute(start);
+        request.setEndMinute(end);
         return request;
     }
 
     private void assertTime(int start, int end, int duration) {
-        var row = jdbc.queryForMap("SELECT start_time, end_time, duration FROM time_record WHERE id = 'time-1'");
-        assertEquals(start, row.get("start_time"));
-        assertEquals(end, row.get("end_time"));
-        assertEquals(duration, row.get("duration"));
+        var row = jdbc.queryForMap("SELECT start_minute, end_minute, duration_minutes FROM time_record WHERE id = 'time-1'");
+        assertEquals(start, row.get("start_minute"));
+        assertEquals(end, row.get("end_minute"));
+        assertEquals(duration, row.get("duration_minutes"));
     }
 
     @Test

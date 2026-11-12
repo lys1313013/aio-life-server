@@ -58,11 +58,11 @@ class WorkCalendarIntegrationTest {
         jdbc.execute("""
                 CREATE TABLE time_record (
                     id VARCHAR(32) PRIMARY KEY, user_id BIGINT, date DATE, category_id BIGINT,
-                    start_time INT, end_time INT, is_deleted INT DEFAULT 0
+                    start_minute INT, end_minute INT, is_deleted INT DEFAULT 0
                 )
                 """);
         jdbc.execute("""
-                INSERT INTO time_record (id,user_id,date,category_id,start_time,end_time,is_deleted) VALUES
+                INSERT INTO time_record (id,user_id,date,category_id,start_minute,end_minute,is_deleted) VALUES
                 ('1',1,'2026-09-20',104,600,699,0),
                 ('2',1,'2026-09-20',106,700,799,0),
                 ('3',1,'2026-09-25',105,600,699,0),

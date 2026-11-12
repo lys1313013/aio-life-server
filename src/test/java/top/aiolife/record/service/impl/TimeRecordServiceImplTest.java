@@ -186,7 +186,7 @@ class TimeRecordServiceImplTest {
             return List.of(previous);
         }).when(service).list(anyWrapper());
         var result = service.recommendNext(1L, "2020-09-19");
-        assertEquals(600, result.getRecommend().getStartTime());
+        assertEquals(600, result.getRecommend().getStartMinute());
         assertEquals(104L, result.getRecords().getFirst().getCategoryId());
     }
 
@@ -216,12 +216,12 @@ class TimeRecordServiceImplTest {
         var service = Mockito.spy(timeRecordService);
         var req = new TimeRecordReq();
         req.setId("client-id");
-        req.setStartTime(540);
-        req.setEndTime(569);
+        req.setStartMinute(540);
+        req.setEndMinute(569);
         Mockito.doAnswer(invocation -> {
             TimeRecordEntity entity = invocation.getArgument(0);
             assertNull(entity.getId());
-            assertEquals(30, entity.getDuration());
+            assertEquals(30, entity.getDurationMinutes());
             entity.setId("2099999999999999999");
             return true;
         }).when(service).save(ArgumentMatchers.any(TimeRecordEntity.class));
@@ -245,8 +245,8 @@ class TimeRecordServiceImplTest {
         TimeRecordEntity result = timeRecordService.calculateRecommendNext(records, targetDate);
 
         // Then: Should recommend 13-14
-        assertEquals(13, result.getStartTime());
-        assertEquals(14, result.getEndTime());
+        assertEquals(13, result.getStartMinute());
+        assertEquals(14, result.getEndMinute());
     }
 
     @Test
@@ -261,9 +261,9 @@ class TimeRecordServiceImplTest {
         TimeRecordEntity result = timeRecordService.calculateRecommendNext(records, targetDate);
 
         // Then: Should recommend 30 minutes (11 - 40, inclusive)
-        assertEquals(11, result.getStartTime());
-        assertEquals(40, result.getEndTime());
-        assertEquals(30, result.getDuration());
+        assertEquals(11, result.getStartMinute());
+        assertEquals(40, result.getEndMinute());
+        assertEquals(30, result.getDurationMinutes());
     }
 
     @Test
@@ -277,9 +277,9 @@ class TimeRecordServiceImplTest {
         TimeRecordEntity result = timeRecordService.calculateRecommendNext(records, targetDate);
 
         // Then: Should recommend 30 minutes (0 - 29, inclusive)
-        assertEquals(0, result.getStartTime());
-        assertEquals(29, result.getEndTime());
-        assertEquals(30, result.getDuration());
+        assertEquals(0, result.getStartMinute());
+        assertEquals(29, result.getEndMinute());
+        assertEquals(30, result.getDurationMinutes());
     }
 
     @Test
@@ -294,9 +294,9 @@ class TimeRecordServiceImplTest {
         TimeRecordEntity result = timeRecordService.calculateRecommendNext(records, targetDate);
 
         // Then: Should recommend 1431 - 1439 (not 1461)
-        assertEquals(1431, result.getStartTime());
-        assertEquals(1439, result.getEndTime());
-        assertEquals(9, result.getDuration());
+        assertEquals(1431, result.getStartMinute());
+        assertEquals(1439, result.getEndMinute());
+        assertEquals(9, result.getDurationMinutes());
     }
 
     @Test
@@ -327,9 +327,9 @@ class TimeRecordServiceImplTest {
 
         TimeRecordEntity result = timeRecordService.calculateRecommendNext(records, LocalDate.now());
 
-        assertEquals(1439, result.getStartTime());
-        assertEquals(1439, result.getEndTime());
-        assertEquals(1, result.getDuration());
+        assertEquals(1439, result.getStartMinute());
+        assertEquals(1439, result.getEndMinute());
+        assertEquals(1, result.getDurationMinutes());
     }
 
     @Test
@@ -339,15 +339,15 @@ class TimeRecordServiceImplTest {
 
         TimeRecordEntity result = timeRecordService.calculateRecommendNext(records, LocalDate.now());
 
-        assertEquals(600, result.getStartTime());
-        assertEquals(600, result.getEndTime());
-        assertEquals(1, result.getDuration());
+        assertEquals(600, result.getStartMinute());
+        assertEquals(600, result.getEndMinute());
+        assertEquals(1, result.getDurationMinutes());
     }
 
     private TimeRecordEntity createRecord(int start, int end) {
         TimeRecordEntity record = new TimeRecordEntity();
-        record.setStartTime(start);
-        record.setEndTime(end);
+        record.setStartMinute(start);
+        record.setEndMinute(end);
         return record;
     }
 }

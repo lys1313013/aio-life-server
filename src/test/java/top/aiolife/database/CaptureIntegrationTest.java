@@ -96,7 +96,7 @@ class CaptureIntegrationTest {
     void setup() {
         cleanup();
         jdbc.update(
-                "INSERT INTO \"user\" (id,username,password,nickname,is_deleted) VALUES"
+                "INSERT INTO sys_user (id,username,password,nickname,is_deleted) VALUES"
                     + " (?,?,?,'采集测试用户',0)",
                 USER,
                 "capture-fixture",
@@ -113,7 +113,7 @@ class CaptureIntegrationTest {
         for (String table : List.of("device", "wardrobe_item", "read_record", "movie", "expense"))
             jdbc.update("DELETE FROM " + table + " WHERE user_id=?", USER);
         jdbc.update("DELETE FROM \"file\" WHERE create_user=?", USER);
-        jdbc.update("DELETE FROM \"user\" WHERE id=?", USER);
+        jdbc.update("DELETE FROM sys_user WHERE id=?", USER);
         var keys = redis.keys("aio:capture:request:v2:" + USER + ":*");
         if (keys != null && !keys.isEmpty()) redis.delete(keys);
     }

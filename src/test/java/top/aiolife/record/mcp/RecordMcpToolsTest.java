@@ -125,7 +125,7 @@ class RecordMcpToolsTest {
                                 (mProxy, mMethod, mArgs) -> {
                                     if ("selectList".equals(mMethod.getName()) || "selectOne".equals(mMethod.getName())) {
                                         TimeRecordEntity lastRecord = new TimeRecordEntity();
-                                        lastRecord.setEndTime(60);
+                                        lastRecord.setEndMinute(60);
                                         if ("selectOne".equals(mMethod.getName())) return lastRecord;
                                         return Collections.singletonList(lastRecord);
                                     }
@@ -229,7 +229,7 @@ class RecordMcpToolsTest {
 
         assertTrue(result.contains("保存成功"));
         assertNotNull(savedTimeRecord);
-        assertEquals(61, savedTimeRecord.getStartTime());
+        assertEquals(61, savedTimeRecord.getStartMinute());
     }
 
     @Test
@@ -237,14 +237,14 @@ class RecordMcpToolsTest {
         var request = new TimeRecordSaveMcpReq();
         request.setDate(LocalDate.of(2026, 1, 1));
         assertThrows(IllegalArgumentException.class, () -> recordMcpTools.time_record_save(request));
-        request.setStartTime(600);
+        request.setStartMinute(600);
         assertThrows(IllegalArgumentException.class, () -> recordMcpTools.time_record_save(request));
-        request.setEndTime(659);
+        request.setEndMinute(659);
         recordMcpTools.time_record_save(request);
-        assertEquals(600, savedTimeRecord.getStartTime());
-        assertEquals(659, savedTimeRecord.getEndTime());
+        assertEquals(600, savedTimeRecord.getStartMinute());
+        assertEquals(659, savedTimeRecord.getEndMinute());
         assertEquals(LocalDate.of(2026, 1, 1), savedTimeRecord.getDate());
-        request.setEndTime(599);
+        request.setEndMinute(599);
         assertThrows(IllegalArgumentException.class, () -> recordMcpTools.time_record_save(request));
     }
 

@@ -283,7 +283,10 @@ class OpenApiIntegrationTest {
         login.when(StpUtil::getLoginIdAsLong).thenThrow(new NotLoginException("未登录", "test", null));
         JsonNode catalog = discovery("/docs/catalog");
         assertTrue(catalog.path("operationCount").asInt() > 200);
-        assertEquals(9, catalog.path("modules").size());
+        var modules = new HashSet<String>();
+        catalog.path("modules").forEach(module -> modules.add(module.path("id").asText()));
+        assertTrue(modules.containsAll(List.of("record", "sso", "system", "wardrobe", "membership",
+                "bankcard", "feedback", "relationship", "mcp")));
         for (JsonNode module : catalog.path("modules")) {
             JsonNode page = discovery("/docs/operations?module=" + module.path("id").asText());
             assertEquals(module.path("operationCount").asInt(), page.path("total").asInt());
@@ -321,6 +324,103 @@ class OpenApiIntegrationTest {
             mvc.perform(get("/api/docs/operations?" + query).contextPath("/api")).andExpect(status().isBadRequest());
         }
         mvc.perform(get("/api/docs/operations/missing_operation").contextPath("/api")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void 中文字典搜索覆盖用户及系统字典操作() throws Exception {
+        JsonNode results = discovery("/docs/operations?keyword=字典&pageSize=100");
+        Map<String, JsonNode> found = new LinkedHashMap<>();
+        results.path("items").forEach(item -> found.put(item.path("operationId").asText(), item));
+        JsonNode api = document("/v3/api-docs");
+        int dictionaryCount = 0;
+        for (var path : api.path("paths").properties()) {
+            if (List.of("/userDictData/", "/userDictType/", "/sysDictData/", "/sysDictType/")
+                    .stream().noneMatch(prefix -> (path.getKey() + "/").startsWith(prefix))) continue;
+            for (var method : path.getValue().properties()) {
+                String id = method.getValue().path("operationId").asText();
+                assertTrue(found.containsKey(id), "中文搜索遗漏字典接口：" + id);
+                assertTrue(found.get(id).path("name").asText().contains("字典"), id);
+                dictionaryCount++;
+            }
+        }
+        assertTrue(dictionaryCount > 0);
+        assertTrue(found.containsKey("get_userDictData_id"), "应可发现业务关联 ID 的名称解析接口");
+    }
+
+    @Test
+    void 所有公开操作都有简短中文名称且常用业务可搜索() throws Exception {
+        JsonNode api = document("/v3/api-docs");
+        api.path("paths").properties().forEach(path -> path.getValue().properties().forEach(method -> {
+            String summary = method.getValue().path("summary").asText();
+            String location = method.getKey() + " " + path.getKey();
+            assertTrue(summary.matches(".*[\\p{IsHan}].*"), "缺少中文名称：" + location);
+            assertTrue(summary.length() <= 32, "名称应简短：" + location);
+            assertFalse(List.of("新增", "删除", "更新", "查询列表", "拖拽排序").contains(summary), location);
+        }));
+        for (var entry : Map.ofEntries(
+                Map.entry("收入", "get_income_query"),
+                Map.entry("支出", "get_expense_query"),
+                Map.entry("财务", "get_home_sections_finance_calendar"),
+                Map.entry("收支", "get_home_sections_finance_calendar"),
+                Map.entry("银行卡", "get_bank_cards"),
+                Map.entry("会员", "get_membership_list"),
+                Map.entry("微信读书", "get_weread_recent"),
+                Map.entry("纪念日", "get_anniversaryRecords"),
+                Map.entry("运动", "get_exerciseRecord_query"),
+                Map.entry("设备", "get_device_query"),
+                Map.entry("导出", "get_me_data_exports_catalog"),
+                Map.entry("采集", "get_capture_options"),
+                Map.entry("定时任务", "get_system_scheduled_jobs"),
+                Map.entry("授权", "post_query_access_token")).entrySet()) {
+            assertTrue(discovery("/docs/operations?keyword=" + entry.getKey() + "&pageSize=100")
+                    .path("items").toString().contains(entry.getValue()), entry.toString());
+        }
+        assertFalse(api.path("paths").has("/internal/query/access/evaluate"));
+        assertFalse(api.path("paths").has("/internal/query/access/check-token"));
+    }
+
+    @Test
+    void 财务日历和阅读统计的周期模型互不混用() throws Exception {
+        JsonNode api = document("/v3/api-docs");
+        var bucketRefs = new HashSet<String>();
+        for (String schemaName : List.of("FinanceCalendarVO", "FinanceOverviewCalendarVO", "WereadStatsVO")) {
+            JsonNode bucketRef = api.path("components").path("schemas").path(schemaName)
+                    .path("properties").path("buckets").path("items");
+            assertTrue(bucketRefs.add(bucketRef.path("$ref").asText()), "同名周期模型不能相互覆盖");
+            JsonNode fields = resolve(api, bucketRef).path("properties");
+            if (schemaName.equals("WereadStatsVO")) {
+                assertTrue(fields.has("seconds"));
+                assertFalse(fields.has("amount"));
+            } else {
+                for (String field : List.of("amount", "startDate", "endDate", "future")) {
+                    assertTrue(fields.has(field), schemaName + " 缺少 " + field);
+                }
+                assertFalse(fields.has("seconds"));
+                if (schemaName.equals("FinanceOverviewCalendarVO")) {
+                    for (String field : List.of("income", "expense", "balance")) assertTrue(fields.has(field));
+                }
+            }
+        }
+        for (String path : List.of("/home/sections/expense/calendar", "/home/sections/income/calendar",
+                "/home/sections/finance/calendar")) {
+            Map<String, JsonNode> query = parameters(api.path("paths").path(path).path("get"));
+            assertTrue(query.get("date").path("description").asText().contains("yyyy-MM"), path);
+            assertTrue(query.get("granularity").path("description").asText().contains("week"), path);
+        }
+    }
+
+    @Test
+    void 匿名图片及协议文档不要求凭据而相邻业务仍需鉴权() throws Exception {
+        JsonNode api = document("/v3/api-docs");
+        for (String path : List.of("/auth/legal", "/public/images/{id}.{extension}",
+                "/membership/provider-icons/{key}", "/cbti/images/{objectName}")) {
+            JsonNode security = api.path("paths").path(path).path("get").path("security");
+            assertTrue(security.isArray() && security.isEmpty(), path);
+        }
+        for (String path : List.of("/membership/provider-icons", "/membership/providers", "/auth/info")) {
+            assertFalse(api.path("paths").path(path).path("get").path("security").isArray(), path);
+        }
+        assertTrue(api.at("/security/0").has("bearerAuth"));
     }
 
     @Test
@@ -383,10 +483,10 @@ class OpenApiIntegrationTest {
             }
         }
         JsonNode schemas = api.at("/components/schemas");
-        assertTrue(schemas.path("TimeRecordSaveReq").path("required").toString().contains("startTime"));
-        assertTrue(schemas.path("TimeRecordSaveReq").path("required").toString().contains("endTime"));
-        assertFalse(schemas.path("TimeRecordUpdateReq").path("required").toString().contains("startTime"));
-        assertEquals(1439, schemas.at("/TimeRecordSaveReq/properties/endTime/maximum").asInt());
+        assertTrue(schemas.path("TimeRecordSaveReq").path("required").toString().contains("startMinute"));
+        assertTrue(schemas.path("TimeRecordSaveReq").path("required").toString().contains("endMinute"));
+        assertFalse(schemas.path("TimeRecordUpdateReq").path("required").toString().contains("startMinute"));
+        assertEquals(1439, schemas.at("/TimeRecordSaveReq/properties/endMinute/maximum").asInt());
         assertTrue(schemas.at("/ReadRecordCreateReq/properties/totalProgress/description").asText().contains("单位"));
         assertTrue(schemas.at("/TaskDetailCreateReq/properties/taskId/description").asText().contains("/tasks"));
         assertTrue(schemas.path("ReadRecordCreateReq").path("required").toString().contains("title"));
@@ -423,10 +523,9 @@ class OpenApiIntegrationTest {
     }
 
     @Configuration(proxyBeanMethods = false)
-    @ComponentScan(basePackages = {"top.aiolife.record.api", "top.aiolife.sso.api", "top.aiolife.system.api",
-            "top.aiolife.wardrobe.api", "top.aiolife.membership.api", "top.aiolife.bankcard.api",
-            "top.aiolife.feedback.api", "top.aiolife.relationship.api", "top.aiolife.mcp.api"},
-            useDefaultFilters = false, includeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = RestController.class))
+    @ComponentScan(basePackages = "top.aiolife", useDefaultFilters = false,
+            includeFilters = @ComponentScan.Filter(type = FilterType.ANNOTATION, classes = RestController.class),
+            excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = DocumentationController.class))
     @Import({DocumentationController.class, DocumentationService.class, OpenApiConfig.class, JsonConfig.class, QueryParamsConfig.class, ExceptionHandle.class,
             SaTokenConfig.class, SaTokenContextRegister.class, ApiKeyInterceptor.class,
             SecondaryLockInterceptor.class, UserLastActiveInterceptor.class})

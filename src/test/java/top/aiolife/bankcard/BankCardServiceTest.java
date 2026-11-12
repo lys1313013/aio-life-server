@@ -51,8 +51,8 @@ class BankCardServiceTest {
         var ds = new JdbcDataSource();
         ds.setURL("jdbc:h2:mem:"+UUID.randomUUID()+";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=USER;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds); tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
-        jdbc.execute("CREATE TABLE user(policy_version VARCHAR(32), policy_accepted_at TIMESTAMP, erasure_requested_at TIMESTAMP, erasure_retry_at TIMESTAMP, id BIGINT PRIMARY KEY,is_deleted INT DEFAULT 0)");
-        jdbc.execute("INSERT INTO \"user\"(id) VALUES(1),(2)");
+        jdbc.execute("CREATE TABLE sys_user(policy_version VARCHAR(32), policy_accepted_at TIMESTAMP, erasure_requested_at TIMESTAMP, erasure_retry_at TIMESTAMP, id BIGINT PRIMARY KEY,is_deleted INT DEFAULT 0)");
+        jdbc.execute("INSERT INTO sys_user(id) VALUES(1),(2)");
         jdbc.execute("CREATE TABLE sys_dict_type(dict_id BIGINT PRIMARY KEY,dict_type VARCHAR(100),is_enabled SMALLINT,is_deleted INT DEFAULT 0)");
         jdbc.execute("CREATE TABLE sys_dict_data(dict_code BIGINT PRIMARY KEY,dict_id BIGINT,dict_label VARCHAR(100),dict_value VARCHAR(100),sort_order INT,is_enabled SMALLINT,is_deleted INT DEFAULT 0)");
         jdbc.execute("INSERT INTO sys_dict_type VALUES(10,'bank',1,0),(11,'other',1,0)");

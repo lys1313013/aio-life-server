@@ -63,6 +63,7 @@ import top.aiolife.record.mapper.ITimeRecordMapper;
 import top.aiolife.record.mapper.ITimeTrackerCategoryMapper;
 import top.aiolife.record.mapper.ImageImportTaskMapper;
 import top.aiolife.record.mapper.UserBindMapper;
+import top.aiolife.record.pojo.entity.BVideoEntity;
 import top.aiolife.record.pojo.entity.TaskEntity;
 import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.pojo.query.DeviceQuery;
@@ -86,6 +87,8 @@ import top.aiolife.record.service.impl.TimeTrackerCategoryServiceImpl;
 import top.aiolife.record.service.impl.WereadServiceImpl;
 import top.aiolife.record.weread.WereadClient;
 import top.aiolife.record.weread.WereadReadCache;
+import top.aiolife.scheduling.mapper.ScheduledJobMapper;
+import top.aiolife.scheduling.pojo.entity.ScheduledJobEntity;
 import top.aiolife.sso.mapper.ApiKeyMapper;
 import top.aiolife.sso.mapper.LoginLogMapper;
 import top.aiolife.sso.mapper.UserMapper;
@@ -120,7 +123,15 @@ class PostgresqlRegressionIntegrationTest {
                 + "/fixture?stringtype=unspecified");
         source.setUser("postgres"); source.setPassword("isolated-regression");
         jdbc = new JdbcTemplate(source);
-        jdbc.execute(Files.readString(Path.of("sql/migrations/V20261110_01__postgresql_schema.sql")));
+        try (var paths = Files.list(Path.of("sql/migrations"))) {
+            for (var path : paths
+                    .filter(p -> p.getFileName().toString().matches("V\\d.*\\.sql"))
+                    .filter(p -> !p.getFileName().toString().startsWith("V20261110_02_"))
+                    .sorted()
+                    .toList()) {
+                jdbc.execute(Files.readString(path));
+            }
+        }
         var configuration = new MybatisConfiguration();
         configuration.setMapUnderscoreToCamelCase(true);
         configuration.getTypeHandlerRegistry().register(NumericBooleanTypeHandler.class);
@@ -128,7 +139,8 @@ class PostgresqlRegressionIntegrationTest {
                 BankCardTagMapper.class, BankCardTagRelMapper.class, BankCardCoverTemplateMapper.class,
                 UserBindMapper.class, UserMapper.class, IDeviceMapper.class, IIncomeMapper.class, IExpenseMapper.class,
                 IMemoMapper.class, ITaskMapper.class,
-                IBVideoMapper.class, IFileMapper.class, ImageImportTaskMapper.class, ITimeTrackerCategoryMapper.class)) configuration.addMapper(mapper);
+                IBVideoMapper.class, IFileMapper.class, ImageImportTaskMapper.class, ITimeTrackerCategoryMapper.class,
+                ScheduledJobMapper.class)) configuration.addMapper(mapper);
         var factory = new MybatisSqlSessionFactoryBean();
         factory.setDataSource(source); factory.setConfiguration(configuration);
         factory.setPlugins(new MybatisPlusConfig().mybatisPlusInterceptor());
@@ -139,7 +151,7 @@ class PostgresqlRegressionIntegrationTest {
 
     @BeforeEach void 开启隔离事务() {
         transaction = transactions.getTransaction(new DefaultTransactionDefinition());
-        jdbc.update("INSERT INTO \"user\"(id,username,nickname,update_time) VALUES (42,'fixture','before',?)", OLD_TIME);
+        jdbc.update("INSERT INTO sys_user(id,username,nickname,update_time) VALUES (42,'fixture','before',?)", OLD_TIME);
     }
     @AfterEach void 回滚夹具() { transactions.rollback(transaction); }
     @AfterAll static void 清理数据库() { POSTGRES.stop(); }
@@ -351,9 +363,9 @@ class PostgresqlRegressionIntegrationTest {
         var change = new UserEntity(); change.setId(42L); change.setNickname("after"); change.setUpdateUser(99L);
         var created = mapper(UserMapper.class).selectById(42).getCreateTime();
         users.updateUser(change, false);
-        assertTrue(updated("\"user\"", 42).isAfter(OLD_TIME));
+        assertTrue(updated("sys_user", 42).isAfter(OLD_TIME));
         assertEquals(99L, mapper(UserMapper.class).selectById(42).getUpdateUser());
-        jdbc.update("UPDATE \"user\" SET update_time=? WHERE id=42", OLD_TIME);
+        jdbc.update("UPDATE sys_user SET update_time=? WHERE id=42", OLD_TIME);
         var clear = new UserEntity(); clear.setId(42L);
         users.updateUser(clear, true);
         var saved = mapper(UserMapper.class).selectById(42);
@@ -432,7 +444,7 @@ class PostgresqlRegressionIntegrationTest {
     }
 
     @Test void 视频封面排队和任务完成维护更新时间() {
-        jdbc.update("INSERT INTO b_video(id,user_id,title,url,duration,update_time) VALUES (1,42,'fixture','https://example.test/v',10,?)", OLD_TIME);
+        jdbc.update("INSERT INTO b_video(id,user_id,title,url,duration_seconds,update_time) VALUES (1,42,'fixture','https://example.test/v',10,?)", OLD_TIME);
         var service = new VideoCoverService(mapper(IBVideoMapper.class), mapper(ImageImportTaskMapper.class),
                 mapper(IFileMapper.class), mock(VideoCoverDownloader.class), mock(VideoCoverStorage.class));
         service.enqueue(1, 42, "https://example.test/cover.png", false);
@@ -442,5 +454,93 @@ class PostgresqlRegressionIntegrationTest {
         service.failed(id, "fixture", "FIXTURE_FAILURE");
         assertTrue(updated("image_import_task", id).isAfter(OLD_TIME));
         assertEquals("FAILED", mapper(IBVideoMapper.class).selectById(1).getCoverState());
+    }
+
+    @Test void 定时任务与视频写入的冲突目标匹配部分唯一索引() {
+        var jobs = mapper(ScheduledJobMapper.class);
+        assertEquals(1, jobs.insertIfAbsent(scheduledJob("UPSERT_TEST")));
+        assertEquals(0, jobs.insertIfAbsent(scheduledJob("UPSERT_TEST")));
+        jdbc.update("UPDATE sys_scheduled_job SET is_deleted = 1 WHERE job_code = 'UPSERT_TEST'");
+        assertEquals(1, jobs.insertIfAbsent(scheduledJob("UPSERT_TEST")));
+
+        var videos = mapper(IBVideoMapper.class);
+        assertEquals(1, videos.insertIgnoreActive(video(1L, "BV1UPSERT")));
+        assertEquals(0, videos.insertIgnoreActive(video(2L, "BV1UPSERT")));
+        assertEquals(1, videos.insertIgnoreActive(video(3L, "")));
+        assertEquals(1, videos.insertIgnoreActive(video(4L, "")));
+    }
+
+    @Test void 时迹分类删除落为逻辑删除() {
+        var categories = mapper(ITimeTrackerCategoryMapper.class);
+        var category = new TimeTrackerCategoryEntity();
+        category.setUserId(42L);
+        category.setName("fixture");
+        category.fillCreateCommonField(42L);
+        categories.insert(category);
+        assertNotNull(category.getId());
+        categories.deleteById(category.getId());
+        assertNull(categories.selectById(category.getId()));
+        assertEquals(1, jdbc.queryForObject(
+                "SELECT is_deleted FROM time_tracker_category WHERE id = ?", Integer.class, category.getId()).intValue());
+    }
+
+    @Test void 审计字段和字典启用状态满足契约() {
+        var audit = jdbc.queryForList("""
+                SELECT c.table_name, c.column_name
+                FROM information_schema.columns c
+                JOIN information_schema.tables t
+                  ON t.table_schema = c.table_schema
+                 AND t.table_name = c.table_name
+                 AND t.table_type = 'BASE TABLE'
+                WHERE c.table_schema = current_schema()
+                  AND c.table_name NOT IN ('flyway_schema_history', 'migration_archive')
+                  AND c.column_name IN ('create_time', 'update_time')
+                  AND (c.is_nullable = 'YES' OR c.column_default IS NULL)
+                """);
+        assertTrue(audit.isEmpty(), "审计字段仍需默认值或非空: " + audit);
+
+        assertEquals("NO", jdbc.queryForObject("""
+                SELECT is_nullable FROM information_schema.columns
+                WHERE table_schema = current_schema() AND table_name = 'sys_dict_data' AND column_name = 'is_enabled'
+                """, String.class));
+        assertEquals("NO", jdbc.queryForObject("""
+                SELECT is_nullable FROM information_schema.columns
+                WHERE table_schema = current_schema() AND table_name = 'sys_dict_type' AND column_name = 'is_enabled'
+                """, String.class));
+        assertEquals("YES", jdbc.queryForObject("""
+                SELECT is_nullable FROM information_schema.columns
+                WHERE table_schema = current_schema() AND table_name = 'user_dict_data' AND column_name = 'is_enabled'
+                """, String.class));
+        assertEquals(3, jdbc.queryForObject("""
+                SELECT count(*) FROM pg_constraint
+                WHERE conname IN ('ck_sys_dict_type_enabled', 'ck_sys_dict_data_enabled', 'ck_user_dict_data_enabled')
+                """, Integer.class).intValue());
+
+        jdbc.update("INSERT INTO user_dict_data(id, user_id, dict_type, is_enabled) VALUES (9001, 42, 'fixture', NULL)");
+        jdbc.update("INSERT INTO user_dict_data(id, user_id, dict_type, is_enabled) VALUES (9002, 42, 'fixture', 1)");
+    }
+
+    private ScheduledJobEntity scheduledJob(String code) {
+        var job = new ScheduledJobEntity();
+        job.setJobCode(code);
+        job.setName("fixture");
+        job.setCron("0 0 1 * * ?");
+        job.setZoneId("Asia/Shanghai");
+        job.setIsEnabled(1);
+        job.setRevision(0);
+        job.fillCreateCommonField(null);
+        return job;
+    }
+
+    private BVideoEntity video(long id, String bvid) {
+        var video = new BVideoEntity();
+        video.setId(id);
+        video.setUserId(42L);
+        video.setTitle("fixture");
+        video.setUrl("https://example.test/v");
+        video.setDurationSeconds(1);
+        video.setBvid(bvid);
+        video.fillCreateCommonField(42L);
+        return video;
     }
 }

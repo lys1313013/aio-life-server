@@ -28,7 +28,12 @@ class AccountErasureMapperTest {
         var tables = new LinkedHashMap<String, List<String>>();
         var matcher = tablePattern.matcher(Files.readString(Path.of("sql/migrations/V20261110_01__postgresql_schema.sql")));
         while (matcher.find()) {
-            String table = matcher.group(1);
+            // 增量 V20261112_03 将基线中的 user 重命名为 sys_user，V20261112_04 删除四张死表。
+            String baselineTable = matcher.group(1);
+            if (top.aiolife.support.CurrentSchema.dropped(baselineTable)) {
+                continue;
+            }
+            String table = "user".equals(baselineTable) ? "sys_user" : baselineTable;
             var columns = columnPattern.matcher(matcher.group(2)).results().map(m -> m.group(1)).toList();
             tables.put(table, columns);
             var definitions = columns.stream().map(column -> "\"" + column + "\" " +
@@ -40,11 +45,9 @@ class AccountErasureMapperTest {
                 if (columns.contains("is_deleted")) jdbc.update("UPDATE \"" + table + "\" SET is_deleted=1 WHERE user_id=7");
             }
         }
-        jdbc.update("INSERT INTO \"user\"(id,username,email,is_deleted,erasure_requested_at) VALUES(7,'fixture','fixture@example.test',0,?)", LocalDateTime.now());
+        jdbc.update("INSERT INTO sys_user(id,username,email,is_deleted,erasure_requested_at) VALUES(7,'fixture','fixture@example.test',0,?)", LocalDateTime.now());
         jdbc.update("INSERT INTO file(id,create_user,biz_type) VALUES(11,7,'avatar'),(12,8,'avatar'),(13,7,'bank_card_template_cover')");
         jdbc.update("INSERT INTO thought_rela_event(id,thought_id,create_user) VALUES(1,1,8),(2,2,8)");
-        jdbc.update("INSERT INTO record_article(id,create_user) VALUES(1,7),(2,8)");
-        jdbc.update("INSERT INTO record_article_annotation(id,article_id,create_user) VALUES(1,1,8),(2,2,8)");
         var config = new Configuration(new Environment("fixture", new JdbcTransactionFactory(), source));
         config.setMapUnderscoreToCamelCase(true); config.addMapper(AccountErasureMapper.class);
         try (var session = new SqlSessionFactoryBuilder().build(config).openSession(true)) {
@@ -65,7 +68,6 @@ class AccountErasureMapperTest {
             }
             assertEquals(2L, jdbc.queryForObject("SELECT COUNT(*) FROM file", Long.class));
             assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM thought_rela_event", Long.class));
-            assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM record_article_annotation", Long.class));
             assertEquals(1, mapper.finish(7));
         }
     }

@@ -31,7 +31,7 @@ class HomeVideoDetailTest {
     }
 
     private void insert(long id, long user, int deleted) {
-        database.jdbc.update("INSERT INTO b_video(id,user_id,title,url,duration,watched_duration,episodes,current_episode,status,notes,bvid,description,is_deleted) VALUES (?,?,'完整视频','https://www.bilibili.com/video/BV123',600,120,5,2,'in_progress',?,'BV123','保留原始视频简介',?)", id, user, FULL_NOTES, deleted);
+        database.jdbc.update("INSERT INTO b_video(id,user_id,title,url,duration_seconds,watched_duration_seconds,episodes,current_episode,status,notes,bvid,description,is_deleted) VALUES (?,?,'完整视频','https://www.bilibili.com/video/BV123',600,120,5,2,'in_progress',?,'BV123','保留原始视频简介',?)", id, user, FULL_NOTES, deleted);
     }
 
     @AfterEach
@@ -51,8 +51,8 @@ class HomeVideoDetailTest {
                     .andExpect(jsonPath("$.data.notes").value(FULL_NOTES))
                     .andExpect(jsonPath("$.data.description").value("保留原始视频简介"))
                     .andExpect(jsonPath("$.data.status").value("in_progress"))
-                    .andExpect(jsonPath("$.data.duration").value(600))
-                    .andExpect(jsonPath("$.data.watchedDuration").value(120))
+                    .andExpect(jsonPath("$.data.durationSeconds").value(600))
+                    .andExpect(jsonPath("$.data.watchedDurationSeconds").value(120))
                     .andExpect(jsonPath("$.data.currentEpisode").value(2))
                     .andExpect(jsonPath("$.data.episodes").value(5))
                     .andExpect(jsonPath("$.data.userId").doesNotExist())

@@ -109,8 +109,8 @@ class TimeRecordControllerIntegrationTest extends BaseIntegrationTest {
     private TimeRecordReq timeRecordReq() {
         TimeRecordReq req = new TimeRecordReq();
         req.setDate(LocalDate.now());
-        req.setStartTime(540);
-        req.setEndTime(569);
+        req.setStartMinute(540);
+        req.setEndMinute(569);
         req.setTitle("关联状态归属测试");
         return req;
     }
@@ -166,11 +166,11 @@ class TimeRecordControllerIntegrationTest extends BaseIntegrationTest {
         entity.setUserId(TEST_USER_ID);
         entity.setCreateUser(TEST_USER_ID);
         entity.setDate(date);
-        entity.setStartTime(540);
-        entity.setEndTime(600);
+        entity.setStartMinute(540);
+        entity.setEndMinute(600);
         entity.setTitle("测试时间记录");
         entity.setCategoryId(1L);
-        entity.setDuration(60);
+        entity.setDurationMinutes(60);
         return entity;
     }
 }

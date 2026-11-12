@@ -39,8 +39,8 @@ class TimeRecordControllerTest {
     @Test
     void testRecommendNext_全天已满时返回空推荐及当天记录且不查询分类() {
         TimeRecordEntity record = new TimeRecordEntity();
-        record.setStartTime(0);
-        record.setEndTime(1439);
+        record.setStartMinute(0);
+        record.setEndMinute(1439);
         List<TimeRecordEntity> records = List.of(record);
         RecommendNextVO result = new RecommendNextVO(null, records);
         ITimeRecordService timeRecordService = proxy(ITimeRecordService.class, (method, args) -> {
@@ -58,11 +58,11 @@ class TimeRecordControllerTest {
     @Test
     void testRecommendNext_剩余一分钟时正常推荐并查询分类() {
         TimeRecordEntity previousRecord = new TimeRecordEntity();
-        previousRecord.setEndTime(1438);
+        previousRecord.setEndMinute(1438);
         previousRecord.setCategoryId(10L);
         TimeRecordEntity recommend = new TimeRecordEntity();
-        recommend.setStartTime(1439);
-        recommend.setEndTime(1439);
+        recommend.setStartMinute(1439);
+        recommend.setEndMinute(1439);
         RecommendNextVO result = new RecommendNextVO(recommend, List.of(previousRecord));
         ITimeRecordService timeRecordService = proxy(ITimeRecordService.class, (method, args) -> {
             if ("recommendNext".equals(method)) {
@@ -109,14 +109,14 @@ class TimeRecordControllerTest {
         TimeRecordEntity timeRecord = new TimeRecordEntity();
         timeRecord.setId("time-1");
         timeRecord.setDate(LocalDate.of(2026, 8, 9));
-        timeRecord.setStartTime(540);
-        timeRecord.setEndTime(600);
+        timeRecord.setStartMinute(540);
+        timeRecord.setEndMinute(600);
 
         TimeRecordEntity timeRecordWithoutExercise = new TimeRecordEntity();
         timeRecordWithoutExercise.setId("time-2");
         timeRecordWithoutExercise.setDate(LocalDate.of(2026, 8, 8));
-        timeRecordWithoutExercise.setStartTime(540);
-        timeRecordWithoutExercise.setEndTime(600);
+        timeRecordWithoutExercise.setStartMinute(540);
+        timeRecordWithoutExercise.setEndMinute(600);
 
         ITimeRecordService timeRecordService = proxy(ITimeRecordService.class,
                 (method, args) -> "list".equals(method)

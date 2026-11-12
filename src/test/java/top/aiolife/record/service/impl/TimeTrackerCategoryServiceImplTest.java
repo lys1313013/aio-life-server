@@ -9,6 +9,8 @@ import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.test.util.ReflectionTestUtils;
+import top.aiolife.record.mapper.ITimeTrackerCategoryMapper;
 import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.service.TimeTrackerCategoryCache;
 
@@ -31,7 +33,9 @@ class TimeTrackerCategoryServiceImplTest {
         var cache = mock(TimeTrackerCategoryCache.class);
         when(cache.list(any(), any())).thenAnswer(invocation ->
                 invocation.<Supplier<List<TimeTrackerCategoryEntity>>>getArgument(1).get());
-        return new TimeTrackerCategoryServiceImpl(cache);
+        var service = new TimeTrackerCategoryServiceImpl(cache);
+        ReflectionTestUtils.setField(service, "baseMapper", mock(ITimeTrackerCategoryMapper.class));
+        return service;
     }
 
     @BeforeAll

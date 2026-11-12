@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import top.aiolife.config.JsonConfig;
@@ -68,6 +69,7 @@ class UserDictDataCacheTest {
         dictionaries = context.getBean(UserDictDataCache.class);
         caches = context.getBean("cacheManager", CacheManager.class);
         service = spy(new UserDictDataServiceImpl(dictionaries));
+        ReflectionTestUtils.setField(service, "baseMapper", mapper);
         when(mapper.selectList(anyWrapper())).thenReturn(List.of());
     }
 

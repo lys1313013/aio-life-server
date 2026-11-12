@@ -202,9 +202,9 @@ class TimeRecordDayQueryTest {
     private void commit() { TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit); }
     private TimeRecordEntity record(String id, LocalDate day) {
         var row = new TimeRecordEntity(); row.setId(id); row.setUserId(1L); row.setDate(day);
-        row.setCategoryId(9223372036854775806L); row.setStartTime(540); row.setEndTime(599); return row;
+        row.setCategoryId(9223372036854775806L); row.setStartMinute(540); row.setEndMinute(599); return row;
     }
     private TimeRecordReq request(String id, LocalDate day) {
-        var req = new TimeRecordReq(); req.setId(id); req.setDate(day); req.setStartTime(540); req.setEndTime(599); return req;
+        var req = new TimeRecordReq(); req.setId(id); req.setDate(day); req.setStartMinute(540); req.setEndMinute(599); return req;
     }
 }

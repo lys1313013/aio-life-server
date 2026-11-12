@@ -47,7 +47,7 @@ class PublicImageControllerTest {
         jdbc = new JdbcTemplate(ds);
         jdbc.execute("CREATE TABLE file(id VARCHAR(32) PRIMARY KEY,file_name VARCHAR(255),file_type VARCHAR(100),biz_type VARCHAR(100),biz_id BIGINT,create_user BIGINT,is_deleted INT,is_public INT,storage_object_id BIGINT)");
         jdbc.execute("CREATE TABLE bank_card_cover_template(id BIGINT PRIMARY KEY,is_deleted INT,is_enabled INT)");
-        jdbc.execute("CREATE TABLE \"user\"(id BIGINT PRIMARY KEY,avatar_file_id VARCHAR(32),is_deleted INT)");
+        jdbc.execute("CREATE TABLE sys_user(id BIGINT PRIMARY KEY,avatar_file_id VARCHAR(32),is_deleted INT)");
         var config = new MybatisConfiguration(); config.setMapUnderscoreToCamelCase(true); config.addMapper(PublicImageMapper.class);
         var factory = new MybatisSqlSessionFactoryBean(); factory.setDataSource(ds); factory.setConfiguration(config);
         mapper = new SqlSessionTemplate(factory.getObject()).getMapper(PublicImageMapper.class);
@@ -103,14 +103,14 @@ class PublicImageControllerTest {
     @Test void 头像必须公开且当前绑定到所属用户() throws Exception {
         jdbc.update("INSERT INTO file VALUES(?,'42/avatar/test.png','image/png','avatar',NULL,42,0,1,NULL)", ID);
         mvc.perform(get(url(ID))).andExpect(status().isNotFound());
-        jdbc.update("INSERT INTO \"user\" VALUES(43,?,0)", ID);
+        jdbc.update("INSERT INTO sys_user VALUES(43,?,0)", ID);
         mvc.perform(get(url(ID))).andExpect(status().isNotFound());
-        jdbc.update("UPDATE \"user\" SET id=42");
+        jdbc.update("UPDATE sys_user SET id=42");
         mvc.perform(get(url(ID))).andExpect(status().isOk());
         jdbc.update("UPDATE file SET is_public=0");
         mvc.perform(get(url(ID))).andExpect(status().isNotFound());
         jdbc.update("UPDATE file SET is_public=1");
-        jdbc.update("UPDATE \"user\" SET avatar_file_id=?", NEXT);
+        jdbc.update("UPDATE sys_user SET avatar_file_id=?", NEXT);
         mvc.perform(get(url(ID))).andExpect(status().isNotFound());
     }
     @Test void 换图使用新文件ID旧图源站失效且新图可访问() throws Exception {

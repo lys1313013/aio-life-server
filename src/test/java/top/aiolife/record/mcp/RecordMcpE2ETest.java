@@ -177,7 +177,7 @@ public class RecordMcpE2ETest {
                                     (mProxy, mMethod, mArgs) -> {
                                         if ("selectList".equals(mMethod.getName()) || "selectOne".equals(mMethod.getName())) {
                                             TimeRecordEntity lastRecord = new TimeRecordEntity();
-                                            lastRecord.setEndTime(60);
+                                            lastRecord.setEndMinute(60);
                                             if ("selectOne".equals(mMethod.getName())) return lastRecord;
                                             return Collections.singletonList(lastRecord);
                                         }
@@ -344,7 +344,7 @@ public class RecordMcpE2ETest {
 
         McpSchema.CallToolResult result = mcpClient.callTool(new McpSchema.CallToolRequest(
                 "time_record_save",
-                Map.of("date", "2026-05-21", "title", "Test", "startTime", 600, "endTime", 659)
+                Map.of("date", "2026-05-21", "title", "Test", "startMinute", 600, "endMinute", 659)
         ));
 
         assertNotNull(result);

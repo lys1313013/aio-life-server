@@ -128,8 +128,8 @@ class JevCategoryRecommendationServiceTest {
     private TimeRecordEntity record(LocalDate day, int start, int end, Long category) {
         var record = new TimeRecordEntity();
         record.setDate(day);
-        record.setStartTime(start);
-        record.setEndTime(end);
+        record.setStartMinute(start);
+        record.setEndMinute(end);
         record.setCategoryId(category);
         return record;
     }

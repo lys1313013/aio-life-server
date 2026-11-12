@@ -70,23 +70,23 @@ class HomeSectionServiceTest {
         var row = new BVideoEntity();
         row.setEpisodes(0);
         row.setCurrentEpisode(-1);
-        row.setDuration(-1);
-        row.setWatchedDuration(-1);
+        row.setDurationSeconds(-1);
+        row.setWatchedDurationSeconds(-1);
         var result = HomeSectionService.video(row);
         assertEquals(1, result.getEpisodes());
         assertEquals(1, result.getCurrentEpisode());
-        assertEquals(0, result.getDuration());
-        assertEquals(0, result.getWatchedDuration());
+        assertEquals(0, result.getDurationSeconds());
+        assertEquals(0, result.getWatchedDurationSeconds());
         assertEquals(0, result.getProgressPercent());
         row.setEpisodes(3);
         row.setCurrentEpisode(9);
-        row.setDuration(10);
-        row.setWatchedDuration(Integer.MAX_VALUE);
+        row.setDurationSeconds(10);
+        row.setWatchedDurationSeconds(Integer.MAX_VALUE);
         result = HomeSectionService.video(row);
         assertEquals(3, result.getCurrentEpisode());
         assertEquals(100, result.getProgressPercent());
-        row.setDuration(3);
-        row.setWatchedDuration(1);
+        row.setDurationSeconds(3);
+        row.setWatchedDurationSeconds(1);
         assertEquals(33, HomeSectionService.video(row).getProgressPercent());
     }
 
@@ -95,7 +95,7 @@ class HomeSectionServiceTest {
         var row = new BVideoEntity();
         row.setEpisodes(5);
         row.setCurrentEpisode(3);
-        row.setWatchedDuration(1200);
+        row.setWatchedDurationSeconds(1200);
         row.setUrl("https://www.bilibili.com/video/BV123?p=2&t=60&foo=bar");
         var crossEpisode = UriComponentsBuilder.fromUriString(HomeSectionService.video(row).getResumeUrl()).build();
         assertEquals("www.bilibili.com", crossEpisode.getHost());

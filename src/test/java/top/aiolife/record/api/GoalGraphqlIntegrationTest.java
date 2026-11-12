@@ -75,11 +75,11 @@ class GoalGraphqlIntegrationTest {
             assertEquals(100, preview("salary").getProgressPercent());
 
             // 严格超过：80 尚未达标，81 才达标；同日重复、午睡、00:01、删除、其他用户和范围外均已在夹具中。
-            jdbc.update("INSERT INTO time_record(id,date,category_id,user_id,start_time,end_time) WITH RECURSIVE n AS (SELECT 26 AS v UNION ALL SELECT v+1 FROM n WHERE v<80) SELECT CONCAT('extra-',v),(DATE '2026-01-01' + (v-1)),1,101,0,420 FROM n");
+            jdbc.update("INSERT INTO time_record(id,date,category_id,user_id,start_minute,end_minute) WITH RECURSIVE n AS (SELECT 26 AS v UNION ALL SELECT v+1 FROM n WHERE v<80) SELECT CONCAT('extra-',v),(DATE '2026-01-01' + (v-1)),1,101,0,420 FROM n");
             var equal = preview("sleep");
             assertEquals(0, equal.getCurrentValue().compareTo(new BigDecimal("80")));
             assertFalse(equal.isAchieved()); assertEquals(99, equal.getProgressPercent());
-            jdbc.update("INSERT INTO time_record(id,date,category_id,user_id,start_time,end_time) VALUES ('extra-81','2026-03-22',1,101,0,420)");
+            jdbc.update("INSERT INTO time_record(id,date,category_id,user_id,start_minute,end_minute) VALUES ('extra-81','2026-03-22',1,101,0,420)");
             assertTrue(preview("sleep").isAchieved());
             jdbc.update("UPDATE exercise_record SET exercise_count=40 WHERE id=1");
             assertTrue(preview("pushups").isAchieved());

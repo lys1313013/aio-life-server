@@ -33,6 +33,16 @@ class ExportDatasetRegistryTest {
                 json.readValue(
                         Files.readString(Path.of("src/main/resources/export/excluded-tables.json")),
                         new TypeReference<>() {});
+        for (var item : datasets) {
+            assertFalse(
+                    CurrentSchema.dropped(item.table()),
+                    "Dataset references a dropped table: " + item.table());
+        }
+        for (var table : excluded.keySet()) {
+            assertFalse(
+                    CurrentSchema.dropped(table),
+                    "Excluded table no longer exists: " + table);
+        }
         Set<String> classified = new HashSet<>(excluded.keySet());
         for (var item : datasets) {
             assertTrue(classified.add(item.table()), "Duplicate classification: " + item.table());
@@ -69,10 +79,15 @@ class ExportDatasetRegistryTest {
                                 Files.readString(
                                         Path.of(
                                                 "sql/migrations/V20261110_01__postgresql_schema.sql")));
-        while (matcher.find())
+        while (matcher.find()) {
+            String baselineTable = matcher.group(1);
+            if (CurrentSchema.dropped(baselineTable)) {
+                continue;
+            }
             assertTrue(
-                    classified.contains(matcher.group(1)),
-                    "Missing classification: " + matcher.group(1));
+                    classified.contains(CurrentSchema.currentName(baselineTable)),
+                    "Missing classification: " + CurrentSchema.currentName(baselineTable));
+        }
     }
 
     @Test
@@ -99,7 +114,12 @@ class ExportDatasetRegistryTest {
             assertTrue(table.find(), dataset.table());
             Set<String> actual = new HashSet<>();
             var fields = Pattern.compile("(?m)^\\s*\"([^\"]+)\"\\s+").matcher(CurrentSchema.table(dataset.table()));
-            while (fields.find()) actual.add(fields.group(1));
+            while (fields.find()) {
+                if (CurrentSchema.droppedColumn(dataset.table(), fields.group(1))) {
+                    continue;
+                }
+                actual.add(fields.group(1));
+            }
             Set<String> classified = new HashSet<>();
             dataset.columns().forEach(column -> classified.add(column.key()));
             var omissions = excluded.getOrDefault(dataset.table(), Map.of());

@@ -13,6 +13,6 @@ class BankDictionarySeedTest {
         assertFalse(sql.contains("INSERT INTO \"sys_menu\""));
         String menus=Files.readString(Path.of("sql/migrations/V20261110_02_006__menus.sql"));
         assertTrue(menus.contains("/finance/bank-cards"));
-        assertFalse(sql.contains("INSERT INTO \"user\""));
+        assertFalse(sql.contains("INSERT INTO sys_user"));
     }
 }

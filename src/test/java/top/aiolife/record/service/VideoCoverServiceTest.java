@@ -80,7 +80,7 @@ class VideoCoverServiceTest {
         proxy.addAdvice(interceptor); return (T)proxy.getProxy();
     }
     void video(long id,long owner) {
-        jdbc.update("INSERT INTO b_video(id,title,url,duration,user_id,cover,create_user,update_user) VALUES (?,?,?,?,?,?,?,?)", id,"合成视频","https://www.bilibili.com/video/BVtest",60,owner,URL,owner,owner);
+        jdbc.update("INSERT INTO b_video(id,title,url,duration_seconds,user_id,cover,create_user,update_user) VALUES (?,?,?,?,?,?,?,?)", id,"合成视频","https://www.bilibili.com/video/BVtest",60,owner,URL,owner,owner);
     }
     void finishNext() {
         var task=tasks.due().getFirst(); assertEquals(1,tasks.claim(task.getId(),"lease")); service.complete(task.getId(),"lease",png);
@@ -127,7 +127,7 @@ class VideoCoverServiceTest {
             stp.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
             var create=new BVideoCreateReq();
             create.setTitle("测试"); create.setUrl("https://www.bilibili.com/video/BVtest");
-            create.setDuration(60); create.setCover(URL); create.setBvid("BVone");
+            create.setDurationSeconds(60); create.setCover(URL); create.setBvid("BVone");
             assertEquals(0,controller.insert(create).getCode());
             var first=videos.selectList(null).getFirst();
             assertEquals("PENDING",first.getCoverState()); assertEquals(1,tasks.selectCount(null));
@@ -137,8 +137,8 @@ class VideoCoverServiceTest {
             controller.update(first.getId(),update); assertEquals(2,tasks.selectCount(null));
             create.setBvid("BVtwo"); controller.tagVideo(create); assertEquals(3,tasks.selectCount(null));
             var sync=new BVideoProgressReq();
-            sync.setTitle("浏览器同步"); sync.setUrl(create.getUrl()); sync.setDuration(60);
-            sync.setWatchedDuration(10); sync.setCurrentEpisode(1);
+            sync.setTitle("浏览器同步"); sync.setUrl(create.getUrl()); sync.setDurationSeconds(60);
+            sync.setWatchedDurationSeconds(10); sync.setCurrentEpisode(1);
             sync.setBvid("BVthree"); sync.setCover(URL);
             controller.syncProgress(sync); assertEquals(4,tasks.selectCount(null));
             controller.syncProgress(sync); assertEquals(4,tasks.selectCount(null));
