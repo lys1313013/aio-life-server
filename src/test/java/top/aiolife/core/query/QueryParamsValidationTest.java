@@ -2,6 +2,7 @@ package top.aiolife.core.query;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -77,6 +78,7 @@ class QueryParamsValidationTest {
             @NotNull(groups = RequiredDate.class, message = "分组日期不能为空")
             @JsonFormat(pattern = "yyyy-MM-dd") LocalDate date) {}
 
+    @Hidden
     @RestController
     static class QueryController {
         int calls;
