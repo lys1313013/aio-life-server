@@ -31,7 +31,7 @@
 
 ## SQL 与兼容性
 
-当前 PostgreSQL 新库的银行字典由 `sql/migrations/V20261110_02_005__bank_dictionary.sql` 初始化，菜单单独位于 `V20261110_02_006__menus.sql`。历史 MySQL 银行字典及菜单已被上述 PostgreSQL 分类迁移覆盖，不再保留重复副本；原文通过 Git 历史追溯。以下保留配置与补缺规则描述历史增量及生成器草稿，不表示全量 PostgreSQL 种子可在已有库手工重跑。后续更新应新增 V 迁移，不修改已执行文件。生成器只输出 `artifacts/generated-sql/bank_dictionary.sql` 待审阅稿，不直接覆盖迁移。
+当前 PostgreSQL 新库的银行字典由 `sql/migrations/V20261110_02_005__bank_dictionary.sql` 初始化，菜单单独位于 `V20261110_02_006__menus.sql`。历史银行字典及菜单已被上述 PostgreSQL 分类迁移覆盖，不再保留重复副本；原文通过 Git 历史追溯。以下保留配置与补缺规则描述历史增量及生成器草稿，不表示全量 PostgreSQL 种子可在已有库手工重跑。后续更新应新增 V 迁移，不修改已执行文件。生成器只输出 `artifacts/generated-sql/bank_dictionary.sql` 待审阅稿，不直接覆盖迁移。
 
 - 初始15家继续用原 ICBC、ABC 等键值和原主键，不修改已有卡片引用。
 - 新银行的 `dict_value` 为 `NFRA_` 加监管机构编码。它是本系统的来源命名空间，不是银联 BIN、联行号或微信支付编码。
