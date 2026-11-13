@@ -79,6 +79,8 @@ class WechatWebLoginHttpTest {
         verifyNoInteractions(service);
     }
     @Test void APIKey身份不能确认扫码() throws Exception {
+        stp.when(StpUtil::getLoginIdAsLong).thenReturn(13L);
+        stp.when(StpUtil::getLoginIdAsString).thenReturn("13");
         when(storage.get("IS_API_KEY_AUTH")).thenReturn(true);
         mvc.perform(post("/auth/wechat/web/confirm").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"scene\":\"" + SCENE + "\",\"loginCode\":\"code\"}"))
