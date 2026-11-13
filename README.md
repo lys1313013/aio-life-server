@@ -209,11 +209,11 @@ Web 入口为 `/auth/app-qrcode-login`，已登录的 App / 微信小程序通�
 
 入口 `/record/life-footprints`，接口前缀 `/api/life-footprints`。起止日期使用 `yyyy-MM-dd`，结束日期必填，`9999-12-31` 表示至今；不使用 `ongoing`。暂不使用乐观锁，同账号多端编辑以最后成功保存为准；请求结果不确定时先重新读取确认。
 
-Web 使用腾讯 GL，H5 使用 Leaflet 底图，微信和 App 使用原生 GCJ02 地图。管理员维护 `footprints.tencent` 的展示 Key、搜索解析 Key，以及 `footprints.baidu` 的查询 AK / H5 底图；密钥加密存入 `system_config`，不发给客户端。搜索采用百度优先，配额耗尽或并发受限时切换腾讯；不根据免费余额判断切换。
+Web 使用腾讯 GL，H5 使用 Leaflet 底图，微信和 App 使用原生 GCJ02 地图。管理员维护 `footprints.tencent` 的展示 Key、搜索解析 Key，以及 `footprints.baidu` 的查询 AK / H5 底图；密钥加密存入 `sys_config`，不发给客户端。搜索采用百度优先，配额耗尽或并发受限时切换腾讯；不根据免费余额判断切换。
 
 两个腾讯 Key 必须不同，搜索解析凭据需按服务商要求配置出口 IP 权限。GL 代理依赖本站登录和限定路径 Cookie；默认 `style1` 需在腾讯控制台绑定白浅模板。具体路由、权限、配额回退与配置语义见[腾讯地图代理接入](docs/腾讯地图代理接入.md)。模拟测试不代表真实地图权限、额度或定位精度验收。
 
-省市区县乡镇目录由 `system_region` 提供，接口为 `/system/regions` 与 `/system/regions/{code}/path`，需登录但不需要地图 Key。当前为固定 2023 快照，不涵盖港澳台及海外；手填地址与选点仍可使用。来源、许可及更新方式见[地区数据](docs/data/china-regions.md)。
+省市区县乡镇目录由 `sys_region` 提供，接口为 `/system/regions` 与 `/system/regions/{code}/path`，需登录但不需要地图 Key。当前为固定 2023 快照，不涵盖港澳台及海外；手填地址与选点仍可使用。来源、许可及更新方式见[地区数据](docs/data/china-regions.md)。
 
 ### MBTI 接口配置
 

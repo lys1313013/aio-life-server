@@ -143,7 +143,7 @@ LLM 会话、消息和模型密钥业务接口、数据表及实体 Mapper 已�
 ### 认证
 
 - **Sa-Token JWT**：Token 通过 `Authorization: Bearer <token>` 传递
-- **获取当前用户**：`StpUtil.getLoginIdAsLong()`
+- **获取当前用户**：Controller 使用 `@CurrentUserId` 参数注入，不直接调用 `StpUtil`；Service/Guard 可使用登录上下文。
 - **登录拦截**：默认拦截所有请求，白名单在 `SaTokenConfig` 配置
 
 ### MCP Tool 开发
@@ -197,6 +197,7 @@ public interface MyConvertor {
 ### RESTful 风格
 
 - 接口尽量采用 RESTful 风格
+- Controller 的资源划分、URL、方法语义、错误模型与硬性禁则见[接口架构规范](../docs/接口架构规范.md)。
 - 注释使用标准 JavaDoc 形式
 - 对外接口使用简短中文 `@Operation(summary = "动作＋业务对象")`，避免仅写“新增”“删除”；`description` 只补日期格式、统计范围、副作用等必要口径，不重复通用响应和鉴权规则。接口文档随实现维护，不另建静态接口清单。
 - 异常不主动捕捉，交由全局 `@RestControllerAdvice` 处理
