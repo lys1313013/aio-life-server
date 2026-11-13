@@ -1,5 +1,6 @@
 package top.aiolife.record.api;
 
+import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.support.CurrentSchema;
 
 import cn.dev33.satoken.stp.StpUtil;
@@ -135,10 +136,12 @@ class LifeFootprintTest {
 
     @Test void testHttp_校验坐标契约并使用登录身份() throws Exception {
         var business = mock(LifeFootprintService.class);
-        var mvc = MockMvcBuilders.standaloneSetup(new LifeFootprintController(business)).build();
+        var mvc = MockMvcBuilders.standaloneSetup(new LifeFootprintController(business))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver()).build();
         var json = new JsonConfig().jacksonObjectMapper(new Jackson2ObjectMapperBuilder());
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             var body = json.valueToTree(request()); ((com.fasterxml.jackson.databind.node.ObjectNode) body).put("userId", "8");
             mvc.perform(post("/life-footprints").contentType(MediaType.APPLICATION_JSON).content(body.toString()))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));

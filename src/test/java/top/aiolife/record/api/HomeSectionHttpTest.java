@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.core.exception.ExceptionHandle;
 import top.aiolife.core.exception.SecondaryLockRequiredException;
@@ -35,9 +36,11 @@ class HomeSectionHttpTest {
         when(service.memos(7L)).thenReturn(new HomeSectionVO.Items<>(List.of(memo), 300));
         var json = new JsonConfig().jacksonObjectMapper(new Jackson2ObjectMapperBuilder());
         var mvc = MockMvcBuilders.standaloneSetup(new HomeSectionController(service, mock(WereadStatsService.class)))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(get("/home/sections/memo").param("userId", "99"))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
                     .andExpect(jsonPath("$.data.items[0].id").value("9007199254740993"))
@@ -65,6 +68,7 @@ class HomeSectionHttpTest {
         var mvc = mvc(service);
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(get("/home/sections/video"))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
                     .andExpect(jsonPath("$.data.items[0].id").value("9007199254740993"))
@@ -85,7 +89,7 @@ class HomeSectionHttpTest {
         var json = new JsonConfig().jacksonObjectMapper(new Jackson2ObjectMapperBuilder());
         return MockMvcBuilders.standaloneSetup(new HomeSectionController(service, mock(WereadStatsService.class)))
                 .setControllerAdvice(new ExceptionHandle())
-                .setCustomArgumentResolvers(new QueryParamsArgumentResolver(json))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver(), new QueryParamsArgumentResolver(json))
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
     }
 

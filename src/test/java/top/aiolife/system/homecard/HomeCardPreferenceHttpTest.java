@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.system.api.HomeCardPreferenceController;
 import top.aiolife.system.service.HomeCardPreferenceService;
 
@@ -19,9 +20,11 @@ class HomeCardPreferenceHttpTest {
     @Test void identity_忽略客户端用户字段并始终使用登录态() throws Exception {
         var service = mock(HomeCardPreferenceService.class);
         when(service.toggle(anyLong(), anyString(), anyInt())).thenReturn(List.of());
-        var mvc = MockMvcBuilders.standaloneSetup(new HomeCardPreferenceController(service)).build();
+        var mvc = MockMvcBuilders.standaloneSetup(new HomeCardPreferenceController(service))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver()).build();
         try (MockedStatic<StpUtil> login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(put("/home/cards/section.goal").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"isEnabled\":0,\"userId\":8}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
@@ -34,13 +37,17 @@ class HomeCardPreferenceHttpTest {
     }
     @Test void validation_缺失开关或空排序被拒绝且不调用业务写入() throws Exception {
         var service = mock(HomeCardPreferenceService.class);
-        var mvc = MockMvcBuilders.standaloneSetup(new HomeCardPreferenceController(service)).build();
-        mvc.perform(put("/home/cards/section.goal").contentType(MediaType.APPLICATION_JSON).content("{}"))
-            .andExpect(status().isBadRequest());
-        mvc.perform(put("/home/cards/order").contentType(MediaType.APPLICATION_JSON).content("{\"group\":\"section\",\"keys\":[]}"))
-            .andExpect(status().isBadRequest());
-        mvc.perform(put("/home/cards/order").contentType(MediaType.APPLICATION_JSON).content("{\"group\":\"section\",\"keys\":[null]}"))
-            .andExpect(status().isBadRequest());
-        verifyNoInteractions(service);
+        var mvc = MockMvcBuilders.standaloneSetup(new HomeCardPreferenceController(service))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver()).build();
+        try (MockedStatic<StpUtil> login = mockStatic(StpUtil.class)) {
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
+            mvc.perform(put("/home/cards/section.goal").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+            mvc.perform(put("/home/cards/order").contentType(MediaType.APPLICATION_JSON).content("{\"group\":\"section\",\"keys\":[]}"))
+                .andExpect(status().isBadRequest());
+            mvc.perform(put("/home/cards/order").contentType(MediaType.APPLICATION_JSON).content("{\"group\":\"section\",\"keys\":[null]}"))
+                .andExpect(status().isBadRequest());
+            verifyNoInteractions(service);
+        }
     }
 }

@@ -187,11 +187,12 @@ class PaginationOrderingSqlTest {
 
     @Test
     void testUserDictionary_合法超大页码返回空页而不溢出() throws Exception {
-        var service = mock(UserDictDataService.class);
+        var cache = mock(UserDictDataCache.class);
         UserDictDataEntity item = new UserDictDataEntity();
         item.setId(1L);
-        when(service.listUserVisibleDictData(7L, null, true)).thenReturn(List.of(item));
-        var controller = new UserDictDataController(service);
+        when(cache.list(0L, null)).thenReturn(List.of());
+        when(cache.list(7L, null)).thenReturn(List.of(item));
+        var controller = new UserDictDataController(new UserDictDataServiceImpl(cache));
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
             login.when(StpUtil::getLoginIdAsString).thenReturn("7");

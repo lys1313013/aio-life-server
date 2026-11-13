@@ -7,6 +7,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.core.exception.ExceptionHandle;
 import top.aiolife.core.query.QueryParamsArgumentResolver;
@@ -35,6 +36,7 @@ class WereadStatsHttpTest {
                 2100, 420, "2026-10-26", "2026-10-30", 1500, 600));
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc().perform(get("/home/sections/weread-stats").param("granularity", "week"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(0))
@@ -57,6 +59,7 @@ class WereadStatsHttpTest {
     void 阅读统计拒绝缺失或非法粒度() throws Exception {
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc().perform(get("/home/sections/weread-stats"))
                     .andExpect(status().isBadRequest());
             mvc().perform(get("/home/sections/weread-stats").param("granularity", "overall"))
@@ -69,7 +72,7 @@ class WereadStatsHttpTest {
         var json = new JsonConfig().jacksonObjectMapper(new Jackson2ObjectMapperBuilder());
         return MockMvcBuilders.standaloneSetup(new HomeSectionController(sections, stats))
                 .setControllerAdvice(new ExceptionHandle())
-                .setCustomArgumentResolvers(new QueryParamsArgumentResolver(json))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver(), new QueryParamsArgumentResolver(json))
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
     }
 }

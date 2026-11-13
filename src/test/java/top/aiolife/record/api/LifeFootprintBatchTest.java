@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.web.server.ResponseStatusException;
+import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.record.mapper.LifeFootprintMapper;
 import top.aiolife.record.pojo.req.LifeFootprintBatchItemReq;
@@ -133,6 +134,7 @@ class LifeFootprintBatchTest {
     @Test void testHttp_嵌套校验登录归属及大整数ID字符串响应() throws Exception {
         var business = mock(LifeFootprintService.class);
         var mvc = MockMvcBuilders.standaloneSetup(new LifeFootprintController(business))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(
                         new JsonConfig().jacksonObjectMapper(new Jackson2ObjectMapperBuilder())))
                 .build();
@@ -141,6 +143,7 @@ class LifeFootprintBatchTest {
         when(business.saveBatch(eq(7L), any())).thenReturn(saved);
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(post("/life-footprints/batch").contentType(MediaType.APPLICATION_JSON)
                     .content(json.writeValueAsString(batch(List.of(item(Long.MAX_VALUE, "住所"))))))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))

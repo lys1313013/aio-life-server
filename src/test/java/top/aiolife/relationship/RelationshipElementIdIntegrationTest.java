@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.relationship.api.RelationshipController;
 import top.aiolife.relationship.pojo.entity.RelatesToRelationship;
@@ -74,6 +75,7 @@ class RelationshipElementIdIntegrationTest {
         var persons = new PersonServiceImpl(mock(PersonRepository.class), mock(Neo4jTemplate.class), driver);
         relationships = new RelationshipServiceImpl(mock(RelationshipRepository.class), mock(PersonRepository.class), driver);
         mvc = MockMvcBuilders.standaloneSetup(new RelationshipController(persons, relationships))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
     }
 
@@ -81,6 +83,7 @@ class RelationshipElementIdIntegrationTest {
     void 创建详情更新使用同一字符串标识且更新只影响指定关系() throws Exception {
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+            auth.when(StpUtil::getLoginIdAsString).thenReturn("1");
             var created = mvc.perform(post("/relationships").contentType(MediaType.APPLICATION_JSON)
                             .content("{\"sourcePersonId\":\"source\",\"targetPersonId\":\"target\",\"relationType\":\"朋友\"}"))
                     .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();

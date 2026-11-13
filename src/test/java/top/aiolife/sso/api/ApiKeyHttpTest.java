@@ -14,6 +14,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.core.exception.ExceptionHandle;
 import top.aiolife.sso.mapper.ApiKeyMapper;
@@ -54,6 +55,7 @@ class ApiKeyHttpTest {
         ReflectionTestUtils.setField(service, "baseMapper", new SqlSessionTemplate(factory.getObject()).getMapper(ApiKeyMapper.class));
         var json = new JsonConfig().jacksonObjectMapper(Jackson2ObjectMapperBuilder.json());
         mvc = MockMvcBuilders.standaloneSetup(new ApiKeyController(service))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver())
                 .setControllerAdvice(new ExceptionHandle())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
     }
@@ -62,6 +64,7 @@ class ApiKeyHttpTest {
     void 修改备注保留密钥和有效期且响应脱敏大ID保持字符串() throws Exception {
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("11");
             mvc.perform(put("/api-key/9007199254740993").contentType("application/json")
                     .content("{\"remark\":\"  新备注  \",\"apiKey\":\"hijack\",\"userId\":\"22\",\"expiredAt\":null}"))
                     .andExpect(jsonPath("$.code").value(0))
@@ -81,9 +84,11 @@ class ApiKeyHttpTest {
     void 他人已删除和不存在的密钥均不能修改() throws Exception {
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(22L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("22");
             mvc.perform(put("/api-key/9007199254740993").contentType("application/json").content("{\"remark\":\"攻击\"}"))
                     .andExpect(status().isNotFound());
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("11");
             jdbc.update("UPDATE api_key SET is_deleted=1");
             mvc.perform(put("/api-key/9007199254740993").contentType("application/json").content("{\"remark\":\"修改\"}"))
                     .andExpect(status().isNotFound());
@@ -97,6 +102,7 @@ class ApiKeyHttpTest {
     void 空白缺失和超长备注被拒绝() throws Exception {
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("11");
             for (String body : new String[]{"{}", "{\"remark\":\"   \"}", "{\"remark\":\"" + "a".repeat(256) + "\"}"}) {
                 mvc.perform(put("/api-key/9007199254740993").contentType("application/json").content(body))
                         .andExpect(jsonPath("$.code").value(not(0)));

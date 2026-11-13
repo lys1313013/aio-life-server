@@ -1,4 +1,5 @@
 package top.aiolife.bankcard;
+import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.bankcard.api.BankCardCoverTemplateAdminController;
 import top.aiolife.bankcard.service.BankCardService;
 import top.aiolife.bankcard.service.BankCardCoverTemplateService;
@@ -64,6 +65,7 @@ class BankCardCoverAuthorizationTest {
         when(service.list()).thenReturn(List.of());
         files=mock(IFileService.class);
         mvc = MockMvcBuilders.standaloneSetup(new BankCardCoverTemplateAdminController(orderService,service,mock(BankCardService.class),files))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver())
                 .setControllerAdvice(new ExceptionHandle())
                 .addInterceptors(new SaInterceptor(handler -> StpUtil.checkLogin())).build();
     }

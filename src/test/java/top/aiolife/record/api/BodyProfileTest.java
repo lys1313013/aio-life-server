@@ -16,6 +16,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
+import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.record.mapper.BodyProfileMapper;
 import top.aiolife.record.pojo.req.BodyProfileSaveReq;
@@ -116,24 +117,26 @@ class BodyProfileTest {
 
     @Test void testHttp_客户端身份和计算字段无效且校验阻止非法保存() throws Exception {
         var business = mock(BodyProfileService.class);
-        var mvc = MockMvcBuilders.standaloneSetup(new BodyProfileController(business)).build();
+        var mvc = MockMvcBuilders.standaloneSetup(new BodyProfileController(business))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver()).build();
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(put("/body-profile").contentType(MediaType.APPLICATION_JSON)
                     .content("{\"version\":0,\"userId\":8,\"id\":9,\"bmi\":1,\"heightCm\":178}"))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
             verify(business).save(eq(7L), argThat(req -> req.getHeightCm().intValueExact() == 178));
             mvc.perform(get("/body-profile")).andExpect(status().isOk());
             verify(business).get(7L);
+            clearInvocations(business);
+            for (String body : new String[]{"{}", "{\"version\":0,\"weightKg\":0}",
+                    "{\"version\":0,\"bodyFatPercent\":100}", "{\"version\":0,\"upperArmCm\":32.55}",
+                    "{\"version\":0,\"gender\":\"invalid\"}", "{\"version\":0,\"shoeSize\":\"EU 42\"}",
+                    "{\"version\":0,\"shoeSize\":\"0\"}"}) {
+                mvc.perform(put("/body-profile").contentType(MediaType.APPLICATION_JSON).content(body))
+                        .andExpect(status().isBadRequest());
+            }
+            verifyNoInteractions(business);
         }
-        clearInvocations(business);
-        for (String body : new String[]{"{}", "{\"version\":0,\"weightKg\":0}",
-                "{\"version\":0,\"bodyFatPercent\":100}", "{\"version\":0,\"upperArmCm\":32.55}",
-                "{\"version\":0,\"gender\":\"invalid\"}", "{\"version\":0,\"shoeSize\":\"EU 42\"}",
-                "{\"version\":0,\"shoeSize\":\"0\"}"}) {
-            mvc.perform(put("/body-profile").contentType(MediaType.APPLICATION_JSON).content(body))
-                    .andExpect(status().isBadRequest());
-        }
-        verifyNoInteractions(business);
     }
 }

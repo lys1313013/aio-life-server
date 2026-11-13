@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import top.aiolife.config.SaTokenConfig;
+import top.aiolife.config.CurrentUserConfig;
 import top.aiolife.core.exception.ExceptionHandle;
 import top.aiolife.sso.api.WechatWebLoginController;
 import top.aiolife.sso.interceptor.ApiKeyInterceptor;
@@ -53,6 +54,7 @@ class WechatWebLoginHttpTest {
         holder.when(SaHolder::getStorage).thenReturn(storage);
         holder.when(SaHolder::getRequest).thenReturn(request);
         stp.when(StpUtil::getLoginIdAsLong).thenThrow(new NotLoginException("未登录", "login", NotLoginException.NOT_TOKEN));
+        stp.when(StpUtil::getLoginIdAsString).thenThrow(new NotLoginException("未登录", "login", NotLoginException.NOT_TOKEN));
     }
     @AfterEach void cleanup() { holder.close(); stp.close(); context.close(); }
 
@@ -85,6 +87,7 @@ class WechatWebLoginHttpTest {
     }
     @Test void 当前会话身份传给确认服务不接受客户端用户ID() throws Exception {
         stp.when(StpUtil::getLoginIdAsLong).thenReturn(13L);
+        stp.when(StpUtil::getLoginIdAsString).thenReturn("13");
         when(service.confirm(eq(SCENE), eq(13L), eq("fresh-code"), anyString())).thenReturn("CONFIRMED");
         mvc.perform(post("/auth/wechat/web/confirm").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"scene\":\"" + SCENE + "\",\"loginCode\":\"fresh-code\",\"userId\":\"99\"}"))
@@ -100,6 +103,7 @@ class WechatWebLoginHttpTest {
 
     @Configuration @EnableWebMvc
     static class Config {
+        @Bean CurrentUserConfig currentUser() { return new CurrentUserConfig(); }
         @Bean WechatWebLoginService service() { return mock(WechatWebLoginService.class); }
         @Bean WechatWebLoginController controller(WechatWebLoginService service) { return new WechatWebLoginController(service); }
         @Bean ExceptionHandle errors() { return new ExceptionHandle(); }

@@ -1,8 +1,12 @@
 package top.aiolife.sso.service;
 
 import cn.dev33.satoken.stp.StpUtil;
+import cn.dev33.satoken.context.SaHolder;
+import cn.dev33.satoken.context.model.SaStorage;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.sso.mapper.AccountErasureMapper;
 import top.aiolife.sso.mapper.UserMapper;
@@ -24,13 +28,20 @@ class AccountClosureServiceTest {
     WechatWebLoginService web = mock(WechatWebLoginService.class);
     AccountClosureService service = new AccountClosureService(users, erasure, wechat, limits, web);
     UserEntity user = new UserEntity();
+    SaStorage storage = mock(SaStorage.class);
+    MockedStatic<StpUtil> stp;
+    MockedStatic<SaHolder> holder;
     @BeforeEach void setup() {
+        stp = mockStatic(StpUtil.class);
+        holder = mockStatic(SaHolder.class);
+        holder.when(SaHolder::getStorage).thenReturn(storage);
         user.setId(7L); user.setPasswordSalt("fixture-salt");
         user.setPassword(PasswordUtil.encryptPassword("fixture-password", "fixture-salt"));
         user.setWechatOpenid("fixture-owner");
         when(users.selectForAuthUpdate(7L)).thenReturn(user);
         when(erasure.request(eq(7L), any(), any())).thenReturn(1);
     }
+    @AfterEach void cleanup() { holder.close(); stp.close(); }
     CloseAccountReq request() { var req = new CloseAccountReq(); req.setConfirmation("注销账号"); return req; }
     @Test void 缺少确认和错误密码都不受理注销() {
         var req = request(); req.setConfirmation("退出");
@@ -42,13 +53,11 @@ class AccountClosureServiceTest {
     }
     @Test void 正确密码只注销当前账号并撤销全部设备会话() {
         var req = request(); req.setPassword("fixture-password");
-        try (var stp = mockStatic(StpUtil.class)) {
-            service.close(7L, req);
-            verify(erasure).request(eq(7L), any(), any());
-            verify(erasure).cancelExports(7L);
-            verify(erasure).cancelNotifications(7L);
-            stp.verify(() -> StpUtil.logout(7L));
-        }
+        service.close(7L, req);
+        verify(erasure).request(eq(7L), any(), any());
+        verify(erasure).cancelExports(7L);
+        verify(erasure).cancelNotifications(7L);
+        stp.verify(() -> StpUtil.logout(7L));
     }
     @Test void 微信重新核验必须匹配当前账号且无需密码() {
         var req = request(); req.setLoginCode("fixture-code");
@@ -57,7 +66,7 @@ class AccountClosureServiceTest {
         verifyNoInteractions(erasure);
         when(wechat.exchangeLogin("fixture-code")).thenReturn(new WechatMiniClient.Identity("fixture-owner", null));
         user.setPassword(null);
-        try (var stp = mockStatic(StpUtil.class)) { service.close(7L, req); stp.verify(() -> StpUtil.logout(7L)); }
+        service.close(7L, req); stp.verify(() -> StpUtil.logout(7L));
     }
     @Test void Web扫码确认他人账号不能注销当前账号() {
         var req = request(); req.setWechatScene("scene"); req.setWechatBrowserSecret("secret");
@@ -65,13 +74,21 @@ class AccountClosureServiceTest {
         assertThrows(ResponseStatusException.class, () -> service.close(7L, req));
         verifyNoInteractions(erasure);
         when(web.consumeConfirmedIdentity("scene", "secret")).thenReturn(7L);
-        try (var stp = mockStatic(StpUtil.class)) { service.close(7L, req); stp.verify(() -> StpUtil.logout(7L)); }
+        service.close(7L, req); stp.verify(() -> StpUtil.logout(7L));
     }
     @Test void 会话撤销失败不能被伪装成受理成功() {
         var req = request(); req.setPassword("fixture-password");
-        try (var stp = mockStatic(StpUtil.class)) {
-            stp.when(() -> StpUtil.logout(7L)).thenThrow(new IllegalStateException("fixture"));
-            assertThrows(IllegalStateException.class, () -> service.close(7L, req));
-        }
+        stp.when(() -> StpUtil.logout(7L)).thenThrow(new IllegalStateException("fixture"));
+        assertThrows(IllegalStateException.class, () -> service.close(7L, req));
+    }
+    @Test void 身份切换与APIKey会话均不能注销账号() {
+        var req = request(); req.setPassword("fixture-password");
+        stp.when(StpUtil::isSwitch).thenReturn(true);
+        assertThrows(ResponseStatusException.class, () -> service.close(7L, req));
+        stp.when(StpUtil::isSwitch).thenReturn(false);
+        when(storage.get("IS_API_KEY_AUTH")).thenReturn(true);
+        assertThrows(ResponseStatusException.class, () -> service.close(7L, req));
+        verifyNoInteractions(users, erasure, limits, wechat, web);
+        stp.verify(() -> StpUtil.logout(anyLong()), never());
     }
 }

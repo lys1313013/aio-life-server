@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.core.exception.ExceptionHandle;
 import top.aiolife.core.resq.PageResp;
@@ -75,6 +76,7 @@ class ScheduledJobHttpTest {
         runtime = mock(ScheduledJobRuntime.class);
         var mapper = new JsonConfig().jacksonObjectMapper(Jackson2ObjectMapperBuilder.json());
         mvc = MockMvcBuilders.standaloneSetup(new ScheduledJobController(service, runtime))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(mapper))
                 .setControllerAdvice(new ExceptionHandle()).addInterceptors(registry.interceptors()).build();
     }

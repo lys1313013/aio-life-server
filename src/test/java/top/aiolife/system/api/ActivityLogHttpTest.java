@@ -112,7 +112,7 @@ class ActivityLogHttpTest {
         row.setRequestParams(null);
         mvc.perform(get("/system/logs/operation/9223372036854775806").header("Authorization", "Bearer " + admin))
                 .andExpect(jsonPath("$.data.requestParams").value(nullValue()));
-        when(service.list(eq("OPERATION"), any())).thenReturn(PageResp.of(List.of(row), 1));
+        when(service.list(eq("operation"), any())).thenReturn(PageResp.of(List.of(row), 1));
         mvc.perform(get("/system/logs/operation").header("Authorization", "Bearer " + admin))
                 .andExpect(jsonPath("$.data.items[0].requestParams").doesNotExist())
                 .andExpect(jsonPath("$.data.total").value(1));

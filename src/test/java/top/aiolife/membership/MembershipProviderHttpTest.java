@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.core.exception.ExceptionHandle;
 import top.aiolife.membership.api.MembershipProviderController;
 import top.aiolife.membership.api.MembershipProviderAdminController;
@@ -70,6 +71,7 @@ class MembershipProviderHttpTest {
         when(service.list(anyBoolean())).thenReturn(List.of());
         icons = new MembershipIconCatalog(new ObjectMapper());
         mvc = MockMvcBuilders.standaloneSetup(new MembershipProviderController(service, icons), new MembershipProviderAdminController(service))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver())
                 .setControllerAdvice(new ExceptionHandle()).addInterceptors(registry.interceptors()).build();
     }
 

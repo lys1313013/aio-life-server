@@ -3,6 +3,7 @@ package top.aiolife.record.api;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import top.aiolife.core.constant.ResponseCodeConst;
+import top.aiolife.core.exception.ApiException;
 import top.aiolife.record.pojo.entity.MbtiResultEntity;
 import top.aiolife.record.service.IMbtiResultService;
 
@@ -53,8 +54,9 @@ class MbtiControllerIntegrationTest extends BaseIntegrationTest {
         entity.fillCreateCommonField(999L);
         mbtiResultService.saveResult(entity);
 
-        var response = mbtiController.deleteResult(String.valueOf(TEST_USER_ID), String.valueOf(entity.getId()));
-        assertEquals(ResponseCodeConst.COMMON_FAIL, response.getCode());
+        var exception = assertThrows(ApiException.class, () ->
+                mbtiController.deleteResult(String.valueOf(TEST_USER_ID), String.valueOf(entity.getId())));
+        assertEquals(ResponseCodeConst.COMMON_FAIL, exception.getCode());
         assertNotNull(mbtiResultService.getById(entity.getId()));
     }
 }

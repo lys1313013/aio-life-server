@@ -18,6 +18,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.core.exception.ExceptionHandle;
 import top.aiolife.core.exception.SecondaryLockRequiredException;
@@ -93,10 +94,12 @@ class FinanceCalendarServiceTest {
     @Test void HTTP日期校验身份隔离以及二级锁() throws Exception {
         var json = new JsonConfig().jacksonObjectMapper(new Jackson2ObjectMapperBuilder());
         var mvc = MockMvcBuilders.standaloneSetup(new FinanceCalendarController(service))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver())
                 .setControllerAdvice(new ExceptionHandle())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(get("/home/sections/expense/calendar").param("granularity", "day").param("date", "2026-10").param("userId", "8"))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
                     .andExpect(jsonPath("$.data.amount").value(25.50))
@@ -121,10 +124,12 @@ class FinanceCalendarServiceTest {
         assertEquals(new BigDecimal("191.00"), service.incomeCalendar(7, "year", null, today).amount());
         var json = new JsonConfig().jacksonObjectMapper(new Jackson2ObjectMapperBuilder());
         var mvc = MockMvcBuilders.standaloneSetup(new FinanceCalendarController(service))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver())
                 .setControllerAdvice(new ExceptionHandle())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(get("/home/sections/income/calendar").param("date", "2026-10").param("userId", "8"))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
                     .andExpect(jsonPath("$.data.granularity").value("week"))
@@ -154,10 +159,12 @@ class FinanceCalendarServiceTest {
         assertEquals(new BigDecimal("158.90"), year.buckets().getLast().balance());
         var json = new JsonConfig().jacksonObjectMapper(new Jackson2ObjectMapperBuilder());
         var mvc = MockMvcBuilders.standaloneSetup(new FinanceCalendarController(service))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver())
                 .setControllerAdvice(new ExceptionHandle())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(get("/home/sections/finance/calendar").param("date", "2026-10"))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
                     .andExpect(jsonPath("$.data.balance").value(125.10))

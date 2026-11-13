@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.service.IUserService;
 import top.aiolife.system.api.MenuController;
@@ -27,9 +28,11 @@ class MenuVisualHttpTest {
         reading.setIconColor("#427B8F");
         when(menus.getAccessibleMenuTree(List.of("user"), MenuClient.MOBILE)).thenReturn(List.of(reading));
         var service = new MenuVisualService(menus, users);
-        var mvc = MockMvcBuilders.standaloneSetup(new MenuController(menus, mock(IUserService.class), service)).build();
+        var mvc = MockMvcBuilders.standaloneSetup(new MenuController(menus, mock(IUserService.class), service))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver()).build();
         try (MockedStatic<StpUtil> login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(get("/menu/visuals").param("client", "mobile").param("userId", "8"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
