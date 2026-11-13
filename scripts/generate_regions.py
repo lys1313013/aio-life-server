@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 COMMIT = "dc3a1d7acd85ca1b0979543e9259604142c52e8e"
 SHA256 = "eaec154ce55f9683fbae09a21cea7d8523e4074f323602cf92b6840611139c5b"
 SOURCE = f"https://raw.githubusercontent.com/modood/Administrative-divisions-of-China/{COMMIT}/dist/pcas-code.json"
-HEADER = '-- 由scripts/generate_regions.py从固定版本公开目录生成，不手工编辑地区行。\n-- 目的：补齐2023年大陆31省级、342市级、2978县级、41352乡级目录；不含港澳台及村级。\n-- 前置：PostgreSQL 18+；已创建system_region；来源及许可见docs/data/china-regions.md。\n-- 影响：仅补缺失目录，不写用户数据，不覆盖已维护名称、上下级或软删除状态。\n-- 重跑：编码或固定ID已存在时仅保持原ID，不覆盖记录。\n-- 执行：按数据库初始化顺序执行，遇错停止；每批500行，失败后可重跑补齐。\n-- 恢复：不自动删除目录；回退应用保留目录，数据更正使用独立迁移。\n'
+HEADER = '-- 由scripts/generate_regions.py从固定版本公开目录生成，不手工编辑地区行。\n-- 目的：补齐2023年大陆31省级、342市级、2978县级、41352乡级目录；不含港澳台及村级。\n-- 前置：PostgreSQL 18+；已创建sys_region；来源及许可见docs/data/china-regions.md。\n-- 影响：仅补缺失目录，不写用户数据，不覆盖已维护名称、上下级或软删除状态。\n-- 重跑：编码或固定ID已存在时仅保持原ID，不覆盖记录。\n-- 执行：按数据库初始化顺序执行，遇错停止；每批500行，失败后可重跑补齐。\n-- 恢复：不自动删除目录；回退应用保留目录，数据更正使用独立迁移。\n'
 
 
 def main():
@@ -37,9 +37,9 @@ def main():
         raise ValueError(f"Unexpected region coverage: {counts}")
     output = HEADER
     for index in range(0, len(rows), 500):
-        output += "INSERT INTO system_region (id,code,parent_code,name,level,data_version,is_deleted) VALUES\n"
+        output += "INSERT INTO sys_region (id,code,parent_code,name,level,data_version,is_deleted) VALUES\n"
         output += ",\n".join(rows[index:index + 500]) + "\nON CONFLICT DO NOTHING;\n"
-    target = ROOT / "artifacts/generated-sql/system_regions.sql"
+    target = ROOT / "artifacts/generated-sql/sys_regions.sql"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(output, encoding="utf-8")
     print(f"Generated {target}: {len(rows)} regions; review the diff and add a new V migration")

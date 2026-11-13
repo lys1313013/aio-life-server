@@ -2,6 +2,7 @@ package top.aiolife.record.pojo.entity;
 
 import top.aiolife.core.pojo.entity.BaseEntity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
@@ -70,6 +71,8 @@ public class DeviceEntity extends BaseEntity {
     /**
      * 图片文件ID
      */
+    /** 从 file 业务关联填充，不映射业务表字段。 */
+    @TableField(exist = false)
     private String fileId;
 
     /**

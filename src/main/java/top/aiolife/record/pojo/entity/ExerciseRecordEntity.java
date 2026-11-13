@@ -51,5 +51,5 @@ public class ExerciseRecordEntity extends BaseEntity {
     /**
      * 时间 ID
      */
-    private String timeId;
+    private Long timeId;
 }

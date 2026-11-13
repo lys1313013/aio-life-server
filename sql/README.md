@@ -5,6 +5,8 @@
 ## 当前执行链
 
 - [V20261110_01__postgresql_schema.sql](migrations/V20261110_01__postgresql_schema.sql)：完整结构，包含 68 张业务表、索引、约束和中文注释。
+
+> 2026-11-13 一次性调整：把 `time_record.id`、`exercise_record.time_id` 从 `varchar(32)` 改为 `bigint`（与时迹雪花 ID 和其他业务主键一致）。已有库先重编非数字 ID 并同步 `exercise_record`，再执行 `ALTER COLUMN ... TYPE bigint`，随后 `flyway repair` 同步基线校验和；新库直接按本文件创建。
 - [V20261110_02_001__cbti_personalities.sql](migrations/V20261110_02_001__cbti_personalities.sql)：CBTI 人格定义。
 - [V20261110_02_002__data_export_coordinator.sql](migrations/V20261110_02_002__data_export_coordinator.sql)：数据导出协调记录。
 - [V20261110_02_003__honor_categories.sql](migrations/V20261110_02_003__honor_categories.sql)：荣誉分类。
@@ -12,7 +14,7 @@
 - [V20261110_02_005__bank_dictionary.sql](migrations/V20261110_02_005__bank_dictionary.sql)：银行字典。
 - [V20261110_02_006__menus.sql](migrations/V20261110_02_006__menus.sql)：系统菜单，含 Web 查询工作台与数据模型入口，移动端不启用。
 - [V20261110_02_007__work_calendar_2026.sql](migrations/V20261110_02_007__work_calendar_2026.sql)：2026 年工作日历。
-- [V20261110_02_008__system_config.sql](migrations/V20261110_02_008__system_config.sql)：系统配置。
+- [V20261110_02_008__sys_config.sql](migrations/V20261110_02_008__sys_config.sql)：系统配置。
 - [V20261110_02_009__regions.sql](migrations/V20261110_02_009__regions.sql)：行政区划。
 - [V20261110_02_010__payment_methods.sql](migrations/V20261110_02_010__payment_methods.sql)：公共支付方式。
 - [V20261110_02_011__wardrobe_categories.sql](migrations/V20261110_02_011__wardrobe_categories.sql)：衣柜分类。
@@ -22,6 +24,10 @@
 
 - [V20261112_15__relocate_category_menus.sql](migrations/V20261112_15__relocate_category_menus.sql)：个人分类归入个人中心分类管理，管理员时迹分类移至系统管理，保留菜单 ID 和页面路径。
 - [V20261112_16__menu_visible_clients.sql](migrations/V20261112_16__menu_visible_clients.sql)：将 Web、移动端启用列合并为展示端位掩码并删除旧列，保留各端设置，时迹取消移动端菜单重复入口。
+
+- [V20261113_01__record_images_use_file_binding.sql](migrations/V20261113_01__record_images_use_file_binding.sql)：迁移设备、观影、阅读、衣物图片至 `file.biz_type/biz_id`，删除四表 `file_id`，保留文件和存储对象并约束单图唯一。
+
+本次按明确要求同步修改历史初始脚本：新库不再创建上述四列；已有库仍保留可执行的迁移。历史校验和调整需先备份并完成实际数据、结构迁移，再执行 `flyway:repair`；`repair` 本身不迁移业务数据。
 
 新库先用独立 Flyway 入口迁移，再启动应用；应用启动不自动建表或导入种子。后续结构、菜单和数据变更新增更高版本 `V`，不改写已执行文件。
 

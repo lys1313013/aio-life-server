@@ -3,7 +3,7 @@
 -- 影响：插入公共预设，不创建用户账号；源库搬迁仍由独立导入器处理。
 -- 重跑：由 Flyway 版本历史保证只执行一次；失败事务回滚后修正原因再迁移。
 -- 执行：mvn -f tools/flyway/pom.xml compile flyway:migrate flyway:validate。
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000000011, '11', '0', '北京市', 1, 'NBS-2023', NULL, NULL, 0),
 (900000000000000012, '12', '0', '天津市', 1, 'NBS-2023', NULL, NULL, 0),
 (900000000000000013, '13', '0', '河北省', 1, 'NBS-2023', NULL, NULL, 0),
@@ -204,7 +204,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000004190, '4190', '41', '省直辖县级行政区划', 2, 'NBS-2023', NULL, NULL, 0),
 (900000000000004201, '4201', '42', '武汉市', 2, 'NBS-2023', NULL, NULL, 0),
 (900000000000004202, '4202', '42', '黄石市', 2, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000004203, '4203', '42', '十堰市', 2, 'NBS-2023', NULL, NULL, 0),
 (900000000000004205, '4205', '42', '宜昌市', 2, 'NBS-2023', NULL, NULL, 0),
 (900000000000004206, '4206', '42', '襄阳市', 2, 'NBS-2023', NULL, NULL, 0),
@@ -405,7 +405,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000120112, '120112', '1201', '津南区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000120113, '120113', '1201', '北辰区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000120114, '120114', '1201', '武清区', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000120115, '120115', '1201', '宝坻区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000120116, '120116', '1201', '滨海新区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000120117, '120117', '1201', '宁河区', 3, 'NBS-2023', NULL, NULL, 0),
@@ -606,7 +606,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000140107, '140107', '1401', '杏花岭区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000140108, '140108', '1401', '尖草坪区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000140109, '140109', '1401', '万柏林区', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000140110, '140110', '1401', '晋源区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000140121, '140121', '1401', '清徐县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000140122, '140122', '1401', '阳曲县', 3, 'NBS-2023', NULL, NULL, 0),
@@ -807,7 +807,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000150927, '150927', '1509', '察哈尔右翼中旗', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000150928, '150928', '1509', '察哈尔右翼后旗', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000150929, '150929', '1509', '四子王旗', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000150981, '150981', '1509', '丰镇市', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000152201, '152201', '1522', '乌兰浩特市', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000152202, '152202', '1522', '阿尔山市', 3, 'NBS-2023', NULL, NULL, 0),
@@ -1008,7 +1008,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000230109, '230109', '2301', '松北区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000230110, '230110', '2301', '香坊区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000230111, '230111', '2301', '呼兰区', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000230112, '230112', '2301', '阿城区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000230113, '230113', '2301', '双城区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000230123, '230123', '2301', '依兰县', 3, 'NBS-2023', NULL, NULL, 0),
@@ -1209,7 +1209,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000320812, '320812', '3208', '清江浦区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000320813, '320813', '3208', '洪泽区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000320826, '320826', '3208', '涟水县', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000320830, '320830', '3208', '盱眙县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000320831, '320831', '3208', '金湖县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000320871, '320871', '3208', '淮安经济技术开发区', 3, 'NBS-2023', NULL, NULL, 0),
@@ -1410,7 +1410,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000341024, '341024', '3410', '祁门县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000341102, '341102', '3411', '琅琊区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000341103, '341103', '3411', '南谯区', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000341122, '341122', '3411', '来安县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000341124, '341124', '3411', '全椒县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000341125, '341125', '3411', '定远县', 3, 'NBS-2023', NULL, NULL, 0),
@@ -1611,7 +1611,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000360830, '360830', '3608', '永新县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000360881, '360881', '3608', '井冈山市', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000360902, '360902', '3609', '袁州区', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000360921, '360921', '3609', '奉新县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000360922, '360922', '3609', '万载县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000360923, '360923', '3609', '上高县', 3, 'NBS-2023', NULL, NULL, 0),
@@ -1812,7 +1812,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000410185, '410185', '4101', '登封市', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000410202, '410202', '4102', '龙亭区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000410203, '410203', '4102', '顺河回族区', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000410204, '410204', '4102', '鼓楼区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000410205, '410205', '4102', '禹王台区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000410212, '410212', '4102', '祥符区', 3, 'NBS-2023', NULL, NULL, 0),
@@ -2013,7 +2013,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000420526, '420526', '4205', '兴山县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000420527, '420527', '4205', '秭归县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000420528, '420528', '4205', '长阳土家族自治县', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000420529, '420529', '4205', '五峰土家族自治县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000420581, '420581', '4205', '宜都市', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000420582, '420582', '4205', '当阳市', 3, 'NBS-2023', NULL, NULL, 0),
@@ -2214,7 +2214,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000433123, '433123', '4331', '凤凰县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000433124, '433124', '4331', '花垣县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000433125, '433125', '4331', '保靖县', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000433126, '433126', '4331', '古丈县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000433127, '433127', '4331', '永顺县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000433130, '433130', '4331', '龙山县', 3, 'NBS-2023', NULL, NULL, 0),
@@ -2415,7 +2415,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000451002, '451002', '4510', '右江区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000451003, '451003', '4510', '田阳区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000451022, '451022', '4510', '田东县', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000451024, '451024', '4510', '德保县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000451026, '451026', '4510', '那坡县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000451027, '451027', '4510', '凌云县', 3, 'NBS-2023', NULL, NULL, 0),
@@ -2616,7 +2616,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000511424, '511424', '5114', '丹棱县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000511425, '511425', '5114', '青神县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000511502, '511502', '5115', '翠屏区', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000511503, '511503', '5115', '南溪区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000511504, '511504', '5115', '叙州区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000511523, '511523', '5115', '江安县', 3, 'NBS-2023', NULL, NULL, 0),
@@ -2817,7 +2817,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000530402, '530402', '5304', '红塔区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000530403, '530403', '5304', '江川区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000530423, '530423', '5304', '通海县', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000530424, '530424', '5304', '华宁县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000530425, '530425', '5304', '易门县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000530426, '530426', '5304', '峨山彝族自治县', 3, 'NBS-2023', NULL, NULL, 0),
@@ -3018,7 +3018,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000610222, '610222', '6102', '宜君县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000610302, '610302', '6103', '渭滨区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000610303, '610303', '6103', '金台区', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000610304, '610304', '6103', '陈仓区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000610305, '610305', '6103', '凤翔区', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000610323, '610323', '6103', '岐山县', 3, 'NBS-2023', NULL, NULL, 0),
@@ -3219,7 +3219,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000000632521, '632521', '6325', '共和县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000632522, '632522', '6325', '同德县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000632523, '632523', '6325', '贵德县', 3, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000000632524, '632524', '6325', '兴海县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000632525, '632525', '6325', '贵南县', 3, 'NBS-2023', NULL, NULL, 0),
 (900000000000632621, '632621', '6326', '玛沁县', 3, 'NBS-2023', NULL, NULL, 0),
@@ -3420,7 +3420,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000110105015, '110105015', '110105', '八里庄街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000110105016, '110105016', '110105', '双井街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000110105017, '110105017', '110105', '劲松街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000110105018, '110105018', '110105', '潘家园街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000110105019, '110105019', '110105', '垡头街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000110105020, '110105020', '110105', '首都机场街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -3621,7 +3621,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000110114118, '110114118', '110114', '流村镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000110114119, '110114119', '110114', '十三陵镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000110114120, '110114120', '110114', '延寿镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000110115001, '110115001', '110115', '兴丰街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000110115002, '110115002', '110115', '林校路街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000110115003, '110115003', '110115', '清源街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -3822,7 +3822,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000120111450, '120111450', '120111', '西青区开发区', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000120112001, '120112001', '120112', '双新街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000120112002, '120112002', '120112', '双林街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000120112003, '120112003', '120112', '海棠街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000120112100, '120112100', '120112', '咸水沽镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000120112101, '120112101', '120112', '葛沽镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -4023,7 +4023,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000120119203, '120119203', '120119', '孙各庄满族乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000120119401, '120119401', '120119', '天津市蓟州区经济开发区', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130102001, '130102001', '130102', '建北街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000130102002, '130102002', '130102', '青园街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130102003, '130102003', '130102', '广安街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130102004, '130102004', '130102', '育才街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -4224,7 +4224,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000130131110, '130131110', '130131', '西柏坡镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130131111, '130131111', '130131', '下口镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130131200, '130131200', '130131', '西大吾乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000130131201, '130131201', '130131', '上三汲乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130131202, '130131202', '130131', '两河乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130131203, '130131203', '130131', '东王坡乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -4425,7 +4425,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000130224116, '130224116', '130224', '东黄坨镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130224117, '130224117', '130224', '马城镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130225001, '130225001', '130225', '乐安街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000130225100, '130225100', '130225', '乐亭镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130225101, '130225101', '130225', '汤家河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130225102, '130225102', '130225', '胡家坨镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -4626,7 +4626,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000130322102, '130322102', '130322', '安山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130322103, '130322103', '130322', '龙家店镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130322104, '130322104', '130322', '泥井镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000130322105, '130322105', '130322', '大蒲河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130322106, '130322106', '130322', '新集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130322107, '130322107', '130322', '刘台庄镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -4827,7 +4827,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000130432102, '130432102', '130432', '胜营镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130432103, '130432103', '130432', '南阳堡镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130432104, '130432104', '130432', '十里铺镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000130432105, '130432105', '130432', '南韩镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130432106, '130432106', '130432', '东张孟镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130433100, '130433100', '130433', '馆陶镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -5028,7 +5028,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000130530202, '130530202', '130530', '西流乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130530203, '130530203', '130530', '仁让里乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130531100, '130531100', '130531', '广宗镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000130531101, '130531101', '130531', '冯家寨镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130531102, '130531102', '130531', '北塘疃镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130531103, '130531103', '130531', '核桃园镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -5229,7 +5229,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000130626209, '130626209', '130626', '李郁庄乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130627100, '130627100', '130627', '仁厚镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130627101, '130627101', '130627', '王京镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000130627102, '130627102', '130627', '高昌镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130627103, '130627103', '130627', '北罗镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130627104, '130627104', '130627', '白合镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -5430,7 +5430,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000130682106, '130682106', '130682', '东亭镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130682107, '130682107', '130682', '大辛庄镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130682108, '130682108', '130682', '东旺镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000130682109, '130682109', '130682', '高蓬镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130682110, '130682110', '130682', '邢邑镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130682111, '130682111', '130682', '李亲顾镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -5631,7 +5631,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000130727202, '130727202', '130727', '井儿沟乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130727203, '130727203', '130727', '三马坊乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130727204, '130727204', '130727', '高墙乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000130727205, '130727205', '130727', '大田洼乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130727206, '130727206', '130727', '辛堡乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130727207, '130727207', '130727', '马圈堡乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -5832,7 +5832,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000130825214, '130825214', '130825', '湾沟门乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130826001, '130826001', '130826', '新丰路街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130826100, '130826100', '130826', '大阁镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000130826101, '130826101', '130826', '大滩镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130826102, '130826102', '130826', '鱼儿山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130826103, '130826103', '130826', '土城镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -6033,7 +6033,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000130928101, '130928101', '130928', '铁城镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130928102, '130928102', '130928', '于集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130928103, '130928103', '130928', '梁集镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000130928104, '130928104', '130928', '安陵镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130928200, '130928200', '130928', '曹家洼乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000130928201, '130928201', '130928', '东宋门乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -6234,7 +6234,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000131028101, '131028101', '131028', '夏垫镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000131028102, '131028102', '131028', '祁各庄镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000131028103, '131028103', '131028', '邵府镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000131028104, '131028104', '131028', '陈府镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000131028400, '131028400', '131028', '河北大厂高新技术产业开发区', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000131071450, '131071450', '131071', '耀华道街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -6435,7 +6435,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000140108005, '140108005', '140108', '迎新街街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140108006, '140108006', '140108', '古城街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140108007, '140108007', '140108', '汇丰街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000140108008, '140108008', '140108', '柴村街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140108009, '140108009', '140108', '新城街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140108100, '140108100', '140108', '向阳镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -6636,7 +6636,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000140226207, '140226207', '140226', '小京庄乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140271400, '140271400', '140271', '经济技术开发区乡级单位', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140302001, '140302001', '140302', '上站街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000140302002, '140302002', '140302', '下站街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140302003, '140302003', '140302', '北大街街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140302004, '140302004', '140302', '南山路街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -6837,7 +6837,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000140502009, '140502009', '140502', '开发区街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140502100, '140502100', '140502', '北石店镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140521100, '140521100', '140521', '龙港镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000140521101, '140521101', '140521', '中村镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140521102, '140521102', '140521', '郑庄镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140521103, '140521103', '140521', '端氏镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -7038,7 +7038,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000140724100, '140724100', '140724', '乐平镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140724101, '140724101', '140724', '皋落镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140724102, '140724102', '140724', '冶头镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000140724103, '140724103', '140724', '沾尚镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140724104, '140724104', '140724', '大寨镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140724200, '140724200', '140724', '李家庄乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -7239,7 +7239,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000140830100, '140830100', '140830', '古魏镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140830101, '140830101', '140830', '风陵渡镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140830102, '140830102', '140830', '陌南镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000140830103, '140830103', '140830', '西陌镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140830104, '140830104', '140830', '永乐镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140830105, '140830105', '140830', '大王镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -7440,7 +7440,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000140981206, '140981206', '140981', '西镇乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140981208, '140981208', '140981', '王家庄乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140981210, '140981210', '140981', '段家堡乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000140981400, '140981400', '140981', '山西鲁能晋北铝业工矿区', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140981401, '140981401', '140981', '原平市石豹沟煤矿工矿区', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000140981403, '140981403', '140981', '原平农场', 4, 'NBS-2023', NULL, NULL, 0),
@@ -7641,7 +7641,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000141123103, '141123103', '141123', '康宁镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000141123104, '141123104', '141123', '高家村镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000141123105, '141123105', '141123', '罗峪口镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000141123106, '141123106', '141123', '蔡家会镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000141123200, '141123200', '141123', '交楼申乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000141123202, '141123202', '141123', '东会乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -7842,7 +7842,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000150124401, '150124401', '150124', '内蒙古清水河工业园区', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150125100, '150125100', '150125', '可可以力更镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150125101, '150125101', '150125', '哈乐镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000150125102, '150125102', '150125', '西乌兰不浪镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150125200, '150125200', '150125', '大青山乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150125205, '150125205', '150125', '上秃亥乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -8043,7 +8043,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000150422101, '150422101', '150422', '隆昌镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150422102, '150422102', '150422', '十三敖包镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150422103, '150422103', '150422', '碧流台镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000150422104, '150422104', '150422', '富河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150422105, '150422105', '150422', '白音勿拉镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150422106, '150422106', '150422', '哈拉哈达镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -8244,7 +8244,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000150522409, '150522409', '150522', '茂道吐林场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150522410, '150522410', '150522', '伊胡塔林场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150522411, '150522411', '150522', '乌旦塔拉林场', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000150523100, '150523100', '150523', '开鲁镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150523101, '150523101', '150523', '大榆树镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150523102, '150523102', '150523', '黑龙坝镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -8445,7 +8445,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000150722203, '150722203', '150722', '杜拉尔鄂温克民族乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150722205, '150722205', '150722', '巴彦鄂温克民族乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150723100, '150723100', '150723', '阿里河镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000150723101, '150723101', '150723', '大杨树镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150723102, '150723102', '150723', '甘河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150723103, '150723103', '150723', '吉文镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -8646,7 +8646,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000150826104, '150826104', '150826', '蛮会镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150826105, '150826105', '150826', '团结镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150826106, '150826106', '150826', '双庙镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000150826107, '150826107', '150826', '沙海镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150826108, '150826108', '150826', '蒙海镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000150826500, '150826500', '150826', '太阳庙农场', 4, 'NBS-2023', NULL, NULL, 0),
@@ -8847,7 +8847,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000152224104, '152224104', '152224', '水泉镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000152224105, '152224105', '152224', '宝石镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000152224200, '152224200', '152224', '学田乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000152224201, '152224201', '152224', '九龙乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000152224202, '152224202', '152224', '太平乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000152224400, '152224400', '152224', '内蒙古自治区国营杜尔基农场', 4, 'NBS-2023', NULL, NULL, 0),
@@ -9048,7 +9048,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000210111001, '210111001', '210111', '解放街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210111003, '210111003', '210111', '民主街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210111005, '210111005', '210111', '中兴街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000210111009, '210111009', '210111', '林盛街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210111010, '210111010', '210111', '沙河街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210111011, '210111011', '210111', '十里河街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -9249,7 +9249,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000210213027, '210213027', '210213', '炮台街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210213028, '210213028', '210213', '复州湾街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210213029, '210213029', '210213', '三十里堡街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000210213030, '210213030', '210213', '石河街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210213031, '210213031', '210213', '光中街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210214001, '210214001', '210214', '丰荣街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -9450,7 +9450,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000210404002, '210404002', '210404', '工农街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210404003, '210404003', '210404', '建设街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210404004, '210404004', '210404', '和平街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000210404005, '210404005', '210404', '光明街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210404006, '210404006', '210404', '朴屯街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210404007, '210404007', '210404', '演武街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -9651,7 +9651,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000210703008, '210703008', '210703', '康宁街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210703009, '210703009', '210703', '锦铁街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210703011, '210703011', '210703', '紫荆街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000210703403, '210703403', '210703', '锦州北山农工商总公司', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210711004, '210711004', '210711', '太和街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210711008, '210711008', '210711', '大薛街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -9852,7 +9852,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000210921111, '210921111', '210921', '王府镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210921112, '210921112', '210921', '于寺镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210921113, '210921113', '210921', '富荣镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000210921114, '210921114', '210921', '新民镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210921115, '210921115', '210921', '福兴地镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000210921116, '210921116', '210921', '平安地镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -10053,7 +10053,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000211224103, '211224103', '211224', '三江口镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000211224104, '211224104', '211224', '金家镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000211224105, '211224105', '211224', '宝力镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000211224106, '211224106', '211224', '泉头镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000211224107, '211224107', '211224', '双庙子镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000211224108, '211224108', '211224', '亮中桥镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -10254,7 +10254,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000211382105, '211382105', '211382', '刀尔登镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000211382106, '211382106', '211382', '松岭子镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000211382107, '211382107', '211382', '四官营子镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000211382108, '211382108', '211382', '沟门子镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000211382110, '211382110', '211382', '小城子镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000211382111, '211382111', '211382', '四合当镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -10455,7 +10455,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000220105174, '220105174', '220105', '泉眼镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220105270, '220105270', '220105', '四家乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220106001, '220106001', '220106', '正阳街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000220106003, '220106003', '220106', '春城街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220106005, '220106005', '220106', '青年路街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220106006, '220106006', '220106', '普阳街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -10656,7 +10656,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000220203001, '220203001', '220203', '龙华街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220203002, '220203002', '220203', '湘潭街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220203003, '220203003', '220203', '铁东街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000220203004, '220203004', '220203', '泡子沿街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220203005, '220203005', '220203', '龙潭街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220203006, '220203006', '220203', '新吉林街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -10857,7 +10857,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000220382103, '220382103', '220382', '服先镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220382104, '220382104', '220382', '王奔镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220382105, '220382105', '220382', '玻璃山镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000220382106, '220382106', '220382', '兴隆镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220382107, '220382107', '220382', '东明镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220382200, '220382200', '220382', '那木乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -11058,7 +11058,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000220621120, '220621120', '220621', '长白山保护开发区池西区特殊乡镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220621121, '220621121', '220621', '长白山保护开发区池南区特殊乡镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220621200, '220621200', '220621', '兴隆乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000220621201, '220621201', '220621', '抽水乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220621202, '220621202', '220621', '沿江乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220622100, '220622100', '220622', '靖宇镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -11259,7 +11259,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000220802203, '220802203', '220802', '金祥乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220802204, '220802204', '220802', '德顺蒙古族乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220802402, '220802402', '220802', '镇南种羊场', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000220802403, '220802403', '220802', '白城牧场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220802404, '220802404', '220802', '洮儿河农场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000220802405, '220802405', '220802', '保民农场', 4, 'NBS-2023', NULL, NULL, 0),
@@ -11460,7 +11460,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000222424103, '222424103', '222424', '罗子沟镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000222424104, '222424104', '222424', '百草沟镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000222424105, '222424105', '222424', '春阳镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000222424106, '222424106', '222424', '复兴镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000222424107, '222424107', '222424', '东光镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000222424200, '222424200', '222424', '鸡冠乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -11661,7 +11661,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000230113011, '230113011', '230113', '幸福街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230113104, '230113104', '230113', '韩甸镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230113105, '230113105', '230113', '单城镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000230113106, '230113106', '230113', '东官镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230113107, '230113107', '230113', '农丰满族锡伯族镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230113108, '230113108', '230113', '杏山镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -11862,7 +11862,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000230208103, '230208103', '230208', '达呼店镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230208104, '230208104', '230208', '共和镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230208105, '230208105', '230208', '梅里斯镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000230208200, '230208200', '230208', '莽格吐达斡尔族乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230221100, '230221100', '230221', '龙江镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230221101, '230221101', '230221', '景星镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -12063,7 +12063,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000230321102, '230321102', '230321', '向阳镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230321103, '230321103', '230321', '哈达镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230321104, '230321104', '230321', '永安镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000230321105, '230321105', '230321', '永和镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230321106, '230321106', '230321', '东海镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230321107, '230321107', '230321', '兴农镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -12264,7 +12264,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000230523402, '230523402', '230523', '双鸭山林业局七一林场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230523403, '230523403', '230523', '双鸭山林业局七星河林场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230523404, '230523404', '230523', '双鸭山林业局红旗林场', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000230523405, '230523405', '230523', '双鸭山林业局三岔河林场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230523406, '230523406', '230523', '双鸭山林业局青龙林场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230523407, '230523407', '230523', '双鸭山林业局宝石经营所', 4, 'NBS-2023', NULL, NULL, 0),
@@ -12465,7 +12465,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000230781202, '230781202', '230781', '王杨乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230781400, '230781400', '230781', '铁力林业局', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230781401, '230781401', '230781', '双丰林业局', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000230781402, '230781402', '230781', '桃山林业局', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230803007, '230803007', '230803', '西林街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000230803008, '230803008', '230803', '建设街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -12666,7 +12666,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000231003103, '231003103', '231003', '五林镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000231004001, '231004001', '231004', '向阳街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000231004002, '231004002', '231004', '黄花街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000231004003, '231004003', '231004', '铁北街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000231004004, '231004004', '231004', '新华街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000231004005, '231004005', '231004', '大庆街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -12867,7 +12867,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000231182480, '231182480', '231182', '花园劳教所', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000231182481, '231182481', '231182', '永丰监狱', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000231182482, '231182482', '231182', '华山监狱', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000231182483, '231182483', '231182', '凤凰山监狱', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000231182501, '231182501', '231182', '龙门农场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000231182502, '231182502', '231182', '襄河农场', 4, 'NBS-2023', NULL, NULL, 0),
@@ -13068,7 +13068,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000231226402, '231226402', '231226', '绥棱县国有林场三吉台林场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000231226403, '231226403', '231226', '绥棱县国有林场半截河林场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000231226404, '231226404', '231226', '黑龙江省绥棱林业局有限公司', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000231226500, '231226500', '231226', '黑龙江北大荒农垦集团绥棱农场有限公司', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000231226580, '231226580', '231226', '种马场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000231226581, '231226581', '231226', '良种场', 4, 'NBS-2023', NULL, NULL, 0),
@@ -13269,7 +13269,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000310110015, '310110015', '310110', '延吉新村街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000310110016, '310110016', '310110', '殷行街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000310110018, '310110018', '310110', '大桥街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000310110019, '310110019', '310110', '五角场街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000310110020, '310110020', '310110', '新江湾城街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000310110021, '310110021', '310110', '长海路街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -13470,7 +13470,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000320106009, '320106009', '320106', '热河南路街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320106010, '320106010', '320106', '幕府山街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320106011, '320106011', '320106', '建宁路街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000320106012, '320106012', '320106', '宝塔桥街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320106013, '320106013', '320106', '小市街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320111001, '320111001', '320111', '泰山街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -13671,7 +13671,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000320303003, '320303003', '320303', '黄山街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320303004, '320303004', '320303', '骆驼山街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320303005, '320303005', '320303', '大郭庄街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000320303006, '320303006', '320303', '翠屏山街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320303007, '320303007', '320303', '大龙湖街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320303008, '320303008', '320303', '潘塘街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -13872,7 +13872,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000320411122, '320411122', '320411', '奔牛镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320412001, '320412001', '320412', '戚墅堰街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320412002, '320412002', '320412', '丁堰街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000320412003, '320412003', '320412', '潞城街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320412100, '320412100', '320412', '湖塘镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320412102, '320412102', '320412', '牛塘镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -14073,7 +14073,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000320614105, '320614105', '320614', '四甲镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320614106, '320614106', '320614', '余东镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320614107, '320614107', '320614', '正余镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000320614400, '320614400', '320614', '南通市海门区经济技术开发区', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320614401, '320614401', '320614', '南通市海门区永隆沙农场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320614403, '320614403', '320614', '南通市海门区大东农场', 4, 'NBS-2023', NULL, NULL, 0),
@@ -14274,7 +14274,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000320724109, '320724109', '320724', '新集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320724110, '320724110', '320724', '李集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320771001, '320771001', '320771', '中云街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000320771002, '320771002', '320771', '猴嘴街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320771003, '320771003', '320771', '朝阳街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320771450, '320771450', '320771', '青口盐场', 4, 'NBS-2023', NULL, NULL, 0),
@@ -14475,7 +14475,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000320923001, '320923001', '320923', '阜城街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320923002, '320923002', '320923', '吴滩街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320923003, '320923003', '320923', '花园街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000320923004, '320923004', '320923', '金沙湖街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320923100, '320923100', '320923', '沟墩镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000320923101, '320923101', '320923', '陈良镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -14676,7 +14676,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000321171101, '321171101', '321171', '大路镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000321171102, '321171102', '321171', '丁岗镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000321181001, '321181001', '321181', '云阳街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000321181002, '321181002', '321181', '曲阿街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000321181100, '321181100', '321181', '司徒镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000321181101, '321181101', '321181', '延陵镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -14877,7 +14877,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000321322120, '321322120', '321322', '耿圩镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000321322124, '321322124', '321322', '新河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000321322125, '321322125', '321322', '贤官镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000321322126, '321322126', '321322', '吴集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000321322128, '321322128', '321322', '青伊湖镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000321322205, '321322205', '321322', '西圩乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -15078,7 +15078,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000330122112, '330122112', '330122', '百江镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330122113, '330122113', '330122', '江南镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330122201, '330122201', '330122', '莪山畲族乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000330122202, '330122202', '330122', '钟山乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330122204, '330122204', '330122', '新合乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330122210, '330122210', '330122', '合村乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -15279,7 +15279,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000330282121, '330282121', '330282', '周巷镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330282123, '330282123', '330282', '龙山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330282402, '330282402', '330282', '滨海经济开发区', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000330282403, '330282403', '330282', '高新技术产业园区', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330282404, '330282404', '330282', '环杭州湾创新中心', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330282405, '330282405', '330282', '现代农业开发区', 4, 'NBS-2023', NULL, NULL, 0),
@@ -15480,7 +15480,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000330402009, '330402009', '330402', '新嘉街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330402010, '330402010', '330402', '南湖街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330402011, '330402011', '330402', '新兴街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000330402012, '330402012', '330402', '城南街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330402013, '330402013', '330402', '东栅街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330402014, '330402014', '330402', '长水街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -15681,7 +15681,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000330624107, '330624107', '330624', '小将镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330624108, '330624108', '330624', '沙溪镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330624109, '330624109', '330624', '镜岭镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000330624110, '330624110', '330624', '儒岙镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330624112, '330624112', '330624', '沃洲镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330624200, '330624200', '330624', '城南乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -15882,7 +15882,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000330802101, '330802101', '330802', '航埠镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330802205, '330802205', '330802', '黄家乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330802209, '330802209', '330802', '七里乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000330802210, '330802210', '330802', '九华乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330802211, '330802211', '330802', '沟溪乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000330802212, '330802212', '330802', '华墅乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -16083,7 +16083,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000331024103, '331024103', '331024', '白塔镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000331024104, '331024104', '331024', '田市镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000331024105, '331024105', '331024', '官路镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000331024106, '331024106', '331024', '下各镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000331024107, '331024107', '331024', '朱溪镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000331024200, '331024200', '331024', '安岭乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -16284,7 +16284,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000331127103, '331127103', '331127', '英川镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000331127104, '331127104', '331127', '沙湾镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000331127201, '331127201', '331127', '大均乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000331127202, '331127202', '331127', '澄照乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000331127203, '331127203', '331127', '梅岐乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000331127205, '331127205', '331127', '郑坑乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -16485,7 +16485,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000340202016, '340202016', '340202', '赭山街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000340202017, '340202017', '340202', '弋矶山街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000340202018, '340202018', '340202', '汀棠街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000340202019, '340202019', '340202', '天门山街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000340202020, '340202020', '340202', '大砻坊街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000340202021, '340202021', '340202', '荆山街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -16686,7 +16686,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000340406100, '340406100', '340406', '高皇镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000340406101, '340406101', '340406', '平圩镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000340406102, '340406102', '340406', '泥河镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000340406103, '340406103', '340406', '潘集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000340406104, '340406104', '340406', '芦集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000340406105, '340406105', '340406', '架河镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -16887,7 +16887,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000340722110, '340722110', '340722', '义津镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000340722111, '340722111', '340722', '浮山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000340722112, '340722112', '340722', '会宫镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000340722113, '340722113', '340722', '官埠桥镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000340722114, '340722114', '340722', '钱铺镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000340722115, '340722115', '340722', '金社镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -17088,7 +17088,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000341003201, '341003201', '341003', '龙门乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341003203, '341003203', '341003', '新华乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341003204, '341003204', '341003', '新丰乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000341003205, '341003205', '341003', '永丰乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341003400, '341003400', '341003', '黄山风景区', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341004100, '341004100', '341004', '岩寺镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -17289,7 +17289,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000341182004, '341182004', '341182', '明西街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341182100, '341182100', '341182', '张八岭镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341182101, '341182101', '341182', '三界镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000341182102, '341182102', '341182', '管店镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341182103, '341182103', '341182', '自来桥镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341182104, '341182104', '341182', '涧溪镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -17490,7 +17490,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000341302105, '341302105', '341302', '夹沟镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341302106, '341302106', '341302', '栏杆镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341302107, '341302107', '341302', '时村镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000341302108, '341302108', '341302', '永安镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341302109, '341302109', '341302', '灰古镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341302110, '341302110', '341302', '大店镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -17691,7 +17691,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000341523110, '341523110', '341523', '张母桥镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341523111, '341523111', '341523', '五显镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341523112, '341523112', '341523', '山七镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000341523113, '341523113', '341523', '河棚镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341523114, '341523114', '341523', '汤池镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341523200, '341523200', '341523', '春秋乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -17892,7 +17892,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000341723100, '341723100', '341723', '蓉城镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341723101, '341723101', '341723', '木镇镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341723102, '341723102', '341723', '庙前镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000341723103, '341723103', '341723', '陵阳镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341723104, '341723104', '341723', '新河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000341723105, '341723105', '341723', '丁桥镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -18093,7 +18093,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000350121206, '350121206', '350121', '小箬乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350121400, '350121400', '350121', '江洋农场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350122100, '350122100', '350122', '凤城镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000350122101, '350122101', '350122', '敖江镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350122102, '350122102', '350122', '东岱镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350122103, '350122103', '350122', '琯头镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -18294,7 +18294,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000350322001, '350322001', '350322', '鲤城街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350322100, '350322100', '350322', '枫亭镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350322101, '350322101', '350322', '榜头镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000350322102, '350322102', '350322', '郊尾镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350322103, '350322103', '350322', '度尾镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350322104, '350322104', '350322', '鲤南镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -18495,7 +18495,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000350521104, '350521104', '350521', '洛阳镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350521105, '350521105', '350521', '东园镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350521106, '350521106', '350521', '张坂镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000350521107, '350521107', '350521', '崇武镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350521108, '350521108', '350521', '山霞镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350521109, '350521109', '350521', '涂寨镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -18696,7 +18696,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000350623102, '350623102', '350623', '佛昙镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350623103, '350623103', '350623', '赤湖镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350623104, '350623104', '350623', '杜浔镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000350623105, '350623105', '350623', '霞美镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350623106, '350623106', '350623', '官浔镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350623107, '350623107', '350623', '石榴镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -18897,7 +18897,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000350782001, '350782001', '350782', '崇安街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350782002, '350782002', '350782', '新丰街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350782003, '350782003', '350782', '武夷街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000350782100, '350782100', '350782', '星村镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350782101, '350782101', '350782', '兴田镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350782102, '350782102', '350782', '五夫镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -19098,7 +19098,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000350922106, '350922106', '350922', '凤都镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350922107, '350922107', '350922', '水口镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350922108, '350922108', '350922', '大甲镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000350922201, '350922201', '350922', '吉巷乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350922203, '350922203', '350922', '泮洋乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000350922204, '350922204', '350922', '凤埔乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -19299,7 +19299,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000360123105, '360123105', '360123', '东阳镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360123106, '360123106', '360123', '黄洲镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360123200, '360123200', '360123', '乔乐乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000360123201, '360123201', '360123', '长均乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360123202, '360123202', '360123', '新民乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360123402, '360123402', '360123', '江西安义工业园区', 4, 'NBS-2023', NULL, NULL, 0),
@@ -19500,7 +19500,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000360423206, '360423206', '360423', '甫田乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360423207, '360423207', '360423', '清江乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360423208, '360423208', '360423', '石渡乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000360423209, '360423209', '360423', '杨洲乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360423210, '360423210', '360423', '罗溪乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360423500, '360423500', '360423', '万福经济技术开发区管委会', 4, 'NBS-2023', NULL, NULL, 0),
@@ -19701,7 +19701,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000360521103, '360521103', '360521', '双林镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360521104, '360521104', '360521', '钤山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360521105, '360521105', '360521', '洋江镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000360521106, '360521106', '360521', '凤阳镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360521201, '360521201', '360521', '洞村乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360521202, '360521202', '360521', '高岚乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -19902,7 +19902,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000360726207, '360726207', '360726', '双芫乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360726208, '360726208', '360726', '塘村乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360726209, '360726209', '360726', '高云山乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000360726400, '360726400', '360726', '九龙工业园', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360728100, '360728100', '360728', '历市镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360728101, '360728101', '360728', '岿美山镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -20103,7 +20103,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000360821001, '360821001', '360821', '高新街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360821002, '360821002', '360821', '金鸡湖街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360821100, '360821100', '360821', '敦厚镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000360821101, '360821101', '360821', '永阳镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360821102, '360821102', '360821', '天河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360821103, '360821103', '360821', '横江镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -20304,7 +20304,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000360830204, '360830204', '360830', '在中乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360830205, '360830205', '360830', '三湾乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360830206, '360830206', '360830', '台岭乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000360830207, '360830207', '360830', '龙田乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360830208, '360830208', '360830', '高溪乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360830209, '360830209', '360830', '莲洲乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -20505,7 +20505,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000360982003, '360982003', '360982', '福城街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360982004, '360982004', '360982', '大桥街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360982005, '360982005', '360982', '张家山街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000360982100, '360982100', '360982', '临江镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360982101, '360982101', '360982', '永泰镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000360982102, '360982102', '360982', '黄土岗镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -20706,7 +20706,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000361027106, '361027106', '361027', '左坊镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000361027107, '361027107', '361027', '对桥镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000361027200, '361027200', '361027', '黄通乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000361027202, '361027202', '361027', '陆坊乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000361027203, '361027203', '361027', '陈坊积乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000361027204, '361027204', '361027', '琉璃乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -20907,7 +20907,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000361128207, '361128207', '361128', '柘港乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000361128208, '361128208', '361128', '鸦鹊湖乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000361128209, '361128209', '361128', '银宝湖乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000361128210, '361128210', '361128', '游城乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000361128211, '361128211', '361128', '珠湖乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000361128212, '361128212', '361128', '白沙洲乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -21108,7 +21108,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000370124104, '370124104', '370124', '孔村镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370124105, '370124105', '370124', '洪范池镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370124106, '370124106', '370124', '玫瑰镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000370124107, '370124107', '370124', '安城镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370126001, '370126001', '370126', '许商街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370126101, '370126101', '370126', '殷巷镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -21309,7 +21309,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000370305002, '370305002', '370305', '雪宫街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370305003, '370305003', '370305', '辛店街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370305004, '370305004', '370305', '稷下街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000370305005, '370305005', '370305', '齐陵街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370305100, '370305100', '370305', '齐都镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370305102, '370305102', '370305', '皇城镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -21510,7 +21510,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000370612110, '370612110', '370612', '王格庄镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370612111, '370612111', '370612', '昆嵛镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370612112, '370612112', '370612', '莒格庄镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000370613001, '370613001', '370613', '黄海路街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370613002, '370613002', '370613', '初家街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370613003, '370613003', '370613', '滨海路街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -21711,7 +21711,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000370782114, '370782114', '370782', '林家村镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370782117, '370782117', '370782', '皇华镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370782118, '370782118', '370782', '桃林镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000370782400, '370782400', '370782', '诸城经济开发区管理委员会', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370783001, '370783001', '370783', '圣城街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370783003, '370783003', '370783', '文家街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -21912,7 +21912,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000370883106, '370883106', '370883', '唐村镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370883107, '370883107', '370883', '太平镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370883109, '370883109', '370883', '石墙镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000370883110, '370883110', '370883', '峄山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370883111, '370883111', '370883', '看庄镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000370883112, '370883112', '370883', '张庄镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -22113,7 +22113,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000371121201, '371121201', '371121', '石场乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371121202, '371121202', '371121', '户部乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371122001, '371122001', '371122', '城阳街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000371122002, '371122002', '371122', '店子集街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371122003, '371122003', '371122', '陵阳街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371122004, '371122004', '371122', '浮来山街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -22314,7 +22314,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000371403202, '371403202', '371403', '于集乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371422001, '371422001', '371422', '宁城街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371422002, '371422002', '371422', '津城街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000371422101, '371422101', '371422', '柴胡店镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371422102, '371422102', '371422', '长官镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371422103, '371422103', '371422', '杜集镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -22515,7 +22515,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000371524103, '371524103', '371524', '大桥镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371524104, '371524104', '371524', '高集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371524105, '371524105', '371524', '姜楼镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000371524107, '371524107', '371524', '姚寨镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371524108, '371524108', '371524', '鱼山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371524109, '371524109', '371524', '陈集镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -22716,7 +22716,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000371722002, '371722002', '371722', '南城街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371722003, '371722003', '371722', '园艺街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371722004, '371722004', '371722', '东城街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000371722101, '371722101', '371722', '郭村镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371722102, '371722102', '371722', '黄岗镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000371722103, '371722103', '371722', '终兴镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -22917,7 +22917,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000410122104, '410122104', '410122', '万滩镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410122105, '410122105', '410122', '白沙镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410122106, '410122106', '410122', '郑庵镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000410122109, '410122109', '410122', '黄店镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410122112, '410122112', '410122', '刘集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410122114, '410122114', '410122', '雁鸣湖镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -23118,7 +23118,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000410222200, '410222200', '410222', '冯庄乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410222201, '410222201', '410222', '孙营乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410222202, '410222202', '410222', '大岗李乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000410222203, '410222203', '410222', '邸阁乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410222204, '410222204', '410222', '练城乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410222205, '410222205', '410222', '厉庄乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -23319,7 +23319,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000410327212, '410327212', '410327', '董王庄乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410328001, '410328001', '410328', '永宁街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410328101, '410328101', '410328', '王范回族镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000410328102, '410328102', '410328', '上戈镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410328103, '410328103', '410328', '下峪镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410328104, '410328104', '410328', '河底镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -23520,7 +23520,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000410503001, '410503001', '410503', '红旗路街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410503003, '410503003', '410503', '解放路街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410503004, '410503004', '410503', '灯塔路街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000410503005, '410503005', '410503', '豆腐营街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410503006, '410503006', '410503', '洹北街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410503008, '410503008', '410503', '彰东街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -23721,7 +23721,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000410721101, '410721101', '410721', '翟坡镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410721102, '410721102', '410721', '小冀镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410721103, '410721103', '410721', '七里营镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000410721104, '410721104', '410721', '朗公庙镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410721105, '410721105', '410721', '古固寨镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410721107, '410721107', '410721', '大召营镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -23922,7 +23922,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000410823103, '410823103', '410823', '谢旗营镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410823104, '410823104', '410823', '大封镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410823107, '410823107', '410823', '乔庙镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000410823108, '410823108', '410823', '圪垱店镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410823200, '410823200', '410823', '嘉应观乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000410823203, '410823203', '410823', '三阳乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -24123,7 +24123,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000411025205, '411025205', '411025', '范湖乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411025206, '411025206', '411025', '双庙乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411071001, '411071001', '411071', '长村张街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000411071400, '411071400', '411071', '龙湖街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411081001, '411081001', '411081', '颍川街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411081002, '411081002', '411081', '夏都街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -24324,7 +24324,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000411303002, '411303002', '411303', '七一街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411303003, '411303003', '411303', '卧龙岗街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411303004, '411303004', '411303', '武侯街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000411303005, '411303005', '411303', '梅溪街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411303006, '411303006', '411303', '车站街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411303007, '411303007', '411303', '光武街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -24525,7 +24525,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000411330111, '411330111', '411330', '朱庄镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411330112, '411330112', '411330', '程湾镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411330300, '411330300', '411330', '城郊乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000411330301, '411330301', '411330', '回龙乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411330306, '411330306', '411330', '新集乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411371060, '411371060', '411371', '南阳高新区张衡街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -24726,7 +24726,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000411426211, '411426211', '411426', '刘店集乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411426212, '411426212', '411426', '骆集乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411426214, '411426214', '411426', '孔庄乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000411471001, '411471001', '411471', '中州街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411471100, '411471100', '411471', '张阁镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411471101, '411471101', '411471', '贾寨镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -24927,7 +24927,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000411526003, '411526003', '411526', '弋阳街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411526004, '411526004', '411526', '老城街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411526101, '411526101', '411526', '双柳树镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000411526102, '411526102', '411526', '伞陂镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411526103, '411526103', '411526', '卜塔集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411526105, '411526105', '411526', '仁和镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -25128,7 +25128,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000411625209, '411625209', '411625', '李楼乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411625210, '411625210', '411625', '胡集乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411627100, '411627100', '411627', '城关回族镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000411627101, '411627101', '411627', '常营镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411627102, '411627102', '411627', '逊母口镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411627103, '411627103', '411627', '老冢镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -25329,7 +25329,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000411726108, '411726108', '411726', '郭集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411726109, '411726109', '411726', '泰山庙镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411726110, '411726110', '411726', '王店镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000411726111, '411726111', '411726', '杨家集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411726112, '411726112', '411726', '高店镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000411726113, '411726113', '411726', '高邑镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -25530,7 +25530,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000420112007, '420112007', '420112', '径河街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420112008, '420112008', '420112', '长青街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420112011, '420112011', '420112', '辛安渡街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000420112012, '420112012', '420112', '东山街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420112013, '420112013', '420112', '常青花园新区管理委员会街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420112014, '420112014', '420112', '新沟镇街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -25731,7 +25731,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000420322400, '420322400', '420322', '槐树林特场管委会', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420322401, '420322401', '420322', '三官洞林区', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420322402, '420322402', '420322', '工业园区', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000420323100, '420323100', '420323', '城关镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420323101, '420323101', '420323', '溢水镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420323102, '420323102', '420323', '麻家渡镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -25932,7 +25932,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000420606003, '420606003', '420606', '中原街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420606004, '420606004', '420606', '定中门街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420606005, '420606005', '420606', '清河口街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000420606006, '420606006', '420606', '屏襄门街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420606007, '420606007', '420606', '米公街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420606008, '420606008', '420606', '柿铺街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -26133,7 +26133,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000420881451, '420881451', '420881', '南湖原种场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420881452, '420881452', '420881', '罗汉寺种畜场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420881453, '420881453', '420881', '双桥原种场', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000420881454, '420881454', '420881', '东岳种畜场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420881455, '420881455', '420881', '康桥湖农场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000420881456, '420881456', '420881', '大口林场', 4, 'NBS-2023', NULL, NULL, 0),
@@ -26334,7 +26334,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000421024103, '421024103', '421024', '白马寺镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000421024104, '421024104', '421024', '沙岗镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000421024105, '421024105', '421024', '普济镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000421024106, '421024106', '421024', '郝穴镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000421024200, '421024200', '421024', '马家寨乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000421024201, '421024201', '421024', '秦市乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -26535,7 +26535,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000421127110, '421127110', '421127', '独山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000421127111, '421127111', '421127', '分路镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000421127200, '421127200', '421127', '柳林乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000421127201, '421127201', '421127', '杉木乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000421127202, '421127202', '421127', '苦竹乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000421127203, '421127203', '421127', '刘佐乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -26736,7 +26736,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000422801102, '422801102', '422801', '板桥镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000422801103, '422801103', '422801', '白杨坪镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000422801104, '422801104', '422801', '三岔镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000422801105, '422801105', '422801', '盛家坝镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000422801201, '422801201', '422801', '新塘乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000422801202, '422801202', '422801', '红土乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -26937,7 +26937,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000430104001, '430104001', '430104', '望月湖街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430104002, '430104002', '430104', '岳麓街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430104003, '430104003', '430104', '桔子洲街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000430104004, '430104004', '430104', '银盆岭街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430104005, '430104005', '430104', '观沙岭街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430104006, '430104006', '430104', '望城坡街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -27138,7 +27138,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000430223401, '430223401', '430223', '攸县网岭循环经济园', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430224002, '430224002', '430224', '下东街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430224003, '430224003', '430224', '思聪街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000430224004, '430224004', '430224', '洣江街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430224005, '430224005', '430224', '云阳街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430224101, '430224101', '430224', '界首镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -27339,7 +27339,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000430422117, '430422117', '430422', '硫市镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430422118, '430422118', '430422', '栗江镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430422119, '430422119', '430422', '近尾洲镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000430422121, '430422121', '430422', '咸塘镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430422122, '430422122', '430422', '松江镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430422200, '430422200', '430422', '相市乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -27540,7 +27540,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000430524114, '430524114', '430524', '北山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430524115, '430524115', '430524', '三阁司镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430524116, '430524116', '430524', '南岳庙镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000430524117, '430524117', '430524', '七江镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430524118, '430524118', '430524', '羊古坳镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430524119, '430524119', '430524', '罗洪镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -27741,7 +27741,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000430624201, '430624201', '430624', '六塘乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430624206, '430624206', '430624', '杨林寨乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430626001, '430626001', '430626', '汉昌街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000430626002, '430626002', '430626', '天岳街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430626101, '430626101', '430626', '安定镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430626102, '430626102', '430626', '三市镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -27942,7 +27942,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000430726002, '430726002', '430726', '永兴街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430726003, '430726003', '430726', '宝峰街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430726004, '430726004', '430726', '二都街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000430726101, '430726101', '430726', '蒙泉镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430726102, '430726102', '430726', '夹山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430726103, '430726103', '430726', '易家渡镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -28143,7 +28143,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000430981105, '430981105', '430981', '泗湖山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430981107, '430981107', '430981', '南嘴镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430981108, '430981108', '430981', '新湾镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000430981110, '430981110', '430981', '茶盘洲镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430981112, '430981112', '430981', '南大膳镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000430981113, '430981113', '430981', '黄茅洲镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -28344,7 +28344,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000431103103, '431103103', '431103', '牛角坝镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000431103104, '431103104', '431103', '高溪市镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000431103105, '431103105', '431103', '黄阳司镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000431103106, '431103106', '431103', '上岭桥镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000431103108, '431103108', '431103', '伊塘镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000431103110, '431103110', '431103', '蔡市镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -28545,7 +28545,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000431222224, '431222224', '431222', '楠木铺乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000431222230, '431222230', '431222', '肖家桥乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000431222234, '431222234', '431222', '火场土家族乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000431222238, '431222238', '431222', '陈家滩乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000431222239, '431222239', '431222', '清浪乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000431222245, '431222245', '431222', '借母溪乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -28746,7 +28746,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000431321112, '431321112', '431321', '锁石镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000431321200, '431321200', '431321', '石牛乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000431321201, '431321201', '431321', '沙塘乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000431321202, '431321202', '431321', '印塘乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000431322001, '431322001', '431322', '上梅街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000431322002, '431322002', '431322', '上渡街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -28947,7 +28947,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000440103021, '440103021', '440103', '东沙街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440103022, '440103022', '440103', '中南街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440104001, '440104001', '440104', '洪桥街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000440104003, '440104003', '440104', '北京街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440104004, '440104004', '440104', '六榕街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440104005, '440104005', '440104', '流花街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -29148,7 +29148,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000440224106, '440224106', '440224', '红山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440224107, '440224107', '440224', '石塘镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440224108, '440224108', '440224', '董塘镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000440224109, '440224109', '440224', '大桥镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440224110, '440224110', '440224', '周田镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440224111, '440224111', '440224', '黄坑镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -29349,7 +29349,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000440511018, '440511018', '440511', '小公园街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440511019, '440511019', '440511', '金东街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440512001, '440512001', '440512', '达濠街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000440512002, '440512002', '440512', '马窖街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440512003, '440512003', '440512', '礐石街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440512004, '440512004', '440512', '广澳街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -29550,7 +29550,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000440811072, '440811072', '440811', '民安街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440811100, '440811100', '440811', '麻章镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440811101, '440811101', '440811', '太平镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000440811102, '440811102', '440811', '湖光镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440811173, '440811173', '440811', '硇洲镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440823001, '440823001', '440823', '遂城街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -29751,7 +29751,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000440982407, '440982407', '440982', '石滩农场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440983001, '440983001', '440983', '东镇街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440983002, '440983002', '440983', '玉都街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000440983101, '440983101', '440983', '镇隆镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440983102, '440983102', '440983', '水口镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000440983105, '440983105', '440983', '丁堡镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -29952,7 +29952,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000441324001, '441324001', '441324', '龙城街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000441324002, '441324002', '441324', '平陵街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000441324100, '441324100', '441324', '麻榨镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000441324101, '441324101', '441324', '永汉镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000441324115, '441324115', '441324', '龙田镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000441324116, '441324116', '441324', '龙潭镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -30153,7 +30153,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000441621100, '441621100', '441621', '紫城镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000441621102, '441621102', '441621', '龙窝镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000441621103, '441621103', '441621', '九和镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000441621104, '441621104', '441621', '上义镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000441621105, '441621105', '441621', '蓝塘镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000441621106, '441621106', '441621', '凤安镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -30354,7 +30354,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000441825108, '441825108', '441825', '福堂镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000441825109, '441825109', '441825', '小三江镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000441825111, '441825111', '441825', '上帅镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000441825450, '441825450', '441825', '连山林场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000441825451, '441825451', '441825', '禾洞农林场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000441826100, '441826100', '441826', '三江镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -30555,7 +30555,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000445222110, '445222110', '445222', '棉湖镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000445222111, '445222111', '445222', '金和镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000445222112, '445222112', '445222', '大溪镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000445222113, '445222113', '445222', '钱坑镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000445222114, '445222114', '445222', '坪上镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000445222115, '445222115', '445222', '五云镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -30756,7 +30756,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000450110108, '450110108', '450110', '陆斡镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450110109, '450110109', '450110', '两江镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450110110, '450110110', '450110', '罗波镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000450110111, '450110111', '450110', '灵马镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450110112, '450110112', '450110', '甘圩镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450110113, '450110113', '450110', '马头镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -30957,7 +30957,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000450304002, '450304002', '450304', '象山街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450304003, '450304003', '450304', '平山街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450304200, '450304200', '450304', '二塘乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000450305001, '450305001', '450305', '七星区街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450305002, '450305002', '450305', '东江街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450305003, '450305003', '450305', '穿山街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -31158,7 +31158,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000450481109, '450481109', '450481', '筋竹镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450481110, '450481110', '450481', '诚谏镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450481111, '450481111', '450481', '归义镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000450481112, '450481112', '450481', '糯垌镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450481113, '450481113', '450481', '安平镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450481114, '450481114', '450481', '三堡镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -31359,7 +31359,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000450881115, '450881115', '450881', '白沙镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450881116, '450881116', '450881', '石龙镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450881117, '450881117', '450881', '蒙圩镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000450881118, '450881118', '450881', '西山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450881119, '450881119', '450881', '南木镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000450881120, '450881120', '450881', '江口镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -31560,7 +31560,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000451029206, '451029206', '451029', '那比乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000451029207, '451029207', '451029', '高龙乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000451029208, '451029208', '451029', '百乐乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000451029209, '451029209', '451029', '者苗乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000451030100, '451030100', '451030', '八达镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000451030101, '451030101', '451030', '古障镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -31761,7 +31761,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000451225200, '451225200', '451225', '宝坛乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000451225202, '451225202', '451225', '乔善乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000451225203, '451225203', '451225', '纳翁乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000451225204, '451225204', '451225', '兼爱乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000451226001, '451226001', '451226', '城西街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000451226100, '451226100', '451226', '思恩镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -31962,7 +31962,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000451424207, '451424207', '451424', '宝圩乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000451424208, '451424208', '451424', '堪圩乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000451424400, '451424400', '451424', '国营桃城华侨农场', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000451425100, '451425100', '451425', '天等镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000451425101, '451425101', '451425', '龙茗镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000451425102, '451425102', '451425', '进结镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -32163,7 +32163,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000469025102, '469025102', '469025', '邦溪镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000469025103, '469025103', '469025', '打安镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000469025200, '469025200', '469025', '细水乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000469025201, '469025201', '469025', '元门乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000469025202, '469025202', '469025', '南开乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000469025203, '469025203', '469025', '阜龙乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -32364,7 +32364,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000500107001, '500107001', '500107', '杨家坪街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500107002, '500107002', '500107', '黄桷坪街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500107003, '500107003', '500107', '谢家湾街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000500107004, '500107004', '500107', '石坪桥街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500107005, '500107005', '500107', '石桥铺街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500107006, '500107006', '500107', '中梁山街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -32565,7 +32565,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000500115124, '500115124', '500115', '但渡镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500115125, '500115125', '500115', '云集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500115126, '500115126', '500115', '长寿湖镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000500115127, '500115127', '500115', '双龙镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500115128, '500115128', '500115', '龙河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500115129, '500115129', '500115', '石堰镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -32766,7 +32766,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000500153100, '500153100', '500153', '荣隆镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500153101, '500153101', '500153', '仁义镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500153102, '500153102', '500153', '盘龙镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000500153103, '500153103', '500153', '吴家镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500153104, '500153104', '500153', '直升镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500153105, '500153105', '500153', '万灵镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -32967,7 +32967,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000500233104, '500233104', '500233', '洋渡镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500233105, '500233105', '500233', '东溪镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500233106, '500233106', '500233', '复兴镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000500233107, '500233107', '500233', '石宝镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500233108, '500233108', '500233', '汝溪镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500233109, '500233109', '500233', '野鹤镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -33168,7 +33168,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000500241109, '500241109', '500241', '洪安镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500241110, '500241110', '500241', '雅江镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500241111, '500241111', '500241', '石耶镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000500241112, '500241112', '500241', '梅江镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500241113, '500241113', '500241', '兰桥镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000500241114, '500241114', '500241', '膏田镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -33369,7 +33369,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000510116019, '510116019', '510116', '正兴街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510116020, '510116020', '510116', '兴隆街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510116021, '510116021', '510116', '煎茶街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000510116022, '510116022', '510116', '新兴街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510116023, '510116023', '510116', '籍田街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510116024, '510116024', '510116', '太平街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -33570,7 +33570,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000510311109, '510311109', '510311', '王井镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510311110, '510311110', '510311', '黄市镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510311111, '510311111', '510311', '瓦市镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000510311112, '510311112', '510311', '仙市镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510311204, '510311204', '510311', '九洪乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510321001, '510321001', '510321', '梧桐街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -33771,7 +33771,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000510525003, '510525003', '510525', '永乐街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510525101, '510525101', '510525', '龙山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510525103, '510525103', '510525', '太平镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000510525104, '510525104', '510525', '二郎镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510525105, '510525105', '510525', '大村镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510525106, '510525106', '510525', '石宝镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -33972,7 +33972,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000510725108, '510725108', '510725', '石牛镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510725109, '510725109', '510725', '自强镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510725110, '510725110', '510725', '仁和镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000510725111, '510725111', '510725', '双板镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510725112, '510725112', '510725', '金龙镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510725113, '510725113', '510725', '文兴镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -34173,7 +34173,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000510824119, '510824119', '510824', '石马镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510824120, '510824120', '510824', '运山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510824121, '510824121', '510824', '东溪镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000510824122, '510824122', '510824', '高坡镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510824123, '510824123', '510824', '龙山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000510824125, '510824125', '510824', '亭子镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -34374,7 +34374,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000511102010, '511102010', '511102', '全福街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511102101, '511102101', '511102', '牟子镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511102102, '511102102', '511102', '土主镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000511102103, '511102103', '511102', '白马镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511102104, '511102104', '511102', '茅桥镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511102105, '511102105', '511102', '青平镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -34575,7 +34575,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000511321108, '511321108', '511321', '石河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511321109, '511321109', '511321', '王家镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511321110, '511321110', '511321', '富利镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000511321111, '511321111', '511321', '楠木镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511321112, '511321112', '511321', '长坪镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511321113, '511321113', '511321', '东坝镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -34776,7 +34776,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000511421116, '511421116', '511421', '龙马镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511421117, '511421117', '511421', '方家镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511421124, '511421124', '511421', '大化镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000511421125, '511421125', '511421', '高家镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511421127, '511421127', '511421', '禄加镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511421128, '511421128', '511421', '宝飞镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -34977,7 +34977,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000511602109, '511602109', '511602', '肖溪镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511602110, '511602110', '511602', '恒升镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511602111, '511602111', '511602', '石笋镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000511602112, '511602112', '511602', '白市镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511602113, '511602113', '511602', '大安镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511602121, '511602121', '511602', '穿石镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -35178,7 +35178,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000511723101, '511723101', '511723', '普安镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511723102, '511723102', '511723', '回龙镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511723104, '511723104', '511723', '永兴镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000511723105, '511723105', '511723', '讲治镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511723106, '511723106', '511723', '甘棠镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511723107, '511723107', '511723', '任市镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -35379,7 +35379,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000511827101, '511827101', '511827', '灵关镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511827102, '511827102', '511827', '陇东镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511827201, '511827201', '511827', '蜂桶寨乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000511827202, '511827202', '511827', '硗碛乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511827205, '511827205', '511827', '五龙乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000511827206, '511827206', '511827', '大溪乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -35580,7 +35580,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000512021132, '512021132', '512021', '乾龙镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000512021133, '512021133', '512021', '大平镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000512021205, '512021205', '512021', '来凤乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000512021206, '512021206', '512021', '天马乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000512021212, '512021212', '512021', '云峰乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000512021213, '512021213', '512021', '岳新乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -35781,7 +35781,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000513232214, '513232214', '513232', '求吉乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513232215, '513232215', '513232', '包座乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513232400, '513232400', '513232', '白河牧场', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000513233100, '513233100', '513233', '邛溪镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513233101, '513233101', '513233', '刷经寺镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513233102, '513233102', '513233', '瓦切镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -35982,7 +35982,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000513332200, '513332200', '513332', '真达乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513332201, '513332201', '513332', '奔达乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513332202, '513332202', '513332', '正科乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000513332204, '513332204', '513332', '德荣马乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513332206, '513332206', '513332', '长沙贡马乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513332207, '513332207', '513332', '呷衣乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -36183,7 +36183,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000513424101, '513424101', '513424', '永郎镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513424102, '513424102', '513424', '乐跃镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513424103, '513424103', '513424', '麻栗镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000513424106, '513424106', '513424', '茨达镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513424109, '513424109', '513424', '巴洞镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513424113, '513424113', '513424', '黑龙潭镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -36384,7 +36384,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000513437222, '513437222', '513437', '谷堆乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513437224, '513437224', '513437', '拉咪乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513437227, '513437227', '513437', '千万贯乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000513437233, '513437233', '513437', '莫红乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513437237, '513437237', '513437', '巴姑乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000513437241, '513437241', '513437', '卡哈洛乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -36585,7 +36585,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000520204104, '520204104', '520204', '勺米镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520204105, '520204105', '520204', '化乐镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520204106, '520204106', '520204', '比德镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000520204107, '520204107', '520204', '阿戛镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520204108, '520204108', '520204', '玉舍镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520204109, '520204109', '520204', '陡箐镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -36786,7 +36786,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000520327101, '520327101', '520327', '进化镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520327102, '520327102', '520327', '琊川镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520327103, '520327103', '520327', '蜂岩镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000520327104, '520327104', '520327', '永和镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520327106, '520327106', '520327', '绥阳镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520327107, '520327107', '520327', '土溪镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -36987,7 +36987,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000520502012, '520502012', '520502', '青龙街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520502013, '520502013', '520502', '柏杨林街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520502014, '520502014', '520502', '甘河街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000520502100, '520502100', '520502', '鸭池镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520502101, '520502101', '520502', '梨树镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520502102, '520502102', '520502', '岔河镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -37188,7 +37188,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000520526128, '520526128', '520526', '岔河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520526129, '520526129', '520526', '黑土河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520526201, '520526201', '520526', '新发布依族乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000520526210, '520526210', '520526', '石门乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520526211, '520526211', '520526', '云贵乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520526214, '520526214', '520526', '板底乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -37389,7 +37389,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000520627002, '520627002', '520627', '和平街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520627003, '520627003', '520627', '沙子街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520627004, '520627004', '520627', '祐溪街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000520627101, '520627101', '520627', '黑水镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520627102, '520627102', '520627', '谯家镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000520627103, '520627103', '520627', '夹石镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -37590,7 +37590,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000522601101, '522601101', '522601', '舟溪镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000522601103, '522601103', '522601', '旁海镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000522601104, '522601104', '522601', '湾水镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000522601105, '522601105', '522601', '炉山镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000522601106, '522601106', '522601', '万潮镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000522601107, '522601107', '522601', '龙场镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -37791,7 +37791,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000522636001, '522636001', '522636', '金泉街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000522636100, '522636100', '522636', '龙泉镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000522636101, '522636101', '522636', '兴仁镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000522636102, '522636102', '522636', '排调镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000522636103, '522636103', '522636', '扬武镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000522636202, '522636202', '522636', '雅灰乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -37992,7 +37992,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000530125102, '530125102', '530125', '北古城镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530125103, '530125103', '530125', '狗街镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530125105, '530125105', '530125', '竹山镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000530125106, '530125106', '530125', '马街镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530125201, '530125201', '530125', '耿家营彝族苗族乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530125202, '530125202', '530125', '九乡彝族回族乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -38193,7 +38193,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000530381206, '530381206', '530381', '乐丰乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530381207, '530381207', '530381', '文兴乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530381208, '530381208', '530381', '阿都乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000530402001, '530402001', '530402', '玉兴街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530402002, '530402002', '530402', '凤凰街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530402003, '530402003', '530402', '玉带街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -38394,7 +38394,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000530622112, '530622112', '530622', '蒙姑镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530622203, '530622203', '530622', '红山乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530622205, '530622205', '530622', '包谷垴乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000530622206, '530622206', '530622', '中寨乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530622209, '530622209', '530622', '炉房乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530623101, '530623101', '530623', '盐井镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -38595,7 +38595,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000530822208, '530822208', '530822', '龙潭乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530822212, '530822212', '530822', '那哈乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530823101, '530823101', '530823', '锦屏镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000530823102, '530823102', '530823', '文井镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530823103, '530823103', '530823', '漫湾镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000530823104, '530823104', '530823', '大朝山东镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -38796,7 +38796,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000532323202, '532323202', '532323', '戌街乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000532323203, '532323203', '532323', '安乐乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000532324101, '532324101', '532324', '龙川镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000532324102, '532324102', '532324', '沙桥镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000532324103, '532324103', '532324', '五街镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000532324104, '532324104', '532324', '红土坡镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -38997,7 +38997,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000532601001, '532601001', '532601', '开化街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000532601002, '532601002', '532601', '卧龙街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000532601003, '532601003', '532601', '新平街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000532601102, '532601102', '532601', '古木镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000532601103, '532601103', '532601', '平坝镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000532601104, '532601104', '532601', '马塘镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -39198,7 +39198,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000532926103, '532926103', '532926', '公郎镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000532926104, '532926104', '532926', '宝华镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000532926105, '532926105', '532926', '无量山镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000532926201, '532926201', '532926', '拥翠乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000532926202, '532926202', '532926', '乐秋乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000532926203, '532926203', '532926', '碧溪乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -39399,7 +39399,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000540104203, '540104203', '540104', '雪乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540104204, '540104204', '540104', '帮堆乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540121100, '540121100', '540121', '甘丹曲果镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000540121200, '540121200', '540121', '春堆乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540121201, '540121201', '540121', '松盘乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540121202, '540121202', '540121', '强嘎乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -39600,7 +39600,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000540231202, '540231202', '540231', '定结乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540231203, '540231203', '540231', '多布扎乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540231204, '540231204', '540231', '扎西岗乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000540231205, '540231205', '540231', '琼孜乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540231206, '540231206', '540231', '萨尔乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540231207, '540231207', '540231', '郭加乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -39801,7 +39801,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000540421101, '540421101', '540421', '金达镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540421102, '540421102', '540421', '巴河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540421200, '540421200', '540421', '朱拉乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000540421201, '540421201', '540421', '错高乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540421202, '540421202', '540421', '仲萨乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540421203, '540421203', '540421', '江达乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -40002,7 +40002,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000540626206, '540626206', '540626', '江达乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540626208, '540626208', '540626', '热瓦乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540626209, '540626209', '540626', '嘎美乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000540626210, '540626210', '540626', '嘎木乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540627100, '540627100', '540627', '普保镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000540627101, '540627101', '540627', '北拉镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -40203,7 +40203,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000610117007, '610117007', '610117', '通远街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610118001, '610118001', '610118', '甘亭街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610118002, '610118002', '610118', '余下街道', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000610118003, '610118003', '610118', '玉蝉街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610118004, '610118004', '610118', '五竹街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610118005, '610118005', '610118', '大王街道', 4, 'NBS-2023', NULL, NULL, 0),
@@ -40404,7 +40404,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000610330106, '610330106', '610330', '平木镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610330107, '610330107', '610330', '坪坎镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610330110, '610330110', '610330', '留凤关镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000610330400, '610330400', '610330', '马头滩林业局', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610330401, '610330401', '610330', '辛家山林业场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610331100, '610331100', '610331', '咀头镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -40605,7 +40605,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000610523103, '610523103', '610523', '安仁镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610523104, '610523104', '610523', '两宜镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610523105, '610523105', '610523', '羌白镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000610523106, '610523106', '610523', '官池镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610523107, '610523107', '610523', '冯村镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610523108, '610523108', '610523', '双泉镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -40806,7 +40806,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000610681102, '610681102', '610681', '玉家湾镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610681103, '610681103', '610681', '安定镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610681104, '610681104', '610681', '马家砭镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000610681105, '610681105', '610681', '南沟岔镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610681106, '610681106', '610681', '涧峪岔镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610681107, '610681107', '610681', '李家岔镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -41007,7 +41007,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000610802106, '610802106', '610802', '牛家梁镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610802107, '610802107', '610802', '金鸡滩镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610802108, '610802108', '610802', '马合镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000610802109, '610802109', '610802', '巴拉素镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610802111, '610802111', '610802', '鱼河峁镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610802112, '610802112', '610802', '青云镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -41208,7 +41208,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000610921104, '610921104', '610921', '双乳镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610921105, '610921105', '610921', '铁佛寺镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610921107, '610921107', '610921', '漩涡镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000610921108, '610921108', '610921', '汉阳镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610921110, '610921110', '610921', '双河口镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000610921112, '610921112', '610921', '观音河镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -41409,7 +41409,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000611025110, '611025110', '611025', '达仁镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000611025111, '611025111', '611025', '木王镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000611025113, '611025113', '611025', '云盖寺镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000611025114, '611025114', '611025', '庙沟镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000611025117, '611025117', '611025', '月河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000611025400, '611025400', '611025', '黑窑沟林厂', 4, 'NBS-2023', NULL, NULL, 0),
@@ -41610,7 +41610,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000620422105, '620422105', '620422', '甘沟驿镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000620422106, '620422106', '620422', '侯家川镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000620422107, '620422107', '620422', '柴家门镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000620422108, '620422108', '620422', '汉家岔镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000620422109, '620422109', '620422', '刘家寨子镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000620422110, '620422110', '620422', '白草塬镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -41811,7 +41811,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000620602127, '620602127', '620602', '吴家井镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000620602128, '620602128', '620602', '金河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000620602129, '620602129', '620602', '韩佐镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000620602130, '620602130', '620602', '大柳镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000620602131, '620602131', '620602', '柏树镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000620602132, '620602132', '620602', '金塔镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -42012,7 +42012,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000620822400, '620822400', '620822', '万宝川农场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000620823001, '620823001', '620823', '城市社区管理委员会街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000620823100, '620823100', '620823', '锦屏镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000620823101, '620823101', '620823', '新窑镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000620823102, '620823102', '620823', '柏树镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000620823103, '620823103', '620823', '黄寨镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -42213,7 +42213,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000621023204, '621023204', '621023', '白马乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000621023205, '621023205', '621023', '怀安乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000621023206, '621023206', '621023', '乔川乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000621023207, '621023207', '621023', '乔河乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000621023208, '621023208', '621023', '山庄乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000621023210, '621023210', '621023', '林镇乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -42414,7 +42414,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000621202108, '621202108', '621202', '三河镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000621202109, '621202109', '621202', '甘泉镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000621202110, '621202110', '621202', '鱼龙镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000621202111, '621202111', '621202', '琵琶镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000621202112, '621202112', '621202', '外纳镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000621202113, '621202113', '621202', '马营镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -42615,7 +42615,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000622921102, '622921102', '622921', '马集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000622921103, '622921103', '622921', '莲花镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000622921104, '622921104', '622921', '新集镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000622921105, '622921105', '622921', '尹集镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000622921106, '622921106', '622921', '刁祁镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000622921107, '622921107', '622921', '北塬镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -42816,7 +42816,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000623026100, '623026100', '623026', '郎木寺镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000623026101, '623026101', '623026', '玛艾镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000623026102, '623026102', '623026', '西仓镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000623026103, '623026103', '623026', '尕海镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000623026104, '623026104', '623026', '双岔镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000623026202, '623026202', '623026', '拉仁关乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -43017,7 +43017,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000632221102, '632221102', '632221', '泉口镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000632221103, '632221103', '632221', '东川镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000632221200, '632221200', '632221', '北山乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000632221201, '632221201', '632221', '麻莲乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000632221202, '632221202', '632221', '西滩乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000632221203, '632221203', '632221', '阴田乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -43218,7 +43218,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000632801005, '632801005', '632801', '西藏路街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000632801100, '632801100', '632801', '郭勒木德镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000632801101, '632801101', '632801', '唐古拉镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000632801200, '632801200', '632801', '大格勒乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000632801201, '632801201', '632801', '乌图美仁乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000632801400, '632801400', '632801', '察尔汗工行委', 4, 'NBS-2023', NULL, NULL, 0),
@@ -43419,7 +43419,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000640402200, '640402200', '640402', '中河乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000640402201, '640402201', '640402', '河川乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000640402204, '640402204', '640402', '炭山乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000640402205, '640402205', '640402', '寨科乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000640422100, '640422100', '640422', '吉强镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000640422101, '640422101', '640422', '兴隆镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -43620,7 +43620,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000650107004, '650107004', '650107', '乌拉泊街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000650107006, '650107006', '650107', '达坂城区盐湖街道', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000650107100, '650107100', '650107', '达坂城镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000650107200, '650107200', '650107', '东沟乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000650107201, '650107201', '650107', '西沟乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000650107202, '650107202', '650107', '阿克苏乡', 4, 'NBS-2023', NULL, NULL, 0),
@@ -43821,7 +43821,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000652324204, '652324204', '652324', '旱卡子滩乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000652324400, '652324400', '652324', '玛电工业区', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000652324402, '652324402', '652324', '自治区林业厅玛纳斯平原林场', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000652324404, '652324404', '652324', '新疆农业科学院玛纳斯县试验站', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000652324520, '652324520', '652324', '兵团农六师新湖农场', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000652324521, '652324521', '652324', '兵团一四七团', 4, 'NBS-2023', NULL, NULL, 0),
@@ -44022,7 +44022,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000652901101, '652901101', '652901', '阿依库勒镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000652901102, '652901102', '652901', '依干其镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000652901201, '652901201', '652901', '拜什吐格曼乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000652901202, '652901202', '652901', '托普鲁克乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000652901203, '652901203', '652901', '库木巴什乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000652901404, '652901404', '652901', '实验林场', 4, 'NBS-2023', NULL, NULL, 0),
@@ -44223,7 +44223,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000653122211, '653122211', '653122', '英阿瓦提乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000653122400, '653122400', '653122', '高新技术产业孵化园区管委会', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000653123100, '653123100', '653123', '英吉沙镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000653123101, '653123101', '653123', '乌恰镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000653123102, '653123102', '653123', '芒辛镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000653123103, '653123103', '653123', '萨罕镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -44424,7 +44424,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000653222210, '653222210', '653222', '阔依其乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000653222211, '653222211', '653222', '雅瓦乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000653222212, '653222212', '653222', '吐外特乡', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000653222213, '653222213', '653222', '英也尔乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000653222214, '653222214', '653222', '喀瓦克乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000653222401, '653222401', '653222', '现代农业产业园', 4, 'NBS-2023', NULL, NULL, 0),
@@ -44625,7 +44625,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000654027200, '654027200', '654027', '呼吉尔特蒙古民族乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000654027203, '654027203', '654027', '阔克铁热克柯尔克孜民族乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000654027405, '654027405', '654027', '科克苏林场', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000654027517, '654027517', '654027', '兵团七十八团', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000654028100, '654028100', '654028', '尼勒克镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000654028101, '654028101', '654028', '乌拉斯台镇', 4, 'NBS-2023', NULL, NULL, 0),
@@ -44826,7 +44826,7 @@ INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_v
 (900000000654326101, '654326101', '654326', '吉木乃镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000654326102, '654326102', '654326', '喀尔交镇', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000654326103, '654326103', '654326', '乌拉斯特镇', 4, 'NBS-2023', NULL, NULL, 0);
-INSERT INTO system_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
+INSERT INTO sys_region ("id", "code", "parent_code", "name", "level", "data_version", "create_user", "update_user", "is_deleted") VALUES
 (900000000654326201, '654326201', '654326', '托斯特乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000654326202, '654326202', '654326', '恰勒什海乡', 4, 'NBS-2023', NULL, NULL, 0),
 (900000000654326204, '654326204', '654326', '别斯铁热克乡', 4, 'NBS-2023', NULL, NULL, 0),

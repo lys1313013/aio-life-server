@@ -1947,11 +1947,6 @@
         "type": "TEXT"
       },
       {
-        "key": "file_id",
-        "label": "图片文件ID(UUID)",
-        "type": "TEXT"
-      },
-      {
         "key": "source_platform",
         "label": "来源平台",
         "type": "TEXT"
@@ -2123,11 +2118,6 @@
         "key": "update_time",
         "label": "更新时间",
         "type": "TEXT"
-      },
-      {
-        "key": "file_id",
-        "label": "封面文件ID(UUID)",
-        "type": "TEXT"
       }
     ]
   },
@@ -2214,11 +2204,6 @@
       {
         "key": "update_time",
         "label": "更新时间",
-        "type": "TEXT"
-      },
-      {
-        "key": "file_id",
-        "label": "封面文件ID(UUID)",
         "type": "TEXT"
       }
     ]
@@ -2331,12 +2316,12 @@
     ]
   },
   {
-    "key": "performance",
-    "title": "演出",
-    "table": "performance",
+    "key": "event_record",
+    "title": "活动",
+    "table": "event_record",
     "ownerColumn": "user_id",
     "menus": [
-      "/record/performance"
+      "/record/event-records"
     ],
     "parents": [],
     "columns": [
@@ -2351,33 +2336,33 @@
         "type": "TEXT"
       },
       {
-        "key": "performance_name",
-        "label": "演出名称",
+        "key": "title",
+        "label": "活动名称",
         "type": "TEXT"
       },
       {
-        "key": "performance_type",
-        "label": "演出类型(演唱会/话剧/音乐会等)",
+        "key": "event_type",
+        "label": "活动类型(演唱会/音乐节/技术分享等)",
         "type": "TEXT"
       },
       {
-        "key": "performance_date",
-        "label": "演出日期",
+        "key": "event_date",
+        "label": "活动日期",
         "type": "TEXT"
       },
       {
         "key": "city",
-        "label": "演出城市",
+        "label": "活动城市",
         "type": "TEXT"
       },
       {
         "key": "venue",
-        "label": "演出地点",
+        "label": "活动地点",
         "type": "TEXT"
       },
       {
         "key": "ticket_price",
-        "label": "票价",
+        "label": "票价或报名费",
         "type": "DECIMAL"
       },
       {
@@ -2387,27 +2372,27 @@
       },
       {
         "key": "duration_minutes",
-        "label": "演出时长(分钟)",
+        "label": "活动时长(分钟)",
         "type": "NUMBER"
       },
       {
         "key": "rating",
-        "label": "演出评分(1-5)",
+        "label": "活动评分(1-5)",
         "type": "NUMBER"
       },
       {
         "key": "review",
-        "label": "演出评价",
+        "label": "活动评价",
         "type": "TEXT"
       },
       {
         "key": "purchase_platform",
-        "label": "购票平台",
+        "label": "购票或报名平台",
         "type": "TEXT"
       },
       {
         "key": "order_number",
-        "label": "购票订单号",
+        "label": "购票或报名订单号",
         "type": "TEXT"
       },
       {
@@ -2421,8 +2406,8 @@
         "type": "TEXT"
       },
       {
-        "key": "performer",
-        "label": "演出人员",
+        "key": "participants",
+        "label": "演出者、主讲人或嘉宾",
         "type": "TEXT"
       }
     ]
@@ -2687,11 +2672,6 @@
         "key": "price",
         "label": "价格",
         "type": "DECIMAL"
-      },
-      {
-        "key": "file_id",
-        "label": "图片文件ID",
-        "type": "TEXT"
       },
       {
         "key": "size",

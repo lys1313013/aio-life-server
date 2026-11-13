@@ -29,6 +29,8 @@ public class MovieEntity extends BaseEntity {
     /**
      * 图片文件ID
      */
+    /** 从 file 业务关联填充，不映射业务表字段。 */
+    @TableField(exist = false)
     private String fileId;
 
     /**

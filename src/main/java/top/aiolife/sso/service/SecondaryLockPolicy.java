@@ -21,7 +21,7 @@ public final class SecondaryLockPolicy {
             Map.entry("/record/videoWatch", List.of("/b-video")),
             Map.entry("/record/think", List.of("/thought")),
             Map.entry("/record/memo", List.of("/memo")),
-            Map.entry("/record/performance", List.of("/performance")),
+            Map.entry("/record/event-records", List.of("/event-records")),
             Map.entry("/record/milestone", List.of("/milestones")),
             Map.entry("/record/anniversary", List.of("/anniversaryRecords")),
             Map.entry("/my-hub/honor", List.of("/honorRecords", "/honorCategories")),
@@ -68,7 +68,7 @@ public final class SecondaryLockPolicy {
             case "/feedback" -> "/my-hub/feedback";
             default -> path.startsWith("/finance-management/")
                     ? path.replace("/finance-management/", "/finance/")
-                    : Set.of("/my-hub/videoWatch", "/my-hub/memo", "/my-hub/performance",
+                    : Set.of("/my-hub/videoWatch", "/my-hub/memo", "/my-hub/event-record",
                             "/my-hub/milestone", "/my-hub/anniversary").contains(path)
                     ? path.replace("/my-hub/", "/record/") : path;
         };

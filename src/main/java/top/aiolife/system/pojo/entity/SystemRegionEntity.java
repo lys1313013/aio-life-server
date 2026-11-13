@@ -8,7 +8,7 @@ import top.aiolife.core.pojo.entity.BaseEntity;
 /** 省、市、区县、乡镇街道基础目录；编码按来源保留字符串。 */
 @Getter
 @Setter
-@TableName("system_region")
+@TableName("sys_region")
 public class SystemRegionEntity extends BaseEntity {
     private String code;
     private String parentCode;

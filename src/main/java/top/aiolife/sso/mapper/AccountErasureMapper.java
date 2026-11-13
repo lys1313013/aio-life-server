@@ -162,8 +162,8 @@ public interface AccountErasureMapper {
     @Delete("DELETE FROM \"b_video\" WHERE user_id = #{userId}")
     int purgeBVideo(@Param("userId") long userId, @Param("email") String email);
 
-    @Delete("DELETE FROM \"performance\" WHERE user_id = #{userId}")
-    int purgePerformance(@Param("userId") long userId, @Param("email") String email);
+    @Delete("DELETE FROM \"event_record\" WHERE user_id = #{userId}")
+    int purgeEventRecord(@Param("userId") long userId, @Param("email") String email);
 
     @Delete("DELETE FROM \"device\" WHERE user_id = #{userId}")
     int purgeDevice(@Param("userId") long userId, @Param("email") String email);
@@ -251,7 +251,7 @@ public interface AccountErasureMapper {
         purgeReadRecord(userId, email);
         purgeMovie(userId, email);
         purgeBVideo(userId, email);
-        purgePerformance(userId, email);
+        purgeEventRecord(userId, email);
         purgeDevice(userId, email);
         purgeMembershipRecord(userId, email);
         purgeNotificationChannelConfig(userId, email);

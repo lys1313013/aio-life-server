@@ -564,7 +564,6 @@ CREATE TABLE "device" (
     "purchase_price" numeric(10,2),
     "purchase_place" varchar(255),
     "end_date" date,
-    "file_id" varchar(32),
     "source_platform" varchar(16),
     "source_order_id" varchar(100) COLLATE "C",
     "source_product_id" varchar(100) COLLATE "C",
@@ -589,7 +588,6 @@ COMMENT ON COLUMN "device"."purchase_date" IS '购买日期';
 COMMENT ON COLUMN "device"."purchase_price" IS '购买价格';
 COMMENT ON COLUMN "device"."purchase_place" IS '购买地点';
 COMMENT ON COLUMN "device"."end_date" IS '结束日期（用于计算日均费用）';
-COMMENT ON COLUMN "device"."file_id" IS '图片文件ID(UUID)';
 COMMENT ON COLUMN "device"."source_platform" IS '采集平台：jd=京东、taobao=淘宝；手工录入或历史记录为NULL';
 COMMENT ON COLUMN "device"."source_order_id" IS '来源订单ID，原始字符串；无采集来源时为NULL';
 COMMENT ON COLUMN "device"."source_product_id" IS '来源商品ID，采集行sku原始字符串；无采集来源时为NULL';
@@ -642,7 +640,7 @@ CREATE TABLE "exercise_record" (
     "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "update_user" bigint,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "time_id" varchar(32),
+    "time_id" bigint,
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "exercise_record" IS '运动记录表';
@@ -787,7 +785,7 @@ COMMENT ON COLUMN "file"."file_size" IS '文件大小(字节)';
 COMMENT ON COLUMN "file"."file_type" IS '文件MIME类型';
 COMMENT ON COLUMN "file"."hash_value" IS '文件哈希值(如 MD5，用于防重)';
 COMMENT ON COLUMN "file"."biz_type" IS '业务类型(如 movie, device, honor, wardrobe_item)';
-COMMENT ON COLUMN "file"."biz_id" IS '业务记录ID(用于反向关联，单附件时也可为空)';
+COMMENT ON COLUMN "file"."biz_id" IS '业务记录ID；上传待绑定或解除关联时为空，设备/观影/阅读/衣物单图由此唯一关联';
 COMMENT ON COLUMN "file"."is_public" IS '是否公开：0-否，1-是';
 COMMENT ON COLUMN "file"."create_user" IS '创建人';
 COMMENT ON COLUMN "file"."create_time" IS '创建时间';
@@ -1341,7 +1339,6 @@ CREATE TABLE "movie" (
     "create_user" bigint,
     "update_user" bigint,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "file_id" varchar(32),
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "movie" IS '影视记录表';
@@ -1363,7 +1360,6 @@ COMMENT ON COLUMN "movie"."update_time" IS '更新时间';
 COMMENT ON COLUMN "movie"."create_user" IS '创建人';
 COMMENT ON COLUMN "movie"."update_user" IS '更新人';
 COMMENT ON COLUMN "movie"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
-COMMENT ON COLUMN "movie"."file_id" IS '封面文件ID(UUID)';
 CREATE INDEX "movie_idx_user_id" ON "movie" ("user_id");
 COMMENT ON INDEX "movie_idx_user_id" IS '业务检索索引：idx_user_id';
 
@@ -1499,13 +1495,13 @@ COMMENT ON COLUMN "password_vault"."update_user" IS '更新人ID';
 CREATE INDEX "password_vault_idx_user_id" ON "password_vault" ("user_id");
 COMMENT ON INDEX "password_vault_idx_user_id" IS '业务检索索引：idx_user_id';
 
-CREATE TABLE "performance" (
+CREATE TABLE "event_record" (
     "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
-    "performance_name" varchar(100) NOT NULL,
-    "performer" varchar(50),
-    "performance_type" varchar(50) NOT NULL,
-    "performance_date" timestamp(0) without time zone NOT NULL,
+    "title" varchar(100) NOT NULL,
+    "participants" varchar(50),
+    "event_type" varchar(50) NOT NULL,
+    "event_date" timestamp(0) without time zone NOT NULL,
     "city" varchar(50) NOT NULL,
     "venue" varchar(100) NOT NULL,
     "ticket_price" numeric(10,2) NOT NULL,
@@ -1522,29 +1518,29 @@ CREATE TABLE "performance" (
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id")
  );
-COMMENT ON TABLE "performance" IS '演出表';
-COMMENT ON COLUMN "performance"."id" IS '唯一标识';
-COMMENT ON COLUMN "performance"."user_id" IS '所属用户ID';
-COMMENT ON COLUMN "performance"."performance_name" IS '演出名称';
-COMMENT ON COLUMN "performance"."performer" IS '演出者或团体名称，未填写时为空';
-COMMENT ON COLUMN "performance"."performance_type" IS '演出类型(演唱会/话剧/音乐会等)';
-COMMENT ON COLUMN "performance"."performance_date" IS '演出日期';
-COMMENT ON COLUMN "performance"."city" IS '演出城市';
-COMMENT ON COLUMN "performance"."venue" IS '演出地点';
-COMMENT ON COLUMN "performance"."ticket_price" IS '票价';
-COMMENT ON COLUMN "performance"."seat_info" IS '座位信息';
-COMMENT ON COLUMN "performance"."duration_minutes" IS '演出时长（分钟）';
-COMMENT ON COLUMN "performance"."rating" IS '演出评分(1-5)';
-COMMENT ON COLUMN "performance"."review" IS '演出评价';
-COMMENT ON COLUMN "performance"."purchase_platform" IS '购票平台';
-COMMENT ON COLUMN "performance"."order_number" IS '购票订单号';
-COMMENT ON COLUMN "performance"."create_user" IS '创建人ID';
-COMMENT ON COLUMN "performance"."create_time" IS '创建时间';
-COMMENT ON COLUMN "performance"."update_user" IS '更新人ID';
-COMMENT ON COLUMN "performance"."update_time" IS '更新时间';
-COMMENT ON COLUMN "performance"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
-CREATE INDEX "performance_idx_performance_user_deleted" ON "performance" ("user_id", "is_deleted", "id");
-COMMENT ON INDEX "performance_idx_performance_user_deleted" IS '业务检索索引：idx_performance_user_deleted';
+COMMENT ON TABLE "event_record" IS '活动记录表';
+COMMENT ON COLUMN "event_record"."id" IS '唯一标识';
+COMMENT ON COLUMN "event_record"."user_id" IS '所属用户ID';
+COMMENT ON COLUMN "event_record"."title" IS '活动名称';
+COMMENT ON COLUMN "event_record"."participants" IS '演出者、主讲人或嘉宾，未填写时为空';
+COMMENT ON COLUMN "event_record"."event_type" IS '活动类型(演唱会/音乐节/技术分享/话剧/音乐会等)';
+COMMENT ON COLUMN "event_record"."event_date" IS '活动日期';
+COMMENT ON COLUMN "event_record"."city" IS '活动城市';
+COMMENT ON COLUMN "event_record"."venue" IS '活动地点';
+COMMENT ON COLUMN "event_record"."ticket_price" IS '票价或报名费';
+COMMENT ON COLUMN "event_record"."seat_info" IS '座位信息';
+COMMENT ON COLUMN "event_record"."duration_minutes" IS '活动时长（分钟）';
+COMMENT ON COLUMN "event_record"."rating" IS '活动评分(1-5)';
+COMMENT ON COLUMN "event_record"."review" IS '活动评价';
+COMMENT ON COLUMN "event_record"."purchase_platform" IS '购票或报名平台';
+COMMENT ON COLUMN "event_record"."order_number" IS '购票或报名订单号';
+COMMENT ON COLUMN "event_record"."create_user" IS '创建人ID';
+COMMENT ON COLUMN "event_record"."create_time" IS '创建时间';
+COMMENT ON COLUMN "event_record"."update_user" IS '更新人ID';
+COMMENT ON COLUMN "event_record"."update_time" IS '更新时间';
+COMMENT ON COLUMN "event_record"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
+CREATE INDEX "event_record_idx_event_record_user_deleted" ON "event_record" ("user_id", "is_deleted", "id");
+COMMENT ON INDEX "event_record_idx_event_record_user_deleted" IS '业务检索索引：idx_event_record_user_deleted';
 
 CREATE TABLE "read_record" (
     "id" bigint NOT NULL,
@@ -1564,7 +1560,6 @@ CREATE TABLE "read_record" (
     "create_user" bigint,
     "update_user" bigint,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
-    "file_id" varchar(32),
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "read_record" IS '阅读记录表';
@@ -1585,7 +1580,6 @@ COMMENT ON COLUMN "read_record"."update_time" IS '更新时间';
 COMMENT ON COLUMN "read_record"."create_user" IS '创建人';
 COMMENT ON COLUMN "read_record"."update_user" IS '更新人';
 COMMENT ON COLUMN "read_record"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
-COMMENT ON COLUMN "read_record"."file_id" IS '封面文件ID(UUID)';
 CREATE INDEX "read_record_idx_user_id" ON "read_record" ("user_id");
 COMMENT ON INDEX "read_record_idx_user_id" IS '业务检索索引：idx_user_id';
 
@@ -1874,7 +1868,7 @@ COMMENT ON COLUMN "sys_work_calendar"."holiday_name" IS '关联节日名称，�
 COMMENT ON COLUMN "sys_work_calendar"."source" IS '数据来源，如 weekday_rule、holiday-cn、manual';
 COMMENT ON COLUMN "sys_work_calendar"."updated_at" IS '最后更新时间';
 
-CREATE TABLE "system_config" (
+CREATE TABLE "sys_config" (
     "id" bigint NOT NULL,
     "config_key" varchar(128) COLLATE "C" NOT NULL,
     "config_value" text,
@@ -1887,19 +1881,19 @@ CREATE TABLE "system_config" (
     "update_user" bigint,
     PRIMARY KEY ("id")
  );
-COMMENT ON TABLE "system_config" IS '系统配置表';
-COMMENT ON COLUMN "system_config"."id" IS '主键ID（雪花）';
-COMMENT ON COLUMN "system_config"."config_key" IS '配置键（唯一）';
-COMMENT ON COLUMN "system_config"."config_value" IS '配置值（JSON 或纯文本）';
-COMMENT ON COLUMN "system_config"."config_type" IS '类型：STRING/JSON/BOOLEAN/NUMBER（前端渲染用）';
-COMMENT ON COLUMN "system_config"."description" IS '配置说明';
-COMMENT ON COLUMN "system_config"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
-COMMENT ON COLUMN "system_config"."create_time" IS '创建时间';
-COMMENT ON COLUMN "system_config"."update_time" IS '更新时间';
-COMMENT ON COLUMN "system_config"."create_user" IS '创建人ID';
-COMMENT ON COLUMN "system_config"."update_user" IS '更新人ID';
+COMMENT ON TABLE "sys_config" IS '系统配置表';
+COMMENT ON COLUMN "sys_config"."id" IS '主键ID（雪花）';
+COMMENT ON COLUMN "sys_config"."config_key" IS '配置键（唯一）';
+COMMENT ON COLUMN "sys_config"."config_value" IS '配置值（JSON 或纯文本）';
+COMMENT ON COLUMN "sys_config"."config_type" IS '类型：STRING/JSON/BOOLEAN/NUMBER（前端渲染用）';
+COMMENT ON COLUMN "sys_config"."description" IS '配置说明';
+COMMENT ON COLUMN "sys_config"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
+COMMENT ON COLUMN "sys_config"."create_time" IS '创建时间';
+COMMENT ON COLUMN "sys_config"."update_time" IS '更新时间';
+COMMENT ON COLUMN "sys_config"."create_user" IS '创建人ID';
+COMMENT ON COLUMN "sys_config"."update_user" IS '更新人ID';
 
-CREATE TABLE "system_region" (
+CREATE TABLE "sys_region" (
     "id" bigint NOT NULL,
     "code" varchar(12) COLLATE "C" NOT NULL,
     "parent_code" varchar(12) COLLATE "C" NOT NULL,
@@ -1912,24 +1906,24 @@ CREATE TABLE "system_region" (
     "update_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "is_deleted" smallint DEFAULT '0' NOT NULL,
     PRIMARY KEY ("id"),
-    CONSTRAINT "ck_system_region_level" CHECK (("level" between 1 and 4))
+    CONSTRAINT "ck_sys_region_level" CHECK (("level" between 1 and 4))
  );
-COMMENT ON TABLE "system_region" IS '省市区县乡镇街道基础目录，版本化统计区划快照';
-COMMENT ON COLUMN "system_region"."id" IS '目录记录ID，初始化数据使用编码映射的固定ID，应用新增使用雪花ID';
-COMMENT ON COLUMN "system_region"."code" IS '地区编码，保留原始字符串，目录内唯一';
-COMMENT ON COLUMN "system_region"."parent_code" IS '上级地区编码，0表示省级根节点';
-COMMENT ON COLUMN "system_region"."name" IS '地区名称，按数据版本保留原名';
-COMMENT ON COLUMN "system_region"."level" IS '地区层级：1=省，2=市，3=区县，4=乡镇街道';
-COMMENT ON COLUMN "system_region"."data_version" IS '来源版本，NBS-2023表示2023年统计区划快照，不表示当前实时区划';
-COMMENT ON COLUMN "system_region"."create_user" IS '创建人用户ID，初始化数据为空';
-COMMENT ON COLUMN "system_region"."create_time" IS '创建时间，由应用写入，初始化数据为空';
-COMMENT ON COLUMN "system_region"."update_user" IS '最后更新人用户ID，未记录时为空';
-COMMENT ON COLUMN "system_region"."update_time" IS '最后更新时间，未记录时为空';
-COMMENT ON COLUMN "system_region"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
-CREATE INDEX "system_region_idx_system_region_parent" ON "system_region" ("parent_code", "is_deleted", "code");
-COMMENT ON INDEX "system_region_idx_system_region_parent" IS '业务检索索引：idx_system_region_parent';
-CREATE UNIQUE INDEX "system_region_uk_system_region_code" ON "system_region" ("code") WHERE "is_deleted" = 0;
-COMMENT ON INDEX "system_region_uk_system_region_code" IS '有效地区编码唯一，已删除版本记录不占用';
+COMMENT ON TABLE "sys_region" IS '省市区县乡镇街道基础目录，版本化统计区划快照';
+COMMENT ON COLUMN "sys_region"."id" IS '目录记录ID，初始化数据使用编码映射的固定ID，应用新增使用雪花ID';
+COMMENT ON COLUMN "sys_region"."code" IS '地区编码，保留原始字符串，目录内唯一';
+COMMENT ON COLUMN "sys_region"."parent_code" IS '上级地区编码，0表示省级根节点';
+COMMENT ON COLUMN "sys_region"."name" IS '地区名称，按数据版本保留原名';
+COMMENT ON COLUMN "sys_region"."level" IS '地区层级：1=省，2=市，3=区县，4=乡镇街道';
+COMMENT ON COLUMN "sys_region"."data_version" IS '来源版本，NBS-2023表示2023年统计区划快照，不表示当前实时区划';
+COMMENT ON COLUMN "sys_region"."create_user" IS '创建人用户ID，初始化数据为空';
+COMMENT ON COLUMN "sys_region"."create_time" IS '创建时间，由应用写入，初始化数据为空';
+COMMENT ON COLUMN "sys_region"."update_user" IS '最后更新人用户ID，未记录时为空';
+COMMENT ON COLUMN "sys_region"."update_time" IS '最后更新时间，未记录时为空';
+COMMENT ON COLUMN "sys_region"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
+CREATE INDEX "sys_region_idx_sys_region_parent" ON "sys_region" ("parent_code", "is_deleted", "code");
+COMMENT ON INDEX "sys_region_idx_sys_region_parent" IS '业务检索索引：idx_sys_region_parent';
+CREATE UNIQUE INDEX "sys_region_uk_sys_region_code" ON "sys_region" ("code") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "sys_region_uk_sys_region_code" IS '有效地区编码唯一，已删除版本记录不占用';
 
 CREATE TABLE "task" (
     "id" bigint NOT NULL,
@@ -2071,7 +2065,7 @@ COMMENT ON COLUMN "thought_rela_event"."update_user" IS '最后更新人用户ID
 COMMENT ON COLUMN "thought_rela_event"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
 
 CREATE TABLE "time_record" (
-    "id" varchar(32) NOT NULL,
+    "id" bigint NOT NULL,
     "user_id" bigint NOT NULL,
     "create_user" bigint,
     "category_id" bigint,
@@ -2514,7 +2508,6 @@ CREATE TABLE "wardrobe_item" (
     "season" varchar(20),
     "purchase_date" date,
     "price" numeric(10,2),
-    "file_id" varchar(32),
     "size" varchar(20),
     "remark" varchar(500),
     "user_id" bigint NOT NULL,
@@ -2539,7 +2532,6 @@ COMMENT ON COLUMN "wardrobe_item"."brand" IS '品牌';
 COMMENT ON COLUMN "wardrobe_item"."season" IS '适用季节:春,夏,秋,冬';
 COMMENT ON COLUMN "wardrobe_item"."purchase_date" IS '购买日期';
 COMMENT ON COLUMN "wardrobe_item"."price" IS '价格';
-COMMENT ON COLUMN "wardrobe_item"."file_id" IS '图片文件ID(UUID)';
 COMMENT ON COLUMN "wardrobe_item"."size" IS '尺码';
 COMMENT ON COLUMN "wardrobe_item"."remark" IS '备注，未填写时为空';
 COMMENT ON COLUMN "wardrobe_item"."user_id" IS '用户ID';
@@ -2573,8 +2565,8 @@ CREATE UNIQUE INDEX "uk_notification_preference_user_biz_channel" ON "notificati
 COMMENT ON INDEX "uk_notification_preference_user_biz_channel" IS '同一用户同一业务类型和渠道只能有一条有效偏好';
 CREATE UNIQUE INDEX "uk_api_key_api_key" ON "api_key" ("api_key") WHERE "is_deleted" = 0;
 COMMENT ON INDEX "uk_api_key_api_key" IS '有效 API Key 精确唯一，已删除 Key 可重新使用';
-CREATE UNIQUE INDEX "uk_system_config_config_key" ON "system_config" ("config_key") WHERE "is_deleted" = 0;
-COMMENT ON INDEX "uk_system_config_config_key" IS '有效系统配置键唯一，已删除配置不占用';
+CREATE UNIQUE INDEX "uk_sys_config_config_key" ON "sys_config" ("config_key") WHERE "is_deleted" = 0;
+COMMENT ON INDEX "uk_sys_config_config_key" IS '有效系统配置键唯一，已删除配置不占用';
 CREATE UNIQUE INDEX "uk_b_video_user_bvid" ON "b_video" ("user_id", "bvid") WHERE "is_deleted" = 0 AND "bvid" IS NOT NULL AND "bvid" <> '';
 COMMENT ON INDEX "uk_b_video_user_bvid" IS '同一用户同一 BV 号只能有一条有效视频记录，未记录 BV 号时为空不参与比较';
 CREATE UNIQUE INDEX "uk_user_dict_data_user_template" ON "user_dict_data" ("user_id", "template_id") WHERE "is_deleted" = 0 AND "template_id" IS NOT NULL;
@@ -2621,5 +2613,5 @@ CREATE INDEX "login_log_idx_created" ON "login_log" ("created_at");
 COMMENT ON INDEX "login_log_idx_created" IS '登录日志按时间清理';
 CREATE INDEX "device_idx_user_deleted_purchase" ON "device" ("user_id", "is_deleted", "purchase_date" DESC NULLS LAST, "id" DESC);
 COMMENT ON INDEX "device_idx_user_deleted_purchase" IS '设备列表：用户、删除标记与购买日期倒序';
-CREATE INDEX "performance_idx_user_deleted_date" ON "performance" ("user_id", "is_deleted", "performance_date" DESC, "id" DESC);
-COMMENT ON INDEX "performance_idx_user_deleted_date" IS '演出列表：用户、删除标记与演出日期倒序';
+CREATE INDEX "event_record_idx_user_deleted_date" ON "event_record" ("user_id", "is_deleted", "event_date" DESC, "id" DESC);
+COMMENT ON INDEX "event_record_idx_user_deleted_date" IS '活动列表：用户、删除标记与活动日期倒序';

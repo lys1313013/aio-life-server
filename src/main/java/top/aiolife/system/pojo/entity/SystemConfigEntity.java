@@ -16,7 +16,7 @@ import top.aiolife.core.pojo.entity.BaseEntity;
  */
 @Getter
 @Setter
-@TableName("system_config")
+@TableName("sys_config")
 public class SystemConfigEntity extends BaseEntity {
 
     /**

@@ -7,41 +7,41 @@ import java.time.LocalDate;
 import java.util.List;
 import lombok.Data;
 
-/** PerformanceCreateReq：仅包含接口允许写入的字段。 */
+/** EventRecordCreateReq：仅包含接口允许写入的字段。 */
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class PerformanceCreateReq {
+public class EventRecordCreateReq {
 
-    private String performanceName;
+    private String title;
 
     /**
-     * 主要演员/演出团体
+     * 演出者、主讲人或嘉宾
      */
-    private String performer;
+    private String participants;
 
     /**
-     * 演出类型(演唱会/话剧/音乐会等)
+     * 活动类型(演唱会/音乐节/技术分享等)
      */
-    private String performanceType;
+    private String eventType;
 
     /**
-     * 演出日期
+     * 活动日期
      */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate performanceDate;
+    private LocalDate eventDate;
 
     /**
-     * 演出城市
+     * 活动城市
      */
     private String city;
 
     /**
-     * 演出地点
+     * 活动地点
      */
     private String venue;
 
     /**
-     * 票价
+     * 票价或报名费
      */
     private BigDecimal ticketPrice;
 
@@ -51,27 +51,27 @@ public class PerformanceCreateReq {
     private String seatInfo;
 
     /**
-     * 演出时长(分钟)
+     * 活动时长(分钟)
      */
     private Integer durationMinutes;
 
     /**
-     * 演出评分(1-5)
+     * 活动评分(1-5)
      */
     private Integer rating;
 
     /**
-     * 演出评价
+     * 活动评价
      */
     private String review;
 
     /**
-     * 购票平台
+     * 购票或报名平台
      */
     private String purchasePlatform;
 
     /**
-     * 购票订单号
+     * 购票或报名订单号
      */
     private String orderNumber;
 

@@ -33,7 +33,8 @@ class HomeSectionMapperTest {
         jdbc = new JdbcTemplate(source);
         jdbc.execute("CREATE TABLE memo (id BIGINT, user_id BIGINT, title VARCHAR(255), content TEXT, hidden_content BOOLEAN, update_time TIMESTAMP, is_deleted INT DEFAULT 0)");
         jdbc.execute("CREATE TABLE b_video (id BIGINT, user_id BIGINT, title VARCHAR(255), url VARCHAR(512), bvid VARCHAR(64), current_episode INT, episodes INT, watched_duration_seconds INT, duration_seconds INT, last_watched TIMESTAMP, cover_file_id VARCHAR(32), cover_state VARCHAR(16), update_time TIMESTAMP, create_time TIMESTAMP, status VARCHAR(32), is_deleted INT DEFAULT 0)");
-        jdbc.execute("CREATE TABLE device (id BIGINT, user_id BIGINT, name VARCHAR(255), purchase_date DATE, purchase_price DECIMAL(12,2), end_date DATE, file_id VARCHAR(32), status VARCHAR(16), is_deleted INT DEFAULT 0)");
+        jdbc.execute("CREATE TABLE device (id BIGINT, user_id BIGINT, name VARCHAR(255), purchase_date DATE, purchase_price DECIMAL(12,2), end_date DATE, status VARCHAR(16), is_deleted INT DEFAULT 0)");
+        jdbc.execute("CREATE TABLE file (id VARCHAR(32), biz_type VARCHAR(50), biz_id BIGINT, create_user BIGINT, is_deleted INT DEFAULT 0)");
         jdbc.execute("CREATE TABLE income (user_id BIGINT, amt DECIMAL(12,2), inc_date DATE, is_deleted INT DEFAULT 0)");
         jdbc.execute("CREATE TABLE expense (user_id BIGINT, amt DECIMAL(12,2), exp_time TIMESTAMP, is_deleted INT DEFAULT 0)");
         var configuration = new Configuration(new Environment("test", new JdbcTransactionFactory(), source));
@@ -106,7 +107,8 @@ class HomeSectionMapperTest {
     @Test
     void testImages_查询返回存储文件ID与封面状态而非原图地址() {
         jdbc.update("INSERT INTO b_video(id,user_id,title,status,last_watched,cover_file_id,cover_state) VALUES (1,7,'video','in_progress','2026-10-22 12:00:00','9007199254740993','READY')");
-        jdbc.update("INSERT INTO device(id,user_id,name,status,file_id) VALUES (1,7,'device','1','9007199254740995')");
+        jdbc.update("INSERT INTO device(id,user_id,name,status) VALUES (1,7,'device','1')");
+        jdbc.update("INSERT INTO file(id,biz_type,biz_id,create_user) VALUES ('9007199254740995','device',1,7)");
         var video = mapper.continuingVideos(7).getFirst();
         assertEquals("9007199254740993", video.getCoverFileId());
         assertEquals("READY", video.getCoverState());

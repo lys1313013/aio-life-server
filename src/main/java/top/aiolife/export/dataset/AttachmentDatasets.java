@@ -23,7 +23,7 @@ public class AttachmentDatasets implements ExportDatasetContributor {
                 attachment("movie", "影视附件", "movie", "/record/movie"),
                 attachment("honor_record", "荣誉附件", "honor_record", "/my-hub/honor"),
                 attachment("read", "阅读附件", "read_record", "/record/read"),
-                attachment("performance", "演出附件", "performance", "/record/performance"),
+                attachment("event_record", "活动附件", "event_record", "/record/event-records"),
                 attachment("device", "设备附件", "device", "/my-hub/device"),
                 attachment("bank_card_cover", "银行卡附件", "bank_card", "/finance/bank-cards"),
                 attachment("b_video_cover", "视频附件", "b_video", "/record/videoWatch"));

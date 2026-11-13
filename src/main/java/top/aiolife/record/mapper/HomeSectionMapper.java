@@ -24,7 +24,9 @@ public interface HomeSectionMapper {
     List<BVideoEntity> continuingVideos(@Param("userId") long userId);
 
     @Select("""
-        SELECT id, name, purchase_date, purchase_price, end_date, file_id FROM device
+        SELECT d.id, d.name, d.purchase_date, d.purchase_price, d.end_date,
+               (SELECT f.id FROM file f WHERE f.biz_type='device' AND f.biz_id=d.id
+                AND f.create_user=d.user_id AND f.is_deleted=0) AS file_id FROM device d
         WHERE user_id = #{userId} AND is_deleted = 0 AND status = '1'
         ORDER BY purchase_date DESC NULLS LAST, id DESC LIMIT 3
         """)

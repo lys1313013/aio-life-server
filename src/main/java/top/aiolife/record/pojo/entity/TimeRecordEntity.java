@@ -60,7 +60,7 @@ public class TimeRecordEntity extends AuditEntity {
     private Integer isManual;
 
     @TableId(type = IdType.ASSIGN_ID)
-    private String id;
+    private Long id;
 
     @TableLogic
     private Integer isDeleted;
