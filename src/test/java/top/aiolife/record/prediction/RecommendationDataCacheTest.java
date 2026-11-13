@@ -71,11 +71,11 @@ class RecommendationDataCacheTest {
         factory.addAspect(new RecommendationCacheInvalidationAspect(cache));
         TimeRecordServiceImpl proxy = factory.getProxy();
         cache.get("records", () -> 1, 7L);
-        proxy.saveTimeRecord(new TimeRecordReq());
+        proxy.saveTimeRecord(1L, new TimeRecordReq());
         assertEquals(2, cache.get("records", () -> 2, 7L));
-        proxy.updateTimeRecord(new TimeRecordReq());
+        proxy.updateTimeRecord(1L, new TimeRecordReq());
         assertEquals(3, cache.get("records", () -> 3, 7L));
-        proxy.removeById("1", 7L);
+        proxy.removeById(1L, 7L);
         assertEquals(4, cache.get("records", () -> 4, 7L));
         proxy.removeByDate(LocalDate.now(), 7L);
         assertEquals(5, cache.get("records", () -> 5, 7L));

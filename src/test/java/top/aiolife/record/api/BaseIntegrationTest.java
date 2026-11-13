@@ -31,6 +31,8 @@ public class BaseIntegrationTest {
     void setUp() {
         stpUtilMock = mockStatic(StpUtil.class);
         stpUtilMock.when(StpUtil::getLoginIdAsLong).thenReturn(TEST_USER_ID);
+        stpUtilMock.when(StpUtil::getLoginIdAsString).thenReturn(String.valueOf(TEST_USER_ID));
+        stpUtilMock.when(StpUtil::getTokenValue).thenReturn("test-token");
     }
 
     @AfterEach

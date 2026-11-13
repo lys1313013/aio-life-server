@@ -32,16 +32,24 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyEntity> i
     @Override
     @Transactional
     public ApiKeyEntity updateRemark(Long userId, Long id, String remark) {
+        String value = remark == null ? null : remark.trim();
         boolean updated = this.update(new LambdaUpdateWrapper<ApiKeyEntity>()
                 .eq(ApiKeyEntity::getId, id)
                 .eq(ApiKeyEntity::getUserId, userId)
-                .set(ApiKeyEntity::getRemark, remark)
+                .set(ApiKeyEntity::getRemark, value)
                 .set(ApiKeyEntity::getUpdateUser, userId)
                 .set(ApiKeyEntity::getUpdateTime, LocalDateTime.now()));
         if (!updated) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "API Key 不存在或已删除");
         }
         return this.getById(id);
+    }
+
+    @Override
+    public void deleteOwned(Long userId, Long id) {
+        this.remove(new LambdaQueryWrapper<ApiKeyEntity>()
+                .eq(ApiKeyEntity::getId, id)
+                .eq(ApiKeyEntity::getUserId, userId));
     }
 
     @Override

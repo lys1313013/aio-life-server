@@ -27,6 +27,8 @@ import top.aiolife.record.pojo.entity.ExpenseEntity;
 import top.aiolife.record.pojo.req.DeviceCreateReq;
 import top.aiolife.record.pojo.req.ExpenseCreateReq;
 import top.aiolife.record.service.DeviceExpenseService;
+import top.aiolife.record.service.RecordImageService;
+import top.aiolife.record.service.UserDictDataService;
 import top.aiolife.record.service.impl.ExpenseServiceImpl;
 import top.aiolife.sso.service.SecondaryLockGuard;
 
@@ -38,7 +40,7 @@ import static org.mockito.ArgumentMatchers.any;
 @ActiveProfiles("test")
 @SpringBootTest(classes = PhysicalTableEntitySelectIntegrationTest.DatabaseMapperTestApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@Import({DeviceExpenseService.class, ExpenseServiceImpl.class})
+@Import({DeviceExpenseService.class, ExpenseServiceImpl.class, RecordImageService.class})
 @Transactional
 class DeviceExpenseIntegrationTest {
     @Autowired private DeviceExpenseService service;
@@ -47,6 +49,7 @@ class DeviceExpenseIntegrationTest {
     @MockitoSpyBean private DeviceExpenseMapper links;
     @Autowired private PlatformTransactionManager transactions;
     @MockitoBean private SecondaryLockGuard locks;
+    @MockitoBean private UserDictDataService dictionaries;
 
     @Test void 新增支出同时关联已有设备或新建设备并保留普通录入() {
         var device = device(1L);

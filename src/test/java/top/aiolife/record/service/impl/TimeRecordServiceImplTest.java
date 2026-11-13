@@ -21,6 +21,8 @@ import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.prediction.RecommendationDataCache;
+import top.aiolife.record.service.IMovieService;
+import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.service.ITimeTrackerCategoryService;
 import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.system.service.IWorkCalendarService;
@@ -33,6 +35,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
@@ -53,6 +56,12 @@ class TimeRecordServiceImplTest {
 
     @Mock
     private ITimeTrackerCategoryService categories;
+
+    @Mock
+    private IReadRecordService readRecordService;
+
+    @Mock
+    private IMovieService movieService;
 
     @BeforeEach
     void setupCache() {
@@ -206,13 +215,39 @@ class TimeRecordServiceImplTest {
             TimeRecordEntity entity = invocation.getArgument(0);
             assertNull(entity.getId());
             assertEquals(30, entity.getDurationMinutes());
-            entity.setId("2099999999999999999");
+            entity.setId(2099999999999999999L);
             return true;
         }).when(service).save(ArgumentMatchers.any(TimeRecordEntity.class));
         try (var stp = Mockito.mockStatic(StpUtil.class)) {
             stp.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
-            assertEquals("2099999999999999999", service.saveTimeRecord(req));
+            assertEquals("2099999999999999999", service.saveTimeRecord(1L, req));
         }
+    }
+
+    @Test
+    void testSave_只有关联类型没有关联ID时拒绝() {
+        var service = Mockito.spy(timeRecordService);
+        var req = new TimeRecordReq();
+        req.setStartMinute(540);
+        req.setEndMinute(569);
+        req.setRelateType(1);
+        var exception = assertThrows(IllegalArgumentException.class,
+                () -> service.saveTimeRecord(1L, req));
+        assertTrue(exception.getMessage().contains("同时提交"));
+        verify(service, never()).save(ArgumentMatchers.any(TimeRecordEntity.class));
+    }
+
+    @Test
+    void testSave_只有关联ID没有关联类型时拒绝() {
+        var service = Mockito.spy(timeRecordService);
+        var req = new TimeRecordReq();
+        req.setStartMinute(540);
+        req.setEndMinute(569);
+        req.setRelateId(123L);
+        var exception = assertThrows(IllegalArgumentException.class,
+                () -> service.saveTimeRecord(1L, req));
+        assertTrue(exception.getMessage().contains("同时提交"));
+        verify(service, never()).save(ArgumentMatchers.any(TimeRecordEntity.class));
     }
 
     @Test

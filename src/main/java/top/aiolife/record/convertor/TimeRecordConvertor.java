@@ -23,6 +23,7 @@ public interface TimeRecordConvertor {
 
     TimeRecordConvertor INSTANCE = Mappers.getMapper(TimeRecordConvertor.class);
 
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "categoryId", qualifiedByName = "stringToLongNullable")
     // 时长由服务端计算；归属、审计和删除状态由新增/更新业务分别控制。
     @Mapping(target = "durationMinutes", ignore = true)

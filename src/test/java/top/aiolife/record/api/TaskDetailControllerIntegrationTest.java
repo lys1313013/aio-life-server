@@ -29,7 +29,7 @@ class TaskDetailControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void testGetWatched_获取关注的明细() {
-        var response = taskDetailController.getWatched();
+        var response = taskDetailController.getWatched(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
         assertNotNull(response.getData());
     }
@@ -51,7 +51,7 @@ class TaskDetailControllerIntegrationTest extends BaseIntegrationTest {
         TaskDetailEntity ownDetail = watchedDetail(ownTask.getId());
         TaskDetailEntity mismatchedDetail = watchedDetail(otherTask.getId());
 
-        var watched = assertSuccessWithData(taskDetailController.getWatched()).stream()
+        var watched = assertSuccessWithData(taskDetailController.getWatched(String.valueOf(TEST_USER_ID))).stream()
                 .filter(detail -> ownDetail.getId().equals(detail.getId())
                         || mismatchedDetail.getId().equals(detail.getId()))
                 .toList();

@@ -33,6 +33,7 @@ import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.vo.MovieVO;
 import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IFileService;
+import top.aiolife.record.service.RecordImageService;
 import top.aiolife.record.pojo.entity.FileEntity;
 import top.aiolife.record.util.DoubanSubjectUrl;
 
@@ -49,6 +50,7 @@ import java.util.stream.Collectors;
 public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> implements IMovieService {
 
     private final IFileService fileService;
+    private final RecordImageService images;
 
     @Autowired
     private DoubanSourceGuard doubanSources;
@@ -77,6 +79,8 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         query.validatePagination();
         Page<MovieEntity> page = new Page<>(query.getPage(), query.getPageSize());
         Page<MovieEntity> entityPage = this.page(page, wrapper);
+
+        images.fill(userId, FileBizType.MOVIE, entityPage.getRecords(), MovieEntity::getId, MovieEntity::setFileId);
 
         Page<MovieVO> voPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
 
@@ -116,6 +120,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         }
 
         this.save(entity);
+        images.replace(userId, FileBizType.MOVIE, entity.getId(), req.getFileId());
         return entity.getId();
     }
 
@@ -135,7 +140,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         ensureCoverUploaded(req, true);
         MovieEntity entity = this.getById(req.getId());
         if (entity == null || !entity.getUserId().equals(userId)) {
-            throw new RuntimeException("记录不存在或无权限");
+            throw new IllegalArgumentException("记录不存在或无权限");
         }
 
         BeanUtil.copyProperties(req, entity);
@@ -156,6 +161,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         }
         entity.setRating(null); // 避免实体列与 wrapper 的评分 SET 重复。
         if (!this.update(entity, wrapper)) throw new IllegalArgumentException("记录不存在或无权限");
+        images.replace(userId, FileBizType.MOVIE, entity.getId(), req.getFileId());
     }
 
     private void validateRating(Integer rating) {
@@ -235,7 +241,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
 
             // 3. 校验解析结果，为空则提示异常
             if (StrUtil.isBlank(res.getTitle())) {
-                 throw new RuntimeException("豆瓣反爬限制或页面结构改变，解析失败，请手动填写");
+                 throw new IllegalArgumentException("豆瓣反爬限制或页面结构改变，解析失败，请手动填写");
             }
 
             // 4. 下载封面图并上传到 MinIO，解决豆瓣 CDN 防盗链问题
@@ -243,7 +249,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
 
         } catch (Exception e) {
             log.error("解析豆瓣链接失败: {}", url, e);
-            throw new RuntimeException("解析豆瓣链接失败，可能触发反爬限制，请稍后再试或手动填写");
+            throw new IllegalArgumentException("解析豆瓣链接失败，可能触发反爬限制，请稍后再试或手动填写");
         }
         
         return res;
@@ -255,11 +261,14 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             throw new IllegalArgumentException("豆瓣 subjectId 格式不正确");
         }
         Long userId = StpUtil.getLoginIdAsLong();
-        return (MovieEntity) doubanSources.find(userId,
+        MovieEntity entity = (MovieEntity) doubanSources.find(userId,
                 DoubanSubjectUrl.parse("https://movie.douban.com/subject/" + subjectId + "/"), false);
+        if (entity != null) entity.setFileId(images.find(userId, FileBizType.MOVIE, entity.getId()));
+        return entity;
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateCoverFileId(Long id, String fileId) {
         if (id == null || StrUtil.isBlank(fileId)) {
             throw new IllegalArgumentException("记录ID和封面文件ID不能为空");
@@ -268,13 +277,13 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         boolean updated = this.lambdaUpdate()
                 .eq(MovieEntity::getId, id)
                 .eq(MovieEntity::getUserId, userId)
-                .set(MovieEntity::getFileId, fileId)
                 .set(MovieEntity::getUpdateUser, userId)
                 .set(MovieEntity::getUpdateTime, LocalDateTime.now())
                 .update();
         if (!updated) {
             throw new IllegalArgumentException("观影记录不存在或无权限");
         }
+        images.replace(userId, FileBizType.MOVIE, id, fileId);
     }
 
     /**
@@ -500,6 +509,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         wrapper.orderByDesc(MovieEntity::getUpdateTime);
         
         List<MovieEntity> entities = this.list(wrapper);
+        images.fill(userId, FileBizType.MOVIE, entities, MovieEntity::getId, MovieEntity::setFileId);
         return entities.stream().map(entity -> {
             MovieVO vo = new MovieVO();
             BeanUtil.copyProperties(entity, vo);
@@ -516,6 +526,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
                 .eq(MovieEntity::getUserId, userId)
                 .one();
         if (entity == null) return null;
+        entity.setFileId(images.find(userId, FileBizType.MOVIE, id));
         MovieVO vo = new MovieVO();
         BeanUtil.copyProperties(entity, vo);
         vo.setId(String.valueOf(entity.getId()));

@@ -22,7 +22,7 @@ class IntegrationConfigPersistenceTest {
         source.setURL("jdbc:h2:mem:integration_config;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         var jdbc = new JdbcTemplate(source);
         jdbc.execute("""
-                CREATE TABLE system_config (
+                CREATE TABLE sys_config (
                     id BIGINT PRIMARY KEY, config_key VARCHAR(100) NOT NULL UNIQUE,
                     config_value TEXT, config_type VARCHAR(20), description VARCHAR(255),
                     is_deleted INT DEFAULT 0, create_user BIGINT, update_user BIGINT,
@@ -51,7 +51,7 @@ class IntegrationConfigPersistenceTest {
                     "{\"apiKey\":\"synthetic-secret\",\"baseUrl\":\"https://api.example.com\"}", 7L);
             assertEquals("https://api.example.com", reader.mbti().baseUrl());
             assertEquals("synthetic-secret", reader.mbti().apiKey());
-            String stored = jdbc.queryForObject("SELECT config_value FROM system_config WHERE config_key = ?", String.class,
+            String stored = jdbc.queryForObject("SELECT config_value FROM sys_config WHERE config_key = ?", String.class,
                     IntegrationSystemConfigService.MBTI_KEY);
             assertFalse(stored.contains("synthetic-secret"));
             assertTrue(stored.contains("apiKeyCiphertext"));
@@ -64,7 +64,7 @@ class IntegrationConfigPersistenceTest {
             assertEquals(1500, mapReader.timeoutMs());
             mapWriter.save("{\"timeoutMs\":8000}", 8L);
             assertEquals(8000, mapReader.timeoutMs());
-            assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM system_config", Integer.class));
+            assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM sys_config", Integer.class));
         }
     }
 }

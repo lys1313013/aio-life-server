@@ -1,52 +1,50 @@
 package top.aiolife.record.weread;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson2.JSON;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import top.aiolife.core.ApiRequestFixtures;
-import top.aiolife.record.api.UserBindController;
-import top.aiolife.record.client.DoubanAccountClient;
-import top.aiolife.record.pojo.entity.UserBindEntity;
-import top.aiolife.record.pojo.req.UserBindCreateReq;
-import top.aiolife.record.pojo.req.UserBindUpdateReq;
-import top.aiolife.record.service.IUserBindService;
-import top.aiolife.record.service.IWereadService;
+import org.springframework.test.util.ReflectionTestUtils;
 import top.aiolife.core.redis.RedisUtil;
+import top.aiolife.record.client.DoubanAccountClient;
+import top.aiolife.record.mapper.UserBindMapper;
+import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.service.IWereadService;
+import top.aiolife.record.service.impl.UserBindServiceImpl;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class WereadUserBindTest {
-    private UserBindController controller;
-    private IUserBindService binds;
+
+    private UserBindServiceImpl service;
+    private UserBindMapper mapper;
     private IWereadService weread;
 
     @BeforeEach
     void setup() {
-        binds = mock(IUserBindService.class);
+        mapper = mock(UserBindMapper.class);
         weread = mock(IWereadService.class);
-        controller = new UserBindController(binds, weread, mock(RedisUtil.class), mock(DoubanAccountClient.class));
+        service = new UserBindServiceImpl(weread, mock(RedisUtil.class), mock(DoubanAccountClient.class));
+        ReflectionTestUtils.setField(service, "baseMapper", mapper);
     }
 
     private UserBindEntity binding() {
         var item = new UserBindEntity();
-        item.setId(11L); item.setUserId(42L); item.setPlatform("weread"); item.setAccessToken("wrk-test");
+        item.setId(11L);
+        item.setUserId(42L);
+        item.setPlatform("weread");
+        item.setAccessToken("wrk-test");
         return item;
     }
 
     @Test
     void list_请求包含Token也不返回微信凭证() {
         var item = binding();
-        when(binds.getBindsByUserId(42L)).thenReturn(List.of(item));
-        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
-            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            controller.list(true);
-            assertNull(item.getAccessToken());
-        }
+        when(mapper.selectList(any())).thenReturn(List.of(item));
+        service.listForUser(42L, true);
+        assertNull(item.getAccessToken());
     }
 
     @Test
@@ -57,71 +55,57 @@ class WereadUserBindTest {
 
     @Test
     void add_绑定入口复用微信读书连接服务() {
-        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
-            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            controller.add(ApiRequestFixtures.request(binding(), UserBindCreateReq.class));
-            verify(weread).connect("wrk-test");
-            verify(binds, never()).save(any());
-        }
+        service.createForUser(42L, binding());
+        verify(weread).connect(42L, "wrk-test");
+        verify(mapper, never()).insert(any(UserBindEntity.class));
     }
 
     @Test
     void update_留空保留原Key且不回写元数据() {
-        when(binds.getById(11L)).thenReturn(binding());
-        var request = binding(); request.setAccessToken(""); request.setMetaFields("{}");
-        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
-            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            controller.update(ApiRequestFixtures.request(request, UserBindUpdateReq.class));
-            verifyNoInteractions(weread);
-            verify(binds, never()).updateById(any());
-        }
+        when(mapper.selectById(11L)).thenReturn(binding());
+        var request = binding();
+        request.setAccessToken("");
+        request.setMetaFields("{}");
+        service.updateForUser(42L, request);
+        verifyNoInteractions(weread);
+        verify(mapper, never()).updateById(any(UserBindEntity.class));
     }
 
     @Test
     void update_更换Key复用验证和保存流程() {
-        when(binds.getById(11L)).thenReturn(binding());
-        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
-            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            controller.update(ApiRequestFixtures.request(binding(), UserBindUpdateReq.class));
-            verify(weread).connect("wrk-test");
-            verify(binds, never()).updateById(any());
-        }
+        when(mapper.selectById(11L)).thenReturn(binding());
+        service.updateForUser(42L, binding());
+        verify(weread).connect(42L, "wrk-test");
+        verify(mapper, never()).updateById(any(UserBindEntity.class));
     }
 
     @Test
     void update_不可通过改平台绕过验证() {
-        when(binds.getById(11L)).thenReturn(binding());
-        var request = binding(); request.setPlatform("github");
-        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
-            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            controller.update(ApiRequestFixtures.request(request, UserBindUpdateReq.class));
-            verifyNoInteractions(weread);
-            verify(binds, never()).updateById(any());
-        }
+        when(mapper.selectById(11L)).thenReturn(binding());
+        var request = binding();
+        request.setPlatform("github");
+        assertThrows(IllegalArgumentException.class, () -> service.updateForUser(42L, request));
+        verifyNoInteractions(weread);
+        verify(mapper, never()).updateById(any(UserBindEntity.class));
     }
 
     @Test
     void delete_绑定入口复用断开连接且验证归属() {
-        when(binds.getById(11L)).thenReturn(binding());
-        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
-            auth.when(StpUtil::getLoginIdAsLong).thenReturn(43L);
-            controller.delete(11L);
-            verifyNoInteractions(weread);
-            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            controller.delete(11L);
-            verify(weread).disconnect();
-            verify(binds, never()).removeById(11L);
-        }
-    }
-    @Test
-    void add_平台大小写不能绕过验证() {
-        var request = binding(); request.setPlatform("WeRead");
-        try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
-            auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            controller.add(ApiRequestFixtures.request(request, UserBindCreateReq.class));
-            verify(weread).connect("wrk-test");
-            verify(binds, never()).save(any());
-        }
+        when(mapper.selectById(11L)).thenReturn(binding());
+        assertThrows(IllegalArgumentException.class, () -> service.deleteForUser(43L, 11L));
+        verifyNoInteractions(weread);
+
+        service.deleteForUser(42L, 11L);
+        verify(weread).disconnect(42L);
+        verify(mapper, never()).deleteById(11L);
     }
 
+    @Test
+    void add_平台大小写不能绕过验证() {
+        var request = binding();
+        request.setPlatform("WeRead");
+        service.createForUser(42L, request);
+        verify(weread).connect(42L, "wrk-test");
+        verify(mapper, never()).insert(any(UserBindEntity.class));
+    }
 }

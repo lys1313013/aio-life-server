@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -21,24 +22,26 @@ public class ActivityLogService {
     private final ActivityLogMapper mapper;
 
     public PageResp<ActivityLogEntity> list(String type, ActivityLogQuery query) {
+        String normalized = normalize(type);
         query.validateRange();
-        if ("OPERATION".equals(type)) {
+        if ("OPERATION".equals(normalized)) {
             var operationPage = mapper.selectOperationPage(new Page<>(query.getPage(), query.getPageSize()), query);
             return PageResp.of(operationPage.getRecords(), operationPage.getTotal());
         }
         var page = mapper.selectPage(new Page<>(query.getPage(), query.getPageSize()),
-                filter(type, query).orderByDesc(ActivityLogEntity::getCreateTime, ActivityLogEntity::getId));
+                filter(normalized, query).orderByDesc(ActivityLogEntity::getCreateTime, ActivityLogEntity::getId));
         return PageResp.of(page.getRecords(), page.getTotal());
     }
 
     /** 按游标分批导出当前筛选的全部数据，避免把全表载入内存。 */
     public void export(String type, ActivityLogQuery query, Writer writer) throws IOException {
+        String normalized = normalize(type);
         query.validateRange();
-        if ("OPERATION".equals(type)) {
+        if ("OPERATION".equals(normalized)) {
             exportOperations(query, writer);
             return;
         }
-        var wrapper = filter(type, query);
+        var wrapper = filter(normalized, query);
         // 以导出开始时的最大 ID 为界，排除导出过程中新增的记录。
         var newest = mapper.selectList(wrapper.orderByDesc(ActivityLogEntity::getId).last("LIMIT 1"));
         writer.write('\ufeff');
@@ -103,6 +106,10 @@ public class ActivityLogService {
     private static String functionPoint(ActivityLogEntity row) {
         return (row.getFunctionName() == null ? "接口操作" : row.getFunctionName())
                 + (row.getFunctionItem() == null ? "" : " · " + row.getFunctionItem());
+    }
+
+    private static String normalize(String type) {
+        return type == null ? null : type.toUpperCase(Locale.ROOT);
     }
 
     private LambdaQueryWrapper<ActivityLogEntity> filter(String type, ActivityLogQuery query) {

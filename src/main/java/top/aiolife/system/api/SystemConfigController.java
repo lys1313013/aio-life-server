@@ -1,13 +1,15 @@
 package top.aiolife.system.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
-import cn.dev33.satoken.stp.StpUtil;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import top.aiolife.core.constant.ResponseCodeConst;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.system.pojo.req.SystemConfigUpdateReq;
 import top.aiolife.system.pojo.vo.SystemConfigVO;
 import top.aiolife.system.service.ISystemConfigService;
@@ -22,6 +24,7 @@ import java.util.List;
  * @author Ethan
  * @date 2026/07/19
  */
+@Tag(name = "系统配置")
 @RestController
 @RequestMapping("/system-config")
 @RequiredArgsConstructor
@@ -30,36 +33,22 @@ public class SystemConfigController {
 
     private final ISystemConfigService systemConfigService;
 
-    /**
-     * 配置列表（按 key 前缀筛选）
-     */
     @Operation(summary = "查询系统配置列表")
     @GetMapping("/list")
     public ApiResponse<List<SystemConfigVO>> list(@RequestParam(required = false) String keyPrefix) {
         return ApiResponse.success(systemConfigService.list(keyPrefix));
     }
 
-    /**
-     * 获取单项配置
-     */
     @Operation(summary = "查询指定系统配置")
     @GetMapping("/{key}")
     public ApiResponse<SystemConfigVO> getByKey(@PathVariable String key) {
-        SystemConfigVO vo = systemConfigService.getByKey(key);
-        if (vo == null) {
-            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "配置项不存在");
-        }
-        return ApiResponse.success(vo);
+        return ApiResponse.success(systemConfigService.getRequiredByKey(key));
     }
 
-    /**
-     * 更新单项配置
-     */
     @Operation(summary = "更新系统配置")
     @PutMapping("/{key}")
-    public ApiResponse<SystemConfigVO> update(@PathVariable String key,
-                                              @RequestBody SystemConfigUpdateReq req) {
-        long operatorId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(systemConfigService.update(key, req, operatorId));
+    public ApiResponse<SystemConfigVO> update(@CurrentUserId String userId, @PathVariable String key,
+                                              @Valid @RequestBody SystemConfigUpdateReq req) {
+        return ApiResponse.success(systemConfigService.update(key, req, IdCodec.decode(userId)));
     }
 }

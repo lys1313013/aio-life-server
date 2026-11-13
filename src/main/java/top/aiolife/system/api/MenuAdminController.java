@@ -1,15 +1,16 @@
 package top.aiolife.system.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
-import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.sso.service.IUserService;
 import top.aiolife.system.pojo.req.MenuSaveReq;
 import top.aiolife.system.pojo.req.MenuSortUpdateReq;
@@ -25,6 +26,7 @@ import top.aiolife.system.service.IMenuService;
  * @author Ethan
  * @date 2026/04/19
  */
+@Tag(name = "菜单管理")
 @RestController
 @RequestMapping("/menu/admin")
 @RequiredArgsConstructor
@@ -35,85 +37,51 @@ public class MenuAdminController {
 
     private final IUserService userService;
 
-    /**
-     * 获取菜单树（管理端）。
-     *
-     * @return 统一返回结构，data 为菜单树
-     */
     @Operation(summary = "管理员查询菜单树")
     @GetMapping("/tree")
     public ApiResponse<List<MenuAdminVO>> tree() {
         return ApiResponse.success(menuService.getAdminMenuTree());
     }
 
-    /**
-     * 获取角色选项列表（用于菜单 Roles 下拉选择）。
-     *
-     * <p>用途：为菜单管理页提供可选角色集合，避免前端写死或手工输入。</p>
-     *
-     * @return 统一返回结构，data 为去重后的角色字符串数组
-     */
     @Operation(summary = "查询菜单可选角色")
     @GetMapping("/role-options")
     public ApiResponse<List<String>> roleOptions() {
         return ApiResponse.success(userService.listRoleOptions());
     }
 
-    /**
-     * 新增菜单节点。
-     *
-     * @param req 菜单保存请求体
-     * @return 统一返回结构，data 为新增后的菜单节点
-     */
     @Operation(summary = "管理员新增菜单")
     @PostMapping
-    public ApiResponse<MenuAdminVO> create(@RequestBody MenuSaveReq req) throws Exception {
-        long userId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(menuService.create(req, userId));
+    public ApiResponse<MenuAdminVO> create(@CurrentUserId String userId,
+                                           @Valid @RequestBody MenuSaveReq req) throws Exception {
+        return ApiResponse.success(menuService.create(req, IdCodec.decode(userId)));
     }
 
-    /**
-     * 更新菜单节点。
-     *
-     * @param id 菜单ID
-     * @param req 菜单保存请求体
-     * @return 统一返回结构，data 为更新后的菜单节点
-     */
     @Operation(summary = "管理员更新菜单")
     @PutMapping("/{id}")
-    public ApiResponse<MenuAdminVO> update(@PathVariable long id, @RequestBody MenuSaveReq req) throws Exception {
-        long userId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(menuService.update(id, req, userId));
+    public ApiResponse<MenuAdminVO> update(@CurrentUserId String userId, @PathVariable String id,
+                                           @Valid @RequestBody MenuSaveReq req) throws Exception {
+        return ApiResponse.success(menuService.update(IdCodec.decode(id), req, IdCodec.decode(userId)));
     }
 
-    /** 更新菜单展示端位掩码。 */
     @Operation(summary = "管理员设置菜单展示端")
     @PutMapping("/{id}/visible-clients")
-    public ApiResponse<MenuAdminVO> updateVisibleClients(@PathVariable long id,
-            @Valid @RequestBody MenuVisibilityUpdateReq body) {
-        return ApiResponse.success(menuService.updateVisibleClients(id, body.getVisibleClients(), StpUtil.getLoginIdAsLong()));
+    public ApiResponse<MenuAdminVO> updateVisibleClients(@CurrentUserId String userId, @PathVariable String id,
+                                                         @Valid @RequestBody MenuVisibilityUpdateReq body) {
+        return ApiResponse.success(menuService.updateVisibleClients(
+                IdCodec.decode(id), body.getVisibleClients(), IdCodec.decode(userId)));
     }
 
-    /** 更新菜单排序。 */
     @Operation(summary = "管理员调整菜单排序")
     @PutMapping("/{id}/sort")
-    public ApiResponse<MenuAdminVO> updateSort(@PathVariable long id, @Valid @RequestBody MenuSortUpdateReq body) throws Exception {
-        long userId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(menuService.updateSort(id, body.getSortOrder(), userId));
+    public ApiResponse<MenuAdminVO> updateSort(@CurrentUserId String userId, @PathVariable String id,
+                                               @Valid @RequestBody MenuSortUpdateReq body) throws Exception {
+        return ApiResponse.success(menuService.updateSort(IdCodec.decode(id), body.getSortOrder(), IdCodec.decode(userId)));
     }
 
-    /**
-     * 删除菜单节点。
-     *
-     * @param id 菜单ID
-     * @return 统一返回结构
-     */
     @Operation(summary = "管理员删除菜单")
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable long id) {
-        long userId = StpUtil.getLoginIdAsLong();
-        menuService.delete(id, userId);
+    public ApiResponse<Void> delete(@CurrentUserId String userId, @PathVariable String id) {
+        menuService.delete(IdCodec.decode(id), IdCodec.decode(userId));
         return ApiResponse.success();
     }
-
 }

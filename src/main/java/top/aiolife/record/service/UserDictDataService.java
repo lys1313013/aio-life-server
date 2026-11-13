@@ -1,6 +1,7 @@
 package top.aiolife.record.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import top.aiolife.core.resq.PageResp;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.vo.UserDictDataSortVO;
 
@@ -24,6 +25,23 @@ public interface UserDictDataService extends IService<UserDictDataEntity> {
      * @param includeDisabled 是否包含已停用记录。true 用于管理页（可查/可改停用项），false 用于业务页（仅展示启用项）
      */
     List<UserDictDataEntity> listUserVisibleDictData(Long userId, String dictType, boolean includeDisabled);
+
+    /**
+     * 分页查询当前用户可见字典数据，包含已停用项，支持标签与启用状态筛选。
+     */
+    PageResp<UserDictDataEntity> pageVisibleDictData(long userId, String dictType, String dictLabel,
+                                                     Integer isEnabled, int page, int pageSize);
+
+    /**
+     * 按 ID 查询当前用户或公共模板的原始字典数据，不存在时返回 null。
+     */
+    UserDictDataEntity getAccessibleById(long userId, long id);
+
+    /**
+     * 管理员分页查询公共基础字典数据（userId = 0）。
+     */
+    PageResp<UserDictDataEntity> pageBaseDictData(String dictType, String dictLabel,
+                                                  Integer isEnabled, int page, int pageSize);
 
     /**
      * 创建字典数据

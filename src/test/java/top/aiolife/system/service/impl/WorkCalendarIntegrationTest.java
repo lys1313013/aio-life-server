@@ -56,7 +56,7 @@ class WorkCalendarIntegrationTest {
         var jdbc = new JdbcTemplate(dataSource);
         jdbc.execute("""
                 CREATE TABLE time_record (
-                    id VARCHAR(32) PRIMARY KEY, user_id BIGINT, date DATE, category_id BIGINT,
+                    id BIGINT PRIMARY KEY, user_id BIGINT, date DATE, category_id BIGINT,
                     start_minute INT, end_minute INT, is_deleted INT DEFAULT 0
                 )
                 """);
@@ -107,7 +107,7 @@ class WorkCalendarIntegrationTest {
                         category.setName("分类" + id);
                         return category;
                     }).toList());
-            var service = new TimeRecordServiceImpl(timeMapper, null, null, null, calendar, new RecommendationDataCache(15000), categories, Mockito.mock(SecondaryLockGuard.class));
+            var service = new TimeRecordServiceImpl(timeMapper, null, null, null, calendar, new RecommendationDataCache(15000), categories, Mockito.mock(SecondaryLockGuard.class), null);
             ReflectionTestUtils.setField(service, "baseMapper", timeMapper);
             try (var clock = mockStatic(LocalDateTime.class, CALLS_REAL_METHODS)) {
                 var now = LocalDateTime.of(2026, 12, 31, 12, 0);

@@ -11,6 +11,8 @@ import top.aiolife.record.pojo.entity.GoalEntity;
  * @date 2026-04-05
  */
 public interface IGoalService extends IService<GoalEntity> {
+    List<GoalEntity> listForUser(long userId, Integer type, String status, String keyword, Integer isPinned);
+
     GoalEntity createForUser(long userId, GoalEntity entity);
 
     GoalEntity updateForUser(long userId, GoalEntity entity);

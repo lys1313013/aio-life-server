@@ -1,6 +1,7 @@
 package top.aiolife.record.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import top.aiolife.record.filter.TencentMapProxySessionFilter;
 import top.aiolife.sso.util.RequestLoginContext;
 
 /** SDK 要求原始 JSON/JSONP，不能套业务响应；仍由全局拦截器执行完整登录校验。 */
+@Tag(name = "腾讯地图代理")
 @RestController
 @RequiredArgsConstructor
 public class TencentMapProxyController {

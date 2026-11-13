@@ -1,92 +1,62 @@
 package top.aiolife.record.api;
 
 import io.swagger.v3.oas.annotations.Operation;
-
-import cn.dev33.satoken.annotation.SaCheckRole;
-import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-import top.aiolife.core.mybatis.IlikeQuery;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
-import top.aiolife.core.util.SysUtil;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.convertor.RecordApiConvertor;
-import top.aiolife.record.mapper.UserDictDataMapper;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.query.UserDictDataQuery;
-import top.aiolife.record.pojo.req.UserDictDataAdminCreateReq;
-import top.aiolife.record.pojo.req.UserDictDataAdminUpdateReq;
 import top.aiolife.record.pojo.req.UserDictDataCreateReq;
-import top.aiolife.record.pojo.req.UserDictDataReSortReq;
 import top.aiolife.record.pojo.req.UserDictDataUpdateReq;
-import top.aiolife.record.pojo.vo.UserDictDataSortVO;
 import top.aiolife.record.pojo.vo.UserDictDataVO;
 import top.aiolife.record.service.UserDictDataService;
 
 /**
- * 用户字典数据Controller
+ * 用户字典数据控制器。
  *
  * @author Lys
  */
+@Tag(name = "用户字典数据")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/userDictData")
 public class UserDictDataController {
 
-    private UserDictDataMapper userDictDataMapper;
-    private UserDictDataService userDictDataService;
+    private final UserDictDataService userDictDataService;
 
     /**
      * 分页查询当前用户可见的字典数据，包含公共模板、个人配置和已停用项。
      */
     @Operation(summary = "分页查询可见用户字典")
     @GetMapping("/query")
-    public ApiResponse<PageResp<UserDictDataVO>> query(@QueryParams CommonQuery<UserDictDataQuery> requestQuery) {
-        CommonQuery<UserDictDataEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromUserDictDataQuery);
-        Long userId = StpUtil.getLoginIdAsLong();
-
+    public ApiResponse<PageResp<UserDictDataVO>> query(@CurrentUserId String userId,
+                                                       @QueryParams CommonQuery<UserDictDataQuery> requestQuery) {
+        CommonQuery<UserDictDataEntity> query = requestQuery.map(
+                RecordApiConvertor.INSTANCE::fromUserDictDataQuery);
         UserDictDataEntity condition = query.getCondition();
-        String dictType = (condition != null) ? condition.getDictType() : null;
-
-        // 管控页需要看到所有记录（含已停用），方便用户改回启用或删除
-        List<UserDictDataEntity> dataList = userDictDataService.listUserVisibleDictData(userId, dictType, true);
-
-        // 如果有额外的查询条件，在内存中进行过滤
-        if (condition != null) {
-            dataList = dataList.stream().filter(item -> {
-                boolean match = true;
-                if (SysUtil.isNotEmpty(condition.getDictLabel())) {
-                    match = item.getDictLabel() != null && item.getDictLabel().contains(condition.getDictLabel());
-                }
-                if (match && SysUtil.isNotEmpty(condition.getIsEnabled())) {
-                    match = condition.getIsEnabled().equals(item.getIsEnabled());
-                }
-                return match;
-            }).toList();
-        }
-
-        // 内存分页
-        int current = query.getPage() != null ? query.getPage() : 1;
-        int size = query.getPageSize() != null ? query.getPageSize() : 10;
-        int total = dataList.size();
-        long offset = ((long) current - 1) * size;
-        List<UserDictDataEntity> pageList = new ArrayList<>();
-        if (offset < total) {
-            int fromIndex = Math.toIntExact(offset);
-            int toIndex = (int) Math.min(offset + size, total);
-            pageList = dataList.subList(fromIndex, toIndex);
-        }
-
-        PageResp<UserDictDataEntity> pageResp = PageResp.of(pageList, (long) total);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserDictDataVOPage(pageResp));
+        PageResp<UserDictDataEntity> page = userDictDataService.pageVisibleDictData(
+                IdCodec.decode(userId),
+                condition == null ? null : condition.getDictType(),
+                condition == null ? null : condition.getDictLabel(),
+                condition == null ? null : condition.getIsEnabled(),
+                query.getPage(),
+                query.getPageSize());
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserDictDataVOPage(page));
     }
 
     /**
@@ -95,12 +65,11 @@ public class UserDictDataController {
      */
     @Operation(summary = "按 ID 查询原始用户字典数据")
     @GetMapping("/{id}")
-    public ApiResponse<UserDictDataVO> getById(@PathVariable("id") Long id) {
-        Long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<UserDictDataEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(UserDictDataEntity::getId, id);
-        queryWrapper.in(UserDictDataEntity::getUserId, userId, 0L);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserDictDataVO(userDictDataMapper.selectOne(queryWrapper)));
+    public ApiResponse<UserDictDataVO> getById(@CurrentUserId String userId,
+                                               @PathVariable("id") String id) {
+        UserDictDataEntity entity = userDictDataService.getAccessibleById(
+                IdCodec.decode(userId), IdCodec.decode(id));
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserDictDataVO(entity));
     }
 
     /**
@@ -108,10 +77,10 @@ public class UserDictDataController {
      */
     @Operation(summary = "新增用户字典数据")
     @PostMapping
-    public ApiResponse<Boolean> insert(@Valid @RequestBody UserDictDataCreateReq entityReq) {
+    public ApiResponse<Boolean> insert(@CurrentUserId String userId,
+                                       @Valid @RequestBody UserDictDataCreateReq entityReq) {
         UserDictDataEntity entity = RecordApiConvertor.INSTANCE.fromUserDictDataCreateReq(entityReq);
-        Long userId = StpUtil.getLoginIdAsLong();
-        userDictDataService.createDictData(entity, userId);
+        userDictDataService.createDictData(entity, IdCodec.decode(userId));
         return ApiResponse.success(true);
     }
 
@@ -120,10 +89,10 @@ public class UserDictDataController {
      */
     @Operation(summary = "更新用户字典配置")
     @PutMapping
-    public ApiResponse<Boolean> update(@Valid @RequestBody UserDictDataUpdateReq entityReq) {
+    public ApiResponse<Boolean> update(@CurrentUserId String userId,
+                                       @Valid @RequestBody UserDictDataUpdateReq entityReq) {
         UserDictDataEntity entity = RecordApiConvertor.INSTANCE.fromUserDictDataUpdateReq(entityReq);
-        Long userId = StpUtil.getLoginIdAsLong();
-        userDictDataService.updateDictData(entity.getId(), entity, userId);
+        userDictDataService.updateDictData(entity.getId(), entity, IdCodec.decode(userId));
         return ApiResponse.success(true);
     }
 
@@ -132,91 +101,9 @@ public class UserDictDataController {
      */
     @Operation(summary = "删除或隐藏用户字典数据")
     @DeleteMapping("/{id}")
-    public ApiResponse<Boolean> delete(@PathVariable("id") Long id) {
-        Long userId = StpUtil.getLoginIdAsLong();
-        userDictDataService.deleteDictData(id, userId);
+    public ApiResponse<Boolean> delete(@CurrentUserId String userId,
+                                       @PathVariable("id") String id) {
+        userDictDataService.deleteDictData(IdCodec.decode(id), IdCodec.decode(userId));
         return ApiResponse.success(true);
-    }
-
-    // ================= 管理员 API =================
-
-    /**
-     * 管理员分页查询公共基础字典数据。
-     */
-    @SaCheckRole("admin")
-    @Operation(summary = "管理员分页查询公共字典数据")
-    @GetMapping("/admin/query")
-    public ApiResponse<PageResp<UserDictDataVO>> adminQuery(@QueryParams CommonQuery<UserDictDataQuery> requestQuery) {
-        CommonQuery<UserDictDataEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromUserDictDataQuery);
-        LambdaQueryWrapper<UserDictDataEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-
-        // 强制只能查询基础值 (userId = 0)
-        lambdaQueryWrapper.eq(UserDictDataEntity::getUserId, 0L);
-
-        UserDictDataEntity condition = query.getCondition();
-        if (condition != null) {
-            lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getDictType()),
-                    UserDictDataEntity::getDictType, condition.getDictType());
-            IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(condition.getDictLabel()),
-                    condition.getDictLabel(), UserDictDataEntity::getDictLabel);
-            lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getIsEnabled()),
-                    UserDictDataEntity::getIsEnabled, condition.getIsEnabled());
-        }
-        lambdaQueryWrapper.orderByAsc(
-                UserDictDataEntity::getDictType,
-                UserDictDataEntity::getSortOrder,
-                UserDictDataEntity::getId);
-
-        Page<UserDictDataEntity> page = new Page<>(query.getPage(), query.getPageSize());
-        IPage<UserDictDataEntity> iPage = userDictDataMapper.selectPage(page, lambdaQueryWrapper);
-        PageResp<UserDictDataEntity> pageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserDictDataVOPage(pageResp));
-    }
-
-    /**
-     * 管理员新增公共基础字典数据。
-     */
-    @SaCheckRole("admin")
-    @Operation(summary = "管理员新增公共字典数据")
-    @PostMapping("/admin")
-    public ApiResponse<Boolean> adminInsert(@Valid @RequestBody UserDictDataAdminCreateReq entityReq) {
-        UserDictDataEntity entity = RecordApiConvertor.INSTANCE.fromUserDictDataAdminCreateReq(entityReq);
-        return ApiResponse.success(userDictDataService.createBaseDictData(entity));
-    }
-
-    /**
-     * 管理员修改公共基础字典数据。
-     */
-    @SaCheckRole("admin")
-    @Operation(summary = "管理员更新公共字典数据")
-    @PutMapping("/admin/{id}")
-    public ApiResponse<Boolean> adminUpdate(@PathVariable("id") Long id, @Valid @RequestBody UserDictDataAdminUpdateReq entityReq) {
-        UserDictDataEntity entity = RecordApiConvertor.INSTANCE.fromUserDictDataAdminUpdateReq(entityReq);
-        return ApiResponse.success(userDictDataService.updateBaseDictData(id, entity));
-    }
-
-    /**
-     * 管理员调整同类型公共基础字典数据的排序。
-     */
-    @SaCheckRole("admin")
-    @Operation(summary = "管理员调整公共字典排序")
-    @PostMapping("/admin/reSort")
-    public ApiResponse<List<UserDictDataSortVO>> adminReSort(@RequestBody UserDictDataReSortReq req) {
-        List<UserDictDataSortVO> result = userDictDataService.reSortBaseDictData(
-                req.getDictType(),
-                req.getDragId(),
-                req.getTargetId(),
-                req.getPosition());
-        return ApiResponse.success(result);
-    }
-
-    /**
-     * 管理员删除公共基础字典数据。
-     */
-    @SaCheckRole("admin")
-    @Operation(summary = "管理员删除公共字典数据")
-    @DeleteMapping("/admin/{id}")
-    public ApiResponse<Boolean> adminDelete(@PathVariable("id") Long id) {
-        return ApiResponse.success(userDictDataService.deleteBaseDictData(id));
     }
 }

@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
@@ -15,6 +16,7 @@ import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.pojo.query.ReadRecordQuery;
 import top.aiolife.record.pojo.req.ReadRecordCreateReq;
 import top.aiolife.record.pojo.req.ReadRecordReq;
+import top.aiolife.record.pojo.vo.ReadRecordParseVO;
 import top.aiolife.record.pojo.vo.ReadRecordVO;
 import top.aiolife.record.service.IReadRecordService;
 
@@ -43,28 +45,28 @@ public class ReadRecordController {
 
     @PutMapping
     @Operation(summary = "更新阅读记录")
-    public ApiResponse<Void> update(@RequestBody ReadRecordReq req) {
+    public ApiResponse<Void> update(@Valid @RequestBody ReadRecordReq req) {
         readRecordService.updateRecord(req);
         return ApiResponse.success();
     }
 
     @Operation(summary = "删除阅读记录")
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable Long id) {
-        readRecordService.deleteRecord(id);
+    public ApiResponse<Void> delete(@PathVariable String id) {
+        readRecordService.deleteRecord(IdCodec.decode(id));
         return ApiResponse.success();
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "查询阅读记录详情")
-    public ApiResponse<ReadRecordVO> getById(@PathVariable Long id) {
-        return ApiResponse.success(readRecordService.getVOById(id));
+    public ApiResponse<ReadRecordVO> getById(@PathVariable String id) {
+        return ApiResponse.success(readRecordService.getVOById(IdCodec.decode(id)));
     }
 
     @GetMapping("/parse-douban")
     @Operation(summary = "解析豆瓣书籍信息")
-    public ApiResponse<ReadRecordReq> parseDouban(@RequestParam String url) {
-        return ApiResponse.success(readRecordService.parseDouban(url));
+    public ApiResponse<ReadRecordParseVO> parseDouban(@RequestParam String url) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toReadRecordParseVO(readRecordService.parseDouban(url)));
     }
 
     @GetMapping("/active")

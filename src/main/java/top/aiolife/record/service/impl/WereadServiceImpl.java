@@ -2,7 +2,6 @@ package top.aiolife.record.service.impl;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
-import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -63,7 +62,7 @@ public class WereadServiceImpl implements IWereadService {
     }
 
     @Override
-    public WereadRecentVO recent(String cursor, int size) {
+    public WereadRecentVO recent(long userId, String cursor, int size) {
         if (size < 1 || size > 20) throw new IllegalArgumentException("每批图书数量须在 1 到 20 之间");
         long beforeTime = Long.MAX_VALUE;
         String beforeId = "";
@@ -79,7 +78,7 @@ public class WereadServiceImpl implements IWereadService {
             if (beforeTime <= 0) throw new IllegalArgumentException("图书分页游标无效");
             beforeId = cursor.substring(cursor.indexOf(':') + 1);
         }
-        var connection = find(StpUtil.getLoginIdAsLong());
+        var connection = find(userId);
         if (!view(connection).connected()) return new WereadRecentVO(false, List.of(), null);
         JsonNode shelf = cachedCall(connection, "/shelf/sync", Map.of());
         if (!shelf.path("books").isArray()) throw new IllegalStateException("微信读书书架数据异常，请重试");
@@ -104,7 +103,7 @@ public class WereadServiceImpl implements IWereadService {
                     book.path("cover").asText(), book.path("readUpdateTime").asLong(), percent,
                     safeBookLink(book.path("deepLink").asText())));
         }
-        var latest = find(StpUtil.getLoginIdAsLong());
+        var latest = find(userId);
         if (latest == null || !view(latest).connected() || !cacheScope(connection).equals(cacheScope(latest))) {
             throw new IllegalStateException("连接已变更，请重新加载");
         }
@@ -128,8 +127,8 @@ public class WereadServiceImpl implements IWereadService {
     }
 
     @Override
-    public WereadConnectionVO connection() {
-        var connection = find(StpUtil.getLoginIdAsLong());
+    public WereadConnectionVO connection(long userId) {
+        var connection = find(userId);
         return view(connection);
     }
 
@@ -161,8 +160,7 @@ public class WereadServiceImpl implements IWereadService {
 
     @Override
     @Transactional
-    public WereadConnectionVO connect(String apiKey) {
-        long userId = StpUtil.getLoginIdAsLong();
+    public WereadConnectionVO connect(long userId, String apiKey) {
         if (apiKey == null || !apiKey.matches("wrk-[A-Za-z0-9_-]{1,252}")) {
             throw new IllegalArgumentException("微信读书 Key 格式无效");
         }
@@ -198,8 +196,7 @@ public class WereadServiceImpl implements IWereadService {
 
     @Override
     @Transactional
-    public void disconnect() {
-        long userId = StpUtil.getLoginIdAsLong();
+    public void disconnect(long userId) {
         mapper.lockWereadUser(userId);
         // 与账号绑定的解绑语义一致，并在逻辑删除前清除敏感凭证。
         mapper.clearWereadCredentials(userId, LocalDateTime.now());
@@ -219,12 +216,11 @@ public class WereadServiceImpl implements IWereadService {
     }
 
     @Override
-    public JsonNode sync(String mode, long baseTime) {
+    public JsonNode sync(long userId, String mode, long baseTime) {
         validateMode(mode);
         if (baseTime < 0 || baseTime > Instant.now().getEpochSecond()) {
             throw new IllegalArgumentException("统计日期不能晚于今天");
         }
-        long userId = StpUtil.getLoginIdAsLong();
         var connection = requireConnection(userId);
         String key = credential(connection);
         ObjectNode result = JsonNodeFactory.instance.objectNode();
@@ -240,12 +236,12 @@ public class WereadServiceImpl implements IWereadService {
     }
 
     @Override
-    public JsonNode stats(String mode, long baseTime) {
+    public JsonNode stats(long userId, String mode, long baseTime) {
         validateMode(mode);
         if (baseTime < 0 || baseTime > Instant.now().getEpochSecond()) {
             throw new IllegalArgumentException("统计日期不能晚于今天");
         }
-        var connection = requireConnection(StpUtil.getLoginIdAsLong());
+        var connection = requireConnection(userId);
         return cachedCall(connection, "/readdata/detail", Map.of("mode", mode, "baseTime", "overall".equals(mode) ? 0L : baseTime));
     }
 
@@ -289,9 +285,9 @@ public class WereadServiceImpl implements IWereadService {
     }
 
     @Override
-    public JsonNode notes(String bookId) {
+    public JsonNode notes(long userId, String bookId) {
         validateBookId(bookId);
-        String key = credential(requireConnection(StpUtil.getLoginIdAsLong()));
+        String key = credential(requireConnection(userId));
         ObjectNode result = JsonNodeFactory.instance.objectNode();
         result.set("marks", client.call(key, "/book/bookmarklist", Map.of("bookId", bookId)));
         ArrayNode reviews = result.putArray("reviews");
@@ -315,9 +311,9 @@ public class WereadServiceImpl implements IWereadService {
     }
 
     @Override
-    public WereadBookLinkVO bookLink(String bookId) {
+    public WereadBookLinkVO bookLink(long userId, String bookId) {
         validateBookId(bookId);
-        var connection = requireConnection(StpUtil.getLoginIdAsLong());
+        var connection = requireConnection(userId);
         String link = safeBookLink(cachedCall(connection, "/book/info", Map.of("bookId", bookId)).path("deepLink").asText(""));
         if (link == null) throw new IllegalStateException("该书暂未提供可用的微信读书链接，请稍后重试");
         return new WereadBookLinkVO(link);
@@ -339,9 +335,9 @@ public class WereadServiceImpl implements IWereadService {
     }
 
     @Override
-    public JsonNode progress(String bookId) {
+    public JsonNode progress(long userId, String bookId) {
         validateBookId(bookId);
-        var connection = requireConnection(StpUtil.getLoginIdAsLong());
+        var connection = requireConnection(userId);
         return cachedCall(connection, "/book/getprogress", Map.of("bookId", bookId));
     }
 }

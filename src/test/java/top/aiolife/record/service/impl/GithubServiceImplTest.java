@@ -19,7 +19,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 class GithubServiceImplTest {
-    private final GithubServiceImpl service = new GithubServiceImpl();
+    private final GithubServiceImpl service = new GithubServiceImpl(mock(top.aiolife.record.service.IUserBindService.class));
 
     @ParameterizedTest
     @ValueSource(ints = {401, 403, 429, 500, 503})

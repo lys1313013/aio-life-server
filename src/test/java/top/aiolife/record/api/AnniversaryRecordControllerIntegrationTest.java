@@ -29,7 +29,7 @@ class AnniversaryRecordControllerIntegrationTest extends BaseIntegrationTest {
         Long anniversaryId = System.currentTimeMillis() % 1000000 + 900000L;
         anniversaryRecordMapper.insert(createAnniversaryRecord(anniversaryId));
 
-        var response = anniversaryRecordController.queryAnniversaryRecords(null);
+        var response = anniversaryRecordController.queryAnniversaryRecords(String.valueOf(TEST_USER_ID), null);
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().size() >= 1);
@@ -40,7 +40,7 @@ class AnniversaryRecordControllerIntegrationTest extends BaseIntegrationTest {
         Long anniversaryId = System.currentTimeMillis() % 1000000 + 900000L;
         anniversaryRecordMapper.insert(createAnniversaryRecord(anniversaryId));
 
-        var response = anniversaryRecordController.getAnniversaryRecord(anniversaryId);
+        var response = anniversaryRecordController.getAnniversaryRecord(String.valueOf(TEST_USER_ID), String.valueOf(anniversaryId));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertEquals(anniversaryId, response.getData().getId());

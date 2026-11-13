@@ -7,54 +7,44 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import top.aiolife.core.constant.ResponseCodeConst;
-import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.id.IdCodec;
+import top.aiolife.core.resq.PageResp;
 import top.aiolife.mcp.annotation.McpToolProvider;
-import top.aiolife.record.api.TaskController;
-import top.aiolife.record.api.TaskDetailController;
-import top.aiolife.record.api.ThoughtController;
-import top.aiolife.record.api.TimeRecordController;
-import top.aiolife.record.api.TimeTrackerCategoryController;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.mcp.req.TaskDetailSaveMcpReq;
-import top.aiolife.record.mcp.req.TaskListMcpReq;
-import top.aiolife.core.resq.PageResp;
-import top.aiolife.core.query.PaginationRequest;
 import top.aiolife.record.mcp.req.TaskDetailUpdateMcpReq;
+import top.aiolife.record.mcp.req.TaskListMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordSaveMcpReq;
 import top.aiolife.record.mcp.vo.TaskDetailMcpVO;
 import top.aiolife.record.mcp.vo.TaskMcpVO;
 import top.aiolife.record.mcp.vo.TimeTrackerCategoryMcpVO;
-import top.aiolife.record.pojo.entity.TaskDetailEntity;
 import top.aiolife.record.pojo.entity.TaskEntity;
-import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.req.TaskDetailCreateReq;
 import top.aiolife.record.pojo.req.TaskDetailUpdateReq;
 import top.aiolife.record.pojo.req.ThoughtSaveReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
-import top.aiolife.record.pojo.vo.TaskDetailVO;
-import top.aiolife.record.pojo.vo.TaskVO;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
-import top.aiolife.record.pojo.vo.TimeTrackerCategoryVO;
+import top.aiolife.record.service.ITaskDetail;
 import top.aiolife.record.service.ITaskService;
 import top.aiolife.record.service.ITimeRecordService;
+import top.aiolife.record.service.ITimeTrackerCategoryService;
+import top.aiolife.record.service.ThoughtCreationService;
 
 @McpToolProvider
 @RequiredArgsConstructor
 public class RecordMcpTools {
 
-    private final TimeRecordController timeRecordController;
-    private final ThoughtController thoughtController;
-    private final TimeTrackerCategoryController timeTrackerCategoryController;
+    private final ThoughtCreationService thoughtCreationService;
     private final ITimeRecordService timeRecordService;
-    private final TaskController taskController;
-    private final TaskDetailController taskDetailController;
+    private final ITimeTrackerCategoryService timeTrackerCategoryService;
     private final ITaskService taskService;
+    private final ITaskDetail taskDetailService;
 
     @Tool("查询指定日期范围内的所有时间记录，包含仅有运动名称和运动次数的运动明细")
     public List<TimeRecordDateRangeVO> time_record_queryByDateRange(TimeRecordDateRangeMcpReq req) {
-        return timeRecordController.queryByDateRangeForAI(req).getData();
+        return timeRecordService.queryByDateRangeForAI(
+                StpUtil.getLoginIdAsLong(), req.getStartDate(), req.getEndDate());
     }
 
     @Tool("新增时迹；省略起止分钟时追加今天末条记录之后至当前时刻。补记历史日期或指定时段须同时提供 startMinute/endMinute（0–1439，闭区间）")
@@ -79,17 +69,8 @@ public class RecordMcpTools {
             endMinute = req.getEndMinute();
         } else {
             // 开始时间自动从数据库中查询，最后一条 + 1
-            TimeRecordEntity lastRecord = timeRecordService.lambdaQuery()
-                    .eq(TimeRecordEntity::getUserId, userId)
-                    .eq(TimeRecordEntity::getDate, date)
-                    .orderByDesc(TimeRecordEntity::getEndMinute)
-                    .last("limit 1")
-                    .one();
-
-            startMinute = 0;
-            if (lastRecord != null && lastRecord.getEndMinute() != null) {
-                startMinute = lastRecord.getEndMinute() + 1;
-            }
+            Integer lastEndMinute = timeRecordService.findLatestEndMinute(userId, date);
+            startMinute = lastEndMinute != null ? lastEndMinute + 1 : 0;
 
             // 结束时间为当前时间
             LocalTime now = LocalTime.now();
@@ -105,7 +86,7 @@ public class RecordMcpTools {
             actualReq.setDate(date);
         }
 
-        timeRecordController.save(RecordApiConvertor.INSTANCE.toTimeRecordSaveReq(actualReq));
+        timeRecordService.saveTimeRecord(userId, actualReq);
 
         // 格式化时间并返回给大模型
         String startTimeStr = String.format("%02d:%02d", startMinute / 60, startMinute % 60);
@@ -116,13 +97,14 @@ public class RecordMcpTools {
 
     @Tool("保存一条想法，并可附带多个关联事件")
     public boolean thought_save(ThoughtSaveReq req) {
-        thoughtController.save(req);
+        thoughtCreationService.create(StpUtil.getLoginIdAsLong(), req);
         return true;
     }
 
     @Tool("查询用户的所有时迹分类（含合并的公共分类）")
     public List<TimeTrackerCategoryMcpVO> time_tracker_category_list() {
-        List<TimeTrackerCategoryVO> items = timeTrackerCategoryController.list().getData();
+        var items = RecordApiConvertor.INSTANCE.toTimeTrackerCategoryVOList(
+                timeTrackerCategoryService.listUserVisibleCategories(StpUtil.getLoginIdAsLong()));
         if (items == null) {
             return List.of();
         }
@@ -138,12 +120,12 @@ public class RecordMcpTools {
     public PageResp<TaskMcpVO> task_list(TaskListMcpReq req) {
         int page = req.getPage() == null ? 1 : req.getPage();
         int pageSize = req.getPageSize() == null ? 10 : req.getPageSize();
-        PaginationRequest.validate(page, pageSize, 100);
-        var result = taskController.query(null, page, pageSize).getData();
-        List<TaskVO> items = result.getItems() == null ? List.of() : result.getItems();
+        long userId = StpUtil.getLoginIdAsLong();
+        var result = taskService.pageForUser(userId, null, page, pageSize);
+        List<TaskEntity> items = result.getItems() == null ? List.of() : result.getItems();
         List<TaskMcpVO> records = items.stream()
                 .map(t -> {
-                    List<TaskDetailVO> detailEntities = taskDetailController.list(t.getId()).getData();
+                    var detailEntities = taskDetailService.listForTask(userId, t.getId());
                     List<TaskDetailMcpVO> details = detailEntities == null ? List.of() : detailEntities.stream()
                             .map(d -> new TaskDetailMcpVO(d.getId(), d.getContent(), d.getIsCompleted(),
                                     d.getPriority(), d.getIsStarred()))
@@ -160,22 +142,19 @@ public class RecordMcpTools {
             throw new IllegalArgumentException("任务ID不能为空");
         }
 
-        Long userId = StpUtil.getLoginIdAsLong();
-        TaskEntity task = taskController.getBaseMapper().selectById(req.getTaskId());
-
-        if (task == null || !task.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("任务不存在或无权限访问该任务");
-        }
+        long userId = StpUtil.getLoginIdAsLong();
+        long taskId = IdCodec.decode(req.getTaskId());
+        taskService.getOwned(userId, taskId);
 
         TaskDetailCreateReq entity = new TaskDetailCreateReq();
-        entity.setTaskId(Long.valueOf(req.getTaskId()));
+        entity.setTaskId(taskId);
         entity.setContent(req.getContent());
         // 设置默认值，避免数据库报错或逻辑异常
         entity.setIsCompleted(0);
         entity.setIsStarred(req.getIsStarred() != null ? req.getIsStarred() : 0);
         entity.setPriority(req.getPriority() != null ? req.getPriority() : 10);
         entity.setSortOrder(0);
-        taskDetailController.create(entity);
+        taskDetailService.createForUser(userId, RecordApiConvertor.INSTANCE.fromTaskDetailCreateReq(entity));
         return true;
     }
 
@@ -208,11 +187,9 @@ public class RecordMcpTools {
         update.setPriority(req.getPriority());
         update.setIsStarred(req.getIsStarred());
         update.setIsCompleted(req.getIsCompleted());
-        ApiResponse<Boolean> response = taskDetailController.update(update);
-        if (response.getCode() != ResponseCodeConst.SUCCESS) {
-            throw new IllegalStateException(response.getMessage() != null ? response.getMessage() : "任务明细更新失败");
-        }
-        if (!Boolean.TRUE.equals(response.getData())) {
+        boolean updated = taskDetailService.updateForUser(
+                StpUtil.getLoginIdAsLong(), RecordApiConvertor.INSTANCE.fromTaskDetailUpdateReq(update));
+        if (!updated) {
             throw new IllegalArgumentException("任务明细不存在、已删除或无权限修改");
         }
         return true;

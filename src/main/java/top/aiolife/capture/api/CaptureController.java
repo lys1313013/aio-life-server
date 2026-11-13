@@ -1,11 +1,11 @@
 package top.aiolife.capture.api;
 
-import cn.dev33.satoken.stp.StpUtil;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -21,14 +21,14 @@ import top.aiolife.capture.pojo.dto.CaptureSchemas;
 import top.aiolife.capture.service.CaptureSecurity;
 import top.aiolife.capture.service.DoubanCaptureService;
 import top.aiolife.capture.service.PurchaseCaptureService;
-import top.aiolife.core.exception.SecondaryLockRequiredException;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
 
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 /** 浏览器预填和原业务表写入，无采购订单、支出或采购历史存储。 */
+@Tag(name = "浏览器采集")
 @RestController
 @RequestMapping("/capture")
 @RequiredArgsConstructor
@@ -48,6 +48,7 @@ public class CaptureController {
                                             implementation =
                                                     CaptureSchemas.DoubanPreviewResponse.class)))
     public ApiResponse<JsonNode> doubanPreview(
+            @CurrentUserId String userId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                             required = true,
                             content =
@@ -58,9 +59,9 @@ public class CaptureController {
                                                                     CaptureSchemas
                                                                             .DoubanPreviewRequest
                                                                             .class)))
-                    @RequestBody
+                    @Valid @RequestBody
                     ObjectNode request) {
-        return ApiResponse.success(douban.preview(StpUtil.getLoginIdAsLong(), request));
+        return ApiResponse.success(douban.preview(IdCodec.decode(userId), request));
     }
 
     @PostMapping("/douban/commit")
@@ -77,6 +78,7 @@ public class CaptureController {
                                             implementation =
                                                     CaptureSchemas.DoubanCommitResponse.class)))
     public ApiResponse<JsonNode> doubanCommit(
+            @CurrentUserId String userId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                             required = true,
                             content =
@@ -87,9 +89,9 @@ public class CaptureController {
                                                                     CaptureSchemas
                                                                             .DoubanCommitRequest
                                                                             .class)))
-                    @RequestBody
+                    @Valid @RequestBody
                     ObjectNode request) {
-        return ApiResponse.success(douban.commit(StpUtil.getLoginIdAsLong(), request));
+        return ApiResponse.success(douban.commit(IdCodec.decode(userId), request));
     }
 
     @PostMapping("/douban/sync")
@@ -106,6 +108,7 @@ public class CaptureController {
                                             implementation =
                                                     CaptureSchemas.DoubanSyncResponse.class)))
     public ApiResponse<JsonNode> doubanSync(
+            @CurrentUserId String userId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                             required = true,
                             content =
@@ -115,9 +118,9 @@ public class CaptureController {
                                                             implementation =
                                                                     CaptureSchemas.DoubanSyncRequest
                                                                             .class)))
-                    @RequestBody
+                    @Valid @RequestBody
                     ObjectNode request) {
-        return ApiResponse.success(douban.sync(StpUtil.getLoginIdAsLong(), request));
+        return ApiResponse.success(douban.sync(IdCodec.decode(userId), request));
     }
 
     @PostMapping("/purchase/preview")
@@ -131,6 +134,7 @@ public class CaptureController {
                                             implementation =
                                                     CaptureSchemas.PurchasePreviewResponse.class)))
     public ApiResponse<JsonNode> purchasePreview(
+            @CurrentUserId String userId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                             required = true,
                             content =
@@ -140,9 +144,9 @@ public class CaptureController {
                                                             implementation =
                                                                     CaptureSchemas.PurchaseOrder
                                                                             .class)))
-                    @RequestBody
+                    @Valid @RequestBody
                     ObjectNode request) {
-        return ApiResponse.success(purchase.preview(StpUtil.getLoginIdAsLong(), request));
+        return ApiResponse.success(purchase.preview(IdCodec.decode(userId), request));
     }
 
     @PostMapping("/purchase/commit")
@@ -159,6 +163,7 @@ public class CaptureController {
                                             implementation =
                                                     CaptureSchemas.PurchaseCommitResponse.class)))
     public ApiResponse<JsonNode> purchaseCommit(
+            @CurrentUserId String userId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                             required = true,
                             content =
@@ -169,41 +174,15 @@ public class CaptureController {
                                                                     CaptureSchemas
                                                                             .PurchaseCommitRequest
                                                                             .class)))
-                    @RequestBody
+                    @Valid @RequestBody
                     ObjectNode request) {
-        return ApiResponse.success(purchase.commit(StpUtil.getLoginIdAsLong(), request));
+        return ApiResponse.success(purchase.commit(IdCodec.decode(userId), request));
     }
 
     @Operation(summary = "查询采集可选配置")
     @GetMapping("/options")
-    public ApiResponse<Map<String, Object>> options() {
-        long user = StpUtil.getLoginIdAsLong();
-        Map<String, Object> out = new LinkedHashMap<>();
-        for (String key : List.of("deviceTypes", "deviceStatuses", "wardrobeCategories"))
-            out.put(key, List.of());
-        try {
-            access.menu(user, "/my-hub/device");
-            out.put("deviceTypes", access.options(user, "device_type", false));
-            out.put(
-                    "deviceStatuses",
-                    List.of(
-                            Map.of("id", "1", "name", "使用中"),
-                            Map.of("id", "2", "name", "已损坏"),
-                            Map.of("id", "3", "name", "已送人"),
-                            Map.of("id", "4", "name", "吃灰中")));
-        } catch (SecondaryLockRequiredException ignored) {
-            /* 锁定模块选项不泄露。 */
-        }
-        try {
-            access.menu(user, "/wardrobe");
-            out.put(
-                    "wardrobeCategories",
-                    access.categories(user).stream()
-                            .map(c -> Map.of("id", c.getId().toString(), "name", c.getName()))
-                            .toList());
-        } catch (SecondaryLockRequiredException ignored) {
-            /* 同上。 */
-        }
-        return ApiResponse.success(out);
+    public ApiResponse<Map<String, Object>> options(@CurrentUserId String userId) {
+        return ApiResponse.success(access.options(IdCodec.decode(userId)));
     }
+
 }

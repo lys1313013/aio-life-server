@@ -1,24 +1,23 @@
 package top.aiolife.record.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import top.aiolife.core.query.QueryOrder;
 import jakarta.validation.Valid;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
-import top.aiolife.core.constant.ResponseCodeConst;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.convertor.RecordApiConvertor;
-import top.aiolife.record.mapper.IPasswordVaultMapper;
 import top.aiolife.record.pojo.entity.PasswordVaultEntity;
 import top.aiolife.record.pojo.req.PasswordVaultCreateReq;
 import top.aiolife.record.pojo.req.PasswordVaultUpdateReq;
@@ -33,27 +32,22 @@ import top.aiolife.record.service.IPasswordVaultService;
  * @author Lys
  * @date 2026/04/28
  */
-@Slf4j
+@Tag(name = "密码库")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/password")
 public class PasswordVaultController {
 
     private final IPasswordVaultService passwordVaultService;
-    private final IPasswordVaultMapper passwordVaultMapper;
 
     /**
      * 查询密码列表
      */
     @Operation(summary = "查询密码库记录")
     @GetMapping("/list")
-    public ApiResponse<List<PasswordVaultVO>> list() {
-        long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<PasswordVaultEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PasswordVaultEntity::getUserId, userId);
-        QueryOrder.descNullsLast(wrapper, PasswordVaultEntity::getUpdateTime, PasswordVaultEntity::getId);
-        List<PasswordVaultEntity> list = passwordVaultMapper.selectList(wrapper);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toPasswordVaultVOList(list));
+    public ApiResponse<List<PasswordVaultVO>> list(@CurrentUserId String userId) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toPasswordVaultVOList(
+                passwordVaultService.listForUser(IdCodec.decode(userId))));
     }
 
     /**
@@ -61,13 +55,10 @@ public class PasswordVaultController {
      */
     @Operation(summary = "查询密码库记录详情")
     @GetMapping("/{id}")
-    public ApiResponse<PasswordVaultVO> getById(@PathVariable Long id) {
-        long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<PasswordVaultEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PasswordVaultEntity::getId, id);
-        wrapper.eq(PasswordVaultEntity::getUserId, userId);
-        PasswordVaultEntity entity = passwordVaultMapper.selectOne(wrapper);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toPasswordVaultVO(entity));
+    public ApiResponse<PasswordVaultVO> getById(@CurrentUserId String userId,
+                                                @PathVariable String id) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toPasswordVaultVO(
+                passwordVaultService.getOwned(IdCodec.decode(userId), IdCodec.decode(id))));
     }
 
     /**
@@ -75,19 +66,10 @@ public class PasswordVaultController {
      */
     @Operation(summary = "新增密码库记录")
     @PostMapping
-    public ApiResponse<Boolean> save(@Valid @RequestBody PasswordVaultCreateReq entityReq) {
+    public ApiResponse<Boolean> save(@CurrentUserId String userId,
+                                     @Valid @RequestBody PasswordVaultCreateReq entityReq) {
         PasswordVaultEntity entity = RecordApiConvertor.INSTANCE.fromPasswordVaultCreateReq(entityReq);
-        entity.setUserId(StpUtil.getLoginIdAsLong());
-        entity.setCreateUser(StpUtil.getLoginIdAsLong());
-        entity.setCreateTime(LocalDateTime.now());
-        entity.setUpdateTime(LocalDateTime.now());
-        if (entity.getFavorite() == null) {
-            entity.setFavorite(false);
-        }
-        if (entity.getCategory() == null || entity.getCategory().isEmpty()) {
-            entity.setCategory("其他");
-        }
-        passwordVaultMapper.insert(entity);
+        passwordVaultService.createForUser(IdCodec.decode(userId), entity);
         return ApiResponse.success(true);
     }
 
@@ -96,20 +78,11 @@ public class PasswordVaultController {
      */
     @Operation(summary = "更新密码库记录")
     @PutMapping("/{id}")
-    public ApiResponse<Boolean> update(@PathVariable Long id, @Valid @RequestBody PasswordVaultUpdateReq entityReq) {
+    public ApiResponse<Boolean> update(@CurrentUserId String userId,
+                                       @PathVariable String id,
+                                       @Valid @RequestBody PasswordVaultUpdateReq entityReq) {
         PasswordVaultEntity entity = RecordApiConvertor.INSTANCE.fromPasswordVaultUpdateReq(entityReq);
-        Long userId = StpUtil.getLoginIdAsLong();
-        PasswordVaultEntity existing = passwordVaultMapper.selectById(id);
-        if (existing == null || !userId.equals(existing.getUserId())) {
-            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "记录不存在或无权限操作");
-        }
-        entity.setId(id);
-        // 防止请求方篡改记录归属
-        entity.setUserId(null);
-        entity.setCreateUser(null);
-        entity.setUpdateUser(userId);
-        entity.setUpdateTime(LocalDateTime.now());
-        passwordVaultMapper.updateById(entity);
+        passwordVaultService.updateForUser(IdCodec.decode(userId), IdCodec.decode(id), entity);
         return ApiResponse.success(true);
     }
 
@@ -118,12 +91,9 @@ public class PasswordVaultController {
      */
     @Operation(summary = "删除密码库记录")
     @DeleteMapping("/{id}")
-    public ApiResponse<Boolean> delete(@PathVariable Long id) {
-        Long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<PasswordVaultEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PasswordVaultEntity::getId, id);
-        wrapper.eq(PasswordVaultEntity::getUserId, userId);
-        passwordVaultMapper.delete(wrapper);
+    public ApiResponse<Boolean> delete(@CurrentUserId String userId,
+                                       @PathVariable String id) {
+        passwordVaultService.deleteForUser(IdCodec.decode(userId), IdCodec.decode(id));
         return ApiResponse.success(true);
     }
 
@@ -132,20 +102,7 @@ public class PasswordVaultController {
      */
     @Operation(summary = "查询密码库分类")
     @GetMapping("/categories")
-    public ApiResponse<List<String>> categories() {
-        long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<PasswordVaultEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PasswordVaultEntity::getUserId, userId);
-        wrapper.select(PasswordVaultEntity::getCategory);
-        wrapper.groupBy(PasswordVaultEntity::getCategory);
-        List<PasswordVaultEntity> list = passwordVaultMapper.selectList(wrapper);
-
-        Set<String> categorySet = new LinkedHashSet<>(Arrays.asList("工作", "生活", "学习", "金融", "社交", "游戏", "其他"));
-        for (PasswordVaultEntity entity : list) {
-            if (entity.getCategory() != null && !entity.getCategory().isEmpty()) {
-                categorySet.add(entity.getCategory());
-            }
-        }
-        return ApiResponse.success(new ArrayList<>(categorySet));
+    public ApiResponse<List<String>> categories(@CurrentUserId String userId) {
+        return ApiResponse.success(passwordVaultService.listCategories(IdCodec.decode(userId)));
     }
 }

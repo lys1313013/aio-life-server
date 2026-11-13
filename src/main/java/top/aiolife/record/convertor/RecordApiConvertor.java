@@ -17,7 +17,7 @@ import top.aiolife.record.pojo.entity.MbtiResultEntity;
 import top.aiolife.record.pojo.entity.MemoEntity;
 import top.aiolife.record.pojo.entity.MilestoneEntity;
 import top.aiolife.record.pojo.entity.PasswordVaultEntity;
-import top.aiolife.record.pojo.entity.PerformanceEntity;
+import top.aiolife.record.pojo.entity.EventRecordEntity;
 import top.aiolife.record.pojo.entity.SysDictDataEntity;
 import top.aiolife.record.pojo.entity.SysDictTypeEntity;
 import top.aiolife.record.pojo.entity.TaskColumnEntity;
@@ -64,8 +64,8 @@ import top.aiolife.record.pojo.req.MovieCreateReq;
 import top.aiolife.record.pojo.req.MovieReq;
 import top.aiolife.record.pojo.req.PasswordVaultCreateReq;
 import top.aiolife.record.pojo.req.PasswordVaultUpdateReq;
-import top.aiolife.record.pojo.req.PerformanceCreateReq;
-import top.aiolife.record.pojo.req.PerformanceUpdateReq;
+import top.aiolife.record.pojo.req.EventRecordCreateReq;
+import top.aiolife.record.pojo.req.EventRecordUpdateReq;
 import top.aiolife.record.pojo.req.ReadRecordCreateReq;
 import top.aiolife.record.pojo.req.ReadRecordReq;
 import top.aiolife.record.pojo.req.SysDictDataCreateReq;
@@ -111,8 +111,10 @@ import top.aiolife.record.pojo.vo.IncomeVO;
 import top.aiolife.record.pojo.vo.MbtiResultVO;
 import top.aiolife.record.pojo.vo.MemoVO;
 import top.aiolife.record.pojo.vo.MilestoneVO;
+import top.aiolife.record.pojo.vo.MovieParseVO;
 import top.aiolife.record.pojo.vo.PasswordVaultVO;
-import top.aiolife.record.pojo.vo.PerformanceVO;
+import top.aiolife.record.pojo.vo.EventRecordVO;
+import top.aiolife.record.pojo.vo.ReadRecordParseVO;
 import top.aiolife.record.pojo.vo.RecommendNextVO;
 import top.aiolife.record.pojo.vo.SysDictDataRecordVO;
 import top.aiolife.record.pojo.vo.SysDictTypeVO;
@@ -289,11 +291,11 @@ public interface RecordApiConvertor {
         return page == null ? null : page.map(this::toExerciseRecordVO);
     }
 
-    PerformanceVO toPerformanceVO(PerformanceEntity entity);
-    List<PerformanceVO> toPerformanceVOList(List<PerformanceEntity> entities);
+    EventRecordVO toEventRecordVO(EventRecordEntity entity);
+    List<EventRecordVO> toEventRecordVOList(List<EventRecordEntity> entities);
 
-    default PageResp<PerformanceVO> toPerformanceVOPage(PageResp<PerformanceEntity> page) {
-        return page == null ? null : page.map(this::toPerformanceVO);
+    default PageResp<EventRecordVO> toEventRecordVOPage(PageResp<EventRecordEntity> page) {
+        return page == null ? null : page.map(this::toEventRecordVO);
     }
 
     MemoVO toMemoVO(MemoEntity entity);
@@ -497,10 +499,10 @@ public interface RecordApiConvertor {
     ExerciseRecordEntity fromExerciseRecordUpdateReq(ExerciseRecordUpdateReq request);
 
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
-    PerformanceEntity fromPerformanceCreateReq(PerformanceCreateReq request);
+    EventRecordEntity fromEventRecordCreateReq(EventRecordCreateReq request);
 
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
-    PerformanceEntity fromPerformanceUpdateReq(PerformanceUpdateReq request);
+    EventRecordEntity fromEventRecordUpdateReq(EventRecordUpdateReq request);
 
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
     MemoEntity fromMemoQuery(MemoQuery request);
@@ -536,4 +538,6 @@ public interface RecordApiConvertor {
     TimeRecordRecommendationVO toTimeRecordRecommendationVO(RecommendNextVO result);
     TimeRecordSaveReq toTimeRecordSaveReq(TimeRecordReq request);
     TimeRecordExerciseReq toTimeRecordExerciseReq(ExerciseRecordReq request);
+    MovieParseVO toMovieParseVO(MovieReq parsed);
+    ReadRecordParseVO toReadRecordParseVO(ReadRecordReq parsed);
 }

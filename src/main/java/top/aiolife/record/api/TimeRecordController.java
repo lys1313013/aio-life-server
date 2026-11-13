@@ -1,52 +1,38 @@
 package top.aiolife.record.api;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-
-import cn.dev33.satoken.stp.StpUtil;
-import cn.hutool.core.bean.BeanUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.Collections;
-import java.time.LocalDate;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.convertor.RecordApiConvertor;
-import top.aiolife.record.convertor.TimeRecordConvertor;
-import top.aiolife.record.enums.DictTypeEnum;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
-import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
-import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
-import top.aiolife.record.pojo.entity.UserDictDataEntity;
-import top.aiolife.record.pojo.enums.RelateTypeEnum;
 import top.aiolife.record.pojo.query.TimeRecordQuery;
 import top.aiolife.record.pojo.query.TimeWeekQuery;
 import top.aiolife.record.pojo.req.TimeRecordDeleteByDateReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.req.TimeRecordSaveReq;
 import top.aiolife.record.pojo.req.TimeRecordUpdateReq;
-import top.aiolife.record.pojo.vo.RecommendNextVO;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
-import top.aiolife.record.pojo.vo.TimeRecordExerciseVO;
 import top.aiolife.record.pojo.vo.TimeRecordListVO;
 import top.aiolife.record.pojo.vo.TimeRecordRecommendationVO;
 import top.aiolife.record.pojo.vo.TimeRecordVO;
-import top.aiolife.record.service.IExerciseRecordService;
 import top.aiolife.record.service.ITimeRecordService;
-import top.aiolife.record.service.ITimeTrackerCategoryService;
-import top.aiolife.record.service.UserDictDataService;
-import top.aiolife.sso.service.SecondaryLockGuard;
-import top.aiolife.sso.util.RequestLoginContext;
 
 /**
  * 类功能描述
@@ -54,28 +40,21 @@ import top.aiolife.sso.util.RequestLoginContext;
  * @author Lys
  * @date 2025/10/25 23:16
  */
-@Slf4j
 @Tag(name = "时迹 时间记录 时间块")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/timeRecord")
 public class TimeRecordController {
-    private final SecondaryLockGuard secondaryLockGuard;
-    private final ITimeRecordService timeRecordService;
-    private final IExerciseRecordService exerciseRecordService;
-    private final ITimeTrackerCategoryService timeTrackerCategoryService;
-    private final UserDictDataService userDictDataService;
 
-    public ITimeRecordService getBaseMapper() {
-        return timeRecordService;
-    }
+    private final ITimeRecordService timeRecordService;
 
     /** 查询当前用户指定日期的全部记录，不分页。 */
     @Operation(summary = "查询指定日期的时迹")
     @GetMapping("/query")
-    public ApiResponse<List<TimeRecordListVO>> query(@Valid @QueryParams TimeRecordQuery requestQuery) {
+    public ApiResponse<List<TimeRecordListVO>> query(@CurrentUserId String userId,
+                                                     @Valid @QueryParams TimeRecordQuery requestQuery) {
         return ApiResponse.success(timeRecordService.queryDay(
-                StpUtil.getLoginIdAsLong(), requestQuery.getDate()));
+                IdCodec.decode(userId), requestQuery.getDate()));
     }
 
     /**
@@ -85,9 +64,10 @@ public class TimeRecordController {
     @Operation(summary = "查询日期范围内的时迹")
     @GetMapping("/queryByDateRange")
     public ApiResponse<List<TimeRecordListVO>> queryByDateRange(
+            @CurrentUserId String userId,
             @QueryParams CommonQuery<TimeWeekQuery> query) {
-        List<TimeRecordEntity> list = queryByDateRangeList(query);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeRecordListVOList(list));
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeRecordListVOList(
+                timeRecordService.listByDateRange(IdCodec.decode(userId), query.getCondition())));
     }
 
     /**
@@ -97,150 +77,10 @@ public class TimeRecordController {
     @Operation(summary = "查询时迹及格式化时间")
     @GetMapping("/queryByDateRangeForAI")
     public ApiResponse<List<TimeRecordDateRangeVO>> queryByDateRangeForAI(
+            @CurrentUserId String userId,
             @QueryParams TimeRecordDateRangeMcpReq req) {
-        long userId = StpUtil.getLoginIdAsLong();
-        List<TimeRecordEntity> list = queryByDateRangeForAIList(userId, req);
-        List<TimeRecordDateRangeVO> voList = TimeRecordConvertor.INSTANCE.toDateRangeVOList(list);
-
-        Set<Long> categoryIds = list.stream()
-                .map(TimeRecordEntity::getCategoryId)
-                .filter(id -> id != null)
-                .collect(Collectors.toSet());
-
-        Map<Long, String> categoryNameMap = Collections.emptyMap();
-        if (!categoryIds.isEmpty()) {
-            categoryNameMap = timeTrackerCategoryService.list(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
-                            .in(TimeTrackerCategoryEntity::getId, categoryIds)
-                            .and(w -> w.eq(TimeTrackerCategoryEntity::getUserId, userId)
-                                    .or().eq(TimeTrackerCategoryEntity::getUserId, 0L))).stream()
-                    .collect(Collectors.toMap(
-                            TimeTrackerCategoryEntity::getId,
-                            TimeTrackerCategoryEntity::getName
-                    ));
-        }
-
-        for (int i = 0; i < voList.size(); i++) {
-            Long categoryId = list.get(i).getCategoryId();
-            if (categoryId != null && categoryNameMap.containsKey(categoryId)) {
-                voList.get(i).setCategoryName(categoryNameMap.get(categoryId));
-            }
-            if ("".equals(list.get(i).getTitle())) {
-                voList.get(i).setTitle(null);
-            }
-        }
-
-        fillExerciseDetails(userId, list, voList);
-
-        // 按日期和时间从晚到早排序
-        voList.sort(Comparator
-                .comparing(TimeRecordDateRangeVO::getDate, Comparator.reverseOrder())
-                .thenComparing(TimeRecordDateRangeVO::getStartMinute, Comparator.reverseOrder()));
-
-        return ApiResponse.success(voList);
-    }
-
-    /**
-     * 批量填充运动明细，仅向 AI 接口暴露运动名称和次数。
-     */
-    private void fillExerciseDetails(long userId, List<TimeRecordEntity> records,
-                                     List<TimeRecordDateRangeVO> voList) {
-        Set<String> timeIds = records.stream()
-                .map(TimeRecordEntity::getId)
-                .filter(id -> id != null && !id.isEmpty())
-                .collect(Collectors.toSet());
-        if (timeIds.isEmpty()) {
-            return;
-        }
-
-        List<ExerciseRecordEntity> exerciseRecords = exerciseRecordService.lambdaQuery()
-                .select(ExerciseRecordEntity::getTimeId,
-                        ExerciseRecordEntity::getExerciseTypeId,
-                        ExerciseRecordEntity::getExerciseCount)
-                .eq(ExerciseRecordEntity::getUserId, userId)
-                .in(ExerciseRecordEntity::getTimeId, timeIds)
-                .list();
-        if (exerciseRecords.isEmpty()) {
-            return;
-        }
-
-        secondaryLockGuard.checkMenus(userId, "/record/exercise");
-        Map<Long, String> exerciseNameMap = userDictDataService
-                .listUserVisibleDictData(userId, DictTypeEnum.EXERCISE_TYPE.getValue(), true)
-                .stream()
-                .filter(dict -> dict.getId() != null && dict.getDictLabel() != null)
-                .collect(Collectors.toMap(
-                        UserDictDataEntity::getId,
-                        UserDictDataEntity::getDictLabel,
-                        (existing, replacement) -> replacement));
-
-        Map<String, List<TimeRecordExerciseVO>> exercisesByTimeId = exerciseRecords.stream()
-                .collect(Collectors.groupingBy(
-                        ExerciseRecordEntity::getTimeId,
-                        Collectors.mapping(exercise -> new TimeRecordExerciseVO(
-                                exerciseNameMap.getOrDefault(
-                                        exercise.getExerciseTypeId(), "未知运动"),
-                                exercise.getExerciseCount()), Collectors.toList())));
-
-        for (int i = 0; i < records.size(); i++) {
-            List<TimeRecordExerciseVO> exercises = exercisesByTimeId.get(records.get(i).getId());
-            if (exercises != null && !exercises.isEmpty()) {
-                voList.get(i).setExercises(exercises);
-            }
-        }
-    }
-
-    /**
-     * 根据日期范围查询记录（AI接口专用）
-     */
-    private List<TimeRecordEntity> queryByDateRangeForAIList(long userId, TimeRecordDateRangeMcpReq req) {
-        LambdaQueryWrapper<TimeRecordEntity> lambdaQueryWrapper = buildDateRangeForAIQueryWrapper(userId, req);
-        return timeRecordService.list(lambdaQueryWrapper);
-    }
-
-    /**
-     * 构建日期范围查询条件（AI接口专用）
-     */
-    private LambdaQueryWrapper<TimeRecordEntity> buildDateRangeForAIQueryWrapper(long userId, TimeRecordDateRangeMcpReq req) {
-        LambdaQueryWrapper<TimeRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.select(TimeRecordEntity::getId,
-                TimeRecordEntity::getCategoryId,
-                TimeRecordEntity::getDate,
-                TimeRecordEntity::getStartMinute,
-                TimeRecordEntity::getEndMinute,
-                TimeRecordEntity::getTitle);
-        lambdaQueryWrapper.eq(TimeRecordEntity::getUserId, userId);
-        lambdaQueryWrapper.between(TimeRecordEntity::getDate, req.getStartDate(), req.getEndDate());
-        lambdaQueryWrapper.orderByDesc(TimeRecordEntity::getUpdateTime);
-        return lambdaQueryWrapper;
-    }
-
-    /**
-     * 复用查询逻辑：根据日期范围查询记录
-     */
-    private List<TimeRecordEntity> queryByDateRangeList(CommonQuery<TimeWeekQuery> query) {
-        long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<TimeRecordEntity> lambdaQueryWrapper = buildDateRangeQueryWrapper(userId, query);
-        return timeRecordService.list(lambdaQueryWrapper);
-    }
-
-    /**
-     * 构建日期范围查询条件
-     */
-    private LambdaQueryWrapper<TimeRecordEntity> buildDateRangeQueryWrapper(long userId, CommonQuery<TimeWeekQuery> query) {
-        LambdaQueryWrapper<TimeRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.select(TimeRecordEntity::getId,
-                TimeRecordEntity::getCategoryId,
-                TimeRecordEntity::getDate,
-                TimeRecordEntity::getStartMinute,
-                TimeRecordEntity::getEndMinute,
-                TimeRecordEntity::getTitle,
-                TimeRecordEntity::getRelateId,
-                TimeRecordEntity::getRelateType);
-        lambdaQueryWrapper.eq(TimeRecordEntity::getUserId, userId);
-        TimeWeekQuery condition = query.getCondition();
-        lambdaQueryWrapper.between(TimeRecordEntity::getDate, condition.getStartDate(), condition.getEndDate());
-        lambdaQueryWrapper.orderByDesc(TimeRecordEntity::getUpdateTime);
-        return lambdaQueryWrapper;
+        return ApiResponse.success(timeRecordService.queryByDateRangeForAI(
+                IdCodec.decode(userId), req.getStartDate(), req.getEndDate()));
     }
 
     /**
@@ -249,43 +89,26 @@ public class TimeRecordController {
      */
     @Operation(summary = "查询时迹详情")
     @GetMapping("/{id}")
-    public ApiResponse<TimeRecordVO> getById(@PathVariable("id") String id) {
-        long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<TimeRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(TimeRecordEntity::getId, id);
-        lambdaQueryWrapper.eq(TimeRecordEntity::getUserId, userId);
-        TimeRecordEntity entity = timeRecordService.getOne(lambdaQueryWrapper);
-        if (entity == null) {
-            return ApiResponse.success(null);
-        }
-
-        TimeRecordVO vo = new TimeRecordVO();
-        BeanUtil.copyProperties(entity, vo);
-
-        List<ExerciseRecordEntity> exercises = exerciseRecordService.lambdaQuery()
-                .eq(ExerciseRecordEntity::getTimeId, id)
-                .eq(ExerciseRecordEntity::getUserId, userId)
-                .list();
-        if (!exercises.isEmpty()) secondaryLockGuard.checkMenus(userId, "/record/exercise");
-        vo.setExercises(RecordApiConvertor.INSTANCE.toExerciseRecordVOList(exercises));
-
-        return ApiResponse.success(vo);
+    public ApiResponse<TimeRecordVO> getById(@CurrentUserId String userId, @PathVariable("id") String id) {
+        return ApiResponse.success(timeRecordService.getDetail(IdCodec.decode(userId), IdCodec.decode(id)));
     }
 
     @PostMapping
     @Operation(summary = "新增时迹")
-    public ApiResponse<String> save(@Valid @RequestBody TimeRecordSaveReq request) {
-        if (request.getDate() == null) request.setDate(LocalDate.now());
+    public ApiResponse<String> save(@CurrentUserId String userId,
+                                    @Valid @RequestBody TimeRecordSaveReq request) {
         TimeRecordReq timeRecordReq = RecordApiConvertor.INSTANCE.fromTimeRecordSaveReq(request);
-        return ApiResponse.success(timeRecordService.saveTimeRecord(timeRecordReq));
+        return ApiResponse.success(
+                timeRecordService.saveTimeRecord(IdCodec.decode(userId), timeRecordReq));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "更新时迹")
-    public ApiResponse<Boolean> update(@PathVariable("id") String id, @Valid @RequestBody TimeRecordUpdateReq request) {
+    public ApiResponse<Boolean> update(@CurrentUserId String userId, @PathVariable("id") String id,
+                                       @Valid @RequestBody TimeRecordUpdateReq request) {
         TimeRecordReq timeRecordReq = RecordApiConvertor.INSTANCE.fromTimeRecordUpdateReq(request);
         timeRecordReq.setId(id);
-        timeRecordService.updateTimeRecord(timeRecordReq);
+        timeRecordService.updateTimeRecord(IdCodec.decode(userId), timeRecordReq);
         return ApiResponse.success();
     }
 
@@ -295,8 +118,8 @@ public class TimeRecordController {
      */
     @Operation(summary = "删除时迹")
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable("id") String id) {
-        timeRecordService.removeById(id, StpUtil.getLoginIdAsLong());
+    public ApiResponse<Void> delete(@CurrentUserId String userId, @PathVariable("id") String id) {
+        timeRecordService.removeById(IdCodec.decode(id), IdCodec.decode(userId));
         return ApiResponse.success();
     }
 
@@ -306,9 +129,10 @@ public class TimeRecordController {
      */
     @Operation(summary = "删除指定日期的时迹")
     @PostMapping("/deleteByDate")
-    public ApiResponse<Void> deleteByDay(@Valid @RequestBody TimeRecordDeleteByDateReq entityReq) {
+    public ApiResponse<Void> deleteByDay(@CurrentUserId String userId,
+                                         @Valid @RequestBody TimeRecordDeleteByDateReq entityReq) {
         TimeRecordEntity entity = RecordApiConvertor.INSTANCE.fromTimeRecordDeleteByDateReq(entityReq);
-        timeRecordService.removeByDate(entity.getDate(), StpUtil.getLoginIdAsLong());
+        timeRecordService.removeByDate(entity.getDate(), IdCodec.decode(userId));
         return ApiResponse.success();
     }
 
@@ -324,16 +148,10 @@ public class TimeRecordController {
      */
     @Operation(summary = "推荐指定时刻的时迹分类")
     @GetMapping("/recommendType")
-    public ApiResponse<String> recommendType(String date, int time) {
-        // 从登录上下文确定用户，推荐所用的分类和历史记录均按该用户查询。
-        long userId = RequestLoginContext.requireUserId();
-        Long categoryId = timeRecordService.recommendType(userId, date, time);
-        if (categoryId == null) {
-            // 无推荐属于正常业务结果，用空字符串表示本次没有可自动填入的分类。
-            return ApiResponse.success("");
-        }
+    public ApiResponse<String> recommendType(@CurrentUserId String userId, String date, int time) {
         // 分类 ID 按字符串返回，避免前端 JavaScript Number 丢失大整数精度。
-        return ApiResponse.success(String.valueOf(categoryId));
+        Long categoryId = timeRecordService.recommendType(IdCodec.decode(userId), date, time);
+        return ApiResponse.success(categoryId == null ? "" : String.valueOf(categoryId));
     }
 
     /**
@@ -342,21 +160,9 @@ public class TimeRecordController {
      */
     @Operation(summary = "推荐下一个时迹时间块")
     @GetMapping("/recommendNext")
-    public ApiResponse<TimeRecordRecommendationVO> recommendNext(String date) {
-        long userId = RequestLoginContext.requireUserId();
-        RecommendNextVO result = timeRecordService.recommendNext(userId, date);
-
-        // 获取推荐分类
-        TimeRecordEntity recommend = result.getRecommend();
-        if (recommend == null) {
-            log.info("Time next recommendation skipped: userId={}, date={}, reason=NO_REMAINING_TIME", userId, date);
-            return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeRecordRecommendationVO(result));
-        }
-
-        Long categoryId = timeRecordService.recommendType(userId, date, recommend.getStartMinute());
-        recommend.setCategoryId(categoryId);
-
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeRecordRecommendationVO(result));
+    public ApiResponse<TimeRecordRecommendationVO> recommendNext(@CurrentUserId String userId, String date) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeRecordRecommendationVO(
+                timeRecordService.recommendNextWithCategory(IdCodec.decode(userId), date)));
     }
 
     /**
@@ -365,6 +171,6 @@ public class TimeRecordController {
     @Operation(summary = "查询时迹可关联业务类型")
     @GetMapping("/relateTypes")
     public ApiResponse<List<Map<String, Object>>> getRelateTypes() {
-        return ApiResponse.success(RelateTypeEnum.toList());
+        return ApiResponse.success(timeRecordService.listRelateTypes());
     }
 }

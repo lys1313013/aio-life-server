@@ -2,13 +2,17 @@ package top.aiolife.record.api;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-import cn.dev33.satoken.stp.StpUtil;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.enums.DictTypeEnum;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
@@ -17,16 +21,17 @@ import top.aiolife.record.pojo.vo.UserDictTypeVO;
 import top.aiolife.record.service.UserDictDataService;
 
 /**
- * 用户字典类型Controller
+ * 用户字典类型控制器。
  *
  * @author Lys
  */
+@Tag(name = "用户字典类型")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/userDictType")
 public class UserDictTypeController {
 
-    private UserDictDataService userDictDataService;
+    private final UserDictDataService userDictDataService;
 
     /**
      * 获取用户字典类型枚举，返回类型标识和中文名称。
@@ -42,9 +47,8 @@ public class UserDictTypeController {
      */
     @Operation(summary = "按类型查询已启用的可见用户字典")
     @GetMapping("/getByDictType")
-    public ApiResponse<UserDictTypeDetailVO> getByDictType(@Parameter(description = "用户字典类型，取自 dictTypeEnum") String dictType) {
-        Long userId = StpUtil.getLoginIdAsLong();
-
+    public ApiResponse<UserDictTypeDetailVO> getByDictType(@CurrentUserId String userId,
+                                                           @Parameter(description = "用户字典类型，取自 dictTypeEnum") String dictType) {
         // 1. 字典类型展示信息由枚举提供，不映射数据库实体。
         UserDictTypeVO typeVO = new UserDictTypeVO();
         typeVO.setDictType(dictType);
@@ -56,7 +60,8 @@ public class UserDictTypeController {
         }
 
         // 2. 正常查询数据明细
-        List<UserDictDataEntity> dataList = userDictDataService.listUserVisibleDictData(userId, dictType);
+        List<UserDictDataEntity> dataList = userDictDataService.listUserVisibleDictData(
+                IdCodec.decode(userId), dictType);
 
         UserDictTypeDetailVO detailVO = new UserDictTypeDetailVO();
         detailVO.setUserDictTypeEntity(typeVO);

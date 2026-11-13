@@ -128,7 +128,7 @@ public class FilePreviewGuard {
             case "movie" -> "/record/movie";
             case "honor_record" -> "/my-hub/honor";
             case "read" -> "/record/read";
-            case "performance" -> "/record/performance";
+            case "event_record" -> "/record/event-records";
             case "device" -> "/my-hub/device";
             default -> null;
         };

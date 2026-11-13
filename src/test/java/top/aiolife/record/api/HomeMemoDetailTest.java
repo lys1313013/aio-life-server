@@ -24,7 +24,9 @@ class HomeMemoDetailTest {
     @BeforeEach
     void setUp() throws Exception {
         database = new HomeDetailTestSupport();
-        mvc = database.mvc(new MemoController(mock(IMemoService.class), database.session.getMapper(IMemoMapper.class)));
+        var memoService = new top.aiolife.record.service.impl.MemoServiceImpl();
+        org.springframework.test.util.ReflectionTestUtils.setField(memoService, "baseMapper", database.session.getMapper(IMemoMapper.class));
+        mvc = database.mvc(new MemoController(memoService));
         database.jdbc.update("INSERT INTO memo(id,user_id,title,content,hidden_content,is_deleted) VALUES (?,7,'隐藏笔记',?,1,0)", OWN_ID, FULL_CONTENT);
         database.jdbc.update("INSERT INTO memo(id,user_id,title,content,hidden_content,is_deleted) VALUES (20,8,'他人笔记','他人正文',0,0),(30,7,'已删除笔记','已删除正文',0,1)");
     }
@@ -38,6 +40,7 @@ class HomeMemoDetailTest {
     void testDetail_真实SQL读取本人隐藏笔记完整正文并保持字符串ID() throws Exception {
         try (var identity = mockStatic(StpUtil.class)) {
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            identity.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(get("/memo/{id}", OWN_ID))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(0))
@@ -54,6 +57,7 @@ class HomeMemoDetailTest {
     void testDetail_他人ID及伪造查询用户不能读取正文() throws Exception {
         try (var identity = mockStatic(StpUtil.class)) {
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            identity.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(get("/memo/20").param("userId", "8"))
                     .andExpect(jsonPath("$.code").value(ResponseCodeConst.COMMON_FAIL))
                     .andExpect(jsonPath("$.message").value("笔记不存在或无权访问"))
@@ -65,6 +69,7 @@ class HomeMemoDetailTest {
     void testDetail_软删除与不存在ID统一拒绝() throws Exception {
         try (var identity = mockStatic(StpUtil.class)) {
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            identity.when(StpUtil::getLoginIdAsString).thenReturn("7");
             for (long id : new long[]{30, 99}) {
                 mvc.perform(get("/memo/{id}", id))
                         .andExpect(jsonPath("$.code").value(ResponseCodeConst.COMMON_FAIL))

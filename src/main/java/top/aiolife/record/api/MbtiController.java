@@ -1,20 +1,22 @@
 package top.aiolife.record.api;
 
 import io.swagger.v3.oas.annotations.Operation;
-
-import cn.dev33.satoken.stp.StpUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
-import top.aiolife.core.constant.ResponseCodeConst;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.convertor.RecordApiConvertor;
-import top.aiolife.record.pojo.entity.MbtiResultEntity;
 import top.aiolife.record.pojo.req.MbtiResultSaveReq;
 import top.aiolife.record.pojo.vo.MbtiResultDetailVO;
 import top.aiolife.record.pojo.vo.MbtiResultVO;
@@ -26,107 +28,52 @@ import top.aiolife.record.service.IMbtiResultService;
  * @author Lys
  * @date 2026-03-23
  */
-@Slf4j
+@Tag(name = "MBTI 测试")
 @RestController
 @RequestMapping("/mbti")
 @RequiredArgsConstructor
 public class MbtiController {
 
     private final IMbtiResultService mbtiResultService;
-    private final ObjectMapper objectMapper;
 
     @Operation(summary = "创建 MBTI 测试")
     @PostMapping("/test")
     public ApiResponse<Map<String, Object>> createTest() {
-        Map<String, Object> result = mbtiResultService.createTest();
-        if (Boolean.TRUE.equals(result.get("success"))) {
-            return ApiResponse.success(result);
-        } else {
-            String message = String.valueOf(result.getOrDefault("message", "创建测试失败"));
-            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, message);
-        }
+        return ApiResponse.success(mbtiResultService.createTest());
     }
 
     @Operation(summary = "查询 MBTI 测试进度及结果")
     @GetMapping("/test/{testId}")
     public ApiResponse<Map<String, Object>> checkTest(@PathVariable String testId) {
-        Map<String, Object> result = mbtiResultService.checkTest(testId);
-        return ApiResponse.success(result);
+        return ApiResponse.success(mbtiResultService.checkTest(testId));
     }
 
     @Operation(summary = "保存 MBTI 测试结果")
     @PostMapping("/result")
-    public ApiResponse<Void> saveResult(@Valid @RequestBody MbtiResultSaveReq body) {
-        long userId = StpUtil.getLoginIdAsLong();
-
-        MbtiResultEntity entity = new MbtiResultEntity();
-        entity.setUserId(userId);
-        entity.setTestId(body.getTestId());
-        entity.setMbtiType(body.getMbtiType());
-        entity.setResultsPage(body.getResultsPage());
-
-        try {
-            Map<String, Object> rawData = new HashMap<>();
-            rawData.put("predictions", body.getPredictions());
-            rawData.put("traitOrderConscious", body.getTraitOrderConscious());
-            rawData.put("traitOrderShadow", body.getTraitOrderShadow());
-            rawData.put("matches", body.getMatches());
-            entity.setRawResult(objectMapper.writeValueAsString(rawData));
-        } catch (Exception e) {
-            log.error("序列化原始数据失败", e);
-        }
-
-        entity.fillCreateCommonField(userId);
-        mbtiResultService.saveResult(entity);
+    public ApiResponse<Void> saveResult(@CurrentUserId String userId,
+                                        @Valid @RequestBody MbtiResultSaveReq body) {
+        mbtiResultService.saveResult(IdCodec.decode(userId), body);
         return ApiResponse.success();
     }
 
     @Operation(summary = "查询 MBTI 测试历史")
     @GetMapping("/results")
-    public ApiResponse<List<MbtiResultVO>> getHistory() {
-        long userId = StpUtil.getLoginIdAsLong();
-        List<MbtiResultEntity> history = mbtiResultService.getUserHistory(userId);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toMbtiResultVOList(history));
+    public ApiResponse<List<MbtiResultVO>> getHistory(@CurrentUserId String userId) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toMbtiResultVOList(
+                mbtiResultService.getUserHistory(IdCodec.decode(userId))));
     }
 
     @Operation(summary = "查询 MBTI 测试结果详情")
     @GetMapping("/result/{id}")
-    public ApiResponse<MbtiResultDetailVO> getById(@PathVariable Long id) {
-        long userId = StpUtil.getLoginIdAsLong();
-        MbtiResultEntity result = mbtiResultService.getById(id);
-        if (result == null || result.getUserId() == null || result.getUserId() != userId) {
-            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "记录不存在或无权限");
-        }
-
-        var response = new MbtiResultDetailVO();
-        response.setId(result.getId());
-        response.setTestId(result.getTestId());
-        response.setMbtiType(result.getMbtiType());
-        response.setResultsPage(result.getResultsPage());
-        response.setCreateTime(result.getCreateTime());
-        try {
-            if (result.getRawResult() != null) {
-                var rawData = objectMapper.readTree(result.getRawResult());
-                response.setPredictions(rawData.get("predictions"));
-                response.setTraitOrderConscious(rawData.get("traitOrderConscious"));
-                response.setTraitOrderShadow(rawData.get("traitOrderShadow"));
-                response.setMatches(rawData.get("matches"));
-            }
-        } catch (Exception e) {
-            log.error("解析原始数据失败", e);
-        }
-
-        return ApiResponse.success(response);
+    public ApiResponse<MbtiResultDetailVO> getById(@CurrentUserId String userId, @PathVariable String id) {
+        return ApiResponse.success(mbtiResultService.getDetailForUser(
+                IdCodec.decode(userId), IdCodec.decode(id)));
     }
 
     @Operation(summary = "删除 MBTI 测试结果")
     @DeleteMapping("/result/{id}")
-    public ApiResponse<Void> deleteResult(@PathVariable Long id) {
-        long userId = StpUtil.getLoginIdAsLong();
-        boolean deleted = mbtiResultService.deleteResult(id, userId);
-        if (!deleted) {
-            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "记录不存在或无权限");
-        }
+    public ApiResponse<Void> deleteResult(@CurrentUserId String userId, @PathVariable String id) {
+        mbtiResultService.deleteResultForUser(IdCodec.decode(userId), IdCodec.decode(id));
         return ApiResponse.success();
     }
 }

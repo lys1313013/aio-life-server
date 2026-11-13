@@ -1,14 +1,16 @@
 package top.aiolife.record.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import top.aiolife.record.pojo.entity.TimeRecordEntity;
-import top.aiolife.record.pojo.vo.RecommendNextVO;
-import top.aiolife.record.pojo.vo.TimeRecordListVO;
-import java.util.List;
-
-import top.aiolife.record.pojo.req.TimeRecordReq;
-
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import top.aiolife.record.pojo.entity.TimeRecordEntity;
+import top.aiolife.record.pojo.query.TimeWeekQuery;
+import top.aiolife.record.pojo.req.TimeRecordReq;
+import top.aiolife.record.pojo.vo.RecommendNextVO;
+import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
+import top.aiolife.record.pojo.vo.TimeRecordListVO;
+import top.aiolife.record.pojo.vo.TimeRecordVO;
 
 /**
  * 时间记录Service接口
@@ -21,21 +23,35 @@ public interface ITimeRecordService extends IService<TimeRecordEntity> {
     /** 查询指定用户的完整单日列表，缓存只用于非事务查询。 */
     List<TimeRecordListVO> queryDay(long userId, LocalDate date);
 
+    /** 查询日期范围内的时迹，返回列表展示字段。 */
+    List<TimeRecordEntity> listByDateRange(long userId, TimeWeekQuery condition);
+
+    /** 查询日期范围内的时迹，并补充分类名称、运动明细和格式化时间。 */
+    List<TimeRecordDateRangeVO> queryByDateRangeForAI(long userId, LocalDate startDate, LocalDate endDate);
+
+    /** 查询当前用户的一条时迹详情及运动明细；不存在时返回 null。 */
+    TimeRecordVO getDetail(long userId, Long id);
+
+    /** 查询当前用户指定日期最后一条时迹的结束分钟，没有记录时返回 null。 */
+    Integer findLatestEndMinute(long userId, LocalDate date);
+
     /**
      * 保存时间记录
      *
+     * @param userId 当前用户 ID
      * @param timeRecordReq 请求参数
      */
-    String saveTimeRecord(TimeRecordReq timeRecordReq);
+    String saveTimeRecord(long userId, TimeRecordReq timeRecordReq);
 
     /**
      * 更新时间记录
      *
+     * @param userId 当前用户 ID
      * @param timeRecordReq 请求参数
      */
-    void updateTimeRecord(TimeRecordReq timeRecordReq);
+    void updateTimeRecord(long userId, TimeRecordReq timeRecordReq);
 
-    void removeById(String id, long userId);
+    void removeById(Long id, long userId);
 
     /**
      * 根据日期删除记录及其关联的运动记录
@@ -67,4 +83,10 @@ public interface ITimeRecordService extends IService<TimeRecordEntity> {
      * @return 推荐结果及当日记录；当天没有剩余分钟时 recommend 为 null
      */
     RecommendNextVO recommendNext(long userId, String date);
+
+    /** 推荐下一个时间块，并为推荐结果补充分类。 */
+    RecommendNextVO recommendNextWithCategory(long userId, String date);
+
+    /** 时迹可关联的业务类型。 */
+    List<Map<String, Object>> listRelateTypes();
 }

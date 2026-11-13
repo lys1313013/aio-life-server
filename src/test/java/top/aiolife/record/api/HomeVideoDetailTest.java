@@ -24,7 +24,9 @@ class HomeVideoDetailTest {
     @BeforeEach
     void setUp() throws Exception {
         database = new HomeDetailTestSupport();
-        mvc = database.mvc(new BVideoController(database.session.getMapper(IBVideoMapper.class), mock(VideoCoverService.class)));
+        var videoService = new top.aiolife.record.service.impl.BVideoServiceImpl(mock(VideoCoverService.class));
+        org.springframework.test.util.ReflectionTestUtils.setField(videoService, "baseMapper", database.session.getMapper(IBVideoMapper.class));
+        mvc = database.mvc(new BVideoController(videoService));
         insert(OWN_ID, 7, 0);
         insert(20, 8, 0);
         insert(30, 7, 1);
@@ -43,6 +45,7 @@ class HomeVideoDetailTest {
     void testDetail_真实SQL返回本人编辑字段及字符串ID和数值进度() throws Exception {
         try (var identity = mockStatic(StpUtil.class)) {
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            identity.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(get("/b-video/{id}", OWN_ID))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(0))
@@ -64,6 +67,7 @@ class HomeVideoDetailTest {
     void testDetail_他人ID和伪造用户参数不可获取完整视频() throws Exception {
         try (var identity = mockStatic(StpUtil.class)) {
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            identity.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(get("/b-video/20").param("userId", "8"))
                     .andExpect(jsonPath("$.code").value(ResponseCodeConst.COMMON_FAIL))
                     .andExpect(jsonPath("$.message").value("视频不存在或无权访问"))
@@ -75,6 +79,7 @@ class HomeVideoDetailTest {
     void testDetail_软删除与不存在视频统一拒绝() throws Exception {
         try (var identity = mockStatic(StpUtil.class)) {
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            identity.when(StpUtil::getLoginIdAsString).thenReturn("7");
             for (long id : new long[]{30, 99}) {
                 mvc.perform(get("/b-video/{id}", id))
                         .andExpect(jsonPath("$.code").value(ResponseCodeConst.COMMON_FAIL))

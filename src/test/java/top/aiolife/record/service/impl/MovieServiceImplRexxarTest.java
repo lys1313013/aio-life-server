@@ -1,5 +1,7 @@
 package top.aiolife.record.service.impl;
 
+import top.aiolife.record.service.RecordImageService;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -18,7 +20,7 @@ import static org.mockito.Mockito.when;
 class MovieServiceImplRexxarTest {
 
     private final IFileService fileService = mock(IFileService.class);
-    private final MovieServiceImpl movieService = new MovieServiceImpl(fileService);
+    private final MovieServiceImpl movieService = new MovieServiceImpl(fileService, mock(RecordImageService.class));
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test

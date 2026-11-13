@@ -1,5 +1,8 @@
 package top.aiolife.record.pojo.req;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.util.List;
@@ -12,5 +15,8 @@ import java.util.List;
  */
 @Data
 public class CommonReq {
-    private List<String> idList;
+
+    @NotEmpty
+    @Size(max = 200)
+    private List<@NotBlank String> idList;
 }

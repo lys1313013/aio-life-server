@@ -16,8 +16,10 @@ import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.wardrobe.mapper.WardrobeCategoryMapper;
 import top.aiolife.wardrobe.pojo.entity.WardrobeCategoryEntity;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import top.aiolife.core.exception.SecondaryLockRequiredException;
 
 @Service
 @RequiredArgsConstructor
@@ -83,5 +85,37 @@ public class CaptureSecurity {
                                         "name",
                                         d.getDictLabel()))
                 .toList();
+    }
+
+    /** 采集插件可选配置；锁定模块的选项整体隐藏，不向调用方暴露锁定状态。 */
+    public Map<String, Object> options(long user) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        for (String key : List.of("deviceTypes", "deviceStatuses", "wardrobeCategories")) {
+            out.put(key, List.of());
+        }
+        try {
+            menu(user, "/my-hub/device");
+            out.put("deviceTypes", options(user, "device_type", false));
+            out.put(
+                    "deviceStatuses",
+                    List.of(
+                            Map.of("id", "1", "name", "使用中"),
+                            Map.of("id", "2", "name", "已损坏"),
+                            Map.of("id", "3", "name", "已送人"),
+                            Map.of("id", "4", "name", "吃灰中")));
+        } catch (SecondaryLockRequiredException ignored) {
+            // 锁定模块选项不泄露。
+        }
+        try {
+            menu(user, "/wardrobe");
+            out.put(
+                    "wardrobeCategories",
+                    categories(user).stream()
+                            .map(c -> Map.of("id", c.getId().toString(), "name", c.getName()))
+                            .toList());
+        } catch (SecondaryLockRequiredException ignored) {
+            // 同上。
+        }
+        return out;
     }
 }

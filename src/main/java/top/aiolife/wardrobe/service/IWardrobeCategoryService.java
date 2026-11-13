@@ -15,12 +15,12 @@ public interface IWardrobeCategoryService extends IService<WardrobeCategoryEntit
     /**
      * 保存分类
      */
-    void saveCategory(CategoryReq req);
+    void saveCategory(Long userId, CategoryReq req);
 
     /**
      * 更新分类
      */
-    void updateCategory(CategoryReq req);
+    void updateCategory(Long userId, CategoryReq req);
 
     /**
      * 删除分类

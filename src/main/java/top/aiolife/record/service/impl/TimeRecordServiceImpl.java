@@ -1,7 +1,7 @@
 package top.aiolife.record.service.impl;
 
 import jakarta.annotation.Resource;
-import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -13,16 +13,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.convertor.TimeRecordConvertor;
+import top.aiolife.record.enums.DictTypeEnum;
 import top.aiolife.record.mapper.ITimeRecordMapper;
 import top.aiolife.record.pojo.entity.*;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.enums.RelateTypeEnum;
+import top.aiolife.record.pojo.query.TimeWeekQuery;
 import top.aiolife.record.pojo.req.ExerciseRecordReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.vo.RecommendNextVO;
+import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
+import top.aiolife.record.pojo.vo.TimeRecordExerciseVO;
 import top.aiolife.record.pojo.vo.TimeRecordListVO;
+import top.aiolife.record.pojo.vo.TimeRecordVO;
 import top.aiolife.record.prediction.RecommendationDataCache;
 import top.aiolife.record.service.*;
 import top.aiolife.sso.service.SecondaryLockGuard;
@@ -32,6 +38,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -61,6 +68,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     private final RecommendationDataCache recommendationDataCache;
     private final ITimeTrackerCategoryService timeTrackerCategoryService;
     private final SecondaryLockGuard secondaryLockGuard;
+    private final UserDictDataService userDictDataService;
 
     @Override
     @Cacheable(
@@ -78,6 +86,160 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
                 .eq(TimeRecordEntity::getDate, date)
                 .orderByDesc(TimeRecordEntity::getUpdateTime, TimeRecordEntity::getId));
         return RecordApiConvertor.INSTANCE.toTimeRecordListVOList(records);
+    }
+
+    @Override
+    public List<TimeRecordEntity> listByDateRange(long userId, TimeWeekQuery condition) {
+        LambdaQueryWrapper<TimeRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.select(TimeRecordEntity::getId,
+                TimeRecordEntity::getCategoryId,
+                TimeRecordEntity::getDate,
+                TimeRecordEntity::getStartMinute,
+                TimeRecordEntity::getEndMinute,
+                TimeRecordEntity::getTitle,
+                TimeRecordEntity::getRelateId,
+                TimeRecordEntity::getRelateType);
+        lambdaQueryWrapper.eq(TimeRecordEntity::getUserId, userId);
+        lambdaQueryWrapper.between(TimeRecordEntity::getDate, condition.getStartDate(), condition.getEndDate());
+        lambdaQueryWrapper.orderByDesc(TimeRecordEntity::getUpdateTime);
+        return this.list(lambdaQueryWrapper);
+    }
+
+    @Override
+    public List<TimeRecordDateRangeVO> queryByDateRangeForAI(long userId, LocalDate startDate, LocalDate endDate) {
+        LambdaQueryWrapper<TimeRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.select(TimeRecordEntity::getId,
+                TimeRecordEntity::getCategoryId,
+                TimeRecordEntity::getDate,
+                TimeRecordEntity::getStartMinute,
+                TimeRecordEntity::getEndMinute,
+                TimeRecordEntity::getTitle);
+        lambdaQueryWrapper.eq(TimeRecordEntity::getUserId, userId);
+        lambdaQueryWrapper.between(TimeRecordEntity::getDate, startDate, endDate);
+        lambdaQueryWrapper.orderByDesc(TimeRecordEntity::getUpdateTime);
+        List<TimeRecordEntity> list = this.list(lambdaQueryWrapper);
+        List<TimeRecordDateRangeVO> voList = TimeRecordConvertor.INSTANCE.toDateRangeVOList(list);
+
+        Set<Long> categoryIds = list.stream()
+                .map(TimeRecordEntity::getCategoryId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+
+        Map<Long, String> categoryNameMap = Collections.emptyMap();
+        if (!categoryIds.isEmpty()) {
+            categoryNameMap = timeTrackerCategoryService.list(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
+                            .in(TimeTrackerCategoryEntity::getId, categoryIds)
+                            .and(w -> w.eq(TimeTrackerCategoryEntity::getUserId, userId)
+                                    .or().eq(TimeTrackerCategoryEntity::getUserId, 0L))).stream()
+                    .collect(Collectors.toMap(
+                            TimeTrackerCategoryEntity::getId,
+                            TimeTrackerCategoryEntity::getName
+                    ));
+        }
+
+        for (int i = 0; i < voList.size(); i++) {
+            Long categoryId = list.get(i).getCategoryId();
+            if (categoryId != null && categoryNameMap.containsKey(categoryId)) {
+                voList.get(i).setCategoryName(categoryNameMap.get(categoryId));
+            }
+            if ("".equals(list.get(i).getTitle())) {
+                voList.get(i).setTitle(null);
+            }
+        }
+
+        fillExerciseDetails(userId, list, voList);
+
+        // 按日期和时间从晚到早排序
+        voList.sort(Comparator
+                .comparing(TimeRecordDateRangeVO::getDate, Comparator.reverseOrder())
+                .thenComparing(TimeRecordDateRangeVO::getStartMinute, Comparator.reverseOrder()));
+
+        return voList;
+    }
+
+    /**
+     * 批量填充运动明细，仅向 AI 接口暴露运动名称和次数。
+     */
+    private void fillExerciseDetails(long userId, List<TimeRecordEntity> records,
+                                     List<TimeRecordDateRangeVO> voList) {
+        Set<Long> timeIds = records.stream()
+                .map(TimeRecordEntity::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (timeIds.isEmpty()) {
+            return;
+        }
+
+        List<ExerciseRecordEntity> exerciseRecords = exerciseRecordService.lambdaQuery()
+                .select(ExerciseRecordEntity::getTimeId,
+                        ExerciseRecordEntity::getExerciseTypeId,
+                        ExerciseRecordEntity::getExerciseCount)
+                .eq(ExerciseRecordEntity::getUserId, userId)
+                .in(ExerciseRecordEntity::getTimeId, timeIds)
+                .list();
+        if (exerciseRecords.isEmpty()) {
+            return;
+        }
+
+        secondaryLockGuard.checkMenus(userId, "/record/exercise");
+        Map<Long, String> exerciseNameMap = userDictDataService
+                .listUserVisibleDictData(userId, DictTypeEnum.EXERCISE_TYPE.getValue(), true)
+                .stream()
+                .filter(dict -> dict.getId() != null && dict.getDictLabel() != null)
+                .collect(Collectors.toMap(
+                        UserDictDataEntity::getId,
+                        UserDictDataEntity::getDictLabel,
+                        (existing, replacement) -> replacement));
+
+        Map<Long, List<TimeRecordExerciseVO>> exercisesByTimeId = exerciseRecords.stream()
+                .collect(Collectors.groupingBy(
+                        ExerciseRecordEntity::getTimeId,
+                        Collectors.mapping(exercise -> new TimeRecordExerciseVO(
+                                exerciseNameMap.getOrDefault(
+                                        exercise.getExerciseTypeId(), "未知运动"),
+                                exercise.getExerciseCount()), Collectors.toList())));
+
+        for (int i = 0; i < records.size(); i++) {
+            List<TimeRecordExerciseVO> exercises = exercisesByTimeId.get(records.get(i).getId());
+            if (exercises != null && !exercises.isEmpty()) {
+                voList.get(i).setExercises(exercises);
+            }
+        }
+    }
+
+    @Override
+    public TimeRecordVO getDetail(long userId, Long id) {
+        LambdaQueryWrapper<TimeRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(TimeRecordEntity::getId, id);
+        lambdaQueryWrapper.eq(TimeRecordEntity::getUserId, userId);
+        TimeRecordEntity entity = this.getOne(lambdaQueryWrapper);
+        if (entity == null) {
+            return null;
+        }
+
+        TimeRecordVO vo = new TimeRecordVO();
+        BeanUtil.copyProperties(entity, vo);
+
+        List<ExerciseRecordEntity> exercises = exerciseRecordService.lambdaQuery()
+                .eq(ExerciseRecordEntity::getTimeId, id)
+                .eq(ExerciseRecordEntity::getUserId, userId)
+                .list();
+        if (!exercises.isEmpty()) secondaryLockGuard.checkMenus(userId, "/record/exercise");
+        vo.setExercises(RecordApiConvertor.INSTANCE.toExerciseRecordVOList(exercises));
+
+        return vo;
+    }
+
+    @Override
+    public Integer findLatestEndMinute(long userId, LocalDate date) {
+        TimeRecordEntity lastRecord = this.lambdaQuery()
+                .select(TimeRecordEntity::getEndMinute)
+                .eq(TimeRecordEntity::getUserId, userId)
+                .eq(TimeRecordEntity::getDate, date)
+                .orderByDesc(TimeRecordEntity::getEndMinute)
+                .last("limit 1")
+                .one();
+        return lastRecord == null ? null : lastRecord.getEndMinute();
     }
 
     /** 日期修改需要清理新旧两天；直接访问缓存，避免同类调用使注解失效。 */
@@ -103,7 +265,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         }
     }
 
-    private void checkExistingExercises(long userId, List<String> timeIds) {
+    private void checkExistingExercises(long userId, List<Long> timeIds) {
         if (!timeIds.isEmpty() && exerciseRecordService.count(new LambdaQueryWrapper<ExerciseRecordEntity>()
                 .eq(ExerciseRecordEntity::getUserId, userId).in(ExerciseRecordEntity::getTimeId, timeIds)) > 0) {
             secondaryLockGuard.checkMenus(userId, "/record/exercise");
@@ -150,13 +312,14 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public String saveTimeRecord(TimeRecordReq timeRecordReq) {
+    public String saveTimeRecord(long userId, TimeRecordReq timeRecordReq) {
         TimeRecordEntity entity = TimeRecordConvertor.INSTANCE.Req2Entity(timeRecordReq);
         // 新增时始终由服务端生成 ID。
         entity.setId(null);
+        validateRelate(entity);
+        if (entity.getDate() == null) entity.setDate(LocalDate.now());
         List<ExerciseRecordReq> exerciseRecordReqs = timeRecordReq.getExercises();
 
-        long userId = StpUtil.getLoginIdAsLong();
         validateCategory(entity.getCategoryId(), userId, false);
         entity.setUserId(userId);
         entity.setCreateUser(userId);
@@ -194,16 +357,17 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
             }
         }
         invalidateDayCache(userId, entity.getDate());
-        return entity.getId();
+        return IdCodec.encode(entity.getId());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateTimeRecord(TimeRecordReq timeRecordReq) {
+    public void updateTimeRecord(long userId, TimeRecordReq timeRecordReq) {
         TimeRecordEntity entity = TimeRecordConvertor.INSTANCE.Req2Entity(timeRecordReq);
+        entity.setId(IdCodec.decode(timeRecordReq.getId()));
+        validateRelate(entity);
         List<ExerciseRecordReq> exerciseRecordReqs = timeRecordReq.getExercises();
 
-        long userId = StpUtil.getLoginIdAsLong();
         TimeRecordEntity existing = timeRecordMapper.lockOwned(entity.getId(), userId);
         if (existing == null) {
             throw new RuntimeException("记录不存在或无权限");
@@ -227,6 +391,13 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         invalidateDayCache(userId, existing.getDate(), entity.getDate());
     }
 
+    /** 关联类型和关联业务 ID 必须成对提交，单独出现任何一个都会写成无法解释的半关联。 */
+    private void validateRelate(TimeRecordEntity entity) {
+        if ((entity.getRelateType() == null) != (entity.getRelateId() == null)) {
+            throw new IllegalArgumentException("关联业务类型和关联业务ID必须同时提交");
+        }
+    }
+
     /** 分钟采用闭区间；时长只由有效起止时间计算，不能由请求独立写入。 */
     private void calculateDuration(TimeRecordEntity entity) {
         Integer start = entity.getStartMinute();
@@ -244,7 +415,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     }
 
     /** 按完整明细列表同步：已有 ID 原位更新，无 ID 新增，未提交的旧明细逻辑删除。 */
-    private void syncExercises(long userId, String timeId, LocalDate date, List<ExerciseRecordReq> requests) {
+    private void syncExercises(long userId, Long timeId, LocalDate date, List<ExerciseRecordReq> requests) {
         Map<Long, ExerciseRecordEntity> remaining = exerciseRecordService.list(
                         new LambdaQueryWrapper<ExerciseRecordEntity>()
                                 .eq(ExerciseRecordEntity::getTimeId, timeId)
@@ -324,7 +495,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void removeById(String id, long userId) {
+    public void removeById(Long id, long userId) {
         TimeRecordEntity existing = this.getOne(new LambdaQueryWrapper<TimeRecordEntity>()
                 .eq(TimeRecordEntity::getId, id).eq(TimeRecordEntity::getUserId, userId));
         if (existing == null) return;
@@ -355,7 +526,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
             return;
         }
 
-        List<String> ids = list.stream().map(TimeRecordEntity::getId).toList();
+        List<Long> ids = list.stream().map(TimeRecordEntity::getId).toList();
 
         checkExistingExercises(userId, ids);
         // 2. 删除关联的运动记录
@@ -456,6 +627,26 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
                 .recommend(recommend)
                 .records(records)
                 .build();
+    }
+
+    @Override
+    public RecommendNextVO recommendNextWithCategory(long userId, String date) {
+        RecommendNextVO result = recommendNext(userId, date);
+
+        TimeRecordEntity recommend = result.getRecommend();
+        if (recommend == null) {
+            log.info("Time next recommendation skipped: userId={}, date={}, reason=NO_REMAINING_TIME", userId, date);
+            return result;
+        }
+
+        Long categoryId = recommendType(userId, date, recommend.getStartMinute());
+        recommend.setCategoryId(categoryId);
+        return result;
+    }
+
+    @Override
+    public List<Map<String, Object>> listRelateTypes() {
+        return RelateTypeEnum.toList();
     }
 
     /**

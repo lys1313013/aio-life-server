@@ -1,14 +1,15 @@
 package top.aiolife.sso.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-import cn.dev33.satoken.stp.StpUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.sso.pojo.entity.UserEntity;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.sso.pojo.req.ChangePasswordReq;
 import top.aiolife.sso.pojo.req.LoginReq;
 import top.aiolife.sso.pojo.req.ResetSecondaryPasswordReq;
@@ -19,200 +20,125 @@ import top.aiolife.sso.pojo.req.UpdateUserReq;
 import top.aiolife.sso.pojo.vo.UserBasicInfoVO;
 import top.aiolife.sso.pojo.vo.UserInfoVO;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
+import top.aiolife.sso.service.AuthService;
 import top.aiolife.sso.service.IUserService;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 类功能描述
+ * 用户认证与资料控制器
  *
  * @author Lys
  * @date 2025/4/3
  */
+@Tag(name = "用户")
 @RestController
 @RequiredArgsConstructor
 public class UserController {
 
     private final IUserService userService;
 
-    /**
-     * 登录
-     *
-     * @author Lys
-     * @date 2025/4/4
-     */
     @Operation(summary = "账号密码登录")
     @PostMapping("/auth/login")
-    public ApiResponse<UserLoginVO> login(@RequestBody LoginReq loginReq, HttpServletRequest request) {
-        String ip = getIp(request);
-        return ApiResponse.success(userService.login(loginReq, ip));
+    public ApiResponse<UserLoginVO> login(@Valid @RequestBody LoginReq loginReq, HttpServletRequest request) {
+        return ApiResponse.success(userService.login(loginReq, AuthService.clientIp(request)));
     }
 
-    /**
-     * 修改密码
-     */
     @Operation(summary = "修改登录密码")
     @PostMapping("/auth/change-password")
-    public ApiResponse<Void> changePassword(@RequestBody ChangePasswordReq changePasswordReq) {
-        long id = StpUtil.getLoginIdAsLong();
-        userService.changePassword(id, changePasswordReq);
+    public ApiResponse<Void> changePassword(@CurrentUserId String userId,
+                                            @Valid @RequestBody ChangePasswordReq changePasswordReq) {
+        userService.changePassword(IdCodec.decode(userId), changePasswordReq);
         return ApiResponse.success();
     }
 
-    /**
-     * 获取用户信息
-     */
     @Operation(summary = "查询当前登录用户信息")
     @GetMapping("/auth/info")
-    public ApiResponse<UserInfoVO> authInfo() {
-        return info();
+    public ApiResponse<UserInfoVO> authInfo(@CurrentUserId String userId) {
+        return ApiResponse.success(userService.getUserInfo(IdCodec.decode(userId)));
     }
 
-    /**
-     * 获取用户信息
-     */
     @Operation(summary = "查询当前用户资料")
     @GetMapping("/user/info")
-    public ApiResponse<UserInfoVO> info() {
-        long id = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(userService.getUserInfo(id));
+    public ApiResponse<UserInfoVO> info(@CurrentUserId String userId) {
+        return ApiResponse.success(userService.getUserInfo(IdCodec.decode(userId)));
     }
 
-    /**
-     * 获取用户基本信息
-     */
     @Operation(summary = "查询指定用户基本信息")
     @GetMapping("/user/{id}/basic")
-    public ApiResponse<UserBasicInfoVO> basicInfo(@PathVariable Long id) {
-        return ApiResponse.success(userService.getUserBasicInfo(id));
+    public ApiResponse<UserBasicInfoVO> basicInfo(@PathVariable String id) {
+        return ApiResponse.success(userService.getUserBasicInfo(IdCodec.decode(id)));
     }
 
     @Operation(summary = "查询当前用户权限码")
     @GetMapping("/auth/codes")
     public ApiResponse<Void> codes() {
-        Map<String, Object> data = new HashMap<>();
-        data.put("data", new String[]{"AC_100100", "AC_100110", "AC_100120", "AC_100010"});
         return ApiResponse.success();
     }
-
 
     @Operation(summary = "退出登录")
     @PostMapping("/auth/logout")
     public ApiResponse<Map<String, Object>> logout() {
-        StpUtil.logout();
+        AuthService.logout();
         return ApiResponse.success();
     }
 
-    /**
-     * 从请求头中获取IP
-     */
-    public String getIp(HttpServletRequest request) {
-        String ipAddress = request.getHeader("X-Forwarded-For");
-        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
-            ipAddress = request.getHeader("Proxy-Client-IP");
-        }
-        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
-            ipAddress = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ipAddress == null || ipAddress.isEmpty() || "unknown".equalsIgnoreCase(ipAddress)) {
-            ipAddress = request.getRemoteAddr();
-        }
-        return ipAddress;
-    }
-
-    /**
-     * 普通更新用户信息
-     */
     @Operation(summary = "更新当前用户资料")
     @PutMapping("/users")
-    public ApiResponse<Void> modify(@RequestBody UpdateUserReq req) {
-        long id = StpUtil.getLoginIdAsLong();
-        UserEntity userEntity = new UserEntity();
-        userEntity.setId(id);
-        userEntity.setNickname(req.getNickname());
-        userEntity.setUpdateUser(id);
-        userEntity.setIntroduction(req.getIntroduction());
-        userEntity.setAvatarFileId(req.getAvatarFileId());
-        userService.updateUser(userEntity, req.isAvatarFileIdSpecified());
+    public ApiResponse<Void> modify(@CurrentUserId String userId, @Valid @RequestBody UpdateUserReq req) {
+        userService.updateProfile(IdCodec.decode(userId), req);
         return ApiResponse.success();
     }
 
-    /**
-     * 查询是否已设置二级密码
-     */
     @Operation(summary = "查询二级密码设置状态")
     @GetMapping("/auth/secondary-password/status")
-    public ApiResponse<Map<String, Boolean>> secondaryPasswordStatus() {
-        long id = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(Map.of("hasPassword", userService.hasSecondaryPassword(id)));
+    public ApiResponse<Map<String, Boolean>> secondaryPasswordStatus(@CurrentUserId String userId) {
+        return ApiResponse.success(Map.of("hasPassword", userService.hasSecondaryPassword(IdCodec.decode(userId))));
     }
 
-    /**
-     * 设置/修改二级密码
-     */
     @Operation(summary = "设置或修改二级密码")
     @PutMapping("/auth/secondary-password")
-    public ApiResponse<Void> setSecondaryPassword(@Valid @RequestBody SetSecondaryPasswordReq req) {
-        long id = StpUtil.getLoginIdAsLong();
-        userService.setSecondaryPassword(id, req.getPassword(), req.getOldPassword());
+    public ApiResponse<Void> setSecondaryPassword(@CurrentUserId String userId,
+                                                  @Valid @RequestBody SetSecondaryPasswordReq req) {
+        userService.setSecondaryPassword(IdCodec.decode(userId), req.getPassword(), req.getOldPassword());
         return ApiResponse.success();
     }
 
-    /**
-     * 验证二级密码，解锁菜单
-     */
     @Operation(summary = "验证二级密码并解锁菜单")
     @PostMapping("/auth/secondary-verify")
-    public ApiResponse<Map<String, Object>> secondaryVerify(@Valid @RequestBody SecondaryVerifyReq req) {
-        long id = StpUtil.getLoginIdAsLong();
-        userService.verifySecondaryPassword(id, req.getPassword(), req.getMenuPath());
+    public ApiResponse<Map<String, Object>> secondaryVerify(@CurrentUserId String userId,
+                                                            @Valid @RequestBody SecondaryVerifyReq req) {
+        userService.verifySecondaryPassword(IdCodec.decode(userId), req.getPassword(), req.getMenuPath());
         return ApiResponse.success(Map.of("menuPath", req.getMenuPath()));
     }
 
-    /**
-     * 获取当前用户锁定的菜单 ID 列表
-     */
     @Operation(summary = "查询已锁定菜单")
     @GetMapping("/auth/secondary-lock/menus")
-    public ApiResponse<List<Long>> getSecondaryLockMenus() {
-        long id = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(userService.getSecondaryLockMenuIds(id));
+    public ApiResponse<List<Long>> getSecondaryLockMenus(@CurrentUserId String userId) {
+        return ApiResponse.success(userService.getSecondaryLockMenuIds(IdCodec.decode(userId)));
     }
 
-    /**
-     * 保存当前用户锁定的菜单 ID 列表
-     */
     @Operation(summary = "保存菜单锁定配置")
     @PutMapping("/auth/secondary-lock/menus")
-    public ApiResponse<Void> saveSecondaryLockMenus(@Valid @RequestBody SaveSecondaryLockMenusReq req) {
-        long id = StpUtil.getLoginIdAsLong();
-        userService.saveSecondaryLockMenus(id, req.getMenuIds(), req.getSecondaryPassword());
+    public ApiResponse<Void> saveSecondaryLockMenus(@CurrentUserId String userId,
+                                                    @Valid @RequestBody SaveSecondaryLockMenusReq req) {
+        userService.saveSecondaryLockMenus(IdCodec.decode(userId), req.getMenuIds(), req.getSecondaryPassword());
         return ApiResponse.success();
     }
 
-    /**
-     * 发送重置二级密码验证码（发到当前用户绑定的邮箱）
-     */
     @Operation(summary = "发送二级密码重置邮箱验证码")
     @PostMapping("/auth/send-reset-secondary-password-code")
-    public ApiResponse<Void> sendResetSecondaryPasswordCode(HttpServletRequest request) {
-        long id = StpUtil.getLoginIdAsLong();
-        String ip = getIp(request);
-        userService.sendResetSecondaryPasswordCode(id, ip);
+    public ApiResponse<Void> sendResetSecondaryPasswordCode(@CurrentUserId String userId, HttpServletRequest request) {
+        userService.sendResetSecondaryPasswordCode(IdCodec.decode(userId), AuthService.clientIp(request));
         return ApiResponse.success();
     }
 
-    /**
-     * 通过邮箱验证码重置二级密码
-     */
     @Operation(summary = "通过邮箱验证码重置二级密码")
     @PostMapping("/auth/reset-secondary-password")
-    public ApiResponse<Void> resetSecondaryPassword(@Valid @RequestBody ResetSecondaryPasswordReq req) {
-        long id = StpUtil.getLoginIdAsLong();
-        userService.resetSecondaryPassword(id, req.getCode(), req.getPassword());
+    public ApiResponse<Void> resetSecondaryPassword(@CurrentUserId String userId,
+                                                    @Valid @RequestBody ResetSecondaryPasswordReq req) {
+        userService.resetSecondaryPassword(IdCodec.decode(userId), req.getCode(), req.getPassword());
         return ApiResponse.success();
     }
-
 }

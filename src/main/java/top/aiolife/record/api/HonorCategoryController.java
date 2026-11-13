@@ -1,16 +1,16 @@
 package top.aiolife.record.api;
 
 import io.swagger.v3.oas.annotations.Operation;
-
-import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import top.aiolife.core.query.QueryOrder;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.convertor.RecordApiConvertor;
-import top.aiolife.record.pojo.entity.HonorCategoryEntity;
 import top.aiolife.record.pojo.vo.HonorCategoryVO;
 import top.aiolife.record.service.IHonorCategoryService;
 
@@ -20,24 +20,17 @@ import top.aiolife.record.service.IHonorCategoryService;
  * @author Lys
  * @date 2026/04/11
  */
+@Tag(name = "荣誉分类")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/honorCategories")
 public class HonorCategoryController {
     private final IHonorCategoryService honorCategoryService;
 
-
     @Operation(summary = "查询荣誉分类")
     @GetMapping
-    public ApiResponse<List<HonorCategoryVO>> queryCategories() {
-        long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<HonorCategoryEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.and(wrapper -> wrapper
-                .eq(HonorCategoryEntity::getUserId, userId)
-                .or()
-                .isNull(HonorCategoryEntity::getUserId)
-        );
-        QueryOrder.ascNullsFirst(queryWrapper, HonorCategoryEntity::getSortOrder);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toHonorCategoryVOList(honorCategoryService.list(queryWrapper)));
+    public ApiResponse<List<HonorCategoryVO>> queryCategories(@CurrentUserId String userId) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toHonorCategoryVOList(
+                honorCategoryService.listForUser(IdCodec.decode(userId))));
     }
 }

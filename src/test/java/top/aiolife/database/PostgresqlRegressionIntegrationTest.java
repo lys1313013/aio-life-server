@@ -57,6 +57,9 @@ import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.mapper.IDeviceMapper;
 import top.aiolife.record.mapper.IExpenseMapper;
 import top.aiolife.record.mapper.IFileMapper;
+import top.aiolife.record.mapper.RecordImageMapper;
+import top.aiolife.record.service.RecordImageService;
+import top.aiolife.record.enums.FileBizType;
 import top.aiolife.record.mapper.IIncomeMapper;
 import top.aiolife.record.mapper.IMemoMapper;
 import top.aiolife.record.mapper.ITaskMapper;
@@ -141,7 +144,7 @@ class PostgresqlRegressionIntegrationTest {
                 BankCardTagMapper.class, BankCardTagRelMapper.class, BankCardCoverTemplateMapper.class,
                 UserBindMapper.class, UserMapper.class, IDeviceMapper.class, IIncomeMapper.class, IExpenseMapper.class,
                 IMemoMapper.class, ITaskMapper.class,
-                IBVideoMapper.class, IFileMapper.class, ImageImportTaskMapper.class, ITimeTrackerCategoryMapper.class,
+                IBVideoMapper.class, IFileMapper.class, RecordImageMapper.class, ImageImportTaskMapper.class, ITimeTrackerCategoryMapper.class,
                 ScheduledJobMapper.class)) configuration.addMapper(mapper);
         var factory = new MybatisSqlSessionFactoryBean();
         factory.setDataSource(source); factory.setConfiguration(configuration);
@@ -159,15 +162,71 @@ class PostgresqlRegressionIntegrationTest {
     @AfterAll static void 清理数据库() { POSTGRES.stop(); }
 
     private <T> T mapper(Class<T> type) { return session.getMapper(type); }
+    private RecordImageService images() {
+        return new RecordImageService(mapper(IFileMapper.class), mapper(RecordImageMapper.class));
+    }
+
+    @Test void 四类业务图片从文件关联读取替换和清除() {
+        for (var type : List.of(FileBizType.DEVICE, FileBizType.MOVIE, FileBizType.READ_RECORD, FileBizType.WARDROBE_ITEM)) {
+            String table = type == FileBizType.READ_RECORD ? "read_record" : type.getBizType();
+            String columns = type == FileBizType.MOVIE || type == FileBizType.READ_RECORD
+                    ? "title,type" : "name";
+            String values = columns.equals("name") ? "'测试图片'" : "'测试图片',1";
+            jdbc.update("INSERT INTO " + table + "(id,user_id," + columns + ") VALUES(811,42," + values + ")");
+            file("first-" + table, type.getBizType(), 42, 811);
+            file("second-" + table, type.getBizType(), 42, 812);
+            jdbc.update("UPDATE file SET biz_id=NULL WHERE id=?", "second-" + table);
+            var images = images();
+            assertEquals("first-" + table, images.find(42, type, 811));
+            images.replace(42, type, 811, "second-" + table);
+            assertEquals("second-" + table, images.find(42, type, 811));
+            assertNull(mapper(IFileMapper.class).selectById("first-" + table).getBizId());
+            assertNull(images.find(43, type, 811));
+            images.replace(42, type, 811, "");
+            assertNull(images.find(42, type, 811));
+            assertNotNull(mapper(IFileMapper.class).selectById("second-" + table));
+        }
+    }
+
+    @Test void 图片绑定校验归属类型和删除状态且失败保留原图() {
+        jdbc.update("INSERT INTO device(id,user_id,name) VALUES(811,42,'图片测试'),(812,43,'其他人')");
+        file("original", "device", 42, 811);
+        file("foreign", "device", 43, 812);
+        file("wrong-type", "movie", 42, 900);
+        file("deleted", "device", 42, 813);
+        jdbc.update("UPDATE file SET is_deleted=1 WHERE id='deleted'");
+        var images = images();
+        for (String id : List.of("missing", "foreign", "wrong-type", "deleted")) {
+            assertThrows(IllegalArgumentException.class, () -> images.replace(42, FileBizType.DEVICE, 811, id));
+            assertEquals("original", images.find(42, FileBizType.DEVICE, 811));
+        }
+        assertThrows(IllegalArgumentException.class, () -> images.replace(42, FileBizType.DEVICE, 812, "original"));
+    }
+
+    @Test void 同图用于多件物品时复制附件归属而不迁走原图() {
+        jdbc.update("INSERT INTO device(id,user_id,name) VALUES(811,42,'物品一'),(812,42,'物品二')");
+        file("shared", "device", 42, 811);
+        var images = images();
+        String copied = images.replace(42, FileBizType.DEVICE, 812, "shared");
+        assertNotEquals("shared", copied);
+        assertEquals("shared", images.find(42, FileBizType.DEVICE, 811));
+        assertEquals(copied, images.find(42, FileBizType.DEVICE, 812));
+        assertEquals(mapper(IFileMapper.class).selectById("shared").getFileName(),
+                mapper(IFileMapper.class).selectById(copied).getFileName());
+    }
+
     private LocalDateTime updated(String table, long id) {
         return jdbc.queryForObject("SELECT update_time FROM " + table + " WHERE id=?", LocalDateTime.class, id);
     }
     private IncomeController incomeController() {
-        return new IncomeController(mapper(IIncomeMapper.class), mock(UserDictDataService.class));
+        var service = new top.aiolife.record.service.impl.IncomeServiceImpl(mock(UserDictDataService.class));
+        ReflectionTestUtils.setField(service, "baseMapper", mapper(IIncomeMapper.class));
+        return new IncomeController(service);
     }
     private ExpController expenseController() {
-        return new ExpController(mock(UserDictDataService.class), mock(IExpenseService.class),
-                mock(DeviceExpenseService.class), mapper(IExpenseMapper.class));
+        var service = new top.aiolife.record.service.impl.ExpenseServiceImpl(mock(UserDictDataService.class));
+        ReflectionTestUtils.setField(service, "baseMapper", mapper(IExpenseMapper.class));
+        return new ExpController(service, mock(DeviceExpenseService.class));
     }
     private void file(String id, String type, long owner, long business) {
         jdbc.update("INSERT INTO file(id,file_name,biz_type,biz_id,create_user,create_time,update_time) VALUES (?,?,?,?,?,?,?)",
@@ -188,13 +247,13 @@ class PostgresqlRegressionIntegrationTest {
         request.setCondition(condition);
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            var response = controller.query(request);
+            var response = controller.query("42", request);
             assertEquals(0, response.getCode()); assertEquals(2L, response.getData().getTotal());
             assertEquals(List.of("3", "2"), response.getData().getItems().stream().map(row -> row.getId().toString()).toList());
             condition.setStartTime("2026-07-01");
-            assertEquals(List.of("3"), controller.query(request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
+            assertEquals(List.of("3"), controller.query("42", request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
             condition.setYear(null); condition.setStartTime(null);
-            assertEquals(List.of("4", "3", "2", "1"), controller.query(request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
+            assertEquals(List.of("4", "3", "2", "1"), controller.query("42", request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
         }
     }
 
@@ -212,13 +271,13 @@ class PostgresqlRegressionIntegrationTest {
         request.setCondition(condition);
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            var response = controller.query(request);
+            var response = controller.query("42", request);
             assertEquals(0, response.getCode()); assertEquals(2L, response.getData().getTotal());
             assertEquals(List.of("3", "2"), response.getData().getItems().stream().map(row -> row.getId().toString()).toList());
             condition.setStartTime(LocalDateTime.of(2026, 7, 1, 0, 0));
-            assertEquals(List.of("3"), controller.query(request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
+            assertEquals(List.of("3"), controller.query("42", request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
             condition.setYear(null); condition.setStartTime(null);
-            assertEquals(List.of("4", "3", "2", "1"), controller.query(request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
+            assertEquals(List.of("4", "3", "2", "1"), controller.query("42", request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
         }
     }
 
@@ -231,8 +290,8 @@ class PostgresqlRegressionIntegrationTest {
         var change = new IncomeUpdateReq(); change.setAmt(new BigDecimal("200"));
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            assertTrue(controller.update(1L, change).getData());
-            assertFalse(controller.update(2L, change).getData());
+            assertTrue(controller.update("42", "1", change).getData());
+            assertFalse(controller.update("42", "2", change).getData());
         }
         var saved = mapper(IIncomeMapper.class).selectById(1);
         assertEquals(new BigDecimal("200.00"), saved.getAmt());
@@ -252,8 +311,8 @@ class PostgresqlRegressionIntegrationTest {
         var change = new ExpenseUpdateReq(); change.setId(1L); change.setAmt(new BigDecimal("200"));
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            assertEquals(0, controller.update(change).getCode());
-            change.setId(2L); controller.update(change);
+            assertEquals(0, controller.update("42", change).getCode());
+            change.setId(2L); controller.update("42", change);
         }
         var saved = mapper(IExpenseMapper.class).selectById(1);
         assertEquals(new BigDecimal("200.00"), saved.getAmt()); assertEquals(saved.getAmt(), saved.getTransactionAmt());
@@ -329,13 +388,13 @@ class PostgresqlRegressionIntegrationTest {
         var service = weread(client);
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            var result = service.sync("overall", 0);
+            var result = service.sync(42L, "overall", 0);
             var stored = mapper(UserBindMapper.class).selectById(1);
             var metadata = JSON.parseObject(stored.getMetaFields());
             assertEquals(result.path("lastSyncTime").asText(), metadata.getString("lastSyncTime"));
             assertTrue(metadata.getJSONObject("extra").getBooleanValue("keep"));
             assertTrue(updated("user_bind", 1).isAfter(OLD_TIME));
-            service.disconnect();
+            service.disconnect(42L);
         }
         assertNull(mapper(UserBindMapper.class).selectById(1));
         assertNull(jdbc.queryForObject("SELECT access_token FROM user_bind WHERE id=1", String.class));
@@ -379,14 +438,16 @@ class PostgresqlRegressionIntegrationTest {
             jdbc.update("INSERT INTO device(id,user_id,name,purchase_date) VALUES (?,42,'fixture',CAST(? AS date))",
                     id, id <= 2 ? null : "2026-11-10");
         }
-        var controller = new DeviceController(mapper(IDeviceMapper.class), mock(DeviceExpenseService.class));
+        var deviceService = new top.aiolife.record.service.impl.DeviceServiceImpl(images());
+        ReflectionTestUtils.setField(deviceService, "baseMapper", mapper(IDeviceMapper.class));
+        var controller = new DeviceController(deviceService, mock(DeviceExpenseService.class));
         var request = new CommonQuery<DeviceQuery>(); request.setCondition(new DeviceQuery()); request.setPageSize(2);
         var ids = new ArrayList<String>();
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             for (int page = 1; page <= 4; page++) {
                 request.setPage(page);
-                var response = controller.query(request);
+                var response = controller.query("42", request);
                 assertEquals(0, response.getCode()); assertEquals(5L, response.getData().getTotal());
                 response.getData().getItems().forEach(row -> ids.add(row.getId().toString()));
             }
@@ -403,13 +464,15 @@ class PostgresqlRegressionIntegrationTest {
 
     @Test void 笔记切换隐藏保持时间但修改内容会更新时间() {
         jdbc.update("INSERT INTO memo(id,user_id,title,content,update_time) VALUES (1,42,'fixture','before',?)", OLD_TIME);
-        var controller = new MemoController(mock(IMemoService.class), mapper(IMemoMapper.class));
+        var memoService = new top.aiolife.record.service.impl.MemoServiceImpl();
+        ReflectionTestUtils.setField(memoService, "baseMapper", mapper(IMemoMapper.class));
+        var controller = new MemoController(memoService);
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             var hidden = new MemoUpdateReq(); hidden.setHiddenContent(true);
-            controller.update(1L, hidden); assertEquals(OLD_TIME, updated("memo", 1));
+            controller.update("42", "1", hidden); assertEquals(OLD_TIME, updated("memo", 1));
             var content = new MemoUpdateReq(); content.setContent("after");
-            controller.update(1L, content); assertTrue(updated("memo", 1).isAfter(OLD_TIME));
+            controller.update("42", "1", content); assertTrue(updated("memo", 1).isAfter(OLD_TIME));
         }
     }
 
@@ -431,13 +494,13 @@ class PostgresqlRegressionIntegrationTest {
 
     @Test void 文件绑定维护审计字段且不修改他人文件() {
         String own = "a".repeat(32), other = "b".repeat(32);
-        file(own, "read", 42, 1); file(other, "read", 43, 1);
+        file(own, "honor_record", 42, 1); file(other, "honor_record", 43, 1);
         var service = new FileServiceImpl(mock(MinioUtil.class), mock(MinioConfig.class),
                 mock(StorageObjectLock.class), mock(DoubanCoverUrlPolicy.class));
         ReflectionTestUtils.setField(service, "baseMapper", mapper(IFileMapper.class));
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            service.bindBizId(List.of(own, other), "read", 2L);
+            service.bindBizId(List.of(own, other), "honor_record", 2L);
         }
         assertEquals(42L, mapper(IFileMapper.class).selectById(own).getUpdateUser());
         assertTrue(mapper(IFileMapper.class).selectById(own).getUpdateTime().isAfter(OLD_TIME));

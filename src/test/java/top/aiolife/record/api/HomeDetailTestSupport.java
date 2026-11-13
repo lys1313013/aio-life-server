@@ -42,8 +42,14 @@ final class HomeDetailTestSupport implements AutoCloseable {
 
     MockMvc mvc(Object controller) {
         var json = new JsonConfig().jacksonObjectMapper(new Jackson2ObjectMapperBuilder());
+        var validator = new org.springframework.validation.beanvalidation.LocalValidatorFactoryBean();
+        validator.afterPropertiesSet();
         return MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new ExceptionHandle())
+                .setValidator(validator)
+                .setCustomArgumentResolvers(
+                        new top.aiolife.core.web.CurrentUserIdArgumentResolver(),
+                        new top.aiolife.core.web.CurrentTokenArgumentResolver())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
     }
 

@@ -207,7 +207,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         category.setId(null);
         category.setUserId(userId);
         category.setTemplateId(null);
-        category.setIsDeleted(0);
+        category.fillCreateCommonField(userId);
         category.setParentId(parentId(category));
         if (category.getParentId() != 0L) validateParent(category.getId(), category.getParentId(), listUserCategories(userId));
         if (category.getSortOrder() == null) {
@@ -220,6 +220,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
 
     @Override
     public void updateCategory(Long categoryId, TimeTrackerCategoryEntity updates, Long userId) {
+        updates.fillUpdateCommonField(userId);
         // 覆盖记录的首次创建也参与串行化，避免并发插入同一模板的两条覆盖记录。
         lockHierarchy();
         TimeTrackerCategoryEntity target = this.getById(categoryId);
@@ -396,6 +397,22 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
     }
 
     @Override
+    public void reSortCategories(List<TimeTrackerCategoryEntity> categories, Long userId) {
+        for (TimeTrackerCategoryEntity entity : categories) {
+            TimeTrackerCategoryEntity update = new TimeTrackerCategoryEntity();
+            update.setSortOrder(entity.getSortOrder());
+
+            if (entity.getTemplateId() != null) {
+                // 如果是公共分类（且可能没有覆盖记录），调用 updateCategory 创建/更新覆盖记录
+                updateCategory(entity.getTemplateId(), update, userId);
+            } else {
+                // 私有分类或原记录
+                updateCategory(entity.getId(), update, userId);
+            }
+        }
+    }
+
+    @Override
     public List<TimeTrackerCategoryEntity> listAllCategories() {
         return this.list(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
                 .eq(TimeTrackerCategoryEntity::getUserId, 0L)
@@ -409,7 +426,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         category.setId(null);
         category.setUserId(0L); // 强制为公共分类
         category.setTemplateId(null);
-        category.setIsDeleted(0);
+        category.fillCreateCommonField(0L);
         category.setParentId(parentId(category));
         validateParent(null, category.getParentId(), listAllCategories());
         if (category.getParentId() != 0L) validatePublicParentChange(null, category.getParentId());

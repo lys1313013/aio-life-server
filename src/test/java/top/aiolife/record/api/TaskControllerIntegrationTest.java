@@ -27,7 +27,10 @@ class TaskControllerIntegrationTest extends BaseIntegrationTest {
         Long taskId = System.currentTimeMillis() % 1000000 + 900000L;
         taskMapper.insert(createTask(taskId));
 
-        var response = taskController.query(null, 1, 10);
+        var pageQuery = new top.aiolife.record.pojo.query.TaskPageQuery();
+        pageQuery.setPage(1);
+        pageQuery.setPageSize(10);
+        var response = taskController.queryPage(String.valueOf(TEST_USER_ID), pageQuery);
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);
@@ -38,7 +41,11 @@ class TaskControllerIntegrationTest extends BaseIntegrationTest {
         Long taskId = System.currentTimeMillis() % 1000000 + 900000L;
         taskMapper.insert(createTask(taskId));
 
-        var response = taskController.query(taskId, 1, 1);
+        var pageQuery = new top.aiolife.record.pojo.query.TaskPageQuery();
+        pageQuery.setPage(1);
+        pageQuery.setPageSize(1);
+        pageQuery.setTaskId(taskId);
+        var response = taskController.queryPage(String.valueOf(TEST_USER_ID), pageQuery);
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);

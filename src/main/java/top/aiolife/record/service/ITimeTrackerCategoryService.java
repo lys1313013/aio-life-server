@@ -53,6 +53,13 @@ public interface ITimeTrackerCategoryService extends IService<TimeTrackerCategor
     void deleteCategory(Long categoryId, Long userId);
 
     /**
+     * 调整用户分类排序；公共分类通过覆盖记录保存排序。
+     * @param categories 待调整的分类及排序值
+     * @param userId 用户ID
+     */
+    void reSortCategories(List<TimeTrackerCategoryEntity> categories, Long userId);
+
+    /**
      * 获取所有分类（管理员）
      * @return 分类列表
      */

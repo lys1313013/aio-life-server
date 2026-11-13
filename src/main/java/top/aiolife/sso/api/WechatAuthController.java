@@ -1,21 +1,27 @@
 package top.aiolife.sso.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-import cn.dev33.satoken.context.SaHolder;
-import cn.dev33.satoken.stp.StpUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
+import top.aiolife.sso.service.AuthService;
 import top.aiolife.sso.wechat.*;
 
 import java.util.Map;
 
-/** 单个微信小程序的认证入口，App / Web 不使用这些凭证交换接口。 */
+/**
+ * 单个微信小程序的认证入口，App / Web 不使用这些凭证交换接口。
+ *
+ * @author Lys
+ * @date 2026/11/13
+ */
+@Tag(name = "微信小程序登录")
 @RestController
 @RequestMapping("/auth/wechat/mini")
 @RequiredArgsConstructor
@@ -50,22 +56,21 @@ public class WechatAuthController {
     /** 使用当前业务会话及原账号密码，绑定已验证的微信身份。 */
     @Operation(summary = "绑定微信小程序身份")
     @PostMapping("/bind")
-    public ApiResponse<WechatLoginVO> bind(@Valid @RequestBody WechatAuthRequests.Bind body, HttpServletRequest request) {
-        return ApiResponse.success(service.bind(requireSession(), body, request.getRemoteAddr()));
+    public ApiResponse<WechatLoginVO> bind(@CurrentUserId String userId,
+                                           @Valid @RequestBody WechatAuthRequests.Bind body,
+                                           HttpServletRequest request) {
+        AuthService.requireAccountSession();
+        return ApiResponse.success(service.bind(IdCodec.decode(userId), body, request.getRemoteAddr()));
     }
 
     /** 无密码账号通过新鲜微信凭证首次设置密码，不能覆盖已有密码。 */
     @Operation(summary = "为微信账号首次设置登录密码")
     @PostMapping("/password")
-    public ApiResponse<Void> initializePassword(@Valid @RequestBody WechatAuthRequests.InitializePassword body, HttpServletRequest request) {
-        service.initializePassword(requireSession(), body, request.getRemoteAddr());
+    public ApiResponse<Void> initializePassword(@CurrentUserId String userId,
+                                                @Valid @RequestBody WechatAuthRequests.InitializePassword body,
+                                                HttpServletRequest request) {
+        AuthService.requireAccountSession();
+        service.initializePassword(IdCodec.decode(userId), body, request.getRemoteAddr());
         return ApiResponse.success();
-    }
-
-    private long requireSession() {
-        if (Boolean.TRUE.equals(SaHolder.getStorage().get("IS_API_KEY_AUTH"))) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "请使用账号登录后操作");
-        }
-        return StpUtil.getLoginIdAsLong();
     }
 }

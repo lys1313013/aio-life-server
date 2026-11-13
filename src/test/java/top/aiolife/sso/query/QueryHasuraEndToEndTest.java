@@ -55,6 +55,7 @@ class QueryHasuraEndToEndTest {
     private final List<Long> apiKeyIds = new ArrayList<>();
     private Process gateway;
     private final String prefix = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+    private final long timeIdBase = System.currentTimeMillis() * 10_000L;
     private String sessionA;
     private String tokenA;
     private String tokenB;
@@ -94,8 +95,8 @@ class QueryHasuraEndToEndTest {
         }
         sessionA = sessions.getFirst();
         tokenA = sessionA; tokenB = sessions.get(1);
-        row("a1", userIds.getFirst(), 30, 0); row("a2", userIds.getFirst(), 60, 0);
-        row("deleted", userIds.getFirst(), 777, 1); row("b1", userIds.get(1), 999, 0);
+        row(timeIdBase + 1, userIds.getFirst(), 30, 0); row(timeIdBase + 2, userIds.getFirst(), 60, 0);
+        row(timeIdBase + 3, userIds.getFirst(), 777, 1); row(timeIdBase + 4, userIds.get(1), 999, 0);
         for (int index=0; index<4; index++) {
             long user=index==3 ? userIds.get(1) : userIds.getFirst();
             int deleted=index==2 ? 1 : 0;
@@ -105,7 +106,7 @@ class QueryHasuraEndToEndTest {
             db.update("INSERT INTO read_record(id,user_id,title,type,status,current_progress,total_progress,start_time,finish_time,create_time,is_deleted,remark) VALUES(?,?,?,1,?,20,100,'2026-09-10','2026-09-20','2026-09-01',?,?)",id,user,"book-"+index,status,deleted,"私有备注");
             db.update("INSERT INTO movie(id,user_id,title,type,status,current_progress,total_progress,rating,start_time,finish_time,create_time,is_deleted,remark) VALUES(?,?,?,1,?,1,2,5,'2026-09-10','2026-09-20','2026-09-01',?,?)",id,user,"movie-"+index,status,deleted,"私有短评");
             db.update("INSERT INTO b_video(id,user_id,title,url,duration_seconds,watched_duration_seconds,status,last_watched,create_time,is_deleted,notes) VALUES(?,?,?,'https://example.invalid/video',120,60,?,'2026-09-20','2026-09-01',?,?)",id,user,"video-"+index,status,deleted,"私有笔记");
-            db.update("INSERT INTO performance(id,user_id,create_user,performance_name,performance_type,performance_date,city,venue,ticket_price,duration_minutes,rating,is_deleted,order_number) VALUES(?,?,?,?,'concert','2026-09-15 19:30:00','city','venue',?,60,5,?,?)",id,user,userIds.get(1),"show-"+index,index==0 ? "19.99" : "20.02",deleted,"私有订单号");
+            db.update("INSERT INTO event_record(id,user_id,create_user,title,event_type,event_date,city,venue,ticket_price,duration_minutes,rating,is_deleted,order_number) VALUES(?,?,?,?,'concert','2026-09-15 19:30:00','city','venue',?,60,5,?,?)",id,user,userIds.get(1),"show-"+index,index==0 ? "19.99" : "20.02",deleted,"私有订单号");
         }
     }
 
@@ -116,9 +117,9 @@ class QueryHasuraEndToEndTest {
         sessions.add(tokenA); sessions.add(tokenB);
     }
 
-    private void row(String id, long user, int minutes, int deleted) {
+    private void row(long id, long user, int minutes, int deleted) {
         db.update("INSERT INTO time_record(id,user_id,category_id,date,start_minute,end_minute,duration_minutes,is_deleted,title) VALUES(?,?,?,'2026-09-15',0,?,?,?,?)",
-                prefix + id, user, 9007199254740993L, minutes, minutes, deleted, "不得暴露的标题");
+                id, user, 9007199254740993L, minutes, minutes, deleted, "不得暴露的标题");
     }
     private HttpResponse<String> call(String method, String url, String token, Object body) throws Exception {
         var request = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(20)).header("Content-Type", "application/json").header("Accept", "application/json, text/event-stream");
@@ -144,14 +145,14 @@ class QueryHasuraEndToEndTest {
         String where = "where:{date:{_gte:\"2026-09-01\",_lt:\"2026-10-01\"}}";
         String details = "query Q { timeRecords(" + where + ",orderBy:[{id:Asc}]) { id date categoryId durationMinutes } }";
         var a = result(tokenA, details).path("timeRecords");
-        assertEquals(2, a.size()); assertEquals(prefix + "a1", a.get(0).path("id").asText());
+        assertEquals(2, a.size()); assertEquals(String.valueOf(timeIdBase + 1), a.get(0).path("id").asText());
         assertEquals("9007199254740993", a.get(0).path("categoryId").textValue());
         String categoryWhere = "where:{date:{_gte:\"2026-09-01\",_lt:\"2026-10-01\"},categoryId:{_eq:\"9007199254740993\"}}";
         assertEquals(2, result(tokenA, "query Q { timeRecords(" + categoryWhere + ") { id } }").path("timeRecords").size());
         var nextPage = result(tokenA, "query Q { rows:timeRecords(" + where + ",limit:1,offset:1){ recordId:id } }").path("rows");
-        assertEquals(1, nextPage.size()); assertEquals(prefix + "a2", nextPage.get(0).path("recordId").asText());
+        assertEquals(1, nextPage.size()); assertEquals(String.valueOf(timeIdBase + 2), nextPage.get(0).path("recordId").asText());
         var b = result(tokenB, details).path("timeRecords");
-        assertEquals(1, b.size()); assertEquals(prefix + "b1", b.get(0).path("id").asText());
+        assertEquals(1, b.size()); assertEquals(String.valueOf(timeIdBase + 4), b.get(0).path("id").asText());
         var stats = result(tokenA, "query Q { timeRecordStats(" + where + ") { count durationMinutes { sum } } }").path("timeRecordStats");
         assertEquals("2", stats.path("count").textValue()); assertEquals("90", stats.path("durationMinutes").path("sum").textValue());
         var empty = result(tokenA, "query Q { timeRecordStats(where:{date:{_gte:\"2026-08-01\",_lt:\"2026-09-01\"}}){count durationMinutes{sum}}}").path("timeRecordStats");
@@ -176,7 +177,7 @@ class QueryHasuraEndToEndTest {
         var args = Map.<String, Object>of("query", details);
         assertTrue(tool(tokenA, "aio_query_validate", args).at("/data/allowed").asBoolean());
         assertEquals(2, tool(tokenA, "aio_query_execute", args).at("/data/result/timeRecords").size());
-        assertEquals(prefix + "b1", tool(tokenB, "aio_query_execute", args).at("/data/result/timeRecords/0/id").asText());
+        assertEquals(String.valueOf(timeIdBase + 4), tool(tokenB, "aio_query_execute", args).at("/data/result/timeRecords/0/id").asText());
         var statsArgs = new java.util.HashMap<>(args); statsArgs.put("query", "query Q { timeRecordStats(" + where + ") { count durationMinutes { sum } } }");
         assertEquals("90", tool(tokenA, "aio_query_execute", statsArgs).at("/data/result/timeRecordStats/durationMinutes/sum").textValue());
         var forged = new java.util.HashMap<>(args); forged.put("userId", userIds.get(1).toString());
@@ -185,7 +186,7 @@ class QueryHasuraEndToEndTest {
         assertEquals(403, mcpWithHeader(tokenA, "X-Hasura-User-Id", userIds.get(1).toString()).statusCode());
         assertEquals(403, mcpWithHeader(tokenA, "Origin", "https://untrusted.example").statusCode());
         var apiKey = apiKeys.generateApiKey(userIds.get(1), "query-mcp-test", 1); apiKeyIds.add(apiKey.getId());
-        assertEquals(prefix + "b1", tool(apiKey.getApiKey(), "aio_query_execute", args).at("/data/result/timeRecords/0/id").asText());
+        assertEquals(String.valueOf(timeIdBase + 4), tool(apiKey.getApiKey(), "aio_query_execute", args).at("/data/result/timeRecords/0/id").asText());
         apiKeys.removeById(apiKey.getId());
         assertEquals(401, mcp(apiKey.getApiKey(), "tools/list", Map.of()).statusCode());
         StpUtil.logoutByTokenValue(sessionA);
@@ -199,7 +200,7 @@ class QueryHasuraEndToEndTest {
         "read_record,reading,read-record-v3,readRecords,readRecordStats,createdAt,,",
         "movie,movie,movie-v3,movies,movieStats,createdAt,,",
         "b_video,video,b-video-v3,bVideos,bVideoStats,createdAt,watchedDurationSeconds,120",
-        "performance,performance,performance-v3,performances,performanceStats,performanceDate,ticketPrice,40.01"})
+        "event_record,event,event-record-v3,eventRecords,eventRecordStats,eventDate,ticketPrice,40.01"})
     void 新数据集真实REST及MCP明细统计分页和隔离(String dataset,String domain,String version,String root,String statsRoot,String date,String numeric,String expectedSum) throws Exception {
         var catalog=call("GET",gatewayUrl+"/api/v1/datasets/"+dataset,tokenA,null);
         assertEquals(200,catalog.statusCode(),catalog.body());
@@ -210,7 +211,7 @@ class QueryHasuraEndToEndTest {
             case "read_record" -> "id title type author url status totalProgress currentProgress startTime finishTime createdAt";
             case "movie" -> "id title type director url status totalProgress currentProgress startTime finishTime rating createdAt";
             case "b_video" -> "id title url bvid ownerName durationSeconds watchedDurationSeconds episodes currentEpisode status lastWatched createdAt";
-            case "performance" -> "id performanceName performer performanceType performanceDate city venue ticketPrice durationMinutes rating";
+            case "event_record" -> "id title participants eventType eventDate city venue ticketPrice durationMinutes rating";
             default -> throw new IllegalArgumentException(dataset);
         };
         String details="query Q { "+root+"("+where+",orderBy:[{id:Asc}]){"+fields+"} }";
@@ -220,7 +221,7 @@ class QueryHasuraEndToEndTest {
         var a=json.readTree(response.body()).at("/data/result/"+root);assertEquals(2,a.size(),response.body());
         assertEquals(Long.toString(userIds.getFirst()+100),a.get(0).path("id").textValue());
         if(numeric==null) assertEquals("not_started",a.get(0).path("status").asText());
-        if(dataset.equals("performance")) assertEquals("19.99",a.get(0).path("ticketPrice").textValue());
+        if(dataset.equals("event_record")) assertEquals("19.99",a.get(0).path("ticketPrice").textValue());
         assertEquals(1,tool(tokenB,"aio_query_execute",args).at("/data/result/"+root).size());
         assertTrue(tool(tokenA,"aio_query_validate",args).at("/data/allowed").asBoolean());
         assertEquals(2,tool(tokenA,"aio_query_execute",args).at("/data/result/"+root).size());
@@ -266,6 +267,6 @@ class QueryHasuraEndToEndTest {
     @AfterAll void cleanup() throws Exception {
         if (gateway != null) { gateway.destroy(); if (!gateway.waitFor(10, TimeUnit.SECONDS)) gateway.destroyForcibly(); }
         apiKeyIds.forEach(apiKeys::removeById); sessions.forEach(StpUtil::logoutByTokenValue);
-        for (Long id : userIds) { for(String table:List.of("time_record","exercise_record","read_record","movie","b_video","performance")) db.update("DELETE FROM "+table+" WHERE user_id=?",id); db.update("DELETE FROM sys_user WHERE id=?", id); }
+        for (Long id : userIds) { for(String table:List.of("time_record","exercise_record","read_record","movie","b_video","event_record")) db.update("DELETE FROM "+table+" WHERE user_id=?",id); db.update("DELETE FROM sys_user WHERE id=?", id); }
     }
 }

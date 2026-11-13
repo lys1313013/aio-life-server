@@ -11,6 +11,10 @@ import top.aiolife.record.pojo.entity.AnniversaryRecordEntity;
  * @date 2026/04/18
  */
 public interface IAnniversaryRecordService extends IService<AnniversaryRecordEntity> {
+    List<AnniversaryRecordEntity> listForUser(long userId, Integer isPinned);
+
+    AnniversaryRecordEntity getOwned(long userId, long id);
+
     AnniversaryRecordEntity createForUser(long userId, AnniversaryRecordEntity entity);
 
     AnniversaryRecordEntity updateForUser(long userId, AnniversaryRecordEntity entity);

@@ -1,5 +1,7 @@
 package top.aiolife.wardrobe.service;
 
+import top.aiolife.record.service.RecordImageService;
+
 import static top.aiolife.support.MockMatchers.anyWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
@@ -50,7 +52,7 @@ class WardrobeItemServiceTest {
     void setUp() {
         categories = mock(WardrobeCategoryMapper.class);
         items = mock(WardrobeItemMapper.class);
-        service = new WardrobeItemServiceImpl(categories);
+        service = new WardrobeItemServiceImpl(categories, mock(RecordImageService.class));
         ReflectionTestUtils.setField(service, "baseMapper", items);
     }
 

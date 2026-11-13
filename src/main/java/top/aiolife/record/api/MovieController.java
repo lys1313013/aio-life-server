@@ -5,8 +5,10 @@ import io.swagger.v3.oas.annotations.Operation;
 
 import java.util.List;
 import cn.dev33.satoken.annotation.SaCheckLogin;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
@@ -17,6 +19,7 @@ import top.aiolife.record.pojo.req.MovieCreateReq;
 import top.aiolife.record.pojo.req.MovieReq;
 import top.aiolife.record.pojo.vo.DoubanMovieImportPreviewVO;
 import top.aiolife.record.pojo.vo.DoubanMovieImportResultVO;
+import top.aiolife.record.pojo.vo.MovieParseVO;
 import top.aiolife.record.pojo.vo.MovieVO;
 import top.aiolife.record.service.IDoubanMovieImportService;
 import top.aiolife.record.service.IMovieService;
@@ -47,7 +50,7 @@ public class MovieController {
 
     @PostMapping
     @Operation(summary = "新增观影记录")
-    public ApiResponse<Void> save(@RequestBody MovieCreateReq request) {
+    public ApiResponse<Void> save(@Valid @RequestBody MovieCreateReq request) {
         MovieReq req = RecordApiConvertor.INSTANCE.fromMovieCreateReq(request);
         movieService.saveRecord(req);
         return ApiResponse.success();
@@ -55,41 +58,41 @@ public class MovieController {
 
     @PutMapping
     @Operation(summary = "更新观影记录")
-    public ApiResponse<Void> update(@RequestBody MovieReq req) {
+    public ApiResponse<Void> update(@Valid @RequestBody MovieReq req) {
         movieService.updateRecord(req);
         return ApiResponse.success();
     }
 
     @Operation(summary = "删除观影记录")
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable Long id) {
-        movieService.deleteRecord(id);
+    public ApiResponse<Void> delete(@PathVariable String id) {
+        movieService.deleteRecord(IdCodec.decode(id));
         return ApiResponse.success();
     }
 
     @Operation(summary = "查询观影记录详情")
     @GetMapping("/{id}")
-    public ApiResponse<MovieVO> getById(@PathVariable Long id) {
-        return ApiResponse.success(movieService.getVOById(id));
+    public ApiResponse<MovieVO> getById(@PathVariable String id) {
+        return ApiResponse.success(movieService.getVOById(IdCodec.decode(id)));
     }
 
     @Operation(summary = "解析豆瓣影视信息")
     @GetMapping("/parse-douban")
-    public ApiResponse<MovieReq> parseDouban(@RequestParam String url) {
-        return ApiResponse.success(movieService.parseDouban(url));
+    public ApiResponse<MovieParseVO> parseDouban(@RequestParam String url) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toMovieParseVO(movieService.parseDouban(url)));
     }
 
     @Operation(summary = "预览豆瓣观影记录导入")
     @PostMapping("/import/douban/preview")
     public ApiResponse<DoubanMovieImportPreviewVO> previewDoubanImport(
-            @RequestBody DoubanMovieImportReq request) {
+            @Valid @RequestBody DoubanMovieImportReq request) {
         return ApiResponse.success(doubanMovieImportService.preview(request));
     }
 
     @Operation(summary = "导入豆瓣观影记录")
     @PostMapping("/import/douban")
     public ApiResponse<DoubanMovieImportResultVO> importDouban(
-            @RequestBody DoubanMovieImportReq request) {
+            @Valid @RequestBody DoubanMovieImportReq request) {
         return ApiResponse.success(doubanMovieImportService.importRecords(request));
     }
 

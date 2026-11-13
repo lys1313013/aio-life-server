@@ -36,7 +36,7 @@ class BVideoControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new BVideoEntity());
 
-        var response = bVideoController.query(ApiRequestFixtures.query(query, BVideoQuery.class));
+        var response = bVideoController.query(String.valueOf(TEST_USER_ID), ApiRequestFixtures.query(query, BVideoQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);
@@ -44,13 +44,13 @@ class BVideoControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void testGetStatusCount_获取状态统计() {
-        var response = bVideoController.getStatusCount();
+        var response = bVideoController.getStatusCount(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
     }
 
     @Test
     void testStatistics_获取统计信息() {
-        var response = bVideoController.statistics();
+        var response = bVideoController.statistics(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
         assertNotNull(response.getData());
     }

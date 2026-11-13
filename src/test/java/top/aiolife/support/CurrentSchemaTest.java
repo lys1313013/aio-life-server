@@ -65,7 +65,7 @@ class CurrentSchemaTest {
         assertTrue(video.contains("\"watched_duration_seconds\""));
         assertFalse(video.contains("\"watched_duration\""));
 
-        assertTrue(CurrentSchema.table("performance").contains("\"duration_minutes\""));
+        assertTrue(CurrentSchema.table("event_record").contains("\"duration_minutes\""));
     }
 
     @Test

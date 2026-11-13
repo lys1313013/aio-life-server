@@ -66,13 +66,13 @@ class TimeRecordControllerIntegrationTest extends BaseIntegrationTest {
         TimeRecordReq foreignReq = timeRecordReq();
         foreignReq.setRelateType(RelateTypeEnum.READ.getValue());
         foreignReq.setRelateId(other.getId());
-        timeRecordService.saveTimeRecord(foreignReq);
+        timeRecordService.saveTimeRecord(TEST_USER_ID,foreignReq);
         assertEquals(ProgressStatusEnum.NOT_STARTED, readRecordService.getById(other.getId()).getStatus());
 
         TimeRecordReq ownReq = timeRecordReq();
         ownReq.setRelateType(RelateTypeEnum.READ.getValue());
         ownReq.setRelateId(own.getId());
-        timeRecordService.saveTimeRecord(ownReq);
+        timeRecordService.saveTimeRecord(TEST_USER_ID,ownReq);
         assertEquals(ProgressStatusEnum.IN_PROGRESS, readRecordService.getById(own.getId()).getStatus());
     }
 
@@ -95,14 +95,14 @@ class TimeRecordControllerIntegrationTest extends BaseIntegrationTest {
         movieService.save(own);
 
         TimeRecordReq req = timeRecordReq();
-        req.setId(timeRecordService.saveTimeRecord(req));
+        req.setId(timeRecordService.saveTimeRecord(TEST_USER_ID,req));
         req.setRelateType(RelateTypeEnum.MOVIE.getValue());
         req.setRelateId(other.getId());
-        timeRecordService.updateTimeRecord(req);
+        timeRecordService.updateTimeRecord(TEST_USER_ID,req);
         assertEquals(ProgressStatusEnum.NOT_STARTED, movieService.getById(other.getId()).getStatus());
 
         req.setRelateId(own.getId());
-        timeRecordService.updateTimeRecord(req);
+        timeRecordService.updateTimeRecord(TEST_USER_ID,req);
         assertEquals(ProgressStatusEnum.IN_PROGRESS, movieService.getById(own.getId()).getStatus());
     }
 
@@ -117,22 +117,22 @@ class TimeRecordControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void testQuery_查询时间记录() {
-        String id = "test_time_" + System.currentTimeMillis();
+        long id = Math.abs(System.nanoTime());
         timeRecordMapper.insert(createTimeRecord(id, LocalDate.now()));
 
         var query = new TimeRecordQuery();
         query.setDate(LocalDate.now());
-        var response = timeRecordController.query(query);
+        var response = timeRecordController.query(String.valueOf(TEST_USER_ID), query);
         assertSuccess(response);
         var records = response.getData();
         assertNotNull(records);
-        boolean found = records.stream().anyMatch(r -> id.equals(r.getId()));
+        boolean found = records.stream().anyMatch(r -> String.valueOf(id).equals(r.getId()));
         assertTrue(found, "应该包含刚才插入的记录");
     }
 
     @Test
     void testQueryByDateRange_按日期范围查询() {
-        String id = "test_timerange_" + System.currentTimeMillis();
+        long id = Math.abs(System.nanoTime());
         timeRecordMapper.insert(createTimeRecord(id, LocalDate.now()));
 
         CommonQuery<TimeWeekQuery> query = new CommonQuery<>();
@@ -143,7 +143,7 @@ class TimeRecordControllerIntegrationTest extends BaseIntegrationTest {
         condition.setEndDate(LocalDate.now().plusDays(1));
         query.setCondition(condition);
 
-        var response = timeRecordController.queryByDateRange(ApiRequestFixtures.query(query, TimeWeekQuery.class));
+        var response = timeRecordController.queryByDateRange(String.valueOf(TEST_USER_ID), ApiRequestFixtures.query(query, TimeWeekQuery.class));
         assertSuccess(response);
         var list = response.getData();
         assertNotNull(list);
@@ -151,16 +151,16 @@ class TimeRecordControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void testGetById_根据ID查询() {
-        String id = "test_getbyid_" + System.currentTimeMillis();
+        long id = Math.abs(System.nanoTime());
         timeRecordMapper.insert(createTimeRecord(id, LocalDate.now()));
 
-        var response = timeRecordController.getById(id);
+        var response = timeRecordController.getById(String.valueOf(TEST_USER_ID), String.valueOf(id));
         assertSuccess(response);
         assertNotNull(response.getData());
-        assertEquals(id, response.getData().getId());
+        assertEquals(String.valueOf(id), response.getData().getId());
     }
 
-    private TimeRecordEntity createTimeRecord(String id, LocalDate date) {
+    private TimeRecordEntity createTimeRecord(long id, LocalDate date) {
         TimeRecordEntity entity = new TimeRecordEntity();
         entity.setId(id);
         entity.setUserId(TEST_USER_ID);

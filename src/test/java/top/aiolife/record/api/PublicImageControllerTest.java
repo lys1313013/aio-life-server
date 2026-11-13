@@ -57,7 +57,8 @@ class PublicImageControllerTest {
         var registry = new TestRegistry();
         new SaTokenConfig(keys, locks, activity, mock(AccountStatusGuard.class)).addInterceptors(registry);
         var storage = new MinioConfig(); storage.setBucketName("aiolife");
-        mvc = MockMvcBuilders.standaloneSetup(new PublicImageController(mapper, minio, storage))
+        mvc = MockMvcBuilders.standaloneSetup(new PublicImageController(
+                        new top.aiolife.record.service.PublicImageService(mapper, minio, storage)))
                 .addInterceptors(registry.interceptors()).build();
     }
     private static class TestRegistry extends InterceptorRegistry {

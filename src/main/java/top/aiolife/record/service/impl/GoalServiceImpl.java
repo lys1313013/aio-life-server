@@ -9,8 +9,11 @@ import java.util.List;
 import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import top.aiolife.core.mybatis.IlikeQuery;
+import top.aiolife.core.query.QueryOrder;
 import top.aiolife.record.mapper.IGoalMapper;
 import top.aiolife.record.pojo.entity.GoalEntity;
+import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.service.IGoalService;
 import top.aiolife.record.service.GoalProgressEvaluator;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,35 @@ import lombok.RequiredArgsConstructor;
 public class GoalServiceImpl extends ServiceImpl<IGoalMapper, GoalEntity> implements IGoalService {
 
     private final GoalProgressEvaluator progress;
+
+    @Override
+    public List<GoalEntity> listForUser(long userId, Integer type, String status, String keyword, Integer isPinned) {
+        LambdaQueryWrapper<GoalEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(GoalEntity::getUserId, userId);
+        queryWrapper.eq(GoalEntity::getIsDeleted, 0);
+        if (type != null) {
+            queryWrapper.eq(GoalEntity::getType, type);
+        }
+        if (status != null && !status.isBlank()) {
+            queryWrapper.eq(GoalEntity::getStatus, ProgressStatusEnum.fromCode(status));
+        }
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            queryWrapper.and(wrapper -> IlikeQuery.anyOf(wrapper, keyword,
+                    GoalEntity::getTitle, GoalEntity::getDescription, GoalEntity::getTags));
+        }
+        if (isPinned != null) {
+            if (isPinned != 0 && isPinned != 1) {
+                throw new IllegalArgumentException("固定状态仅支持 0 或 1");
+            }
+            queryWrapper.eq(GoalEntity::getIsPinned, isPinned);
+        }
+        if (Integer.valueOf(1).equals(isPinned)) {
+            queryWrapper.orderByAsc(GoalEntity::getPinnedSortOrder).orderByDesc(GoalEntity::getId);
+        } else {
+            QueryOrder.descNullsLast(queryWrapper, GoalEntity::getCreateTime).orderByDesc(GoalEntity::getId);
+        }
+        return list(queryWrapper);
+    }
 
     @Override
     @Transactional

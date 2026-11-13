@@ -1,23 +1,30 @@
 package top.aiolife.sso.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-import cn.dev33.satoken.context.SaHolder;
-import cn.dev33.satoken.stp.StpUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentToken;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
 import top.aiolife.sso.qr.QrLoginService;
+import top.aiolife.sso.service.AuthService;
 
 import static top.aiolife.sso.qr.QrLoginModels.*;
 
-/** 浏览器入口使用独立票据鉴权；扫码和确认只接受真实 Bearer 登录会话。 */
+/**
+ * 扫码登录控制器。浏览器入口使用独立票据鉴权；扫码和确认只接受真实 Bearer 登录会话。
+ *
+ * @author Lys
+ * @date 2026/11/13
+ */
+@Tag(name = "扫码登录")
 @RestController
 @RequestMapping("/auth/qr-login")
 @RequiredArgsConstructor
@@ -43,16 +50,18 @@ public class QrLoginController {
 
     @Operation(summary = "扫描登录二维码")
     @PostMapping("/scan")
-    public ApiResponse<Scanned> scan(@Valid @RequestBody ScanRequest body, HttpServletRequest request) {
-        long id = requireSession(request);
-        return ApiResponse.success(service.scan(body, id, StpUtil.getTokenValue()));
+    public ApiResponse<Scanned> scan(@CurrentUserId String userId, @CurrentToken String token,
+                                     @Valid @RequestBody ScanRequest body, HttpServletRequest request) {
+        AuthService.requireScanSession(request.getHeader("Authorization"), token);
+        return ApiResponse.success(service.scan(body, IdCodec.decode(userId), token));
     }
 
     @Operation(summary = "确认或拒绝扫码登录")
     @PostMapping("/decision")
-    public ApiResponse<Status> decision(@Valid @RequestBody DecisionRequest body, HttpServletRequest request) {
-        long id = requireSession(request);
-        return ApiResponse.success(service.decide(body, id, StpUtil.getTokenValue()));
+    public ApiResponse<Status> decision(@CurrentUserId String userId, @CurrentToken String token,
+                                        @Valid @RequestBody DecisionRequest body, HttpServletRequest request) {
+        AuthService.requireScanSession(request.getHeader("Authorization"), token);
+        return ApiResponse.success(service.decide(body, IdCodec.decode(userId), token));
     }
 
     @Operation(summary = "兑换扫码登录凭据")
@@ -66,15 +75,5 @@ public class QrLoginController {
     public ApiResponse<Void> cancel(@Valid @RequestBody BrowserRequest body) {
         service.cancel(body);
         return ApiResponse.success();
-    }
-
-    private long requireSession(HttpServletRequest request) {
-        String authorization = request.getHeader("Authorization");
-        if (Boolean.TRUE.equals(SaHolder.getStorage().get("IS_API_KEY_AUTH")) || StpUtil.isSwitch()
-                || authorization == null || !authorization.startsWith("Bearer ")
-                || !authorization.substring(7).equals(StpUtil.getTokenValue())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "请使用已登录的 App 或小程序扫码");
-        }
-        return StpUtil.getLoginIdAsLong();
     }
 }

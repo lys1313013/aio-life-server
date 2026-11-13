@@ -3,7 +3,6 @@ package top.aiolife.record.api;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 
-import cn.dev33.satoken.stp.StpUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -16,7 +15,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import top.aiolife.record.client.FootprintMapClient;
@@ -49,21 +50,24 @@ public class FootprintMapController {
 
     @Operation(summary = "搜索足迹地图地点")
     @GetMapping("/search")
-    public ApiResponse<List<FootprintLocationVO>> search(@Parameter(description = "地点关键词") @RequestParam @NotBlank @Size(max = 100) String keyword,
+    public ApiResponse<List<FootprintLocationVO>> search(@CurrentUserId String userId,
+                                                       @Parameter(description = "地点关键词") @RequestParam @NotBlank @Size(max = 100) String keyword,
                                                        @Parameter(description = "搜索地区") @RequestParam(defaultValue = "全国") @Size(max = 100) String region) {
-        return ApiResponse.success(client.search(StpUtil.getLoginIdAsLong(), keyword, region));
+        return ApiResponse.success(client.search(IdCodec.decode(userId), keyword, region));
     }
 
     @Operation(summary = "将地址转换为地图坐标")
     @GetMapping("/geocode")
-    public ApiResponse<FootprintLocationVO> geocode(@Parameter(description = "待定位地址") @RequestParam @NotBlank @Size(max = 128) String address) {
-        return ApiResponse.success(client.geocode(StpUtil.getLoginIdAsLong(), address));
+    public ApiResponse<FootprintLocationVO> geocode(@CurrentUserId String userId,
+                                                    @Parameter(description = "待定位地址") @RequestParam @NotBlank @Size(max = 128) String address) {
+        return ApiResponse.success(client.geocode(IdCodec.decode(userId), address));
     }
 
     @Operation(summary = "将地图坐标转换为地址")
     @GetMapping("/reverse")
-    public ApiResponse<FootprintLocationVO> reverse(@Parameter(description = "GCJ02 经度") @RequestParam @DecimalMin("-180") @DecimalMax("180") double longitude,
+    public ApiResponse<FootprintLocationVO> reverse(@CurrentUserId String userId,
+                                                  @Parameter(description = "GCJ02 经度") @RequestParam @DecimalMin("-180") @DecimalMax("180") double longitude,
                                                   @Parameter(description = "GCJ02 纬度") @RequestParam @DecimalMin("-90") @DecimalMax("90") double latitude) {
-        return ApiResponse.success(client.reverse(StpUtil.getLoginIdAsLong(), longitude, latitude));
+        return ApiResponse.success(client.reverse(IdCodec.decode(userId), longitude, latitude));
     }
 }

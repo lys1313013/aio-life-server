@@ -1,6 +1,7 @@
 package top.aiolife.system.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.constraints.Pattern;
 import java.util.List;
@@ -16,6 +17,7 @@ import top.aiolife.system.pojo.vo.SystemRegionVO;
 import top.aiolife.system.service.SystemRegionService;
 
 /** 登录后读取公共地区目录；不调用地图供应商。 */
+@Tag(name = "行政区划")
 @Validated
 @RestController
 @RequestMapping("/system/regions")

@@ -1,34 +1,44 @@
 package top.aiolife.record.mcp;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
-import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.record.api.TaskDetailController;
+import org.mockito.MockedStatic;
 import top.aiolife.record.mcp.req.TaskDetailUpdateMcpReq;
-import top.aiolife.record.pojo.req.TaskDetailUpdateReq;
+import top.aiolife.record.pojo.entity.TaskDetailEntity;
+import top.aiolife.record.service.ITaskDetail;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 class TaskDetailUpdateMcpToolsTest {
 
-    private TaskDetailController controller;
+    private ITaskDetail taskDetailService;
     private RecordMcpTools tools;
+    private MockedStatic<cn.dev33.satoken.stp.StpUtil> login;
 
     @BeforeEach
     void setUp() {
-        controller = mock(TaskDetailController.class);
-        tools = new RecordMcpTools(null, null, null, null, null, controller, null);
+        taskDetailService = mock(ITaskDetail.class);
+        tools = new RecordMcpTools(null, null, null, null, taskDetailService);
+        login = mockStatic(cn.dev33.satoken.stp.StpUtil.class);
+        login.when(cn.dev33.satoken.stp.StpUtil::getLoginIdAsLong).thenReturn(1L);
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (login != null) login.close();
     }
 
     @Test
     void testUpdate_组合更新保留大整数ID且零值不丢失() {
-        when(controller.update(any())).thenReturn(ApiResponse.success(true));
+        when(taskDetailService.updateForUser(anyLong(), any())).thenReturn(true);
         TaskDetailUpdateMcpReq req = request();
         req.setPriority(1);
         req.setIsStarred(0);
@@ -36,9 +46,9 @@ class TaskDetailUpdateMcpToolsTest {
 
         assertTrue(tools.task_detail_update(req));
 
-        ArgumentCaptor<TaskDetailUpdateReq> captured = ArgumentCaptor.forClass(TaskDetailUpdateReq.class);
-        verify(controller).update(captured.capture());
-        TaskDetailUpdateReq actual = captured.getValue();
+        ArgumentCaptor<TaskDetailEntity> captured = ArgumentCaptor.forClass(TaskDetailEntity.class);
+        verify(taskDetailService).updateForUser(anyLong(), captured.capture());
+        TaskDetailEntity actual = captured.getValue();
         assertEquals(2112457917496135682L, actual.getId());
         assertEquals(1, actual.getPriority());
         assertEquals(0, actual.getIsStarred());
@@ -52,11 +62,11 @@ class TaskDetailUpdateMcpToolsTest {
 
     @Test
     void testUpdate_仅完成时不附带其他字段() {
-        when(controller.update(any())).thenReturn(ApiResponse.success(true));
+        when(taskDetailService.updateForUser(anyLong(), any())).thenReturn(true);
         assertTrue(tools.task_detail_update(request()));
 
-        ArgumentCaptor<TaskDetailUpdateReq> captured = ArgumentCaptor.forClass(TaskDetailUpdateReq.class);
-        verify(controller).update(captured.capture());
+        ArgumentCaptor<TaskDetailEntity> captured = ArgumentCaptor.forClass(TaskDetailEntity.class);
+        verify(taskDetailService).updateForUser(anyLong(), captured.capture());
         assertEquals(1, captured.getValue().getIsCompleted());
         assertNull(captured.getValue().getIsStarred());
         assertNull(captured.getValue().getPriority());
@@ -64,14 +74,14 @@ class TaskDetailUpdateMcpToolsTest {
 
     @Test
     void testUpdate_未修改任何记录时不能报告成功() {
-        when(controller.update(any())).thenReturn(ApiResponse.success(false));
+        when(taskDetailService.updateForUser(anyLong(), any())).thenReturn(false);
         assertTrue(assertThrows(IllegalArgumentException.class,
                 () -> tools.task_detail_update(request())).getMessage().contains("无权限"));
     }
 
     @Test
-    void testUpdate_业务失败即使data为true也报错() {
-        when(controller.update(any())).thenReturn(ApiResponse.error(113000, "更新失败", true));
+    void testUpdate_业务失败即使服务抛错也向上报告() {
+        when(taskDetailService.updateForUser(anyLong(), any())).thenThrow(new IllegalStateException("更新失败"));
         assertEquals("更新失败", assertThrows(IllegalStateException.class,
                 () -> tools.task_detail_update(request())).getMessage());
     }
@@ -83,7 +93,7 @@ class TaskDetailUpdateMcpToolsTest {
         TaskDetailUpdateMcpReq req = request();
         req.setId(id);
         assertThrows(IllegalArgumentException.class, () -> tools.task_detail_update(req));
-        verifyNoInteractions(controller);
+        verifyNoInteractions(taskDetailService);
     }
 
     @Test
@@ -92,7 +102,7 @@ class TaskDetailUpdateMcpToolsTest {
         TaskDetailUpdateMcpReq req = request();
         req.setIsCompleted(null);
         assertThrows(IllegalArgumentException.class, () -> tools.task_detail_update(req));
-        verifyNoInteractions(controller);
+        verifyNoInteractions(taskDetailService);
     }
 
     @ParameterizedTest
@@ -101,7 +111,7 @@ class TaskDetailUpdateMcpToolsTest {
         TaskDetailUpdateMcpReq req = request();
         req.setPriority(priority);
         assertThrows(IllegalArgumentException.class, () -> tools.task_detail_update(req));
-        verifyNoInteractions(controller);
+        verifyNoInteractions(taskDetailService);
     }
 
     @ParameterizedTest
@@ -113,7 +123,7 @@ class TaskDetailUpdateMcpToolsTest {
         req.setIsCompleted(1);
         req.setIsStarred(state);
         assertThrows(IllegalArgumentException.class, () -> tools.task_detail_update(req));
-        verifyNoInteractions(controller);
+        verifyNoInteractions(taskDetailService);
     }
 
     private TaskDetailUpdateMcpReq request() {

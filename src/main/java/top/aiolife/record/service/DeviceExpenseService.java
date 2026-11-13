@@ -14,12 +14,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.sso.service.SecondaryLockGuard;
+import top.aiolife.core.constant.ResponseCodeConst;
+import top.aiolife.core.exception.ApiException;
 import top.aiolife.core.exception.SecondaryLockRequiredException;
 import top.aiolife.record.mapper.DeviceExpenseMapper;
 import top.aiolife.record.mapper.IDeviceMapper;
 import top.aiolife.record.mapper.IExpenseMapper;
 import top.aiolife.record.pojo.entity.DeviceExpenseEntity;
 import top.aiolife.record.pojo.entity.DeviceEntity;
+import top.aiolife.record.enums.FileBizType;
 import top.aiolife.record.pojo.entity.ExpenseEntity;
 import top.aiolife.record.pojo.req.DeviceCreateReq;
 import top.aiolife.record.pojo.req.ExpenseCreateReq;
@@ -34,6 +37,7 @@ public class DeviceExpenseService {
     private final DeviceExpenseMapper links;
     private final IExpenseMapper expenses;
     private final IDeviceMapper devices;
+    private final RecordImageService images;
     private final SecondaryLockGuard locks;
     private final IExpenseService expenseService;
 
@@ -73,6 +77,30 @@ public class DeviceExpenseService {
         return true;
     }
 
+    /** 批量新增前按用户校验交易号唯一，再与设备关联统一提交。 */
+    @Transactional(rollbackFor = Exception.class)
+    public boolean createExpensesWithTransactionCheck(long userId, List<ExpenseCreateReq> requests) {
+        if (requests == null || requests.isEmpty()) return true;
+        List<String> transactionIds = requests.stream()
+                .map(ExpenseCreateReq::getTransactionId)
+                .filter(id -> id != null && !id.trim().isEmpty())
+                .distinct()
+                .toList();
+        if (!transactionIds.isEmpty()) {
+            List<ExpenseEntity> existing = expenses.selectList(new LambdaQueryWrapper<ExpenseEntity>()
+                    .eq(ExpenseEntity::getUserId, userId)
+                    .in(ExpenseEntity::getTransactionId, transactionIds));
+            if (!existing.isEmpty()) {
+                String duplicated = existing.stream()
+                        .map(ExpenseEntity::getTransactionId)
+                        .distinct()
+                        .collect(Collectors.joining(", "));
+                throw new ApiException(ResponseCodeConst.COMMON_FAIL, "交易号已存在: " + duplicated);
+            }
+        }
+        return createExpenses(userId, requests);
+    }
+
     public ExpenseDeviceContextVO context(long userId, long expenseId) {
         var expense = expenses.selectOne(new LambdaQueryWrapper<ExpenseEntity>()
                 .eq(ExpenseEntity::getUserId, userId).eq(ExpenseEntity::getId, expenseId));
@@ -89,6 +117,7 @@ public class DeviceExpenseService {
         DeviceVO device = found.isEmpty() ? null : RecordApiConvertor.INSTANCE.toDeviceVO(
                 devices.selectOne(new LambdaQueryWrapper<DeviceEntity>()
                         .eq(DeviceEntity::getId, found.getFirst().getDeviceId()).eq(DeviceEntity::getUserId, userId)));
+        if (device != null) device.setFileId(images.find(userId, FileBizType.DEVICE, device.getId()));
         return new ExpenseDeviceContextVO(device, defaults);
     }
 
@@ -111,6 +140,7 @@ public class DeviceExpenseService {
         var device = devices.lockOwned(userId, deviceId);
         if (device == null) throw missing("设备");
         saveLink(userId, expenseId, deviceId);
+        device.setFileId(images.find(userId, FileBizType.DEVICE, deviceId));
         return RecordApiConvertor.INSTANCE.toDeviceVO(device);
     }
 
@@ -133,6 +163,7 @@ public class DeviceExpenseService {
         device.setUserId(userId);
         device.fillCreateCommonField(userId);
         devices.insert(device);
+        device.setFileId(images.replace(userId, FileBizType.DEVICE, device.getId(), request.getFileId()));
         saveLink(userId, expenseId, device.getId());
         return RecordApiConvertor.INSTANCE.toDeviceVO(device);
     }

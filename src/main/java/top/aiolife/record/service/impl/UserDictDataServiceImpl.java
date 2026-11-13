@@ -1,10 +1,14 @@
 package top.aiolife.record.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import top.aiolife.core.mybatis.IlikeQuery;
+import top.aiolife.core.resq.PageResp;
+import top.aiolife.core.util.SysUtil;
 import top.aiolife.record.mapper.UserDictDataMapper;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.vo.UserDictDataSortVO;
@@ -94,6 +98,59 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
                 .thenComparing(UserDictDataEntity::getId, Comparator.nullsLast(Long::compareTo)));
 
         return result;
+    }
+
+    @Override
+    public PageResp<UserDictDataEntity> pageVisibleDictData(long userId, String dictType, String dictLabel,
+                                                            Integer isEnabled, int page, int pageSize) {
+        // 管控页需要看到所有记录（含已停用），方便用户改回启用或删除
+        List<UserDictDataEntity> dataList = listUserVisibleDictData(userId, dictType, true);
+
+        if (SysUtil.isNotEmpty(dictLabel) || isEnabled != null) {
+            dataList = dataList.stream().filter(item -> {
+                boolean match = true;
+                if (SysUtil.isNotEmpty(dictLabel)) {
+                    match = item.getDictLabel() != null && item.getDictLabel().contains(dictLabel);
+                }
+                if (match && isEnabled != null) {
+                    match = isEnabled.equals(item.getIsEnabled());
+                }
+                return match;
+            }).toList();
+        }
+
+        int total = dataList.size();
+        long offset = ((long) page - 1) * pageSize;
+        List<UserDictDataEntity> pageList = new ArrayList<>();
+        if (offset < total) {
+            int fromIndex = Math.toIntExact(offset);
+            int toIndex = (int) Math.min(offset + pageSize, total);
+            pageList = dataList.subList(fromIndex, toIndex);
+        }
+        return PageResp.of(pageList, (long) total);
+    }
+
+    @Override
+    public UserDictDataEntity getAccessibleById(long userId, long id) {
+        return this.getOne(new LambdaQueryWrapper<UserDictDataEntity>()
+                .eq(UserDictDataEntity::getId, id)
+                .in(UserDictDataEntity::getUserId, userId, 0L));
+    }
+
+    @Override
+    public PageResp<UserDictDataEntity> pageBaseDictData(String dictType, String dictLabel,
+                                                         Integer isEnabled, int page, int pageSize) {
+        LambdaQueryWrapper<UserDictDataEntity> wrapper = new LambdaQueryWrapper<>();
+        // 强制只能查询基础值 (userId = 0)
+        wrapper.eq(UserDictDataEntity::getUserId, 0L);
+        wrapper.eq(SysUtil.isNotEmpty(dictType), UserDictDataEntity::getDictType, dictType);
+        IlikeQuery.anyOf(wrapper, SysUtil.isNotEmpty(dictLabel), dictLabel, UserDictDataEntity::getDictLabel);
+        wrapper.eq(isEnabled != null, UserDictDataEntity::getIsEnabled, isEnabled);
+        wrapper.orderByAsc(UserDictDataEntity::getDictType,
+                UserDictDataEntity::getSortOrder,
+                UserDictDataEntity::getId);
+        var result = this.page(new Page<>(page, pageSize), wrapper);
+        return PageResp.of(result.getRecords(), result.getTotal());
     }
 
     /** NULL 表示继承基础值，未显式停用即视为启用。 */

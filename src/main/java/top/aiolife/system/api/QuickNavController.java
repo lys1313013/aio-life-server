@@ -2,19 +2,20 @@ package top.aiolife.system.api;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-import cn.dev33.satoken.stp.StpUtil;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.sso.mapper.UserMapper;
-import top.aiolife.sso.pojo.entity.UserEntity;
+import top.aiolife.core.web.CurrentUserId;
+import top.aiolife.sso.service.IUserService;
 import top.aiolife.system.pojo.req.QuickNavSaveReq;
 import top.aiolife.system.pojo.vo.QuickNavCandidateVO;
 import top.aiolife.system.pojo.vo.QuickNavItemVO;
@@ -29,6 +30,7 @@ import java.util.List;
  * @author Ethan
  * @date 2026/06/05
  */
+@Tag(name = "快捷导航")
 @RestController
 @RequestMapping("/quick-nav")
 @RequiredArgsConstructor
@@ -36,55 +38,33 @@ public class QuickNavController {
 
     private final IQuickNavService quickNavService;
 
-    private final UserMapper userMapper;
+    private final IUserService userService;
 
-    /**
-     * 获取当前用户可访问、且适合作为快捷入口的菜单叶子列表。
-     */
     @Operation(summary = "查询快捷导航可选菜单")
     @GetMapping("/candidates")
-    public ApiResponse<List<QuickNavCandidateVO>> candidates(@Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
-        return ApiResponse.success(quickNavService.listCandidates(currentRoles(), MenuClient.parse(client)));
+    public ApiResponse<List<QuickNavCandidateVO>> candidates(
+            @CurrentUserId String userId,
+            @Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
+        return ApiResponse.success(quickNavService.listCandidates(
+                userService.listRoles(IdCodec.decode(userId)), MenuClient.parse(client)));
     }
 
-    /**
-     * 获取当前用户已保存的快捷导航布局。
-     *
-     * <p>未保存任何项时返回空数组（前端展示空态）。</p>
-     */
     @Operation(summary = "查询我的快捷导航")
     @GetMapping("/my")
-    public ApiResponse<List<QuickNavItemVO>> my(@Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
-        long userId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(quickNavService.listMy(userId, currentRoles(), MenuClient.parse(client)));
+    public ApiResponse<List<QuickNavItemVO>> my(
+            @CurrentUserId String userId,
+            @Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
+        return ApiResponse.success(quickNavService.listMy(
+                IdCodec.decode(userId), userService.listRoles(IdCodec.decode(userId)), MenuClient.parse(client)));
     }
 
-    /**
-     * 覆盖保存当前端布局（可传空数组清空当前端；保留另一端独有项）。
-     */
     @Operation(summary = "保存当前端快捷导航")
     @PostMapping("/my")
-    public ApiResponse<List<QuickNavItemVO>> save(@RequestBody QuickNavSaveReq req, @Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
-        long userId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(quickNavService.saveMy(userId, currentRoles(), req, MenuClient.parse(client)));
-    }
-
-    public ApiResponse<List<QuickNavCandidateVO>> candidates() { return candidates("web"); }
-
-    public ApiResponse<List<QuickNavItemVO>> my() { return my("web"); }
-
-    public ApiResponse<List<QuickNavItemVO>> save(@RequestBody QuickNavSaveReq req) { return save(req, "web"); }
-
-    private List<String> currentRoles() {
-        long userId = StpUtil.getLoginIdAsLong();
-        UserEntity user = userMapper.selectById(userId);
-        String role = user == null ? null : user.getRole();
-        if (!StringUtils.hasText(role)) {
-            return List.of("user");
-        }
-        return List.of(role.split(",")).stream()
-                .map(String::trim)
-                .filter(StringUtils::hasText)
-                .toList();
+    public ApiResponse<List<QuickNavItemVO>> save(
+            @CurrentUserId String userId,
+            @Valid @RequestBody QuickNavSaveReq req,
+            @Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
+        return ApiResponse.success(quickNavService.saveMy(
+                IdCodec.decode(userId), userService.listRoles(IdCodec.decode(userId)), req, MenuClient.parse(client)));
     }
 }

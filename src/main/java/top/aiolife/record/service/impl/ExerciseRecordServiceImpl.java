@@ -1,18 +1,28 @@
 package top.aiolife.record.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import top.aiolife.core.mybatis.IlikeQuery;
+import top.aiolife.core.resq.PageResp;
+import top.aiolife.core.util.SysUtil;
 import top.aiolife.record.enums.DictTypeEnum;
 import top.aiolife.record.mapper.IExerciseRecordMapper;
 import top.aiolife.record.pojo.dto.ExerciseStatisticsDTO;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
+import top.aiolife.record.pojo.query.ExerciseRecordQuery;
+import top.aiolife.record.pojo.query.ExerciseStatisticsQuery;
 import top.aiolife.record.pojo.vo.ExerciseDashboardDayVO;
 import top.aiolife.record.pojo.vo.ExerciseDashboardItemVO;
 import top.aiolife.record.pojo.vo.ExerciseDashboardSummaryVO;
 import top.aiolife.record.pojo.vo.ExerciseDashboardTrendPointVO;
+import top.aiolife.record.pojo.vo.ExerciseStatisticsPointVO;
 import top.aiolife.record.service.IExerciseRecordService;
 import top.aiolife.record.service.UserDictDataService;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -24,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 /**
  * 运动记录Service实现类
@@ -31,6 +42,7 @@ import java.util.TreeMap;
  * @author Lys
  * @date 2025-11-29 18:40
  */
+@Slf4j
 @Service
 public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper, ExerciseRecordEntity> implements IExerciseRecordService {
 
@@ -163,6 +175,124 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
         result.setHasMore(hasMore);
         result.setLastDate(hasMore ? dates.get(dates.size() - 1).minusDays(1) : null);
         return result;
+    }
+
+    @Override
+    public ExerciseDashboardSummaryVO dashboardSummary(long userId, String lastDate, Integer limit) {
+        LocalDate cursor = null;
+        if (SysUtil.isNotEmpty(lastDate)) {
+            try {
+                cursor = LocalDate.parse(lastDate);
+            } catch (Exception exception) {
+                log.warn("解析 lastDate 失败，使用默认值: {}", lastDate, exception);
+            }
+        }
+        int safeLimit = (limit == null || limit <= 0 || limit > 30) ? 7 : limit;
+        return getDashboardSummary(userId, cursor, safeLimit);
+    }
+
+    @Override
+    public PageResp<ExerciseRecordEntity> pageForUser(long userId, ExerciseRecordQuery filters,
+                                                      int page, int pageSize) {
+        LambdaQueryWrapper<ExerciseRecordEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ExerciseRecordEntity::getUserId, userId);
+        if (filters != null) {
+            wrapper.eq(filters.getExerciseTypeId() != null, ExerciseRecordEntity::getExerciseTypeId,
+                    filters.getExerciseTypeId());
+            wrapper.ge(filters.getStartDate() != null, ExerciseRecordEntity::getExerciseDate,
+                    filters.getStartDate());
+            wrapper.le(filters.getEndDate() != null, ExerciseRecordEntity::getExerciseDate, filters.getEndDate());
+            IlikeQuery.anyOf(wrapper, SysUtil.isNotEmpty(filters.getDescription()), filters.getDescription(),
+                    ExerciseRecordEntity::getDescription);
+        }
+        wrapper.orderByDesc(ExerciseRecordEntity::getExerciseDate, ExerciseRecordEntity::getId);
+        Page<ExerciseRecordEntity> result = baseMapper.selectPage(new Page<>(page, pageSize), wrapper);
+        return PageResp.of(result.getRecords(), result.getTotal());
+    }
+
+    @Override
+    @Transactional
+    public boolean createForUser(long userId, ExerciseRecordEntity entity) {
+        entity.setId(null);
+        entity.setUserId(userId);
+        entity.fillCreateCommonField(userId);
+        return baseMapper.insert(entity) > 0;
+    }
+
+    @Override
+    @Transactional
+    public boolean updateForUser(long userId, long id, ExerciseRecordEntity entity) {
+        entity.setId(id);
+        entity.setUserId(null);
+        entity.fillUpdateCommonField(userId);
+        LambdaQueryWrapper<ExerciseRecordEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ExerciseRecordEntity::getId, id);
+        wrapper.eq(ExerciseRecordEntity::getUserId, userId);
+        return baseMapper.update(entity, wrapper) > 0;
+    }
+
+    @Override
+    @Transactional
+    public void deleteForUser(long userId, List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        baseMapper.delete(new LambdaQueryWrapper<ExerciseRecordEntity>()
+                .eq(ExerciseRecordEntity::getUserId, userId)
+                .in(ExerciseRecordEntity::getId, ids));
+    }
+
+    @Override
+    public ExerciseRecordEntity getOwnedOrNull(long userId, long id) {
+        return baseMapper.selectOne(new LambdaQueryWrapper<ExerciseRecordEntity>()
+                .eq(ExerciseRecordEntity::getUserId, userId)
+                .eq(ExerciseRecordEntity::getId, id));
+    }
+
+    @Override
+    public List<ExerciseStatisticsPointVO> statisticsSummary(long userId, ExerciseStatisticsQuery filters) {
+        return baseMapper.selectStatisticsSummary(userId,
+                filters == null ? new ExerciseStatisticsQuery() : filters);
+    }
+
+    @Override
+    public List<ExerciseRecordEntity> statisticsList(long userId, ExerciseStatisticsQuery filters) {
+        return baseMapper.selectList(statisticsWrapper(userId, filters));
+    }
+
+    @Override
+    public List<ExerciseStatisticsDTO> lightStatistics(long userId, ExerciseStatisticsQuery filters) {
+        return baseMapper.selectList(statisticsWrapper(userId, filters)).stream().map(entity -> {
+            ExerciseStatisticsDTO dto = new ExerciseStatisticsDTO();
+            dto.setExerciseTypeId(entity.getExerciseTypeId());
+            dto.setExerciseDate(entity.getExerciseDate());
+            dto.setExerciseCount(entity.getExerciseCount());
+            dto.setDescription(entity.getDescription());
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    /** 统计明细与轻量明细共用筛选：无筛选时取最近一年，最多返回 1000 条。 */
+    private LambdaQueryWrapper<ExerciseRecordEntity> statisticsWrapper(long userId, ExerciseStatisticsQuery filters) {
+        LambdaQueryWrapper<ExerciseRecordEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ExerciseRecordEntity::getUserId, userId);
+        if (filters != null && filters.hasFilters()) {
+            wrapper.eq(filters.getExerciseTypeId() != null, ExerciseRecordEntity::getExerciseTypeId,
+                    filters.getExerciseTypeId());
+            IlikeQuery.anyOf(wrapper, SysUtil.isNotEmpty(filters.getDescription()), filters.getDescription(),
+                    ExerciseRecordEntity::getDescription);
+            if (SysUtil.isNotEmpty(filters.getStartDate())) {
+                wrapper.ge(ExerciseRecordEntity::getExerciseDate, LocalDate.parse(filters.getStartDate()));
+            }
+            if (SysUtil.isNotEmpty(filters.getEndDate())) {
+                wrapper.le(ExerciseRecordEntity::getExerciseDate, LocalDate.parse(filters.getEndDate()));
+            }
+        } else {
+            wrapper.ge(ExerciseRecordEntity::getExerciseDate, LocalDate.now().minusYears(1));
+        }
+        wrapper.orderByDesc(ExerciseRecordEntity::getExerciseDate, ExerciseRecordEntity::getId);
+        wrapper.last("LIMIT 1000");
+        return wrapper;
     }
 
     /**

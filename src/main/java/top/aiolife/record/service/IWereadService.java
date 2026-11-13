@@ -6,19 +6,16 @@ import top.aiolife.record.pojo.vo.WereadBookLinkVO;
 import top.aiolife.record.pojo.vo.WereadRecentVO;
 
 public interface IWereadService {
-    WereadConnectionVO connection();
-    WereadConnectionVO connect(String apiKey);
-    void disconnect();
-    default JsonNode sync(String mode) { return sync(mode, 0); }
-    JsonNode sync(String mode, long baseTime);
-    default JsonNode stats(String mode) { return stats(mode, 0); }
-    JsonNode stats(String mode, long baseTime);
+    WereadConnectionVO connection(long userId);
+    WereadConnectionVO connect(long userId, String apiKey);
+    void disconnect(long userId);
+    JsonNode sync(long userId, String mode, long baseTime);
+    JsonNode stats(long userId, String mode, long baseTime);
 
     /** 首页卡片使用：按当前用户连接读取指定周期的统计，未连接返回 null。 */
     JsonNode statsForUser(long userId, String mode, long baseTime);
-    JsonNode notes(String bookId);
-    JsonNode progress(String bookId);
-    WereadBookLinkVO bookLink(String bookId);
-    default WereadRecentVO recent() { return recent(null, 6); }
-    WereadRecentVO recent(String cursor, int size);
+    JsonNode notes(long userId, String bookId);
+    JsonNode progress(long userId, String bookId);
+    WereadBookLinkVO bookLink(long userId, String bookId);
+    WereadRecentVO recent(long userId, String cursor, int size);
 }

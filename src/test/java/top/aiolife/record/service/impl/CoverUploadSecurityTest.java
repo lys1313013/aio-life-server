@@ -1,5 +1,7 @@
 package top.aiolife.record.service.impl;
 
+import top.aiolife.record.service.RecordImageService;
+
 import java.io.ByteArrayInputStream;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.http.HttpRequest;
@@ -104,11 +106,11 @@ class CoverUploadSecurityTest {
         var movie = new MovieReq();
         movie.setFileId("uploaded-movie-id");
         movie.setCoverImgUrl("https://example.com/legacy-cover.jpg");
-        new MovieServiceImpl(uploader).ensureCoverUploaded(movie, true);
+        new MovieServiceImpl(uploader, org.mockito.Mockito.mock(RecordImageService.class)).ensureCoverUploaded(movie, true);
         var read = new ReadRecordReq();
         read.setFileId("uploaded-read-id");
         read.setCoverImgUrl("https://example.com/legacy-cover.jpg");
-        ReflectionTestUtils.invokeMethod(new ReadRecordServiceImpl(uploader), "ensureCoverUploaded", read, true);
+        ReflectionTestUtils.invokeMethod(new ReadRecordServiceImpl(uploader, org.mockito.Mockito.mock(RecordImageService.class)), "ensureCoverUploaded", read, true);
         verifyNoInteractions(uploader);
         assertEquals("uploaded-movie-id", movie.getFileId());
         assertEquals("uploaded-read-id", read.getFileId());
@@ -119,14 +121,14 @@ class CoverUploadSecurityTest {
         var uploader = mock(IFileService.class);
         var error = new IllegalArgumentException("自定义封面请上传图片");
         when(uploader.uploadFromUrl(anyString(), any())).thenThrow(error);
-        var movieService = new MovieServiceImpl(uploader);
+        var movieService = new MovieServiceImpl(uploader, org.mockito.Mockito.mock(RecordImageService.class));
         var movie = new MovieReq();
         movie.setCoverImgUrl("https://127.0.0.1/cover.jpg");
         assertSame(error, assertThrows(IllegalArgumentException.class,
                 () -> movieService.ensureCoverUploaded(movie, true)));
         movieService.ensureCoverUploaded(movie, false);
         assertNull(movie.getCoverImgUrl());
-        var readService = new ReadRecordServiceImpl(uploader);
+        var readService = new ReadRecordServiceImpl(uploader, org.mockito.Mockito.mock(RecordImageService.class));
         var read = new ReadRecordReq();
         read.setCoverImgUrl("https://127.0.0.1/cover.jpg");
         assertSame(error, assertThrows(IllegalArgumentException.class,

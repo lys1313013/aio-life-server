@@ -20,7 +20,7 @@ class MenuControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void testAll_获取菜单路由() {
-        var response = menuController.all();
+        var response = menuController.all(String.valueOf(TEST_USER_ID), "web");
         assertSuccess(response);
         assertNotNull(response.getData());
     }

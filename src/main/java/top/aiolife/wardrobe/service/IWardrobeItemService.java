@@ -16,12 +16,12 @@ public interface IWardrobeItemService extends IService<WardrobeItemEntity> {
     /**
      * 保存衣物
      */
-    void saveItem(WardrobeItemReq req);
+    void saveItem(Long userId, WardrobeItemReq req);
 
     /**
      * 更新衣物
      */
-    void updateItem(WardrobeItemReq req);
+    void updateItem(Long userId, WardrobeItemReq req);
 
     /**
      * 删除衣物

@@ -73,14 +73,11 @@ class MembershipProviderServiceTest {
 
     @Test void 全部旧记录未关联平台仍能正常查询列表() {
         tx.execute(status -> records.create(1, req(null)));
-        var controller = new MembershipController(records, providers);
-        try (var login = mockStatic(StpUtil.class)) {
-            login.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
-            var result = controller.list().getData();
-            assertEquals(1, result.size());
-            assertNull(result.getFirst().getProviderId());
-            assertNull(result.getFirst().getProviderIconKey());
-        }
+        var controller = new MembershipController(records);
+        var result = controller.list("1").getData();
+        assertEquals(1, result.size());
+        assertNull(result.getFirst().getProviderId());
+        assertNull(result.getFirst().getProviderIconKey());
     }
 
     @Test void 默认分类可覆盖且平台目录过滤停用项() {

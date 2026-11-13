@@ -1,5 +1,7 @@
 package top.aiolife.config;
 
+import top.aiolife.record.service.RecordImageService;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,7 +51,7 @@ class CountResponseContractTest {
     void 会员聚合结果保留金额且零和正数均输出数字() {
         var membershipMapper = mock(IMembershipMapper.class);
         var recordService = new MembershipRecordWriteService(membershipMapper, mock(MembershipProviderService.class));
-        var controller = new MembershipController(recordService, mock(MembershipProviderService.class));
+        var controller = new MembershipController(recordService);
         var totals = new MembershipStatsAggregate();
         totals.setActiveCount(1);
         totals.setExpiringCount(1);
@@ -62,12 +64,12 @@ class CountResponseContractTest {
                 .thenReturn(totals, empty);
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
-            JsonNode json = mapper.valueToTree(controller.stats().getData());
+            JsonNode json = mapper.valueToTree(controller.stats("11").getData());
             for (String name : List.of("activeCount", "expiringCount", "expiredCount", "expiringThisMonthCount")) {
                 assertNumber(json.path(name), 1);
             }
             assertEquals(0, new BigDecimal("20").compareTo(json.path("monthlyAmount").decimalValue()));
-            json = mapper.valueToTree(controller.stats().getData());
+            json = mapper.valueToTree(controller.stats("11").getData());
             for (String name : List.of("activeCount", "expiringCount", "expiredCount", "expiringThisMonthCount")) {
                 assertNumber(json.path(name), 0);
             }
@@ -79,7 +81,7 @@ class CountResponseContractTest {
     void 衣柜分类和季节数量输出数字且金额计算不变() {
         var categories = mock(WardrobeCategoryMapper.class);
         var items = mock(WardrobeItemMapper.class);
-        var service = new WardrobeItemServiceImpl(categories);
+        var service = new WardrobeItemServiceImpl(categories, org.mockito.Mockito.mock(RecordImageService.class));
         ReflectionTestUtils.setField(service, "baseMapper", items);
         when(items.aggregateStats(11L)).thenReturn(
                 new WardrobeStatsAggregate(2, new BigDecimal("40"), 2, 0, 2, 0),
@@ -110,11 +112,11 @@ class CountResponseContractTest {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
             for (long count : new long[]{0L, 2L, Integer.MAX_VALUE}) {
                 when(service.getUnreadCount(11L)).thenReturn(count);
-                JsonNode json = mapper.valueToTree(controller.unreadCount().getData());
+                JsonNode json = mapper.valueToTree(controller.unreadCount("11").getData());
                 assertNumber(json.path("count"), (int) count);
             }
             when(service.getUnreadCount(11L)).thenReturn((long) Integer.MAX_VALUE + 1);
-            assertThrows(ArithmeticException.class, controller::unreadCount);
+            assertThrows(ArithmeticException.class, () -> controller.unreadCount("11"));
         }
     }
 

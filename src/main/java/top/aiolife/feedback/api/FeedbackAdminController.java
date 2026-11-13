@@ -1,15 +1,18 @@
 package top.aiolife.feedback.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 import cn.dev33.satoken.annotation.SaCheckRole;
-import cn.dev33.satoken.stp.StpUtil;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.feedback.pojo.query.FeedbackAdminQuery;
 import top.aiolife.feedback.pojo.req.FeedbackBatchReq;
 import top.aiolife.feedback.pojo.req.FeedbackCommentCreateReq;
@@ -19,7 +22,6 @@ import top.aiolife.feedback.pojo.vo.FeedbackCommentVO;
 import top.aiolife.feedback.pojo.vo.FeedbackDetailVO;
 import top.aiolife.feedback.pojo.vo.FeedbackVO;
 import top.aiolife.feedback.service.IFeedbackService;
-import top.aiolife.sso.service.IUserService;
 
 /**
  * 反馈管理控制器（管理员）
@@ -27,6 +29,7 @@ import top.aiolife.sso.service.IUserService;
  * @author Ethan
  * @date 2026/07/19
  */
+@Tag(name = "反馈管理")
 @RestController
 @RequestMapping("/feedback/admin")
 @RequiredArgsConstructor
@@ -35,72 +38,45 @@ public class FeedbackAdminController {
 
     private final IFeedbackService feedbackService;
 
-    private final IUserService userService;
-
-    /**
-     * 全部反馈列表（分页 + 筛选）
-     */
     @Operation(summary = "管理员分页查询反馈")
     @GetMapping("/list")
     public ApiResponse<PageResp<FeedbackVO>> list(CommonQuery<FeedbackAdminQuery> query) {
         return ApiResponse.success(feedbackService.listAdmin(query));
     }
 
-    /**
-     * 反馈详情（含评论）
-     */
     @Operation(summary = "管理员查询反馈及评论")
     @GetMapping("/{id}")
-    public ApiResponse<FeedbackDetailVO> detail(@PathVariable("id") long id) {
-        return ApiResponse.success(feedbackService.getAdminDetail(id));
+    public ApiResponse<FeedbackDetailVO> detail(@PathVariable("id") String id) {
+        return ApiResponse.success(feedbackService.getAdminDetail(IdCodec.decode(id)));
     }
 
-    /**
-     * 管理员回复
-     */
     @Operation(summary = "管理员回复反馈")
     @PostMapping("/{id}/reply")
-    public ApiResponse<FeedbackCommentVO> reply(@PathVariable("id") long id,
-                                                 @RequestBody FeedbackCommentCreateReq req) {
-        long adminId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(feedbackService.adminReply(adminId, id, req));
+    public ApiResponse<FeedbackCommentVO> reply(@CurrentUserId String adminId, @PathVariable("id") String id,
+                                                @Valid @RequestBody FeedbackCommentCreateReq req) {
+        return ApiResponse.success(feedbackService.adminReply(
+                IdCodec.decode(adminId), IdCodec.decode(id), req));
     }
 
-    /**
-     * 变更状态
-     */
     @Operation(summary = "管理员更新反馈状态")
     @PutMapping("/{id}/status")
-    public ApiResponse<FeedbackVO> updateStatus(@PathVariable("id") long id,
-                                                 @RequestBody FeedbackStatusUpdateReq req) {
-        long adminId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(feedbackService.adminUpdateStatus(adminId, id, req));
+    public ApiResponse<FeedbackVO> updateStatus(@CurrentUserId String adminId, @PathVariable("id") String id,
+                                                @Valid @RequestBody FeedbackStatusUpdateReq req) {
+        return ApiResponse.success(feedbackService.adminUpdateStatus(
+                IdCodec.decode(adminId), IdCodec.decode(id), req));
     }
 
-    /**
-     * 批量操作
-     */
     @Operation(summary = "管理员批量处理反馈")
     @PostMapping("/batch")
-    public ApiResponse<Void> batch(@RequestBody FeedbackBatchReq req) {
-        long adminId = StpUtil.getLoginIdAsLong();
-        feedbackService.adminBatch(adminId, req);
+    public ApiResponse<Void> batch(@CurrentUserId String adminId,
+                                   @Valid @RequestBody FeedbackBatchReq req) {
+        feedbackService.adminBatch(IdCodec.decode(adminId), req);
         return ApiResponse.success();
     }
 
-    /**
-     * 管理员用户列表（用于配置通知接收人下拉）
-     */
     @Operation(summary = "查询反馈通知可选管理员")
     @GetMapping("/admin-users")
     public ApiResponse<List<AdminUserVO>> adminUsers() {
-        List<AdminUserVO> result = userService.listAdminUsers().stream().map(u -> {
-            AdminUserVO vo = new AdminUserVO();
-            vo.setId(String.valueOf(u.getId()));
-            vo.setUsername(u.getUsername());
-            vo.setNickname(u.getNickname());
-            return vo;
-        }).toList();
-        return ApiResponse.success(result);
+        return ApiResponse.success(feedbackService.listAdminUsers());
     }
 }

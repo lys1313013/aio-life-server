@@ -1,13 +1,16 @@
 package top.aiolife.wardrobe.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-import cn.dev33.satoken.stp.StpUtil;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.wardrobe.convertor.WardrobeApiConvertor;
 import top.aiolife.wardrobe.pojo.req.CategoryReq;
 import top.aiolife.wardrobe.pojo.req.WardrobeCategorySaveReq;
@@ -20,9 +23,13 @@ import top.aiolife.wardrobe.service.IWardrobeCategoryService;
 import top.aiolife.wardrobe.service.IWardrobeItemService;
 
 /**
- * 衣柜 Controller
+ * 衣柜控制器。
+ *
+ * @author Lys
+ * @date 2026/11/13
  */
 @Slf4j
+@Tag(name = "衣柜")
 @RestController
 @RequestMapping("/wardrobe")
 @RequiredArgsConstructor
@@ -31,122 +38,85 @@ public class WardrobeController {
     private final IWardrobeItemService wardrobeItemService;
     private final IWardrobeCategoryService wardrobeCategoryService;
 
-    // ==================== 衣物接口 ====================
-
-    /**
-     * 查询衣物列表
-     */
     @Operation(summary = "查询衣物列表")
     @GetMapping("/items")
     public ApiResponse<List<WardrobeItemVO>> listItems(
-            @RequestParam(required = false) Long categoryId,
+            @CurrentUserId String userId,
+            @RequestParam(required = false) String categoryId,
             @RequestParam(required = false) String season,
             @RequestParam(required = false) String keyword) {
-        Long userId = StpUtil.getLoginIdAsLong();
-        List<WardrobeItemVO> list = wardrobeItemService.listItems(userId, categoryId, season, keyword);
-        return ApiResponse.success(list);
+        return ApiResponse.success(wardrobeItemService.listItems(
+                IdCodec.decode(userId), IdCodec.decodeOrNull(categoryId), season, keyword));
     }
 
-    /**
-     * 获取衣物详情
-     */
     @Operation(summary = "查询衣物详情")
     @GetMapping("/items/{id}")
-    public ApiResponse<WardrobeItemVO> getItem(@PathVariable Long id) {
-        Long userId = StpUtil.getLoginIdAsLong();
-        WardrobeItemVO item = wardrobeItemService.getItem(id, userId);
-        return ApiResponse.success(item);
+    public ApiResponse<WardrobeItemVO> getItem(@CurrentUserId String userId, @PathVariable String id) {
+        return ApiResponse.success(wardrobeItemService.getItem(
+                IdCodec.decode(id), IdCodec.decode(userId)));
     }
 
-    /**
-     * 保存衣物
-     */
     @Operation(summary = "新增衣物")
     @PostMapping("/items")
-    public ApiResponse<Void> saveItem(@RequestBody WardrobeItemSaveReq request) {
+    public ApiResponse<Void> saveItem(@CurrentUserId String userId,
+                                      @Valid @RequestBody WardrobeItemSaveReq request) {
         WardrobeItemReq req = WardrobeApiConvertor.INSTANCE.fromWardrobeItemSaveReq(request);
-        wardrobeItemService.saveItem(req);
+        wardrobeItemService.saveItem(IdCodec.decode(userId), req);
         return ApiResponse.success();
     }
 
-    /**
-     * 更新衣物
-     */
     @Operation(summary = "更新衣物")
     @PutMapping("/items/{id}")
-    public ApiResponse<Void> updateItem(@PathVariable Long id, @RequestBody WardrobeItemSaveReq request) {
+    public ApiResponse<Void> updateItem(@CurrentUserId String userId, @PathVariable String id,
+                                        @Valid @RequestBody WardrobeItemSaveReq request) {
         WardrobeItemReq req = WardrobeApiConvertor.INSTANCE.fromWardrobeItemSaveReq(request);
-        req.setId(id);
-        wardrobeItemService.updateItem(req);
+        req.setId(IdCodec.decode(id));
+        wardrobeItemService.updateItem(IdCodec.decode(userId), req);
         return ApiResponse.success();
     }
 
-    /**
-     * 删除衣物
-     */
     @Operation(summary = "删除衣物")
     @DeleteMapping("/items/{id}")
-    public ApiResponse<Void> deleteItem(@PathVariable Long id) {
-        Long userId = StpUtil.getLoginIdAsLong();
-        wardrobeItemService.removeItem(id, userId);
+    public ApiResponse<Void> deleteItem(@CurrentUserId String userId, @PathVariable String id) {
+        wardrobeItemService.removeItem(IdCodec.decode(id), IdCodec.decode(userId));
         return ApiResponse.success();
     }
 
-    /**
-     * 获取统计数据
-     */
     @Operation(summary = "查询衣柜统计")
     @GetMapping("/stats")
-    public ApiResponse<WardrobeStatsVO> getStats() {
-        Long userId = StpUtil.getLoginIdAsLong();
-        WardrobeStatsVO stats = wardrobeItemService.getStats(userId);
-        return ApiResponse.success(stats);
+    public ApiResponse<WardrobeStatsVO> getStats(@CurrentUserId String userId) {
+        return ApiResponse.success(wardrobeItemService.getStats(IdCodec.decode(userId)));
     }
 
-    // ==================== 分类接口 ====================
-
-    /**
-     * 获取分类列表
-     */
     @Operation(summary = "查询衣物分类")
     @GetMapping("/categories")
-    public ApiResponse<List<CategoryVO>> listCategories() {
-        Long userId = StpUtil.getLoginIdAsLong();
-        List<CategoryVO> list = wardrobeCategoryService.listCategories(userId);
-        return ApiResponse.success(list);
+    public ApiResponse<List<CategoryVO>> listCategories(@CurrentUserId String userId) {
+        return ApiResponse.success(wardrobeCategoryService.listCategories(IdCodec.decode(userId)));
     }
 
-    /**
-     * 保存分类
-     */
     @Operation(summary = "新增衣物分类")
     @PostMapping("/categories")
-    public ApiResponse<Void> saveCategory(@RequestBody WardrobeCategorySaveReq request) {
+    public ApiResponse<Void> saveCategory(@CurrentUserId String userId,
+                                          @Valid @RequestBody WardrobeCategorySaveReq request) {
         CategoryReq req = WardrobeApiConvertor.INSTANCE.fromWardrobeCategorySaveReq(request);
-        wardrobeCategoryService.saveCategory(req);
+        wardrobeCategoryService.saveCategory(IdCodec.decode(userId), req);
         return ApiResponse.success();
     }
 
-    /**
-     * 更新分类
-     */
     @Operation(summary = "更新衣物分类")
     @PutMapping("/categories/{id}")
-    public ApiResponse<Void> updateCategory(@PathVariable Long id, @RequestBody WardrobeCategorySaveReq request) {
+    public ApiResponse<Void> updateCategory(@CurrentUserId String userId, @PathVariable String id,
+                                            @Valid @RequestBody WardrobeCategorySaveReq request) {
         CategoryReq req = WardrobeApiConvertor.INSTANCE.fromWardrobeCategorySaveReq(request);
-        req.setId(id);
-        wardrobeCategoryService.updateCategory(req);
+        req.setId(IdCodec.decode(id));
+        wardrobeCategoryService.updateCategory(IdCodec.decode(userId), req);
         return ApiResponse.success();
     }
 
-    /**
-     * 删除分类
-     */
     @Operation(summary = "删除衣物分类")
     @DeleteMapping("/categories/{id}")
-    public ApiResponse<Void> deleteCategory(@PathVariable Long id) {
-        Long userId = StpUtil.getLoginIdAsLong();
-        wardrobeCategoryService.removeCategory(id, userId);
+    public ApiResponse<Void> deleteCategory(@CurrentUserId String userId, @PathVariable String id) {
+        wardrobeCategoryService.removeCategory(IdCodec.decode(id), IdCodec.decode(userId));
         return ApiResponse.success();
     }
 }

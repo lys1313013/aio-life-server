@@ -1,14 +1,16 @@
 package top.aiolife.relationship.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-import cn.dev33.satoken.stp.StpUtil;
+import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.relationship.convertor.RelationshipApiConvertor;
 import top.aiolife.relationship.pojo.entity.PersonRelationship;
 import top.aiolife.relationship.pojo.entity.RelatesToRelationship;
@@ -21,8 +23,12 @@ import top.aiolife.relationship.service.IPersonService;
 import top.aiolife.relationship.service.IRelationshipService;
 
 /**
- * 关系图谱 Controller
+ * 关系图谱控制器。
+ *
+ * @author Lys
+ * @date 2026/11/13
  */
+@Tag(name = "人际关系")
 @RestController
 @RequestMapping("/relationships")
 @ConditionalOnProperty(name = "aio.life.neo4j.enabled", havingValue = "true", matchIfMissing = false)
@@ -32,84 +38,95 @@ public class RelationshipController {
     private final IPersonService personService;
     private final IRelationshipService relationshipService;
 
-    // ==================== 图谱接口 ====================
-
-    /**
-     * 获取图谱数据（节点和边）
-     */
     @Operation(summary = "查询人际关系图谱")
     @GetMapping("/graph")
-    public ApiResponse<GraphVO> getGraphData() {
-        long userId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toGraphVO(personService.getGraphData(userId)));
+    public ApiResponse<GraphVO> getGraphData(@CurrentUserId String userId) {
+        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toGraphVO(
+                personService.getGraphData(IdCodec.decode(userId))));
     }
 
-    // ==================== 人物接口 ====================
-
-    /**
-     * 获取所有人物
-     */
     @Operation(summary = "查询人际关系人物")
     @GetMapping("/persons")
-    public ApiResponse<GraphVO> getAllPersons() {
-        long userId = StpUtil.getLoginIdAsLong();
-        // 返回图谱数据，前端可以从这里获取节点和边
-        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toGraphVO(personService.getGraphData(userId)));
+    public ApiResponse<GraphVO> getAllPersons(@CurrentUserId String userId) {
+        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toGraphVO(
+                personService.getGraphData(IdCodec.decode(userId))));
     }
 
-    /**
-     * 获取人物详情
-     */
     @Operation(summary = "查询人物详情")
     @GetMapping("/persons/{id}")
-    public ApiResponse<PersonDetailVO> getPerson(@PathVariable String id) {
-        long userId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toPersonDetailVO(personService.getPersonWithRelationships(userId, id)));
+    public ApiResponse<PersonDetailVO> getPerson(@CurrentUserId String userId, @PathVariable String id) {
+        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toPersonDetailVO(
+                personService.getPersonWithRelationships(IdCodec.decode(userId), id)));
     }
 
-    /**
-     * 搜索人物
-     */
     @Operation(summary = "搜索人际关系人物")
     @GetMapping("/persons/search")
-    public ApiResponse<List<PersonVO>> searchPersons(@RequestParam String keyword) {
-        long userId = StpUtil.getLoginIdAsLong();
-        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toPersonVOList(personService.searchPersons(userId, keyword)));
+    public ApiResponse<List<PersonVO>> searchPersons(@CurrentUserId String userId,
+                                                     @RequestParam String keyword) {
+        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toPersonVOList(
+                personService.searchPersons(IdCodec.decode(userId), keyword)));
     }
 
-    /**
-     * 创建人物
-     */
     @Operation(summary = "新增人际关系人物")
     @PostMapping("/persons")
-    public ApiResponse<PersonVO> createPerson(@RequestBody PersonReq req) {
-        long userId = StpUtil.getLoginIdAsLong();
-        PersonRelationship person = new PersonRelationship();
-        person.setUserId(userId);
-        person.setName(req.getName());
-        person.setAvatar(req.getAvatar());
-        person.setCategory(req.getCategory());
-        person.setDescription(req.getDescription());
-        person.setTags(req.getTags());
-        person.setBirthday(req.getBirthday());
-        person.setPhone(req.getPhone());
-        person.setEmail(req.getEmail());
-        person.setSchool(req.getSchool());
-        person.setSocialLinks(req.getSocialLinks());
-        person.setNotes(req.getNotes());
-        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toPersonVO(personService.createPerson(person)));
+    public ApiResponse<PersonVO> createPerson(@CurrentUserId String userId,
+                                              @Valid @RequestBody PersonReq req) {
+        PersonRelationship person = toPerson(req);
+        person.setUserId(IdCodec.decode(userId));
+        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toPersonVO(
+                personService.createPerson(person)));
     }
 
-    /**
-     * 更新人物
-     */
     @Operation(summary = "更新人际关系人物")
     @PutMapping("/persons/{id}")
-    public ApiResponse<PersonVO> updatePerson(@PathVariable String id, @RequestBody PersonReq req) {
-        long userId = StpUtil.getLoginIdAsLong();
-        PersonRelationship person = new PersonRelationship();
+    public ApiResponse<PersonVO> updatePerson(@CurrentUserId String userId, @PathVariable String id,
+                                              @Valid @RequestBody PersonReq req) {
+        PersonRelationship person = toPerson(req);
         person.setId(id);
-        person.setUserId(userId);
+        person.setUserId(IdCodec.decode(userId));
+        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toPersonVO(
+                personService.updatePerson(IdCodec.decode(userId), person)));
+    }
+
+    @Operation(summary = "删除人际关系人物")
+    @DeleteMapping("/persons/{id}")
+    public ApiResponse<Void> deletePerson(@CurrentUserId String userId, @PathVariable String id) {
+        personService.deletePerson(IdCodec.decode(userId), id);
+        return ApiResponse.success();
+    }
+
+    @Operation(summary = "新增人物关系")
+    @PostMapping
+    public ApiResponse<RelationshipVO> createRelationship(@CurrentUserId String userId,
+                                                          @Valid @RequestBody RelationshipReq req) {
+        RelatesToRelationship relationship = toRelationship(req.getRelationType(), req.getDirection(),
+                req.getDescription(), req.getTags());
+        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toRelationshipVO(
+                relationshipService.createRelationship(relationship, IdCodec.decode(userId),
+                        req.getSourcePersonId(), req.getTargetPersonId())));
+    }
+
+    @Operation(summary = "更新人物关系")
+    @PutMapping("/{id}")
+    public ApiResponse<RelationshipVO> updateRelationship(@CurrentUserId String userId, @PathVariable String id,
+                                                          @Valid @RequestBody RelationshipUpdateReq req) {
+        RelatesToRelationship relationship = toRelationship(req.getRelationType(), req.getDirection(),
+                req.getDescription(), req.getTags());
+        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toRelationshipVO(
+                relationshipService.updateRelationship(IdCodec.decode(userId), id, relationship)));
+    }
+
+    @Operation(summary = "删除人物关系")
+    @DeleteMapping
+    public ApiResponse<Void> deleteRelationship(@CurrentUserId String userId,
+                                                @Valid @RequestBody RelationshipDeleteReq req) {
+        relationshipService.deleteRelationship(IdCodec.decode(userId),
+                req.getSourcePersonId(), req.getTargetPersonId());
+        return ApiResponse.success();
+    }
+
+    private PersonRelationship toPerson(PersonReq req) {
+        PersonRelationship person = new PersonRelationship();
         person.setName(req.getName());
         person.setAvatar(req.getAvatar());
         person.setCategory(req.getCategory());
@@ -121,60 +138,16 @@ public class RelationshipController {
         person.setSchool(req.getSchool());
         person.setSocialLinks(req.getSocialLinks());
         person.setNotes(req.getNotes());
-        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toPersonVO(personService.updatePerson(userId, person)));
+        return person;
     }
 
-    /**
-     * 删除人物
-     */
-    @Operation(summary = "删除人际关系人物")
-    @DeleteMapping("/persons/{id}")
-    public ApiResponse<Void> deletePerson(@PathVariable String id) {
-        long userId = StpUtil.getLoginIdAsLong();
-        personService.deletePerson(userId, id);
-        return ApiResponse.success();
-    }
-
-    // ==================== 关系接口 ====================
-
-    /**
-     * 创建关系
-     */
-    @Operation(summary = "新增人物关系")
-    @PostMapping
-    public ApiResponse<RelationshipVO> createRelationship(@RequestBody RelationshipReq req) {
-        long userId = StpUtil.getLoginIdAsLong();
+    private RelatesToRelationship toRelationship(String relationType, String direction,
+                                                 String description, String tags) {
         RelatesToRelationship relationship = new RelatesToRelationship();
-        relationship.setRelationType(req.getRelationType());
-        relationship.setDirection(req.getDirection());
-        relationship.setDescription(req.getDescription());
-        relationship.setTags(req.getTags());
-        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toRelationshipVO(relationshipService.createRelationship(relationship, userId, req.getSourcePersonId(), req.getTargetPersonId())));
-    }
-
-    /**
-     * 更新关系
-     */
-    @Operation(summary = "更新人物关系")
-    @PutMapping("/{id}")
-    public ApiResponse<RelationshipVO> updateRelationship(@PathVariable String id, @RequestBody RelationshipUpdateReq req) {
-        long userId = StpUtil.getLoginIdAsLong();
-        RelatesToRelationship relationship = new RelatesToRelationship();
-        relationship.setRelationType(req.getRelationType());
-        relationship.setDirection(req.getDirection());
-        relationship.setDescription(req.getDescription());
-        relationship.setTags(req.getTags());
-        return ApiResponse.success(RelationshipApiConvertor.INSTANCE.toRelationshipVO(relationshipService.updateRelationship(userId, id, relationship)));
-    }
-
-    /**
-     * 删除关系
-     */
-    @Operation(summary = "删除人物关系")
-    @DeleteMapping
-    public ApiResponse<Void> deleteRelationship(@RequestBody RelationshipDeleteReq req) {
-        long userId = StpUtil.getLoginIdAsLong();
-        relationshipService.deleteRelationship(userId, req.getSourcePersonId(), req.getTargetPersonId());
-        return ApiResponse.success();
+        relationship.setRelationType(relationType);
+        relationship.setDirection(direction);
+        relationship.setDescription(description);
+        relationship.setTags(tags);
+        return relationship;
     }
 }

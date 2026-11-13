@@ -1,24 +1,15 @@
 package top.aiolife.record.mcp;
 
-import top.aiolife.record.mapper.ITimeRecordMapper;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
-import java.lang.reflect.Proxy;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
-import top.aiolife.record.api.*;
 import top.aiolife.record.convertor.RecordApiConvertor;
-import top.aiolife.record.mapper.ITaskMapper;
 import top.aiolife.record.mcp.req.TaskDetailSaveMcpReq;
 import top.aiolife.record.mcp.req.TaskListMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
@@ -27,24 +18,23 @@ import top.aiolife.record.mcp.vo.TaskMcpVO;
 import top.aiolife.record.mcp.vo.TimeTrackerCategoryMcpVO;
 import top.aiolife.record.pojo.entity.TaskDetailEntity;
 import top.aiolife.record.pojo.entity.TaskEntity;
-import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
-import top.aiolife.record.pojo.req.TaskDetailCreateReq;
 import top.aiolife.record.pojo.req.ThoughtSaveReq;
 import top.aiolife.record.pojo.req.TimeRecordReq;
-import top.aiolife.record.pojo.req.TimeRecordSaveReq;
-import top.aiolife.record.pojo.vo.TaskDetailVO;
-import top.aiolife.record.pojo.vo.TaskVO;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
-import top.aiolife.record.pojo.vo.TimeTrackerCategoryVO;
+import top.aiolife.record.service.ITaskDetail;
+import top.aiolife.record.service.ITaskService;
 import top.aiolife.record.service.ITimeRecordService;
-import top.aiolife.sso.service.SecondaryLockGuard;
+import top.aiolife.record.service.ITimeTrackerCategoryService;
+import top.aiolife.record.service.ThoughtCreationService;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 /**
  * RecordMcpTools 单元测试
- * 不依赖数据库，通过动态代理和匿名内部类模拟依赖组件的行为
+ * 不依赖数据库，通过 mock 5 个 Service 模拟依赖组件的行为
  */
 class RecordMcpToolsTest {
 
@@ -81,126 +71,76 @@ class RecordMcpToolsTest {
         savedTimeRecord = null;
         savedTaskDetail = null;
 
-        TimeRecordController timeRecordController = new TimeRecordController(Mockito.mock(SecondaryLockGuard.class), null, null, null, null) {
-            @Override
-            public ApiResponse<List<TimeRecordDateRangeVO>> queryByDateRangeForAI(TimeRecordDateRangeMcpReq req) {
-                TimeRecordDateRangeVO vo = new TimeRecordDateRangeVO();
-                vo.setId("1");
-                return ApiResponse.success(Collections.singletonList(vo));
+        var timeRecordService = mock(ITimeRecordService.class);
+        when(timeRecordService.queryByDateRangeForAI(anyLong(), any(), any())).thenAnswer(call -> {
+            TimeRecordDateRangeVO vo = new TimeRecordDateRangeVO();
+            vo.setId("1");
+            return Collections.singletonList(vo);
+        });
+        when(timeRecordService.findLatestEndMinute(anyLong(), any())).thenReturn(60);
+        when(timeRecordService.saveTimeRecord(anyLong(), any())).thenAnswer(call -> {
+            savedTimeRecord = call.getArgument(1);
+            return "2099999999999999999";
+        });
+
+        var thoughtCreationService = mock(ThoughtCreationService.class);
+        doAnswer(call -> {
+            thoughtSaved = true;
+            return null;
+        }).when(thoughtCreationService).create(anyLong(), any(ThoughtSaveReq.class));
+
+        var timeTrackerCategoryService = mock(ITimeTrackerCategoryService.class);
+        when(timeTrackerCategoryService.listUserVisibleCategories(anyLong())).thenAnswer(call -> {
+            TimeTrackerCategoryEntity category = new TimeTrackerCategoryEntity();
+            category.setId(1L);
+            category.setName("Category1");
+            return Collections.singletonList(category);
+        });
+
+        var taskService = mock(ITaskService.class);
+        when(taskService.pageForUser(anyLong(), any(), anyInt(), anyInt())).thenAnswer(call -> {
+            requestedTaskPage = call.getArgument(2);
+            requestedTaskPageSize = call.getArgument(3);
+            if (requestedTaskPageSize > 100) {
+                throw new IllegalArgumentException("pageSize 必须在 1 到 100 之间");
             }
+            TaskEntity task = new TaskEntity();
+            task.setId(1L);
+            task.setContent("Task1");
+            PageResp<TaskEntity> pageResp = new PageResp<>();
+            pageResp.setItems(Collections.singletonList(task));
+            pageResp.setTotal(205L);
+            return pageResp;
+        });
+        when(taskService.getOwned(anyLong(), anyLong())).thenAnswer(call -> {
+            TaskEntity task = new TaskEntity();
+            task.setId(1L);
+            task.setUserId(1L);
+            return task;
+        });
 
-            @Override
-            public ApiResponse<String> save(TimeRecordSaveReq req) {
-                savedTimeRecord = RecordApiConvertor.INSTANCE.fromTimeRecordSaveReq(req);
-                return ApiResponse.success("2099999999999999999");
-            }
-        };
-
-        ThoughtController thoughtController = new ThoughtController(null, null, null) {
-            @Override
-            public ApiResponse<Boolean> save(ThoughtSaveReq req) {
-                thoughtSaved = true;
-                return ApiResponse.success(true);
-            }
-        };
-
-        TimeTrackerCategoryController timeTrackerCategoryController = new TimeTrackerCategoryController(null) {
-            @Override
-            public ApiResponse<List<TimeTrackerCategoryVO>> list() {
-                TimeTrackerCategoryEntity category = new TimeTrackerCategoryEntity();
-                category.setId(1L);
-                category.setName("Category1");
-                return ApiResponse.success(RecordApiConvertor.INSTANCE.toTimeTrackerCategoryVOList(Collections.singletonList(category)));
-            }
-        };
-
-        ITimeRecordService timeRecordService = (ITimeRecordService) Proxy.newProxyInstance(
-                ITimeRecordService.class.getClassLoader(),
-                new Class[]{ITimeRecordService.class},
-                (proxy, method, args) -> {
-                    if ("lambdaQuery".equals(method.getName())) {
-                        BaseMapper<TimeRecordEntity> dummyMapper = (ITimeRecordMapper) Proxy.newProxyInstance(
-                                ITimeRecordMapper.class.getClassLoader(),
-                                new Class[]{ITimeRecordMapper.class},
-                                (mProxy, mMethod, mArgs) -> {
-                                    if ("selectList".equals(mMethod.getName()) || "selectOne".equals(mMethod.getName())) {
-                                        TimeRecordEntity lastRecord = new TimeRecordEntity();
-                                        lastRecord.setEndMinute(60);
-                                        if ("selectOne".equals(mMethod.getName())) return lastRecord;
-                                        return Collections.singletonList(lastRecord);
-                                    }
-                                    return null;
-                                }
-                        );
-                        return new LambdaQueryChainWrapper<TimeRecordEntity>(dummyMapper);
-                    }
-                    return null;
-                }
-        );
-
-        ITaskMapper taskMapper = (ITaskMapper) Proxy.newProxyInstance(
-                ITaskMapper.class.getClassLoader(),
-                new Class[]{ITaskMapper.class},
-                (proxy, method, args) -> {
-                    if ("selectById".equals(method.getName())) {
-                        TaskEntity task = new TaskEntity();
-                        task.setId(1L);
-                        task.setUserId(1L); // Match StpUtil dummy logic later
-                        return task;
-                    }
-                    return null;
-                }
-        );
-
-        TaskController taskController = new TaskController(null, null, null) {
-            @Override
-            public ApiResponse<PageResp<TaskVO>> query(Long taskId, int page, int pageSize) {
-                requestedTaskPage = page;
-                requestedTaskPageSize = pageSize;
-                TaskEntity task = new TaskEntity();
-                task.setId(1L);
-                task.setContent("Task1");
-                PageResp<TaskEntity> pageResp = new PageResp<>();
-                pageResp.setItems(Collections.singletonList(task));
-                pageResp.setTotal(205L);
-                return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskVOPage(pageResp));
-            }
-
-            @Override
-            public ITaskMapper getBaseMapper() {
-                return taskMapper;
-            }
-        };
-
-        TaskDetailController taskDetailController = new TaskDetailController(null, null) {
-            @Override
-            public ApiResponse<List<TaskDetailVO>> list(Long taskId) {
-                TaskDetailEntity detail = new TaskDetailEntity();
-                detail.setId(1L);
-                detail.setContent("Detail1");
-                detail.setIsCompleted(0);
-                detail.setPriority(10);
-                detail.setIsStarred(1);
-                return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVOList(Collections.singletonList(detail)));
-            }
-
-            @Override
-            public ApiResponse<TaskDetailVO> create(TaskDetailCreateReq request) {
-                savedTaskDetail = RecordApiConvertor.INSTANCE.fromTaskDetailCreateReq(request);
-                return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVO(savedTaskDetail));
-            }
-        };
+        var taskDetailService = mock(ITaskDetail.class);
+        when(taskDetailService.listForTask(anyLong(), anyLong())).thenAnswer(call -> {
+            TaskDetailEntity detail = new TaskDetailEntity();
+            detail.setId(1L);
+            detail.setContent("Detail1");
+            detail.setIsCompleted(0);
+            detail.setPriority(10);
+            detail.setIsStarred(1);
+            return Collections.singletonList(detail);
+        });
+        when(taskDetailService.createForUser(anyLong(), any(TaskDetailEntity.class))).thenAnswer(call -> {
+            savedTaskDetail = call.getArgument(1);
+            return savedTaskDetail;
+        });
 
         recordMcpTools = new RecordMcpTools(
-                timeRecordController,
-                thoughtController,
-                timeTrackerCategoryController,
+                thoughtCreationService,
                 timeRecordService,
-                taskController,
-                taskDetailController,
-                null
+                timeTrackerCategoryService,
+                taskService,
+                taskDetailService
         );
-
     }
 
     @AfterEach

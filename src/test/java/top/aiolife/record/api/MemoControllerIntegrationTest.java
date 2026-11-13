@@ -35,7 +35,7 @@ class MemoControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new MemoEntity());
 
-        var response = memoController.query(ApiRequestFixtures.query(query, MemoQuery.class));
+        var response = memoController.query(String.valueOf(TEST_USER_ID), ApiRequestFixtures.query(query, MemoQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);

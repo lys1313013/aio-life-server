@@ -45,7 +45,9 @@ class QueryHttpContractTest {
 
     private MockMvc mvc(Object controller) {
         return MockMvcBuilders.standaloneSetup(controller)
-                .setCustomArgumentResolvers(new QueryParamsArgumentResolver(mapper))
+                .setCustomArgumentResolvers(new QueryParamsArgumentResolver(mapper),
+                        new top.aiolife.core.web.CurrentUserIdArgumentResolver(),
+                        new top.aiolife.core.web.CurrentTokenArgumentResolver())
                 .setControllerAdvice(new ExceptionHandle())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(mapper))
                 .build();
@@ -57,8 +59,8 @@ class QueryHttpContractTest {
                 Arguments.of(FeedbackController.class, "/feedback/my"),
                 Arguments.of(ReadRecordController.class, "/read-record/page"),
                 Arguments.of(UserDictDataController.class, "/userDictData/query"),
-                Arguments.of(UserDictDataController.class, "/userDictData/admin/query"),
-                Arguments.of(SysDictTypeController.class, "/sysDictType/query"),
+                Arguments.of(UserDictDataAdminController.class, "/userDictData/admin/query"),
+                Arguments.of(SysDictTypeAdminController.class, "/sysDictType/query"),
                 Arguments.of(BVideoController.class, "/b-video/query"),
                 Arguments.of(MovieController.class, "/movie/page"),
                 Arguments.of(ExpController.class, "/expense/query"),
@@ -72,7 +74,7 @@ class QueryHttpContractTest {
                 Arguments.of(TimeRecordController.class, "/timeRecord/queryByDateRange"),
                 Arguments.of(TimeRecordController.class, "/timeRecord/queryByDateRangeForAI"),
                 Arguments.of(ThoughtController.class, "/thought/query"),
-                Arguments.of(SysDictDataController.class, "/sysDictData/query"),
+                Arguments.of(SysDictDataAdminController.class, "/sysDictData/query"),
                 Arguments.of(ExerciseRecordController.class, "/exerciseRecord/query"),
                 Arguments.of(ExerciseRecordController.class, "/exerciseRecord/statistics"),
                 Arguments.of(ExerciseRecordController.class, "/exerciseRecord/statistics/light"),
@@ -92,7 +94,10 @@ class QueryHttpContractTest {
         verifyNoInteractions(controller);
         var getRequest = get(path);
         if (path.equals("/timeRecord/query")) getRequest.param("date", "2026-10-04");
-        mvc.perform(getRequest).andExpect(status().isOk());
+        try (var login = mockStatic(StpUtil.class)) {
+            login.when(StpUtil::getLoginIdAsString).thenReturn("1");
+            mvc.perform(getRequest).andExpect(status().isOk());
+        }
         assertEquals(1, mockingDetails(controller).getInvocations().size());
     }
 
@@ -100,11 +105,14 @@ class QueryHttpContractTest {
     @SuppressWarnings("unchecked")
     void testFeedback_状态和类型从平铺URL绑定到泛型DTO() throws Exception {
         FeedbackController controller = mock(FeedbackController.class);
-        mvc(controller).perform(get("/feedback/my").param("page", "3").param("pageSize", "20")
-                        .param("status", "PENDING").param("feedbackType", "BUG"))
-                .andExpect(status().isOk());
+        try (var login = mockStatic(StpUtil.class)) {
+            login.when(StpUtil::getLoginIdAsString).thenReturn("1");
+            mvc(controller).perform(get("/feedback/my").param("page", "3").param("pageSize", "20")
+                            .param("status", "PENDING").param("feedbackType", "BUG"))
+                    .andExpect(status().isOk());
+        }
         ArgumentCaptor<CommonQuery<FeedbackAdminQuery>> captor = ArgumentCaptor.forClass(CommonQuery.class);
-        verify(controller).listMy(captor.capture());
+        verify(controller).listMy(eq("1"), captor.capture());
         assertEquals(3, captor.getValue().getPage());
         assertEquals(20, captor.getValue().getPageSize());
         assertEquals("PENDING", captor.getValue().getCondition().getStatus());
@@ -115,18 +123,21 @@ class QueryHttpContractTest {
     @SuppressWarnings("unchecked")
     void testExpense_分页和日期条件从URL绑定到泛型DTO() throws Exception {
         ExpController controller = mock(ExpController.class);
-        mvc(controller).perform(get("/expense/query")
-                        .param("page", "2").param("pageSize", "20")
-                        .param("expTypeId", "9007199254740993")
-                        .param("startTime", "2026-09-01 08:30:00")
-                        .param("endTime", "2026-09-12 23:59:59")
-                        .param("endTimeBefore", "2026-09-13 00:00:00")
-                        .param("remark", "午餐 & 饮料+甜点")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"page\":99,\"condition\":{\"remark\":\"不应读取请求体\"}}"))
-                .andExpect(status().isOk());
+        try (var login = mockStatic(StpUtil.class)) {
+            login.when(StpUtil::getLoginIdAsString).thenReturn("1");
+            mvc(controller).perform(get("/expense/query")
+                            .param("page", "2").param("pageSize", "20")
+                            .param("expTypeId", "9007199254740993")
+                            .param("startTime", "2026-09-01 08:30:00")
+                            .param("endTime", "2026-09-12 23:59:59")
+                            .param("endTimeBefore", "2026-09-13 00:00:00")
+                            .param("remark", "午餐 & 饮料+甜点")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"page\":99,\"condition\":{\"remark\":\"不应读取请求体\"}}"))
+                    .andExpect(status().isOk());
+        }
         ArgumentCaptor<CommonQuery<ExpenseQuery>> captor = ArgumentCaptor.forClass(CommonQuery.class);
-        verify(controller).query(captor.capture());
+        verify(controller).query(eq("1"), captor.capture());
         CommonQuery<ExpenseQuery> query = captor.getValue();
         assertEquals(2, query.getPage());
         assertEquals(20, query.getPageSize());
@@ -140,10 +151,13 @@ class QueryHttpContractTest {
     @SuppressWarnings("unchecked")
     void testTimeRecord_仅绑定单日日期不再分页() throws Exception {
         TimeRecordController controller = mock(TimeRecordController.class);
-        mvc(controller).perform(get("/timeRecord/query").param("date", "2026-09-12"))
-                .andExpect(status().isOk());
+        try (var login = mockStatic(StpUtil.class)) {
+            login.when(StpUtil::getLoginIdAsString).thenReturn("1");
+            mvc(controller).perform(get("/timeRecord/query").param("date", "2026-09-12"))
+                    .andExpect(status().isOk());
+        }
         ArgumentCaptor<TimeRecordQuery> captor = ArgumentCaptor.forClass(TimeRecordQuery.class);
-        verify(controller).query(captor.capture());
+        verify(controller).query(eq("1"), captor.capture());
         assertEquals(LocalDate.of(2026, 9, 12), captor.getValue().getDate());
         assertFalse(Arrays.stream(captor.getValue().getClass().getDeclaredFields())
                 .anyMatch(field -> field.getName().equals("categoryId")));
@@ -152,22 +166,22 @@ class QueryHttpContractTest {
     @Test
     void testTimeRecord_完整数组返回且日期必填() throws Exception {
         var service = mock(ITimeRecordService.class);
-        var controller = new TimeRecordController(null, service, null, null, null);
-        mvc(controller).perform(get("/timeRecord/query"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("date 不能为空"));
-        mvc(controller).perform(get("/timeRecord/query").param("date", ""))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("date 不能为空"));
-        mvc(controller).perform(get("/timeRecord/query").param("date", "invalid"))
-                .andExpect(status().isBadRequest());
-        verifyNoInteractions(service);
-        var date = LocalDate.of(2026, 10, 4);
-        var row = new TimeRecordListVO();
-        row.setId("9223372036854775807"); row.setCategoryId(9223372036854775806L); row.setDate(date);
-        when(service.queryDay(1L, date)).thenReturn(Collections.nCopies(151, row));
+        var controller = new TimeRecordController(service);
         try (var login = mockStatic(StpUtil.class)) {
-            login.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("1");
+            mvc(controller).perform(get("/timeRecord/query"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("date 不能为空"));
+            mvc(controller).perform(get("/timeRecord/query").param("date", ""))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("date 不能为空"));
+            mvc(controller).perform(get("/timeRecord/query").param("date", "invalid"))
+                    .andExpect(status().isBadRequest());
+            verifyNoInteractions(service);
+            var date = LocalDate.of(2026, 10, 4);
+            var row = new TimeRecordListVO();
+            row.setId("9223372036854775807"); row.setCategoryId(9223372036854775806L); row.setDate(date);
+            when(service.queryDay(1L, date)).thenReturn(Collections.nCopies(151, row));
             mvc(controller).perform(get("/timeRecord/query").param("date", date.toString()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.length()").value(151))
@@ -194,8 +208,11 @@ class QueryHttpContractTest {
     @Test
     void testInvalidQuery_非法日期和枚举返回400且不调用业务() throws Exception {
         ExpController expense = mock(ExpController.class);
-        mvc(expense).perform(get("/expense/query").param("startTime", "not-a-date"))
-                .andExpect(status().isBadRequest());
+        try (var login = mockStatic(StpUtil.class)) {
+            login.when(StpUtil::getLoginIdAsString).thenReturn("1");
+            mvc(expense).perform(get("/expense/query").param("startTime", "not-a-date"))
+                    .andExpect(status().isBadRequest());
+        }
         verifyNoInteractions(expense);
         MovieController movie = mock(MovieController.class);
         mvc(movie).perform(get("/movie/page").param("statuses", "unknown"))
@@ -237,7 +254,7 @@ class QueryHttpContractTest {
 
     @Test
     void testNotification_GET不触发发送() throws Exception {
-        LeetcodeController controller = mock(LeetcodeController.class);
+        LeetcodeAdminController controller = mock(LeetcodeAdminController.class);
         MockMvc mvc = mvc(controller);
         mvc.perform(get("/leetcode/notifyTodayQuestion")).andExpect(status().isMethodNotAllowed());
         verifyNoInteractions(controller);

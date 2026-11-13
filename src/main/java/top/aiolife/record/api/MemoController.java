@@ -1,30 +1,17 @@
 package top.aiolife.record.api;
 
 import io.swagger.v3.oas.annotations.Operation;
-
-import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import top.aiolife.core.mybatis.IlikeQuery;
-import top.aiolife.core.query.QueryOrder;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.convertor.RecordApiConvertor;
-import top.aiolife.record.mapper.IMemoMapper;
 import top.aiolife.record.pojo.entity.MemoEntity;
 import top.aiolife.record.pojo.query.MemoQuery;
 import top.aiolife.record.pojo.req.MemoCreateReq;
@@ -38,98 +25,56 @@ import top.aiolife.record.service.IMemoService;
  * @author Lys
  * @date 2025/12/07
  */
-@Slf4j
+@Tag(name = "备忘")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/memo")
 public class MemoController {
 
     private final IMemoService memoService;
-    private final IMemoMapper memoMapper;
 
-    /**
-     * 查询列表
-     */
     @Operation(summary = "分页查询备忘")
     @GetMapping("/query")
-    public ApiResponse<PageResp<MemoVO>> query(@QueryParams CommonQuery<MemoQuery> requestQuery) {
-        CommonQuery<MemoEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromMemoQuery);
-        long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<MemoEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(MemoEntity::getUserId, userId);
-
-        if (query.getCondition() != null && query.getCondition().getContent() != null) {
-            IlikeQuery.anyOf(lambdaQueryWrapper, query.getCondition().getContent(), MemoEntity::getContent);
-        }
-
-        QueryOrder.descNullsLast(lambdaQueryWrapper, MemoEntity::getUpdateTime, MemoEntity::getId);
-
-        Page<MemoEntity> page = new Page<>(query.getPage(), query.getPageSize());
-
-        Page<MemoEntity> resultPage = memoMapper.selectPage(page, lambdaQueryWrapper);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toMemoVOPage(PageResp.of(resultPage.getRecords(), resultPage.getTotal())));
+    public ApiResponse<PageResp<MemoVO>> query(@CurrentUserId String userId,
+                                               @QueryParams CommonQuery<MemoQuery> requestQuery) {
+        MemoQuery condition = requestQuery.getCondition();
+        PageResp<MemoEntity> page = memoService.pageForUser(
+                IdCodec.decode(userId),
+                condition == null ? null : condition.getContent(),
+                requestQuery.getPage(),
+                requestQuery.getPageSize());
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toMemoVOPage(page));
     }
 
-    /** 完整编辑详情只按本人 ID 获取；首页摘要不包含正文。 */
     @Operation(summary = "查询备忘详情")
     @GetMapping("/{id}")
-    public ApiResponse<MemoVO> detail(@PathVariable Long id) {
-        MemoEntity entity = memoMapper.selectOne(new LambdaQueryWrapper<MemoEntity>()
-                .eq(MemoEntity::getUserId, StpUtil.getLoginIdAsLong()).eq(MemoEntity::getId, id));
-        if (entity == null) throw new IllegalArgumentException("笔记不存在或无权访问");
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toMemoVO(entity));
+    public ApiResponse<MemoVO> detail(@CurrentUserId String userId, @PathVariable String id) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toMemoVO(
+                memoService.getOwned(IdCodec.decode(userId), IdCodec.decode(id))));
     }
 
-    /**
-     * 新增
-     */
     @Operation(summary = "新增备忘")
     @PostMapping
-    public ApiResponse<Boolean> save(@Valid @RequestBody MemoCreateReq entityReq) {
+    public ApiResponse<Boolean> save(@CurrentUserId String userId,
+                                     @Valid @RequestBody MemoCreateReq entityReq) {
         MemoEntity entity = RecordApiConvertor.INSTANCE.fromMemoCreateReq(entityReq);
-        entity.setUserId(StpUtil.getLoginIdAsLong());
-        entity.setCreateUser(StpUtil.getLoginIdAsLong());
-        entity.setCreateTime(LocalDateTime.now());
-        entity.setUpdateTime(LocalDateTime.now());
-        memoMapper.insert(entity);
+        memoService.createForUser(IdCodec.decode(userId), entity);
         return ApiResponse.success(true);
     }
 
-    /**
-     * 更新
-     */
     @Operation(summary = "更新备忘")
     @PutMapping("/{id}")
-    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @Valid @RequestBody MemoUpdateReq entityReq) {
+    public ApiResponse<Boolean> update(@CurrentUserId String userId, @PathVariable String id,
+                                       @Valid @RequestBody MemoUpdateReq entityReq) {
         MemoEntity entity = RecordApiConvertor.INSTANCE.fromMemoUpdateReq(entityReq);
-        Long userId = StpUtil.getLoginIdAsLong();
-        entity.setId(id);
-        entity.setUserId(userId);
-        entity.setUpdateUser(userId);
-
-        // 只有在修改内容/标题时才更新时间，如果是单纯点击隐藏内容则不更新时间
-        if (entity.getContent() != null || entity.getTitle() != null) {
-            entity.setUpdateTime(LocalDateTime.now());
-        }
-
-        LambdaQueryWrapper<MemoEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(MemoEntity::getId, entity.getId());
-        wrapper.eq(MemoEntity::getUserId, userId);
-
-        memoMapper.update(entity, wrapper);
+        memoService.updateForUser(IdCodec.decode(userId), IdCodec.decode(id), entity);
         return ApiResponse.success(true);
     }
 
-    /**
-     * 删除
-     */
     @Operation(summary = "删除备忘")
     @DeleteMapping("/{id}")
-    public ApiResponse<Boolean> delete(@PathVariable("id") Long id) {
-        LambdaQueryWrapper<MemoEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(MemoEntity::getId, id);
-        wrapper.eq(MemoEntity::getUserId, StpUtil.getLoginIdAsLong());
-        memoMapper.delete(wrapper);
+    public ApiResponse<Boolean> delete(@CurrentUserId String userId, @PathVariable String id) {
+        memoService.deleteForUser(IdCodec.decode(userId), IdCodec.decode(id));
         return ApiResponse.success(true);
     }
 }

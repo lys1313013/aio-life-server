@@ -1,34 +1,32 @@
 package top.aiolife.record.api;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-
-import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import top.aiolife.core.query.QueryOrder;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
-import java.util.Map;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
-import top.aiolife.core.resq.ApiResponse;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.query.QueryParams;
-import top.aiolife.core.query.PaginationRequest;
-import top.aiolife.record.pojo.query.TaskPageQuery;
+import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.convertor.RecordApiConvertor;
-import top.aiolife.record.mapper.ITaskMapper;
 import top.aiolife.record.pojo.entity.TaskEntity;
+import top.aiolife.record.pojo.query.TaskPageQuery;
 import top.aiolife.record.pojo.req.TaskCreateReq;
 import top.aiolife.record.pojo.req.TaskSortReq;
 import top.aiolife.record.pojo.req.TaskUpdateReq;
 import top.aiolife.record.pojo.vo.TaskVO;
-import top.aiolife.record.service.ITaskDetail;
 import top.aiolife.record.service.ITaskService;
 
 /**
@@ -37,7 +35,6 @@ import top.aiolife.record.service.ITaskService;
  * @author Lys
  * @date 2025/04/12 14:46
  */
-@Slf4j
 @Tag(name = "待办 主任务 任务列表")
 @RestController
 @AllArgsConstructor
@@ -46,117 +43,46 @@ public class TaskController {
 
     private final ITaskService taskService;
 
-    private final ITaskMapper taskMapper;
-
-    private final ITaskDetail taskDetailService;
-
-    public ITaskMapper getBaseMapper() {
-        return taskMapper;
-    }
-
-    @GetMapping()
+    @GetMapping
     @Operation(summary = "分页查询待办主任务")
-    public ApiResponse<PageResp<TaskVO>> queryPage(@QueryParams TaskPageQuery query) {
-        query.validatePagination();
-        return query(query.getTaskId(), query.getPage(), query.getPageSize());
+    public ApiResponse<PageResp<TaskVO>> queryPage(@CurrentUserId String userId,
+                                                   @QueryParams TaskPageQuery query) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskVOPage(
+                taskService.pageForUser(IdCodec.decode(userId), query.getTaskId(),
+                        query.getPage(), query.getPageSize())));
     }
 
-    public ApiResponse<PageResp<TaskVO>> query(Long taskId, int pageNumber, int pageSize) {
-        PaginationRequest.validate(pageNumber, pageSize, PaginationRequest.MAX_PAGE_SIZE);
-        Long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<TaskEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(TaskEntity::getUserId, userId);
-        if (taskId != null) {
-            lambdaQueryWrapper.eq(TaskEntity::getId, taskId);
-        }
-
-        QueryOrder.ascNullsFirst(lambdaQueryWrapper, TaskEntity::getSortOrder, TaskEntity::getId);        // 分页
-        Page<TaskEntity> page = new Page<>(pageNumber, pageSize);
-        IPage<TaskEntity> iPage = getBaseMapper().selectPage(page, lambdaQueryWrapper);
-        List<TaskEntity> records = iPage.getRecords();
-        // 获取未完成任务数
-        List<Long> taskIdList = records.stream().map(TaskEntity::getId).toList();
-        Map<Long, Integer> unCompletedCountMap = taskDetailService.getUnCompletedCount(taskIdList, userId);
-        records.forEach(record -> {
-            Integer count = unCompletedCountMap.get(record.getId());
-            record.setUnCompletedCount(count != null ? count : 0);
-        });
-
-        PageResp<TaskEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskVOPage(objectPageResp));
-    }
-
-    /**
-     * 插入或更新
-     *
-     * @param entity
-     */
     @PostMapping
     @Operation(summary = "新增待办主任务")
-    public ApiResponse<TaskVO> save(@Valid @RequestBody TaskCreateReq entityReq) {
+    public ApiResponse<TaskVO> save(@CurrentUserId String userId,
+                                    @Valid @RequestBody TaskCreateReq entityReq) {
         TaskEntity entity = RecordApiConvertor.INSTANCE.fromTaskCreateReq(entityReq);
-        long userId = StpUtil.getLoginIdAsLong();
-        entity.setId(null);
-        entity.setUserId(userId);
-        entity.fillCreateCommonField(userId);
-        getBaseMapper().insert(entity);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskVO(entity));
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskVO(
+                taskService.createForUser(IdCodec.decode(userId), entity)));
     }
 
-    /**
-     * 更新
-     *
-     * @param entity
-     */
     @PutMapping("/{id}")
     @Operation(summary = "更新待办主任务")
-    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @Valid @RequestBody TaskUpdateReq entityReq) {
+    public ApiResponse<Boolean> update(@CurrentUserId String userId, @PathVariable("id") String id,
+                                       @Valid @RequestBody TaskUpdateReq entityReq) {
         TaskEntity entity = RecordApiConvertor.INSTANCE.fromTaskUpdateReq(entityReq);
-        long userId = StpUtil.getLoginIdAsLong();
-        entity.setId(id);
-        entity.setUserId(null);
-        entity.fillUpdateCommonField(userId);
-        LambdaQueryWrapper<TaskEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(TaskEntity::getId, id);
-        wrapper.eq(TaskEntity::getUserId, userId);
-        getBaseMapper().update(entity, wrapper);
+        taskService.updateForUser(IdCodec.decode(userId), IdCodec.decode(id), entity);
         return ApiResponse.success();
     }
 
-    /**
-     * 删除
-     * @param entity id
-     */
-    @Operation(summary = "删除待办主任务")
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable("id") Long id) {
-        LambdaQueryWrapper<TaskEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(TaskEntity::getId, id);
-        wrapper.eq(TaskEntity::getUserId, StpUtil.getLoginIdAsLong());
-        getBaseMapper().delete(wrapper);
+    @Operation(summary = "删除待办主任务")
+    public ApiResponse<Void> delete(@CurrentUserId String userId, @PathVariable("id") String id) {
+        taskService.deleteForUser(IdCodec.decode(userId), IdCodec.decode(id));
         return ApiResponse.success();
     }
 
-    /**
-     * 拖拽排序
-     *
-     * @param list 只传id、columnId和sortOrder
-     */
-    @Operation(summary = "调整待办主任务排序")
     @PostMapping("/reSort")
-    public ApiResponse<Void> reSort(@NotEmpty @RequestBody List<@NotNull @Valid TaskSortReq> requests) {
+    @Operation(summary = "调整待办主任务排序")
+    public ApiResponse<Void> reSort(@CurrentUserId String userId,
+                                    @Valid @NotEmpty @RequestBody List<@NotNull @Valid TaskSortReq> requests) {
         List<TaskEntity> list = requests.stream().map(RecordApiConvertor.INSTANCE::fromTaskSortReq).toList();
-        Long userId = StpUtil.getLoginIdAsLong();
-        for (TaskEntity entity : list) {
-            TaskEntity update = new TaskEntity();
-            update.setSortOrder(entity.getSortOrder());
-            update.setColumnId(entity.getColumnId());
-            update.fillUpdateCommonField(userId);
-            LambdaQueryWrapper<TaskEntity> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(TaskEntity::getId, entity.getId());
-            wrapper.eq(TaskEntity::getUserId, userId);
-            getBaseMapper().update(update, wrapper);
-        }
+        taskService.reSort(IdCodec.decode(userId), list);
         return ApiResponse.success();
     }
 }

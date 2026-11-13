@@ -35,7 +35,7 @@ class ThoughtControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new ThoughtEntity());
 
-        var response = thoughtController.query(ApiRequestFixtures.query(query, ThoughtQuery.class));
+        var response = thoughtController.query(String.valueOf(TEST_USER_ID), ApiRequestFixtures.query(query, ThoughtQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);
@@ -43,7 +43,7 @@ class ThoughtControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void testDashboard_获取看板闪念() {
-        var response = thoughtController.dashboardThoughts();
+        var response = thoughtController.dashboardThoughts(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
         assertNotNull(response.getData());
     }

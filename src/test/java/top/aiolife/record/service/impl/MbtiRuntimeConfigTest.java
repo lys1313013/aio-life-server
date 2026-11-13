@@ -19,7 +19,7 @@ class MbtiRuntimeConfigTest {
         var config = mock(IntegrationSystemConfigService.class);
         var http = new RestTemplate();
         var server = MockRestServiceServer.bindTo(http).build();
-        var service = new MbtiResultServiceImpl(http, config);
+        var service = new MbtiResultServiceImpl(http, config, new com.fasterxml.jackson.databind.ObjectMapper());
         when(config.mbti()).thenReturn(new MbtiSnapshot("first-key", "https://first.example.com"));
         server.expect(requestTo("https://first.example.com/v1/new_test?api_key=first-key&lang=cn"))
                 .andRespond(withSuccess("{\"data\":{\"test_id\":\"first-test\",\"test_url\":\"https://test.example.com\"}}", MediaType.APPLICATION_JSON));
@@ -29,7 +29,8 @@ class MbtiRuntimeConfigTest {
         when(config.mbti()).thenReturn(new MbtiSnapshot("second&key", "https://second.example.com"));
         assertEquals("INTJ", service.checkTest("test&id").get("mbtiType"));
         when(config.mbti()).thenReturn(new MbtiSnapshot("", "https://second.example.com"));
-        assertEquals(false, service.createTest().get("success"));
+        var missingKey = assertThrows(top.aiolife.core.exception.ApiException.class, service::createTest);
+        assertTrue(missingKey.getMessage().contains("MBTI API Key"));
         assertEquals(false, service.checkTest("any").get("success"));
         server.verify();
     }
@@ -40,9 +41,10 @@ class MbtiRuntimeConfigTest {
         var http = new RestTemplate();
         var server = MockRestServiceServer.bindTo(http).build();
         server.expect(anything()).andRespond(request -> { throw new IOException(request.getURI().toString()); });
-        var response = new MbtiResultServiceImpl(http, config).createTest();
-        assertEquals(false, response.get("success"));
-        assertFalse(response.toString().contains("synthetic-secret"));
+        var error = assertThrows(top.aiolife.core.exception.ApiException.class, () ->
+                new MbtiResultServiceImpl(http, config, new com.fasterxml.jackson.databind.ObjectMapper()).createTest());
+        assertFalse(error.getMessage().contains("synthetic-secret"));
+        assertFalse(error.toString().contains("synthetic-secret"));
         server.verify();
     }
 }

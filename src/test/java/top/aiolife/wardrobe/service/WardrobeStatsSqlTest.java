@@ -1,5 +1,7 @@
 package top.aiolife.wardrobe.service;
 
+import top.aiolife.record.service.RecordImageService;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
@@ -20,6 +22,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import top.aiolife.config.JsonConfig;
+import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.support.CurrentSchema;
 import top.aiolife.wardrobe.api.WardrobeController;
 import top.aiolife.wardrobe.mapper.WardrobeCategoryMapper;
@@ -56,7 +59,7 @@ class WardrobeStatsSqlTest {
         configuration.addMapper(WardrobeItemMapper.class);
         session = new MybatisSqlSessionFactoryBuilder().build(configuration).openSession();
         categories = mock(WardrobeCategoryMapper.class);
-        service = new WardrobeItemServiceImpl(categories);
+        service = new WardrobeItemServiceImpl(categories, org.mockito.Mockito.mock(RecordImageService.class));
         ReflectionTestUtils.setField(service, "baseMapper", session.getMapper(WardrobeItemMapper.class));
     }
 
@@ -123,9 +126,11 @@ class WardrobeStatsSqlTest {
         var json = new JsonConfig().jacksonObjectMapper(Jackson2ObjectMapperBuilder.json());
         var mvc = MockMvcBuilders.standaloneSetup(
                         new WardrobeController(service, mock(IWardrobeCategoryService.class)))
+                .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(get("/wardrobe/stats").param("userId", "8"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(0))

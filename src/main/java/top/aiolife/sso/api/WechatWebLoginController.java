@@ -1,9 +1,8 @@
 package top.aiolife.sso.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-import cn.dev33.satoken.context.SaHolder;
-import cn.dev33.satoken.stp.StpUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -11,15 +10,23 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
+import top.aiolife.sso.service.AuthService;
 import top.aiolife.sso.wechat.WechatWebLoginService;
 
 import java.util.Map;
 
+/**
+ * 微信网页扫码登录控制器。
+ *
+ * @author Lys
+ * @date 2026/11/13
+ */
+@Tag(name = "微信网页登录")
 @RestController
 @RequestMapping("/auth/wechat/web")
 @RequiredArgsConstructor
@@ -62,30 +69,28 @@ public class WechatWebLoginController {
 
     @Operation(summary = "扫描微信网页登录二维码")
     @PostMapping("/scan")
-    public ApiResponse<Map<String, String>> scan(@Valid @RequestBody ScanRequest body) {
-        return state(service.scan(body.scene(), requireSession()));
+    public ApiResponse<Map<String, String>> scan(@CurrentUserId String userId, @Valid @RequestBody ScanRequest body) {
+        AuthService.requireAccountSession();
+        return state(service.scan(body.scene(), IdCodec.decode(userId)));
     }
 
     @Operation(summary = "确认微信网页登录")
     @PostMapping("/confirm")
-    public ApiResponse<Map<String, String>> confirm(@Valid @RequestBody ConfirmRequest body, HttpServletRequest request) {
-        return state(service.confirm(body.scene(), requireSession(), body.loginCode(), request.getRemoteAddr()));
+    public ApiResponse<Map<String, String>> confirm(@CurrentUserId String userId,
+                                                    @Valid @RequestBody ConfirmRequest body,
+                                                    HttpServletRequest request) {
+        AuthService.requireAccountSession();
+        return state(service.confirm(body.scene(), IdCodec.decode(userId), body.loginCode(), request.getRemoteAddr()));
     }
 
     @Operation(summary = "拒绝微信网页登录")
     @PostMapping("/cancel")
-    public ApiResponse<Map<String, String>> cancel(@Valid @RequestBody ScanRequest body) {
-        return state(service.cancel(body.scene(), requireSession()));
+    public ApiResponse<Map<String, String>> cancel(@CurrentUserId String userId, @Valid @RequestBody ScanRequest body) {
+        AuthService.requireAccountSession();
+        return state(service.cancel(body.scene(), IdCodec.decode(userId)));
     }
 
     private ApiResponse<Map<String, String>> state(String value) { return ApiResponse.success(Map.of("status", value)); }
-
-    private long requireSession() {
-        if (Boolean.TRUE.equals(SaHolder.getStorage().get("IS_API_KEY_AUTH"))) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "请使用账号登录后操作");
-        }
-        return StpUtil.getLoginIdAsLong();
-    }
 
     public record BrowserRequest(@NotBlank @Pattern(regexp = "[a-f0-9]{32}") String scene,
                                  @NotBlank @Pattern(regexp = "[a-f0-9]{64}") String browserSecret) {}

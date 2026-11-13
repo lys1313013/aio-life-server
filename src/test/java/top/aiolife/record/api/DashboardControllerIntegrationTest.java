@@ -19,7 +19,7 @@ class DashboardControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void testGetTasks_获取任务列表() {
-        var response = dashboardController.getTasks();
+        var response = dashboardController.getTasks(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
         assertNotNull(response.getData());
     }

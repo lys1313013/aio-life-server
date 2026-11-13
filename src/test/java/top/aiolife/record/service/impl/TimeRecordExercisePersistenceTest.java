@@ -71,14 +71,14 @@ class TimeRecordExercisePersistenceTest {
         jdbc = new JdbcTemplate(source);
         jdbc.execute("""
                 CREATE TABLE time_record (
-                    id VARCHAR(32) PRIMARY KEY, user_id BIGINT, category_id BIGINT, date DATE,
+                    id BIGINT PRIMARY KEY, user_id BIGINT, category_id BIGINT, date DATE,
                     start_minute INT, end_minute INT, title VARCHAR(255), description VARCHAR(255), duration_minutes INT,
                     relate_type INT, relate_id BIGINT, is_manual BIGINT, is_deleted INT DEFAULT 0,
                     create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP)
                 """);
         jdbc.execute("""
                 CREATE TABLE exercise_record (
-                    id BIGINT PRIMARY KEY, user_id BIGINT, time_id VARCHAR(32), exercise_type_id BIGINT,
+                    id BIGINT PRIMARY KEY, user_id BIGINT, time_id BIGINT, exercise_type_id BIGINT,
                     exercise_date DATE, exercise_count INT CHECK (exercise_count >= 0), description VARCHAR(255),
                     is_deleted INT DEFAULT 0, create_user BIGINT, update_user BIGINT,
                     create_time TIMESTAMP, update_time TIMESTAMP)
@@ -98,7 +98,7 @@ class TimeRecordExercisePersistenceTest {
         var categories = mock(ITimeTrackerCategoryService.class);
         var target = new TimeRecordServiceImpl(mapper, exercises, mock(IReadRecordService.class),
                 mock(IMovieService.class), mock(IWorkCalendarService.class),
-                new RecommendationDataCache(15000), categories, guard);
+                new RecommendationDataCache(15000), categories, guard, mock(UserDictDataService.class));
         ReflectionTestUtils.setField(target, "baseMapper", mapper);
         ReflectionTestUtils.setField(target, "timeRecordCacheManager", new ConcurrentMapCacheManager("timeRecordDay:v1"));
         var proxy = new ProxyFactory(target);
@@ -109,15 +109,16 @@ class TimeRecordExercisePersistenceTest {
         interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
         proxy.addAdvice(interceptor);
         service = (TimeRecordServiceImpl) proxy.getProxy();
-        controller = new TimeRecordController(guard, service, exercises, categories, mock(UserDictDataService.class));
+        controller = new TimeRecordController(service);
         login = mockStatic(StpUtil.class);
         login.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+        login.when(StpUtil::getLoginIdAsString).thenReturn("1");
         jdbc.update("""
                 INSERT INTO time_record (id, user_id, date, title, start_minute, end_minute, duration_minutes)
-                VALUES ('time-1', 1, ?, '原始时迹', 540, 599, 60)
+                VALUES (1001, 1, ?, '原始时迹', 540, 599, 60)
                 """, DATE);
-        addExercise(FIRST_ID, 1L, "time-1");
-        addExercise(SECOND_ID, 1L, "time-1");
+        addExercise(FIRST_ID, 1L, 1001L);
+        addExercise(SECOND_ID, 1L, 1001L);
     }
 
     @AfterEach
@@ -130,29 +131,29 @@ class TimeRecordExercisePersistenceTest {
     @CsvSource({"550,,50", ",609,70", "550,609,60", "0,1439,1440", "1439,1439,1"})
     void update_合并未提交端点并保存闭区间时长(Integer start, Integer end, int duration) {
         var request = timeRequest(start, end);
-        request.setId("time-1");
-        service.updateTimeRecord(request);
+        request.setId("1001");
+        service.updateTimeRecord(1L, request);
         assertTime(start == null ? 540 : start, end == null ? 599 : end, duration);
     }
 
     @Test
     void update_只改标题也从原起止时间修正失配时长() {
-        jdbc.update("UPDATE time_record SET duration_minutes = 999 WHERE id = 'time-1'");
+        jdbc.update("UPDATE time_record SET duration_minutes = 999 WHERE id = 1001");
         var request = timeRequest(null, null);
-        request.setId("time-1");
+        request.setId("1001");
         request.setTitle("新标题");
-        service.updateTimeRecord(request);
+        service.updateTimeRecord(1L, request);
         assertTime(540, 599, 60);
-        assertEquals("新标题", jdbc.queryForObject("SELECT title FROM time_record WHERE id = 'time-1'", String.class));
+        assertEquals("新标题", jdbc.queryForObject("SELECT title FROM time_record WHERE id = 1001", String.class));
     }
 
     @ParameterizedTest
     @CsvSource({"-1,599", "540,1440", "1440,1440", "600,599", "600,", ",539", "2147483647,599"})
     void update_拒绝越界和合并后反向区间且保留原记录与运动(Integer start, Integer end) {
         var request = timeRequest(start, end);
-        request.setId("time-1");
+        request.setId("1001");
         request.setTitle("不能写入");
-        assertThrows(IllegalArgumentException.class, () -> service.updateTimeRecord(request));
+        assertThrows(IllegalArgumentException.class, () -> service.updateTimeRecord(1L, request));
         assertTime(540, 599, 60);
         assertOriginal();
     }
@@ -161,25 +162,25 @@ class TimeRecordExercisePersistenceTest {
     @CsvSource({"0,0,1", "0,1439,1440", "540,599,60"})
     void save_按闭区间保存时长(int start, int end, int duration) {
         var request = timeRequest(start, end);
-        String id = service.saveTimeRecord(request);
+        String id = service.saveTimeRecord(1L, request);
         assertEquals(duration, jdbc.queryForObject("SELECT duration_minutes FROM time_record WHERE id = ?", Integer.class, id));
     }
 
     @ParameterizedTest
     @CsvSource({",599", "540,", ",", "-1,0", "0,1440", "600,599"})
     void save_拒绝缺失越界或反向端点且不插入(Integer start, Integer end) {
-        assertThrows(IllegalArgumentException.class, () -> service.saveTimeRecord(timeRequest(start, end)));
+        assertThrows(IllegalArgumentException.class, () -> service.saveTimeRecord(1L, timeRequest(start, end)));
         assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM time_record", Integer.class));
     }
 
     @Test
     void update_不能修改其他用户或已删除时迹() {
         var request = timeRequest(550, null);
-        request.setId("time-1");
-        jdbc.update("UPDATE time_record SET user_id = 2 WHERE id = 'time-1'");
-        assertThrows(RuntimeException.class, () -> service.updateTimeRecord(request));
-        jdbc.update("UPDATE time_record SET user_id = 1, is_deleted = 1 WHERE id = 'time-1'");
-        assertThrows(RuntimeException.class, () -> service.updateTimeRecord(request));
+        request.setId("1001");
+        jdbc.update("UPDATE time_record SET user_id = 2 WHERE id = 1001");
+        assertThrows(RuntimeException.class, () -> service.updateTimeRecord(1L, request));
+        jdbc.update("UPDATE time_record SET user_id = 1, is_deleted = 1 WHERE id = 1001");
+        assertThrows(RuntimeException.class, () -> service.updateTimeRecord(1L, request));
         assertTime(540, 599, 60);
     }
 
@@ -195,8 +196,8 @@ class TimeRecordExercisePersistenceTest {
                     user.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
                     new TransactionTemplate(transactions).executeWithoutResult(tx -> {
                         var request = timeRequest(550, null);
-                        request.setId("time-1");
-                        service.updateTimeRecord(request);
+                        request.setId("1001");
+                        service.updateTimeRecord(1L, request);
                         firstSaved.countDown();
                         await(releaseFirst);
                     });
@@ -207,9 +208,9 @@ class TimeRecordExercisePersistenceTest {
                 try (var user = mockStatic(StpUtil.class)) {
                     user.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
                     var request = timeRequest(null, 609);
-                    request.setId("time-1");
+                    request.setId("1001");
                     secondStarted.countDown();
-                    service.updateTimeRecord(request);
+                    service.updateTimeRecord(1L, request);
                 }
             });
             assertTrue(secondStarted.await(5, TimeUnit.SECONDS));
@@ -243,7 +244,7 @@ class TimeRecordExercisePersistenceTest {
     }
 
     private void assertTime(int start, int end, int duration) {
-        var row = jdbc.queryForMap("SELECT start_minute, end_minute, duration_minutes FROM time_record WHERE id = 'time-1'");
+        var row = jdbc.queryForMap("SELECT start_minute, end_minute, duration_minutes FROM time_record WHERE id = 1001");
         assertEquals(start, row.get("start_minute"));
         assertEquals(end, row.get("end_minute"));
         assertEquals(duration, row.get("duration_minutes"));
@@ -268,7 +269,7 @@ class TimeRecordExercisePersistenceTest {
         assertEquals("2000-01-01 00:00:00.0", jdbc.queryForObject(
                 "SELECT create_time FROM exercise_record WHERE id = ?", Timestamp.class, SECOND_ID).toString());
         assertEquals(2, activeCount());
-        var detail = controller.getById("time-1").getData().getExercises();
+        var detail = controller.getById("1", "1001").getData().getExercises();
         var newId = detail.stream().filter(e -> e.getExerciseCount() == 30).findFirst().orElseThrow().getId();
         save(List.of(exercise(SECOND_ID, 20), exercise(newId, 30)), DATE);
         assertEquals(3, totalCount(), "回传新ID后再次保存不新增或重建");
@@ -280,7 +281,7 @@ class TimeRecordExercisePersistenceTest {
         changed.setExerciseTypeId(88L);
         changed.setDescription(null);
         save(List.of(changed, exercise(SECOND_ID, 10)), DATE.plusDays(1));
-        var detail = controller.getById("time-1").getData().getExercises();
+        var detail = controller.getById("1", "1001").getData().getExercises();
         var first = detail.stream().filter(e -> e.getId() == FIRST_ID).findFirst().orElseThrow();
         assertEquals(88L, first.getExerciseTypeId());
         assertNull(first.getExerciseCount());
@@ -292,14 +293,14 @@ class TimeRecordExercisePersistenceTest {
     @Test
     void update_未传日期使用时迹原日期() {
         save(List.of(exercise(FIRST_ID, 11), exercise(SECOND_ID, 10)), null);
-        assertTrue(controller.getById("time-1").getData().getExercises().stream()
+        assertTrue(controller.getById("1", "1001").getData().getExercises().stream()
                 .allMatch(e -> DATE.equals(e.getExerciseDate())));
     }
 
     @Test
     void update_空列表及未传明细维持清空语义且隔离其他用户时迹() {
-        addExercise(3L, 2L, "time-1");
-        addExercise(4L, 1L, "time-2");
+        addExercise(3L, 2L, 1001L);
+        addExercise(4L, 1L, 1002L);
         save(List.of(), DATE);
         save(null, DATE);
         assertEquals(4, totalCount());
@@ -310,9 +311,9 @@ class TimeRecordExercisePersistenceTest {
 
     @Test
     void update_拒绝其他用户其他时迹已删除不存在重复及非法ID并回滚父记录() {
-        addExercise(3L, 2L, "time-1");
-        addExercise(4L, 1L, "time-2");
-        addExercise(5L, 1L, "time-1");
+        addExercise(3L, 2L, 1001L);
+        addExercise(4L, 1L, 1002L);
+        addExercise(5L, 1L, 1001L);
         jdbc.update("UPDATE exercise_record SET is_deleted = 1 WHERE id = 5");
         for (String invalid : List.of("3", "4", "5", "999", "invalid", "")) {
             var request = exercise(FIRST_ID, 99);
@@ -342,11 +343,13 @@ class TimeRecordExercisePersistenceTest {
 
     @Test
     void http_详情返回字符串ID且请求映射保留ID用于更新() throws Exception {
-        var details = json.valueToTree(controller.getById("time-1").getData()).get("exercises");
+        var details = json.valueToTree(controller.getById("1", "1001").getData()).get("exercises");
         assertTrue(details.get(0).get("id").isTextual());
         var mvc = MockMvcBuilders.standaloneSetup(controller)
+                .setCustomArgumentResolvers(new top.aiolife.core.web.CurrentUserIdArgumentResolver(),
+                        new top.aiolife.core.web.CurrentTokenArgumentResolver())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
-        mvc.perform(put("/timeRecord/time-1").contentType(MediaType.APPLICATION_JSON).content("""
+        mvc.perform(put("/timeRecord/1001").contentType(MediaType.APPLICATION_JSON).content("""
                 {"date":"2026-10-20","exercises":[
                   {"id":"9223372036854775001","exerciseTypeId":"77","exerciseCount":21,"description":null},
                   {"id":"9223372036854775002","exerciseTypeId":"77","exerciseCount":10,"description":"原备注"}]}
@@ -357,11 +360,11 @@ class TimeRecordExercisePersistenceTest {
 
     private void save(List<ExerciseRecordReq> exercises, LocalDate date) {
         var request = new TimeRecordReq();
-        request.setId("time-1");
+        request.setId("1001");
         request.setDate(date);
         request.setTitle("更新时迹");
         request.setExercises(exercises);
-        service.updateTimeRecord(request);
+        service.updateTimeRecord(1L, request);
     }
 
     private ExerciseRecordReq exercise(Long id, Integer count) {
@@ -373,7 +376,7 @@ class TimeRecordExercisePersistenceTest {
         return request;
     }
 
-    private void addExercise(long id, long userId, String timeId) {
+    private void addExercise(long id, long userId, long timeId) {
         jdbc.update("""
                 INSERT INTO exercise_record (id, user_id, time_id, exercise_type_id, exercise_date,
                     exercise_count, description, create_user, update_user, create_time, update_time)
@@ -386,11 +389,11 @@ class TimeRecordExercisePersistenceTest {
     }
 
     private int activeCount() {
-        return jdbc.queryForObject("SELECT COUNT(*) FROM exercise_record WHERE user_id = 1 AND time_id = 'time-1' AND is_deleted = 0", Integer.class);
+        return jdbc.queryForObject("SELECT COUNT(*) FROM exercise_record WHERE user_id = 1 AND time_id = 1001 AND is_deleted = 0", Integer.class);
     }
 
     private void assertOriginal() {
-        assertEquals("原始时迹", jdbc.queryForObject("SELECT title FROM time_record WHERE id = 'time-1'", String.class));
+        assertEquals("原始时迹", jdbc.queryForObject("SELECT title FROM time_record WHERE id = 1001", String.class));
         assertEquals(2, activeCount());
         assertEquals(10, jdbc.queryForObject("SELECT exercise_count FROM exercise_record WHERE id = ?", Integer.class, FIRST_ID));
     }

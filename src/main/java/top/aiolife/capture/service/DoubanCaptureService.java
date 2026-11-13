@@ -17,6 +17,8 @@ import top.aiolife.core.pojo.entity.BaseEntity;
 import top.aiolife.record.mapper.IMovieMapper;
 import top.aiolife.record.mapper.ReadRecordMapper;
 import top.aiolife.record.pojo.entity.MovieEntity;
+import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.service.RecordImageService;
 import top.aiolife.record.pojo.entity.ReadRecordEntity;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.service.IMovieService;
@@ -38,6 +40,7 @@ public class DoubanCaptureService {
     private final CaptureRequests requests;
     private final ObjectMapper json;
     private final DoubanSyncCoverService syncCovers;
+    private final RecordImageService images;
     private static final String[] EDITABLE = {
         "title",
         "author",
@@ -119,6 +122,7 @@ public class DoubanCaptureService {
             if (!version(found).equals(text(request, "version", true, 64)))
                 throw conflict("记录已变化，请重新预览");
         }
+        fillImage(found);
         ObjectNode merged = found == null ? json.createObjectNode() : recordFields(found);
         patch.properties().forEach(e -> merged.set(e.getKey(), e.getValue()));
         String title = text(merged, "title", true, 255);
@@ -172,11 +176,11 @@ public class DoubanCaptureService {
                                 .eq(ReadRecordEntity::getId, entity.getId())
                                 .eq(ReadRecordEntity::getUserId, user)
                                 .set(entity.getRemark() == null, ReadRecordEntity::getRemark, null)
-                                .set(entity.getFileId() == null, ReadRecordEntity::getFileId, null)
                                 .set(total == null, ReadRecordEntity::getTotalProgress, null)
                                 .set(entity.getAuthor() == null, ReadRecordEntity::getAuthor, null);
                 readMapper.update(entity, w);
             }
+            images.replace(user, FileBizType.READ_RECORD, entity.getId(), file);
             return requests.finish(
                     key, result(subject, entity, found == null ? "created" : "updated"));
         }
@@ -207,11 +211,11 @@ public class DoubanCaptureService {
                             .eq(MovieEntity::getUserId, user)
                             .set(entity.getRating() == null, MovieEntity::getRating, null)
                             .set(entity.getRemark() == null, MovieEntity::getRemark, null)
-                            .set(entity.getFileId() == null, MovieEntity::getFileId, null)
                             .set(total == null, MovieEntity::getTotalProgress, null)
                             .set(entity.getDirector() == null, MovieEntity::getDirector, null);
             movieMapper.update(entity, w);
         }
+        images.replace(user, FileBizType.MOVIE, entity.getId(), file);
         return requests.finish(key, result(subject, entity, found == null ? "created" : "updated"));
     }
 
@@ -323,6 +327,7 @@ public class DoubanCaptureService {
             }
             movie.fillCreateCommonField(user);
             movieMapper.insert(movie);
+            images.replace(user, FileBizType.MOVIE, movie.getId(), movie.getFileId());
             operation = "created";
         }
         ObjectNode result = json.createObjectNode();
@@ -349,6 +354,7 @@ public class DoubanCaptureService {
     }
 
     private ObjectNode recordFields(BaseEntity e) {
+        fillImage(e);
         JsonNode n = json.valueToTree(e);
         ObjectNode out = json.createObjectNode();
         for (String k : EDITABLE) if (n.has(k)) out.set(k, n.get(k));
@@ -357,7 +363,16 @@ public class DoubanCaptureService {
     }
 
     private String version(BaseEntity e) {
+        fillImage(e);
         return requests.hash(json.valueToTree(e));
+    }
+
+    private void fillImage(BaseEntity entity) {
+        if (entity instanceof MovieEntity movie) {
+            movie.setFileId(images.find(movie.getUserId(), FileBizType.MOVIE, movie.getId()));
+        } else if (entity instanceof ReadRecordEntity read) {
+            read.setFileId(images.find(read.getUserId(), FileBizType.READ_RECORD, read.getId()));
+        }
     }
 
     private ObjectNode existingView(BaseEntity e) {

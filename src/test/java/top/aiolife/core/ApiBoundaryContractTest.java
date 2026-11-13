@@ -59,6 +59,7 @@ class ApiBoundaryContractTest {
     @BeforeAll
     static void tables() {
         TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "api-boundary"), TaskEntity.class);
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "api-boundary-cbti"), CbtiResultEntity.class);
     }
 
     @Test
@@ -98,11 +99,15 @@ class ApiBoundaryContractTest {
     @Test
     void HTTP更新忽略所属用户审计逻辑删除及只读字段() throws Exception {
         var mapper = mock(ITaskMapper.class);
-        var controller = new TaskController(mock(ITaskService.class), mapper, mock(ITaskDetail.class));
+        var service = new top.aiolife.record.service.impl.TaskServiceImpl(mock(ITaskDetail.class));
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "baseMapper", mapper);
+        var controller = new TaskController(service);
         var mvc = MockMvcBuilders.standaloneSetup(controller)
+                .setCustomArgumentResolvers(new top.aiolife.core.web.CurrentUserIdArgumentResolver(),
+                        new top.aiolife.core.web.CurrentTokenArgumentResolver())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
         try (var login = mockStatic(StpUtil.class)) {
-            login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("11");
             mvc.perform(put("/tasks/9007199254740993").contentType(MediaType.APPLICATION_JSON).content("""
                     {"id":"2","userId":"22","createUser":"22","createTime":"2000-01-01 00:00:00",
                      "isDeleted":1,"unCompletedCount":999,"content":"允许修改的内容"}
@@ -127,11 +132,15 @@ class ApiBoundaryContractTest {
             call.<TaskEntity>getArgument(0).setId(9007199254740993L);
             return 1;
         });
-        var controller = new TaskController(mock(ITaskService.class), mapper, mock(ITaskDetail.class));
+        var service = new top.aiolife.record.service.impl.TaskServiceImpl(mock(ITaskDetail.class));
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "baseMapper", mapper);
+        var controller = new TaskController(service);
         var mvc = MockMvcBuilders.standaloneSetup(controller)
+                .setCustomArgumentResolvers(new top.aiolife.core.web.CurrentUserIdArgumentResolver(),
+                        new top.aiolife.core.web.CurrentTokenArgumentResolver())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
         try (var login = mockStatic(StpUtil.class)) {
-            login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("11");
             JsonNode response = json.readTree(mvc.perform(post("/tasks").contentType(MediaType.APPLICATION_JSON)
                     .content("{\"content\":\"测试任务\",\"columnId\":\"9007199254740995\",\"userId\":\"22\",\"id\":\"3\"}"))
                     .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
@@ -211,22 +220,26 @@ class ApiBoundaryContractTest {
 
     @Test
     void 动态人格结果不透传持久化对象和内部归属() {
-        var service = mock(ICbtiService.class);
+        var personalityMapper = mock(top.aiolife.record.mapper.ICbtiPersonalityMapper.class);
+        var resultMapper = mock(top.aiolife.record.mapper.ICbtiResultMapper.class);
         var personality = new CbtiPersonalityEntity();
         personality.setCode("fixture"); personality.setImageObject("fixture/image.png");
         personality.setCreateTime(LocalDateTime.now()); personality.setIsDeleted(0);
-        var history = new HashMap<String, Object>();
-        history.put("id", 9007199254740993L); history.put("imageObject", "fixture/image.png");
-        var detail = new HashMap<String, Object>();
-        detail.put("id", 9007199254740993L); detail.put("userId", 11L); detail.put("personality", personality);
-        when(service.getUserHistory(11L)).thenReturn(List.of(history));
-        when(service.getHistoryDetail(1L, 11L)).thenReturn(detail);
-        var controller = new CbtiController(service, json);
+        when(personalityMapper.selectOne(any())).thenReturn(personality);
+        var stored = new CbtiResultEntity();
+        stored.setId(1L); stored.setUserId(11L); stored.setIsDeleted(0); stored.setPersonalityCode("fixture");
+        when(resultMapper.selectList(any())).thenReturn(List.of(stored));
+        when(resultMapper.selectById(1L)).thenReturn(stored);
+        var service = new top.aiolife.record.service.impl.CbtiServiceImpl(personalityMapper, resultMapper, json,
+                mock(top.aiolife.core.util.MinioUtil.class), mock(top.aiolife.config.MinioConfig.class),
+                new top.aiolife.config.CbtiConfig(), mock(top.aiolife.record.config.CbtiImageInitUtil.class),
+                mock(top.aiolife.core.lock.StorageObjectLock.class));
+        var controller = new CbtiController(service);
         try (var login = mockStatic(StpUtil.class)) {
-            login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
-            JsonNode list = json.valueToTree(controller.results().getData());
+            login.when(StpUtil::getLoginIdAsString).thenReturn("11");
+            JsonNode list = json.valueToTree(controller.results("11").getData());
             assertFalse(list.get(0).has("imageObject")); assertTrue(list.get(0).has("imageUrl"));
-            JsonNode result = json.valueToTree(controller.resultDetail(1L).getData());
+            JsonNode result = json.valueToTree(controller.resultDetail("11", "1").getData());
             assertFalse(result.has("userId"));
             assertEquals("fixture", result.path("personality").path("code").asText());
             assertFalse(result.path("personality").has("createTime"));

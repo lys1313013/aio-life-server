@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.capture.service.PurchaseSourceGuard.Asset;
 import top.aiolife.capture.service.PurchaseSourceGuard.SourceUnit;
 import top.aiolife.record.mapper.IDeviceMapper;
+import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.service.RecordImageService;
 import top.aiolife.record.pojo.entity.DeviceEntity;
 import top.aiolife.wardrobe.mapper.WardrobeItemMapper;
 import top.aiolife.wardrobe.pojo.entity.WardrobeItemEntity;
@@ -32,6 +34,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class PurchaseCaptureService {
     private final IDeviceMapper devices;
+    private final RecordImageService images;
     private final WardrobeItemMapper wardrobe;
     private final CaptureSecurity access;
     private final CaptureRequests requests;
@@ -220,6 +223,7 @@ public class PurchaseCaptureService {
             d.setPurchasePlace(text(order, "shopName", false, 255));
             d.fillCreateCommonField(user);
             devices.insert(d);
+            images.replace(user, FileBizType.DEVICE, d.getId(), file);
             return d.getId();
         }
         if (name.length() > 100) throw bad("衣物名称最多100字，请编辑名称");
@@ -243,6 +247,7 @@ public class PurchaseCaptureService {
         w.setPrice(price);
         w.fillCreateCommonField(user);
         wardrobe.insert(w);
+        images.replace(user, FileBizType.WARDROBE_ITEM, w.getId(), file);
         return w.getId();
     }
 

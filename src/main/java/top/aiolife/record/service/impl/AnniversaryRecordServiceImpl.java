@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import top.aiolife.core.query.QueryOrder;
 import top.aiolife.record.mapper.IAnniversaryRecordMapper;
 import top.aiolife.record.pojo.entity.AnniversaryRecordEntity;
 import top.aiolife.record.service.IAnniversaryRecordService;
@@ -16,6 +17,29 @@ import top.aiolife.record.service.IAnniversaryRecordService;
 /** 纪念日服务：固定顺序与业务写操作在同一用户锁和事务内保存。 */
 @Service
 public class AnniversaryRecordServiceImpl extends ServiceImpl<IAnniversaryRecordMapper, AnniversaryRecordEntity> implements IAnniversaryRecordService {
+
+    @Override
+    public List<AnniversaryRecordEntity> listForUser(long userId, Integer isPinned) {
+        LambdaQueryWrapper<AnniversaryRecordEntity> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(AnniversaryRecordEntity::getUserId, userId);
+        if (isPinned != null) {
+            validatePin(isPinned);
+            queryWrapper.eq(AnniversaryRecordEntity::getIsPinned, isPinned);
+        }
+        if (Integer.valueOf(1).equals(isPinned)) {
+            queryWrapper.orderByAsc(AnniversaryRecordEntity::getPinnedSortOrder)
+                    .orderByDesc(AnniversaryRecordEntity::getId);
+        } else {
+            QueryOrder.descNullsLast(queryWrapper, AnniversaryRecordEntity::getCreateTime)
+                    .orderByDesc(AnniversaryRecordEntity::getId);
+        }
+        return list(queryWrapper);
+    }
+
+    @Override
+    public AnniversaryRecordEntity getOwned(long userId, long id) {
+        return owned(userId, id);
+    }
 
     @Override
     @Transactional

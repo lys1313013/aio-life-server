@@ -9,6 +9,7 @@ import top.aiolife.sso.pojo.req.ChangePasswordReq;
 import top.aiolife.sso.pojo.req.LoginReq;
 import top.aiolife.sso.pojo.req.RegisterReq;
 import top.aiolife.sso.pojo.req.ResetPasswordReq;
+import top.aiolife.sso.pojo.req.UpdateUserReq;
 import top.aiolife.sso.pojo.vo.UserBasicInfoVO;
 import top.aiolife.sso.pojo.vo.UserInfoVO;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
@@ -79,6 +80,12 @@ public interface IUserService {
 
     /** 获取用户角色字符串；用户不存在时返回 null。 */
     String getRole(long userId);
+
+    /** 获取当前用户角色列表，未配置角色时返回 user。 */
+    List<String> listRoles(long userId);
+
+    /** 更新当前用户个人资料，头像文件 ID 是否提交由请求解析结果决定。 */
+    void updateProfile(long userId, UpdateUserReq req);
 
     /** 获取反馈通知配置可选的管理员用户。 */
     List<UserEntity> listAdminUsers();

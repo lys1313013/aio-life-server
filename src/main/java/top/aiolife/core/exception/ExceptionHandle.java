@@ -61,6 +61,12 @@ public class ExceptionHandle {
                 Map.of("menuPath", e.getMenuPath()));
     }
 
+    @ExceptionHandler(ApiException.class)
+    public ApiResponse<Object> handleApiException(ApiException e) {
+        log.warn("业务异常 code={} message={}", e.getCode(), e.getMessage());
+        return ApiResponse.error(e.getCode(), e.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public ApiResponse<Object> handleException(Exception e) {
         log.error("接口调用异常", LogSafeException.withoutMessages(e));

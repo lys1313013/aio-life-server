@@ -1,5 +1,6 @@
 package top.aiolife.feedback.service;
 
+import java.util.List;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.feedback.pojo.query.FeedbackAdminQuery;
@@ -7,6 +8,7 @@ import top.aiolife.feedback.pojo.req.FeedbackBatchReq;
 import top.aiolife.feedback.pojo.req.FeedbackCommentCreateReq;
 import top.aiolife.feedback.pojo.req.FeedbackCreateReq;
 import top.aiolife.feedback.pojo.req.FeedbackStatusUpdateReq;
+import top.aiolife.feedback.pojo.vo.AdminUserVO;
 import top.aiolife.feedback.pojo.vo.FeedbackCommentVO;
 import top.aiolife.feedback.pojo.vo.FeedbackDetailVO;
 import top.aiolife.feedback.pojo.vo.FeedbackVO;
@@ -88,4 +90,9 @@ public interface IFeedbackService {
      * 管理员：批量操作
      */
     void adminBatch(long adminId, FeedbackBatchReq req);
+
+    /**
+     * 反馈通知可选管理员。
+     */
+    List<AdminUserVO> listAdminUsers();
 }

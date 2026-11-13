@@ -1,15 +1,15 @@
 package top.aiolife.record.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-import cn.dev33.satoken.stp.StpUtil;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.record.client.DoubanAccountClient;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.req.UserBindCreateReq;
@@ -17,12 +17,11 @@ import top.aiolife.record.pojo.req.UserBindUpdateReq;
 import top.aiolife.record.pojo.vo.DoubanAccountVO;
 import top.aiolife.record.pojo.vo.UserBindVO;
 import top.aiolife.record.service.IUserBindService;
-import top.aiolife.record.service.IWereadService;
-import top.aiolife.core.redis.RedisUtil;
 
 /**
  * 用户第三方账号绑定接口
  */
+@Tag(name = "第三方账号绑定")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/userbinds")
@@ -30,35 +29,14 @@ public class UserBindController {
 
     private final IUserBindService userBindService;
 
-    private final IWereadService wereadService;
-
-    private final RedisUtil redisUtil;
-
-    private final DoubanAccountClient doubanAccountClient;
-
-    /**
-     * github 绑定变更后失效 Redis 中缓存的「是否展示 GitHub 卡片」决策，使首页判断立即生效
-     */
-    private void evictGithubVisibleCache(long userId, String platform) {
-        if ("github".equals(platform)) {
-            redisUtil.delete("github:visible:" + userId);
-        }
-    }
-
     /**
      * 获取当前用户的绑定列表
      */
     @Operation(summary = "查询第三方账号绑定")
     @GetMapping("/list")
-    public ApiResponse<List<UserBindVO>> list(@RequestParam(required = false) Boolean includeToken) {
-        long userId = StpUtil.getLoginIdAsLong();
-        List<UserBindEntity> list = userBindService.getBindsByUserId(userId);
-        list.forEach(item -> {
-            // 微信读书凭证始终隐藏，其他平台保留原 includeToken 行为。
-            if ("weread".equalsIgnoreCase(item.getPlatform()) || includeToken == null || !includeToken) {
-                item.setAccessToken(null);
-            }
-        });
+    public ApiResponse<List<UserBindVO>> list(@CurrentUserId String userId,
+                                              @RequestParam(required = false) Boolean includeToken) {
+        List<UserBindEntity> list = userBindService.listForUser(IdCodec.decode(userId), includeToken);
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserBindVOList(list));
     }
 
@@ -68,7 +46,7 @@ public class UserBindController {
     @Operation(summary = "查询豆瓣账号公开昵称")
     @GetMapping("/douban/verify")
     public ApiResponse<DoubanAccountVO> verifyDoubanAccount(@RequestParam String accountId) {
-        return ApiResponse.success(doubanAccountClient.verify(accountId));
+        return ApiResponse.success(userBindService.verifyDoubanAccount(accountId));
     }
 
     /**
@@ -76,36 +54,10 @@ public class UserBindController {
      */
     @Operation(summary = "新增第三方账号绑定")
     @PostMapping
-    public ApiResponse<Boolean> add(@Valid @RequestBody UserBindCreateReq userBindEntityReq) {
+    public ApiResponse<Boolean> add(@CurrentUserId String userId,
+                                    @Valid @RequestBody UserBindCreateReq userBindEntityReq) {
         UserBindEntity userBindEntity = RecordApiConvertor.INSTANCE.fromUserBindCreateReq(userBindEntityReq);
-        long userId = StpUtil.getLoginIdAsLong();
-        userBindEntity.setUserId(userId);
-
-        if ("weread".equalsIgnoreCase(userBindEntity.getPlatform())
-                && (userBindEntity.getAccessToken() == null || userBindEntity.getAccessToken().isBlank())) {
-            return ApiResponse.error("微信读书 API Key 不能为空");
-        }
-
-        // 检查是否存在同平台绑定
-        UserBindEntity exist = userBindService.getBindByUserIdAndPlatform(userId, userBindEntity.getPlatform());
-        if (exist != null) {
-            return ApiResponse.error("该平台账号已绑定，请勿重复添加");
-        }
-
-        if ("weread".equalsIgnoreCase(userBindEntity.getPlatform())) {
-            wereadService.connect(userBindEntity.getAccessToken().trim());
-            return ApiResponse.success(true);
-        }
-
-        userBindEntity.fillCreateCommonField(userId);
-        boolean success;
-        try {
-            success = userBindService.save(userBindEntity);
-        } catch (DuplicateKeyException e) {
-            return ApiResponse.error("该平台账号已绑定，请勿重复添加");
-        }
-        evictGithubVisibleCache(userId, userBindEntity.getPlatform());
-        return ApiResponse.success(success);
+        return ApiResponse.success(userBindService.createForUser(IdCodec.decode(userId), userBindEntity));
     }
 
     /**
@@ -113,46 +65,10 @@ public class UserBindController {
      */
     @Operation(summary = "更新第三方账号绑定")
     @PutMapping
-    public ApiResponse<Boolean> update(@Valid @RequestBody UserBindUpdateReq userBindEntityReq) {
+    public ApiResponse<Boolean> update(@CurrentUserId String userId,
+                                       @Valid @RequestBody UserBindUpdateReq userBindEntityReq) {
         UserBindEntity userBindEntity = RecordApiConvertor.INSTANCE.fromUserBindUpdateReq(userBindEntityReq);
-        long userId = StpUtil.getLoginIdAsLong();
-        userBindEntity.setUserId(userId);
-
-        // 检查记录是否存在
-        if (userBindEntity.getId() == null) {
-            return ApiResponse.error("ID不能为空");
-        }
-        UserBindEntity exist = userBindService.getById(userBindEntity.getId());
-        if (exist == null || !exist.getUserId().equals(userId)) {
-            return ApiResponse.error("记录不存在或无权操作");
-        }
-
-        if ("weread".equalsIgnoreCase(exist.getPlatform()) || "weread".equalsIgnoreCase(userBindEntity.getPlatform())) {
-            if (userBindEntity.getPlatform() != null && !exist.getPlatform().equalsIgnoreCase(userBindEntity.getPlatform())) {
-                return ApiResponse.error("请先解绑，再添加其他平台账号");
-            }
-            // 留空保留原 Key；不接受客户端回写服务端同步元数据。
-            if (userBindEntity.getAccessToken() != null && !userBindEntity.getAccessToken().isBlank()) {
-                wereadService.connect(userBindEntity.getAccessToken().trim());
-            }
-            return ApiResponse.success(true);
-        }
-
-        userBindEntity.fillUpdateCommonField(userId);
-
-        // 如果Access Token为空，则保留原值（不更新）
-        if (userBindEntity.getAccessToken() == null || userBindEntity.getAccessToken().isEmpty()) {
-            userBindEntity.setAccessToken(exist.getAccessToken());
-        }
-
-        boolean success;
-        try {
-            success = userBindService.updateById(userBindEntity);
-        } catch (DuplicateKeyException e) {
-            return ApiResponse.error("该平台账号已绑定，请勿重复添加");
-        }
-        evictGithubVisibleCache(userId, exist.getPlatform());
-        return ApiResponse.success(success);
+        return ApiResponse.success(userBindService.updateForUser(IdCodec.decode(userId), userBindEntity));
     }
 
     /**
@@ -160,18 +76,8 @@ public class UserBindController {
      */
     @Operation(summary = "删除第三方账号绑定")
     @DeleteMapping("/{id}")
-    public ApiResponse<Boolean> delete(@PathVariable Long id) {
-        long userId = StpUtil.getLoginIdAsLong();
-        UserBindEntity entity = userBindService.getById(id);
-        if (entity == null || !entity.getUserId().equals(userId)) {
-            return ApiResponse.error("无权操作或记录不存在");
-        }
-        if ("weread".equalsIgnoreCase(entity.getPlatform())) {
-            wereadService.disconnect();
-            return ApiResponse.success(true);
-        }
-        boolean success = userBindService.removeById(id);
-        evictGithubVisibleCache(userId, entity.getPlatform());
-        return ApiResponse.success(success);
+    public ApiResponse<Boolean> delete(@CurrentUserId String userId, @PathVariable String id) {
+        return ApiResponse.success(userBindService.deleteForUser(
+                IdCodec.decode(userId), IdCodec.decode(id)));
     }
 }

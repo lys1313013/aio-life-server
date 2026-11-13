@@ -6,9 +6,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Validation;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -41,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
@@ -60,21 +63,31 @@ class RecordRequestValidationHttpTest {
     private final ITimeRecordService timeRecords = mock(ITimeRecordService.class);
     private final ObjectMapper json = new JsonConfig().jacksonObjectMapper(new Jackson2ObjectMapperBuilder());
     private MockMvc mvc;
+    private ITaskService taskService;
+    private MockedStatic<StpUtil> stpUtil;
 
     @BeforeEach
     void setup() {
-        ITaskService taskService = mock(ITaskService.class);
+        taskService = mock(ITaskService.class);
+        stpUtil = mockStatic(StpUtil.class);
+        stpUtil.when(StpUtil::getLoginIdAsString).thenReturn("7");
+        stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
         mvc = MockMvcBuilders.standaloneSetup(
-                        new TaskController(taskService, tasks, details),
-                        new TaskDetailController(details, taskService),
-                        new TaskColumnController(columns, mock(ITaskColumnService.class)),
-                        new ExerciseRecordController(exercises, mock(IExerciseRecordService.class)),
-                        new TimeRecordController(mock(SecondaryLockGuard.class), timeRecords,
-                                mock(IExerciseRecordService.class), mock(ITimeTrackerCategoryService.class),
-                                mock(UserDictDataService.class)))
+                        new TaskController(taskService),
+                        new TaskDetailController(details),
+                        new TaskColumnController(mock(ITaskColumnService.class)),
+                        new ExerciseRecordController(mock(IExerciseRecordService.class)),
+                        new TimeRecordController(timeRecords))
+                .setCustomArgumentResolvers(new top.aiolife.core.web.CurrentUserIdArgumentResolver(),
+                        new top.aiolife.core.web.CurrentTokenArgumentResolver())
                 .setControllerAdvice(new ExceptionHandle())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json))
                 .build();
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (stpUtil != null) stpUtil.close();
     }
 
     @Test
@@ -105,23 +118,19 @@ class RecordRequestValidationHttpTest {
 
     @Test
     void testTaskDates_严格使用空格格式() throws Exception {
-        try (var login = mockStatic(StpUtil.class)) {
-            login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
             mvc.perform(put("/tasks/9007199254740993").contentType(MediaType.APPLICATION_JSON)
                             .content("{\"dueDate\":\"2026-10-22 10:30:00\"}"))
                     .andExpect(jsonPath("$.code").value(0));
             var task = ArgumentCaptor.forClass(TaskEntity.class);
-            verify(tasks).update(task.capture(), any());
-            assertEquals(9007199254740993L, task.getValue().getId());
+            verify(taskService).updateForUser(eq(7L), eq(9007199254740993L), task.capture());
             assertEquals(LocalDateTime.of(2026, 10, 22, 10, 30), task.getValue().getDueDate());
 
             mvc.perform(put("/taskDetails").contentType(MediaType.APPLICATION_JSON)
                             .content("{\"id\":\"9007199254740993\",\"startTime\":\"2026-10-22 10:30:00\",\"endTime\":\"2026-10-22 10:30:00\"}"))
                     .andExpect(jsonPath("$.code").value(0));
             var detail = ArgumentCaptor.forClass(TaskDetailEntity.class);
-            verify(details).update(detail.capture(), any());
+            verify(details).updateForUser(eq(7L), detail.capture());
             assertEquals(detail.getValue().getStartTime(), detail.getValue().getEndTime());
-        }
     }
 
     @Test

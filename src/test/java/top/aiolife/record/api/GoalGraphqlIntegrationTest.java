@@ -61,7 +61,7 @@ class GoalGraphqlIntegrationTest {
             var salary = create("salary");
             assertEquals("graphql", goals.selectById(pushups.getId()).getProgressMode());
             assertNull(pushups.getCurrentValue());
-            var refreshed = refresh(pushups, sleep, salary);
+            var refreshed = refresh("101", pushups, sleep, salary);
             assertEquals(0, refreshed.get(0).getCurrentValue().compareTo(new BigDecimal("26")));
             assertEquals(0, refreshed.get(1).getCurrentValue().compareTo(new BigDecimal("25")));
             assertEquals(0, refreshed.get(2).getCurrentValue().compareTo(new BigDecimal("15000.00")));
@@ -75,26 +75,26 @@ class GoalGraphqlIntegrationTest {
             assertEquals(100, preview("salary").getProgressPercent());
 
             // 严格超过：80 尚未达标，81 才达标；同日重复、午睡、00:01、删除、其他用户和范围外均已在夹具中。
-            jdbc.update("INSERT INTO time_record(id,date,category_id,user_id,start_minute,end_minute) WITH RECURSIVE n AS (SELECT 26 AS v UNION ALL SELECT v+1 FROM n WHERE v<80) SELECT CONCAT('extra-',v),(DATE '2026-01-01' + (v-1)),1,101,0,420 FROM n");
+            jdbc.update("INSERT INTO time_record(id,date,category_id,user_id,start_minute,end_minute) WITH RECURSIVE n AS (SELECT 26 AS v UNION ALL SELECT v+1 FROM n WHERE v<80) SELECT (900000 + v),(DATE '2026-01-01' + (v-1)),1,101,0,420 FROM n");
             var equal = preview("sleep");
             assertEquals(0, equal.getCurrentValue().compareTo(new BigDecimal("80")));
             assertFalse(equal.isAchieved()); assertEquals(99, equal.getProgressPercent());
-            jdbc.update("INSERT INTO time_record(id,date,category_id,user_id,start_minute,end_minute) VALUES ('extra-81','2026-03-22',1,101,0,420)");
+            jdbc.update("INSERT INTO time_record(id,date,category_id,user_id,start_minute,end_minute) VALUES (900081,'2026-03-22',1,101,0,420)");
             assertTrue(preview("sleep").isAchieved());
             jdbc.update("UPDATE exercise_record SET exercise_count=40 WHERE id=1");
             assertTrue(preview("pushups").isAchieved());
 
             // 计算失败保留上次成功值和时间，不当成 0，也不泄露上游错误正文。
-            var before = refresh(salary).getFirst();
+            var before = refresh("101", salary).getFirst();
             URI endpoint = properties.getQueryUrl();
             try {
                 properties.setQueryUrl(URI.create("http://127.0.0.1:1/graphql"));
-                var failed = refresh(salary).getFirst();
+                var failed = refresh("101", salary).getFirst();
                 assertEquals(before.getCurrentValue(), failed.getCurrentValue());
                 assertEquals(before.getProgressCheckedAt(), failed.getProgressCheckedAt());
                 assertNotNull(failed.getProgressError());
             } finally { properties.setQueryUrl(endpoint); }
-            assertNull(refresh(salary).getFirst().getProgressError());
+            assertNull(refresh("101", salary).getFirst().getProgressError());
             // 编辑期间完成的旧查询不得覆盖新修订，即使旧查询本身成功。
             var changedEvaluator = org.mockito.Mockito.mock(GoalProgressEvaluator.class);
             org.mockito.Mockito.when(changedEvaluator.evaluate(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString())).thenAnswer(call -> {
@@ -113,39 +113,39 @@ class GoalGraphqlIntegrationTest {
 
             // 整批归属校验，猜中其他用户目标 ID 也不能触发查询。
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(102L);
-            assertThrows(IllegalArgumentException.class, () -> refresh(pushups));
+            assertThrows(IllegalArgumentException.class, () -> refresh("102", pushups));
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(101L);
 
             // 自动模式拒绝客户端覆盖 currentValue，切回手动时清除查询配置并恢复手填。
             GoalUpdateReq update = new GoalUpdateReq(); update.setId(pushups.getId()); update.setCurrentValue(new BigDecimal("999"));
-            var automatic = controller.updateGoal(update).getData();
+            var automatic = controller.updateGoal("101", update).getData();
             assertEquals(0, automatic.getCurrentValue().compareTo(new BigDecimal("26")));
             assertTrue(automatic.getProgressVersion() > pushups.getProgressVersion());
             update.setProgressMode("manual"); update.setCurrentValue(new BigDecimal("12.34"));
-            var manual = controller.updateGoal(update).getData();
+            var manual = controller.updateGoal("101", update).getData();
             assertEquals(0, manual.getCurrentValue().compareTo(new BigDecimal("12.34")));
             assertNull(manual.getProgressQuery());
             assertNull(manual.getProgressCheckedAt());
-            assertEquals(0, refresh(manual).getFirst().getCurrentValue().compareTo(new BigDecimal("12.34")));
+            assertEquals(0, refresh("101", manual).getFirst().getCurrentValue().compareTo(new BigDecimal("12.34")));
 
             // 缺失路径与写操作均拒绝，空聚合字段明确归零。
             var invalid = example("salary", GoalProgressPreviewReq.class); invalid.setProgressValuePath("progress.missing");
-            assertThrows(IllegalArgumentException.class, () -> controller.previewProgress(invalid));
+            assertThrows(IllegalArgumentException.class, () -> controller.previewProgress("user-a", invalid));
             invalid.setProgressQuery("mutation { deleteEverything }");
-            assertThrows(IllegalArgumentException.class, () -> controller.previewProgress(invalid));
+            assertThrows(IllegalArgumentException.class, () -> controller.previewProgress("user-a", invalid));
             var empty = example("pushups", GoalProgressPreviewReq.class); empty.setProgressVariables("{\"exerciseTypeName\":\"不存在的运动类型\"}");
-            assertEquals(0, controller.previewProgress(empty).getData().getCurrentValue().signum());
+            assertEquals(0, controller.previewProgress("user-a", empty).getData().getCurrentValue().signum());
         }
     }
 
-    private GoalVO create(String name) throws Exception { return controller.createGoal(example(name, GoalCreateReq.class)).getData(); }
-    private top.aiolife.record.pojo.vo.GoalProgressPreviewVO preview(String name) throws Exception { return controller.previewProgress(example(name, GoalProgressPreviewReq.class)).getData(); }
+    private GoalVO create(String name) throws Exception { return controller.createGoal("101", example(name, GoalCreateReq.class)).getData(); }
+    private top.aiolife.record.pojo.vo.GoalProgressPreviewVO preview(String name) throws Exception { return controller.previewProgress("user-a", example(name, GoalProgressPreviewReq.class)).getData(); }
     private <T> T example(String name, Class<T> type) throws Exception {
         return json.readValue(Files.readString(Path.of(System.getenv("AIO_GOAL_TEST_EXAMPLES"), "goal-" + name + ".json")), type);
     }
-    private List<GoalVO> refresh(GoalVO... rows) {
+    private List<GoalVO> refresh(String userId, GoalVO... rows) {
         var req = new GoalProgressRefreshReq(); req.setIds(java.util.Arrays.stream(rows).map(GoalVO::getId).toList());
-        var list = controller.refreshProgress(req).getData();
+        var list = controller.refreshProgress(userId, "user-a", req).getData();
         return java.util.Arrays.stream(rows).map(row -> list.stream().filter(g -> g.getId().equals(row.getId())).findFirst().orElseThrow()).toList();
     }
 

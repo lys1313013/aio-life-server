@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -12,6 +13,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 import top.aiolife.core.lock.DistributedLockExecutor;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.record.mapper.NotificationChannelConfigMapper;
 import top.aiolife.record.mapper.NotificationDeliveryMapper;
 import top.aiolife.record.mapper.NotificationPreferenceMapper;
@@ -36,6 +38,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -61,6 +64,8 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
     private final IUserBindService userBindService;
     private final DistributedLockExecutor locks;
     private final DataSourceTransactionManager transactionManager;
+    @Autowired(required = false)
+    private RedisUtil redisUtil;
 
     @Override
     public FeishuChannelConfigVO getConfig(long userId) {
@@ -203,6 +208,10 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
 
     @Override
     public void sendTest(long userId) {
+        if (redisUtil != null
+                && !redisUtil.setIfAbsent("notification:feishu:test:" + userId, "1", 30, TimeUnit.SECONDS)) {
+            throw new IllegalStateException("操作过于频繁，请 30 秒后重试");
+        }
         NotificationChannelConfigEntity config = requireConfig(userId, true, false);
         NotificationRequest request = new NotificationRequest(
                 userId,

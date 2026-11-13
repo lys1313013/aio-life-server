@@ -27,7 +27,7 @@ class TimeTrackerCategoryControllerIntegrationTest extends BaseIntegrationTest {
         TimeTrackerCategoryEntity entity = createCategory();
         categoryService.adminCreateCategory(entity);
 
-        var response = timeTrackerCategoryController.list();
+        var response = timeTrackerCategoryController.list(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().size() >= 1);
@@ -39,7 +39,7 @@ class TimeTrackerCategoryControllerIntegrationTest extends BaseIntegrationTest {
         entity.setIsEnabled(0);
         categoryService.adminCreateCategory(entity);
 
-        var response = timeTrackerCategoryController.listHidden();
+        var response = timeTrackerCategoryController.listHidden(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
         assertNotNull(response.getData());
     }

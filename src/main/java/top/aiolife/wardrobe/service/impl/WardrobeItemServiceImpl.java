@@ -1,6 +1,5 @@
 package top.aiolife.wardrobe.service.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.QueryOrder;
@@ -8,6 +7,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.service.RecordImageService;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.wardrobe.mapper.WardrobeCategoryMapper;
 import top.aiolife.wardrobe.mapper.WardrobeItemMapper;
@@ -32,23 +33,23 @@ import java.util.stream.Collectors;
 public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, WardrobeItemEntity> implements IWardrobeItemService {
 
     private final WardrobeCategoryMapper categoryMapper;
+    private final RecordImageService images;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void saveItem(WardrobeItemReq req) {
+    public void saveItem(Long userId, WardrobeItemReq req) {
         WardrobeItemEntity entity = reqToEntity(req);
-        Long userId = StpUtil.getLoginIdAsLong();
         validateCategory(req.getCategoryId(), userId);
         entity.setUserId(userId);
         entity.fillCreateCommonField(userId);
         entity.setSeason(joinSeason(req.getSeason()));
         this.save(entity);
+        images.replace(userId, FileBizType.WARDROBE_ITEM, entity.getId(), req.getFileId());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateItem(WardrobeItemReq req) {
-        Long userId = StpUtil.getLoginIdAsLong();
+    public void updateItem(Long userId, WardrobeItemReq req) {
         WardrobeItemEntity existing = this.getById(req.getId());
         if (existing == null || !userId.equals(existing.getUserId())) {
             throw new RuntimeException("衣物不存在或无权限操作");
@@ -59,6 +60,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         entity.fillUpdateCommonField(userId);
         entity.setSeason(joinSeason(req.getSeason()));
         this.updateById(entity);
+        images.replace(userId, FileBizType.WARDROBE_ITEM, entity.getId(), req.getFileId());
     }
 
     @Override
@@ -79,6 +81,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         if (entity == null) {
             return null;
         }
+        entity.setFileId(images.find(userId, FileBizType.WARDROBE_ITEM, id));
         return toVO(entity, getCategoryNameMap(userId));
     }
 
@@ -100,6 +103,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
 
         QueryOrder.descNullsLast(queryWrapper, WardrobeItemEntity::getCreateTime, WardrobeItemEntity::getId);
         List<WardrobeItemEntity> list = this.list(queryWrapper);
+        images.fill(userId, FileBizType.WARDROBE_ITEM, list, WardrobeItemEntity::getId, WardrobeItemEntity::setFileId);
         Map<Long, String> categoryNameMap = list.isEmpty() ? Collections.emptyMap() : getCategoryNameMap(userId);
         return list.stream().map(item -> toVO(item, categoryNameMap)).collect(Collectors.toList());
     }

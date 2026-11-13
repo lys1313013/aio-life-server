@@ -1,5 +1,7 @@
 package top.aiolife.record.service.impl;
 
+import top.aiolife.record.service.RecordImageService;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
@@ -25,7 +27,7 @@ class HomeCardQueryTest {
     @Test
     void 阅读首页查询限定活跃状态并优先在读且顺序稳定() {
         init(ReadRecordEntity.class);
-        var service = spy(new ReadRecordServiceImpl(mock(IFileService.class)));
+        var service = spy(new ReadRecordServiceImpl(mock(IFileService.class), org.mockito.Mockito.mock(RecordImageService.class)));
         doAnswer(invocation -> {
             Page<ReadRecordEntity> page = invocation.getArgument(0);
             Wrapper<ReadRecordEntity> wrapper = invocation.getArgument(1);
@@ -46,7 +48,7 @@ class HomeCardQueryTest {
     @Test
     void 观影首页查询限定活跃状态并优先在看且顺序稳定() {
         init(MovieEntity.class);
-        var service = spy(new MovieServiceImpl(mock(IFileService.class)));
+        var service = spy(new MovieServiceImpl(mock(IFileService.class), org.mockito.Mockito.mock(RecordImageService.class)));
         doAnswer(invocation -> {
             Page<MovieEntity> page = invocation.getArgument(0);
             Wrapper<MovieEntity> wrapper = invocation.getArgument(1);
@@ -67,7 +69,7 @@ class HomeCardQueryTest {
     @Test
     void 观影默认列表保持原有状态顺序并增加稳定ID兜底() {
         init(MovieEntity.class);
-        var service = spy(new MovieServiceImpl(mock(IFileService.class)));
+        var service = spy(new MovieServiceImpl(mock(IFileService.class), org.mockito.Mockito.mock(RecordImageService.class)));
         doAnswer(invocation -> {
             Page<MovieEntity> page = invocation.getArgument(0);
             Wrapper<MovieEntity> wrapper = invocation.getArgument(1);

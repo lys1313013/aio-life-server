@@ -7,7 +7,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import top.aiolife.membership.pojo.entity.MembershipProviderEntity;
 import top.aiolife.membership.pojo.entity.MembershipRecordEntity;
 import top.aiolife.membership.pojo.req.MembershipReq;
 import top.aiolife.membership.pojo.vo.MembershipStatsVO;
+import top.aiolife.membership.pojo.vo.MembershipVO;
 
 /** 记录所有权、平台引用和持久化必须处于同一事务。 */
 @Service
@@ -41,10 +44,41 @@ public class MembershipRecordWriteService {
                 .orderByAsc(MembershipRecordEntity::getExpiryDate));
     }
 
+    /** 当前用户订阅列表，附带平台信息、状态和剩余天数。 */
+    public List<MembershipVO> listVOs(long userId) {
+        LocalDate today = LocalDate.now();
+        var entities = list(userId);
+        Map<Long, MembershipProviderEntity> platformMap = providers.findAll(
+                entities.stream().map(MembershipRecordEntity::getProviderId).toList());
+        return entities.stream()
+                .map(entity -> toVO(entity, today,
+                        entity.getProviderId() == null ? null : platformMap.get(entity.getProviderId())))
+                .toList();
+    }
+
     public MembershipRecordEntity getOwned(long userId, Long id) {
         return mapper.selectOne(new LambdaQueryWrapper<MembershipRecordEntity>()
                 .eq(MembershipRecordEntity::getId, id)
                 .eq(MembershipRecordEntity::getUserId, userId));
+    }
+
+    /** 当前用户订阅详情；不存在时返回 null。 */
+    public MembershipVO detailVO(long userId, long id) {
+        return toVO(getOwned(userId, id), LocalDate.now());
+    }
+
+    /** 新增订阅并返回完整视图。 */
+    @Transactional
+    public MembershipVO createVO(long userId, MembershipReq req) {
+        normalizeCost(req);
+        return toVO(create(userId, req), LocalDate.now());
+    }
+
+    /** 更新订阅并返回完整视图。 */
+    @Transactional
+    public MembershipVO updateVO(long userId, MembershipReq req) {
+        normalizeCost(req);
+        return toVO(update(userId, req), LocalDate.now());
     }
 
     public String status(MembershipRecordEntity entity, LocalDate today) {
@@ -144,5 +178,25 @@ public class MembershipRecordWriteService {
             entity.setProvider(provider.getName());
             if (entity.getCategory() == null || entity.getCategory().isBlank()) entity.setCategory(provider.getCategory());
         }
+    }
+
+    private MembershipVO toVO(MembershipRecordEntity entity, LocalDate today) {
+        MembershipProviderEntity provider = entity == null || entity.getProviderId() == null ? null
+                : providers.findAll(List.of(entity.getProviderId())).get(entity.getProviderId());
+        return toVO(entity, today, provider);
+    }
+
+    private MembershipVO toVO(MembershipRecordEntity entity, LocalDate today, MembershipProviderEntity provider) {
+        if (entity == null) {
+            return null;
+        }
+        MembershipVO vo = BeanUtil.copyProperties(entity, MembershipVO.class);
+        if (provider != null) {
+            vo.setProviderName(provider.getName());
+            vo.setProviderIconKey(provider.getIconKey());
+        }
+        vo.setStatus(status(entity, today));
+        vo.setRemainingDays(ChronoUnit.DAYS.between(today, entity.getExpiryDate()));
+        return vo;
     }
 }

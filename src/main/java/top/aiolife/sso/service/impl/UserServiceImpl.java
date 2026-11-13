@@ -24,9 +24,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.sso.service.SecondaryLockMenuResolver;
 import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.CommonQuery;
@@ -49,6 +51,7 @@ import top.aiolife.sso.pojo.req.ChangePasswordReq;
 import top.aiolife.sso.pojo.req.LoginReq;
 import top.aiolife.sso.pojo.req.RegisterReq;
 import top.aiolife.sso.pojo.req.ResetPasswordReq;
+import top.aiolife.sso.pojo.req.UpdateUserReq;
 import top.aiolife.sso.pojo.vo.UserBasicInfoVO;
 import top.aiolife.sso.pojo.vo.UserInfoVO;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
@@ -169,6 +172,31 @@ public class UserServiceImpl implements IUserService {
     public String getRole(long userId) {
         UserEntity user = userMapper.selectById(userId);
         return user == null ? null : user.getRole();
+    }
+
+    @Override
+    public List<String> listRoles(long userId) {
+        String role = getRole(userId);
+        if (!StringUtils.hasText(role)) {
+            return List.of("user");
+        }
+        return List.of(role.split(",")).stream()
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .toList();
+    }
+
+    @Override
+    @CacheEvict(value = {"userInfo", "userBasicInfo"}, key = "#userId")
+    @Transactional(rollbackFor = Exception.class)
+    public void updateProfile(long userId, UpdateUserReq req) {
+        UserEntity userEntity = new UserEntity();
+        userEntity.setId(userId);
+        userEntity.setNickname(req.getNickname());
+        userEntity.setIntroduction(req.getIntroduction());
+        userEntity.setAvatarFileId(req.getAvatarFileId());
+        userEntity.setUpdateUser(userId);
+        updateUser(userEntity, req.isAvatarFileIdSpecified());
     }
 
     @Override
@@ -364,10 +392,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public void sendRegisterCode(String email, String ip) {
-        // 简单校验邮箱格式
-        if (!email.contains("@")) {
-            throw new RuntimeException("邮箱格式不正确");
-        }
+        requireEmail(email);
         // 校验邮箱是否已注册
         LambdaQueryWrapper<UserEntity> emailWrapper = new LambdaQueryWrapper<>();
         IlikeQuery.lowerEquals(emailWrapper, UserEntity::getEmail, email);
@@ -391,10 +416,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public void sendResetPasswordCode(String email, String ip) {
-        // 简单校验邮箱格式
-        if (!email.contains("@")) {
-            throw new RuntimeException("邮箱格式不正确");
-        }
+        requireEmail(email);
         // 校验邮箱是否已注册
         LambdaQueryWrapper<UserEntity> emailWrapper = new LambdaQueryWrapper<>();
         IlikeQuery.lowerEquals(emailWrapper, UserEntity::getEmail, email);
@@ -450,11 +472,20 @@ public class UserServiceImpl implements IUserService {
         throw new RuntimeException("验证码错误或已过期");
     }
 
+    /** 发送验证码前校验邮箱必填且格式有效。 */
+    private void requireEmail(String email) {
+        if (!StringUtils.hasText(email)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "邮箱不能为空");
+        }
+        if (!email.contains("@")) {
+            throw new RuntimeException("邮箱格式不正确");
+        }
+    }
+
     /**
      * 检查频率限制
      */
-    private void checkRateLimit(String email, String ip) {
-        // 频率限制：3分钟内只能发送一次（使用配置的 intervalSeconds）
+    private void checkRateLimit(String email, String ip) {        // 频率限制：3分钟内只能发送一次（使用配置的 intervalSeconds）
         String lockKey = "code:lock:" + email;
         if (redisUtil.hasKey(lockKey)) {
             throw new RuntimeException("操作过于频繁，请" + (intervalSeconds / 60) + "分钟后再试");

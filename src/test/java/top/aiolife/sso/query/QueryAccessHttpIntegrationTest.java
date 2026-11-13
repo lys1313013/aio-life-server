@@ -178,7 +178,7 @@ class QueryAccessHttpIntegrationTest {
 
     @ParameterizedTest
     @CsvSource({"exercise_record,exercise,/record/exercise", "read_record,reading,/record/read",
-            "movie,movie,/record/movie", "b_video,video,/record/videoWatch", "performance,performance,/record/performance", "income_month,income,/finance/income"})
+            "movie,movie,/record/movie", "b_video,video,/record/videoWatch", "event_record,event,/record/event-records", "income_month,income,/finance/income"})
     void 新数据集使用独立范围且对应业务锁不能绕过(String dataset, String domain, String path) throws Exception {
         var decision = checkToken(session, KEY, dataset);
         assertEquals(0, decision.path("code").intValue());

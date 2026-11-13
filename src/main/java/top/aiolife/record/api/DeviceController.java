@@ -1,124 +1,78 @@
 package top.aiolife.record.api;
 
 import io.swagger.v3.oas.annotations.Operation;
-
-import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import top.aiolife.core.mybatis.IlikeQuery;
-import top.aiolife.core.query.QueryOrder;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
-import top.aiolife.core.util.SysUtil;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.convertor.RecordApiConvertor;
-import top.aiolife.record.mapper.IDeviceMapper;
 import top.aiolife.record.pojo.entity.DeviceEntity;
 import top.aiolife.record.pojo.query.DeviceQuery;
 import top.aiolife.record.pojo.req.DeviceCreateReq;
 import top.aiolife.record.pojo.req.DeviceUpdateReq;
 import top.aiolife.record.pojo.vo.DeviceVO;
 import top.aiolife.record.service.DeviceExpenseService;
+import top.aiolife.record.service.IDeviceService;
 
 /**
- * 类功能描述
+ * 设备控制器
  *
  * @author Lys
  * @date 2025/04/04 19:22
  */
+@Tag(name = "设备")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/device")
 public class DeviceController {
-    private IDeviceMapper eleDeviceMapper;
-    private DeviceExpenseService deviceExpenseService;
 
-    public IDeviceMapper getBaseMapper() {
-        return eleDeviceMapper;
-    }
+    private final IDeviceService deviceService;
+
+    private final DeviceExpenseService deviceExpenseService;
 
     @Operation(summary = "分页查询设备")
     @GetMapping("/query")
-    public ApiResponse<PageResp<DeviceVO>> query(
-            @QueryParams CommonQuery<DeviceQuery> requestQuery) {
-        CommonQuery<DeviceEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromDeviceQuery);
-        long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<DeviceEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(DeviceEntity::getUserId, userId);
-        DeviceEntity condition = query.getCondition();
-        lambdaQueryWrapper.eq(SysUtil.isNotEmpty(condition.getType()), DeviceEntity::getType,
-                condition.getType());
-        IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(requestQuery.getCondition().getName()),
-                requestQuery.getCondition().getName(), DeviceEntity::getName);
-        QueryOrder.descNullsLast(lambdaQueryWrapper, DeviceEntity::getPurchaseDate).orderByDesc(DeviceEntity::getId);        // 分页
-        Page<DeviceEntity> page = new Page<>(query.getPage(), query.getPageSize());
-        IPage<DeviceEntity> iPage = getBaseMapper().selectPage(page, lambdaQueryWrapper);
-        PageResp<DeviceEntity> objectPageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toDeviceVOPage(objectPageResp));
+    public ApiResponse<PageResp<DeviceVO>> query(@CurrentUserId String userId,
+                                                 @QueryParams CommonQuery<DeviceQuery> requestQuery) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toDeviceVOPage(deviceService.pageForUser(
+                IdCodec.decode(userId), requestQuery.getCondition(),
+                requestQuery.getPage(), requestQuery.getPageSize())));
     }
 
-    /**
-     * 新增
-     *
-     * @param entity
-     */
     @Operation(summary = "新增设备")
     @PostMapping
-    public ApiResponse<Boolean> add(@Valid @RequestBody DeviceCreateReq entityReq) {
+    public ApiResponse<Boolean> add(@CurrentUserId String userId,
+                                    @Valid @RequestBody DeviceCreateReq entityReq) {
         DeviceEntity entity = RecordApiConvertor.INSTANCE.fromDeviceCreateReq(entityReq);
-        long userId = StpUtil.getLoginIdAsLong();
-        entity.setId(null);
-        entity.setUserId(userId);
-        entity.fillCreateCommonField(userId);
-        return ApiResponse.success(getBaseMapper().insert(entity) > 0);
+        return ApiResponse.success(deviceService.createForUser(IdCodec.decode(userId), entity));
     }
 
-    /**
-     * 更新
-     *
-     * @param id
-     * @param entity
-     */
     @Operation(summary = "更新设备")
     @PutMapping("/{id}")
-    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @Valid @RequestBody DeviceUpdateReq entityReq) {
+    public ApiResponse<Boolean> update(@CurrentUserId String userId, @PathVariable String id,
+                                       @Valid @RequestBody DeviceUpdateReq entityReq) {
         DeviceEntity entity = RecordApiConvertor.INSTANCE.fromDeviceUpdateReq(entityReq);
-        long userId = StpUtil.getLoginIdAsLong();
-        entity.setId(id);
-        entity.setUserId(null);
-        entity.fillUpdateCommonField(userId);
-        LambdaQueryWrapper<DeviceEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(DeviceEntity::getId, id);
-        wrapper.eq(DeviceEntity::getUserId, userId);
-        return ApiResponse.success(getBaseMapper().update(entity, wrapper) > 0);
+        return ApiResponse.success(deviceService.updateForUser(
+                IdCodec.decode(userId), IdCodec.decode(id), entity));
     }
 
-    /**
-     * 删除
-     *
-     * @param id
-     * @return
-     */
     @Operation(summary = "删除设备")
     @DeleteMapping("/{id}")
-    public ApiResponse<Boolean> delete(@PathVariable("id") Long id) {
-        return ApiResponse.success(deviceExpenseService.deleteDevice(StpUtil.getLoginIdAsLong(), id));
+    public ApiResponse<Boolean> delete(@CurrentUserId String userId, @PathVariable String id) {
+        return ApiResponse.success(deviceExpenseService.deleteDevice(
+                IdCodec.decode(userId), IdCodec.decode(id)));
     }
 
     @Operation(summary = "查询设备详情")
     @GetMapping("/{id}")
-    public ApiResponse<DeviceVO> getDevice(@PathVariable("id") Long id) {
-        long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<DeviceEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(DeviceEntity::getId, id);
-        queryWrapper.eq(DeviceEntity::getUserId, userId);
-        DeviceEntity entity = getBaseMapper().selectOne(queryWrapper);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toDeviceVO(entity));
+    public ApiResponse<DeviceVO> getDevice(@CurrentUserId String userId, @PathVariable String id) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toDeviceVO(
+                deviceService.getOwnedOrNull(IdCodec.decode(userId), IdCodec.decode(id))));
     }
-
 }

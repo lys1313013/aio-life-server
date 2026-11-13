@@ -37,7 +37,7 @@ class CbtiControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void testResults_获取测试结果() {
-        var response = cbtiController.results();
+        var response = cbtiController.results(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
         assertNotNull(response.getData());
     }

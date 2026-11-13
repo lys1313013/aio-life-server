@@ -53,8 +53,11 @@ import top.aiolife.record.service.IAnniversaryRecordService;
 import top.aiolife.record.service.IGoalService;
 import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IReadRecordService;
+import top.aiolife.record.service.ITaskDetail;
 import top.aiolife.record.service.ITaskService;
 import top.aiolife.record.service.ITimeRecordService;
+import top.aiolife.record.service.ITimeTrackerCategoryService;
+import top.aiolife.record.service.ThoughtCreationService;
 import top.aiolife.sso.service.SecondaryLockGuard;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -71,7 +74,7 @@ public class RecordMcpE2ETest {
     private int port;
 
     @Autowired
-    private TaskDetailController taskDetailController;
+    private ITaskDetail taskDetailService;
 
     private McpSyncClient mcpClient;
     private StpLogic originalStpLogic;
@@ -147,54 +150,32 @@ public class RecordMcpE2ETest {
 
         @Bean
         @Primary
-        public TimeRecordController timeRecordController() {
-            return new TimeRecordController(Mockito.mock(SecondaryLockGuard.class), null, null, null, null) {
-                @Override
-                public ApiResponse<List<TimeRecordDateRangeVO>> queryByDateRangeForAI(TimeRecordDateRangeMcpReq req) {
-                    TimeRecordDateRangeVO vo = new TimeRecordDateRangeVO();
-                    vo.setId("999");
-                    return ApiResponse.success(Collections.singletonList(vo));
-                }
-
-                @Override
-                public ApiResponse<String> save(TimeRecordSaveReq req) {
-                    return ApiResponse.success("2099999999999999999");
-                }
-            };
-        }
-
-        @Bean
-        @Primary
         public ITimeRecordService timeRecordService() {
-            return (ITimeRecordService) Proxy.newProxyInstance(
-                    ITimeRecordService.class.getClassLoader(),
-                    new Class[]{ITimeRecordService.class},
-                    (proxy, method, args) -> {
-                        if ("lambdaQuery".equals(method.getName())) {
-                            BaseMapper<TimeRecordEntity> dummyMapper = (ITimeRecordMapper) Proxy.newProxyInstance(
-                                    ITimeRecordMapper.class.getClassLoader(),
-                                    new Class[]{ITimeRecordMapper.class},
-                                    (mProxy, mMethod, mArgs) -> {
-                                        if ("selectList".equals(mMethod.getName()) || "selectOne".equals(mMethod.getName())) {
-                                            TimeRecordEntity lastRecord = new TimeRecordEntity();
-                                            lastRecord.setEndMinute(60);
-                                            if ("selectOne".equals(mMethod.getName())) return lastRecord;
-                                            return Collections.singletonList(lastRecord);
-                                        }
-                                        return null;
-                                    }
-                            );
-                            return new LambdaQueryChainWrapper<TimeRecordEntity>(dummyMapper);
-                        }
-                        return null;
-                    }
-            );
+            var service = Mockito.mock(ITimeRecordService.class);
+            Mockito.when(service.queryByDateRangeForAI(Mockito.anyLong(), Mockito.any(), Mockito.any()))
+                    .thenAnswer(call -> {
+                        TimeRecordDateRangeVO vo = new TimeRecordDateRangeVO();
+                        vo.setId("999");
+                        return Collections.singletonList(vo);
+                    });
+            Mockito.when(service.findLatestEndMinute(Mockito.anyLong(), Mockito.any())).thenReturn(60);
+            Mockito.when(service.saveTimeRecord(Mockito.anyLong(), Mockito.any()))
+                    .thenReturn("2099999999999999999");
+            return service;
         }
 
-        @Bean @Primary public ThoughtController thoughtController() { return new ThoughtController(null, null, null); }
-        @Bean @Primary public TimeTrackerCategoryController timeTrackerCategoryController() { return new TimeTrackerCategoryController(null); }
-        @Bean @Primary public TaskController taskController() { return new TaskController(null, null, null); }
-        @Bean @Primary public TaskDetailController taskDetailController() { return Mockito.mock(TaskDetailController.class); }
+        @Bean @Primary public ThoughtCreationService thoughtCreationService() {
+            return Mockito.mock(ThoughtCreationService.class);
+        }
+
+        @Bean @Primary public ITimeTrackerCategoryService timeTrackerCategoryService() {
+            return Mockito.mock(ITimeTrackerCategoryService.class);
+        }
+
+        @Bean @Primary public ITaskDetail taskDetailService() {
+            return Mockito.mock(ITaskDetail.class);
+        }
+
         @Bean @Primary public MovieController movieController() { return new MovieController(null, null); }
         @Bean @Primary public ReadRecordController readRecordController() { return new ReadRecordController(null); }
         @Bean @Primary public ITaskService taskService() {
@@ -233,7 +214,7 @@ public class RecordMcpE2ETest {
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(taskDetailController);
+        Mockito.reset(taskDetailService);
         originalStpLogic = StpUtil.getStpLogic();
         StpLogic mockLogic = new StpLogic("login") {
             @Override
@@ -306,12 +287,12 @@ public class RecordMcpE2ETest {
         var numericId = mcpClient.callTool(new McpSchema.CallToolRequest("task_detail_update",
                 Map.of("id", 9007199254740993L, "isCompleted", 1)));
         assertTrue(numericId.isError());
-        Mockito.verifyNoInteractions(taskDetailController);
+        Mockito.verifyNoInteractions(taskDetailService);
     }
 
     @Test
     void testTaskDetailUpdate_协议调用保留大整数和零值() {
-        Mockito.when(taskDetailController.update(Mockito.any())).thenReturn(ApiResponse.success(true));
+        Mockito.when(taskDetailService.updateForUser(Mockito.anyLong(), Mockito.any())).thenReturn(true);
         mcpClient.initialize();
         McpSchema.CallToolResult result = mcpClient.callTool(new McpSchema.CallToolRequest(
                 "task_detail_update",
@@ -319,8 +300,9 @@ public class RecordMcpE2ETest {
 
         assertFalse(result.isError());
         assertEquals("true", ((McpSchema.TextContent) result.content().get(0)).text());
-        ArgumentCaptor<TaskDetailUpdateReq> captured = ArgumentCaptor.forClass(TaskDetailUpdateReq.class);
-        Mockito.verify(taskDetailController).update(captured.capture());
+        ArgumentCaptor<top.aiolife.record.pojo.entity.TaskDetailEntity> captured =
+                ArgumentCaptor.forClass(top.aiolife.record.pojo.entity.TaskDetailEntity.class);
+        Mockito.verify(taskDetailService).updateForUser(Mockito.anyLong(), captured.capture());
         assertEquals(2112457917496135682L, captured.getValue().getId());
         assertEquals(0, captured.getValue().getIsStarred());
         assertEquals(0, captured.getValue().getIsCompleted());
@@ -329,7 +311,7 @@ public class RecordMcpE2ETest {
 
     @Test
     void testTaskDetailUpdate_更新失败返回协议错误() {
-        Mockito.when(taskDetailController.update(Mockito.any())).thenReturn(ApiResponse.success(false));
+        Mockito.when(taskDetailService.updateForUser(Mockito.anyLong(), Mockito.any())).thenReturn(false);
         mcpClient.initialize();
         McpSchema.CallToolResult result = mcpClient.callTool(new McpSchema.CallToolRequest(
                 "task_detail_update", Map.of("id", "2112457917496135682", "isStarred", 1)));

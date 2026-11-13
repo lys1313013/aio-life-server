@@ -2,6 +2,7 @@ package top.aiolife.system.api;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import jakarta.servlet.http.HttpServletResponse;
@@ -18,6 +19,7 @@ import top.aiolife.system.pojo.vo.StoragePageVO;
 import top.aiolife.system.service.StorageAdminService;
 
 /** 对象存储管理：目录、预览、下载及删除均必须校验管理员身份。 */
+@Tag(name = "存储管理")
 @RestController
 @RequestMapping("/system/storage")
 @SaCheckRole("admin")

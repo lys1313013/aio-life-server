@@ -35,7 +35,7 @@ class TaskColumnControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new TaskColumnEntity());
 
-        var response = taskColumnController.query(ApiRequestFixtures.query(query, TaskColumnQuery.class));
+        var response = taskColumnController.query(String.valueOf(TEST_USER_ID), ApiRequestFixtures.query(query, TaskColumnQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);

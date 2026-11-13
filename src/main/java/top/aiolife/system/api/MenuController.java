@@ -2,15 +2,16 @@ package top.aiolife.system.api;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
-import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.sso.service.IUserService;
 import top.aiolife.system.pojo.vo.MenuRouteVO;
 import top.aiolife.system.service.IMenuService;
@@ -28,6 +29,7 @@ import java.util.List;
  * @author Ethan
  * @date 2026/04/19
  */
+@Tag(name = "菜单")
 @RestController
 @RequestMapping("/menu")
 @RequiredArgsConstructor
@@ -38,37 +40,20 @@ public class MenuController {
     private final IUserService userService;
     private final MenuVisualService visuals;
 
-    /**
-     * 获取当前用户可访问菜单路由树。
-     *
-     * <p>用途：前端 accessMode=backend 时拉取动态路由结构并生成侧边栏菜单。</p>
-     *
-     * @return 统一返回结构，data 为 RouteRecordStringComponent 结构的数组
-     */
     @Operation(summary = "查询当前用户可访问菜单")
     @GetMapping("/all")
-    public ApiResponse<List<MenuRouteVO>> all(@Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
-        long userId = StpUtil.getLoginIdAsLong();
-        List<String> roles = parseRoles(userService.getRole(userId));
+    public ApiResponse<List<MenuRouteVO>> all(
+            @CurrentUserId String userId,
+            @Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
+        List<String> roles = userService.listRoles(IdCodec.decode(userId));
         return ApiResponse.success(menuService.getAccessibleMenuTree(roles, MenuClient.parse(client)));
     }
 
     @Operation(summary = "查询业务图标和颜色")
     @GetMapping("/visuals")
-    public ApiResponse<MenuVisualsVO> visuals(@Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
-        return ApiResponse.success(visuals.get(StpUtil.getLoginIdAsLong(), MenuClient.parse(client)));
-    }
-
-    public ApiResponse<List<MenuRouteVO>> all() { return all("web"); }
-
-    private List<String> parseRoles(String roleStr) {
-        if (!StringUtils.hasText(roleStr)) {
-            return List.of("user");
-        }
-        return List.of(roleStr.split(",")).stream()
-                .map(String::trim)
-                .filter(StringUtils::hasText)
-                .toList();
+    public ApiResponse<MenuVisualsVO> visuals(
+            @CurrentUserId String userId,
+            @Parameter(description = "客户端：web、mobile") @RequestParam(defaultValue = "web") String client) {
+        return ApiResponse.success(visuals.get(IdCodec.decode(userId), MenuClient.parse(client)));
     }
 }
-

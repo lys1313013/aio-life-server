@@ -29,7 +29,7 @@ class HonorRecordControllerIntegrationTest extends BaseIntegrationTest {
         Long honorId = System.currentTimeMillis() % 1000000 + 900000L;
         honorRecordMapper.insert(createHonorRecord(honorId));
 
-        var response = honorRecordController.queryHonorRecords();
+        var response = honorRecordController.queryHonorRecords(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().size() >= 1);
@@ -40,7 +40,7 @@ class HonorRecordControllerIntegrationTest extends BaseIntegrationTest {
         Long honorId = System.currentTimeMillis() % 1000000 + 900000L;
         honorRecordMapper.insert(createHonorRecord(honorId));
 
-        var response = honorRecordController.getHonorRecord(honorId);
+        var response = honorRecordController.getHonorRecord(String.valueOf(TEST_USER_ID), String.valueOf(honorId));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertEquals(honorId, response.getData().getId());

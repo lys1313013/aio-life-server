@@ -37,7 +37,7 @@ class IncomeControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new IncomeQuery());
 
-        var response = incomeController.query(ApiRequestFixtures.query(query, IncomeQuery.class));
+        var response = incomeController.query(String.valueOf(TEST_USER_ID), ApiRequestFixtures.query(query, IncomeQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);
@@ -48,7 +48,7 @@ class IncomeControllerIntegrationTest extends BaseIntegrationTest {
         Long incomeId = System.currentTimeMillis() % 1000000 + 900000L;
         incomeMapper.insert(createIncome(incomeId));
 
-        var response = incomeController.statisticsByYear();
+        var response = incomeController.statisticsByYear(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
         assertNotNull(response.getData());
     }
@@ -58,7 +58,7 @@ class IncomeControllerIntegrationTest extends BaseIntegrationTest {
         Long incomeId = System.currentTimeMillis() % 1000000 + 900000L;
         incomeMapper.insert(createIncome(incomeId));
 
-        var response = incomeController.statisticsByMonth();
+        var response = incomeController.statisticsByMonth(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
         assertNotNull(response.getData());
     }

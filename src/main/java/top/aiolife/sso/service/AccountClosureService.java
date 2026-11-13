@@ -29,15 +29,11 @@ public class AccountClosureService {
     private final WechatTicketStore limits;
     private final WechatWebLoginService webWechat;
 
-    public static long requestUser() {
-        if (StpUtil.isSwitch() || Boolean.TRUE.equals(SaHolder.getStorage().get("IS_API_KEY_AUTH")))
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "请使用本人账号登录后注销");
-        return StpUtil.getLoginIdAsLong();
-    }
-
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = {"userInfo", "userBasicInfo"}, key = "#userId")
     public void close(long userId, CloseAccountReq request) {
+        if (StpUtil.isSwitch() || Boolean.TRUE.equals(SaHolder.getStorage().get("IS_API_KEY_AUTH")))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "请使用本人账号登录后注销");
         if (!"注销账号".equals(request.getConfirmation()))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请输入“注销账号”确认操作");
         limits.rateLimit("account-closure", Long.toString(userId), 5);

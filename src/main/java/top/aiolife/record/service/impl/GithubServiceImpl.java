@@ -5,24 +5,40 @@ import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import top.aiolife.record.pojo.vo.GithubCommitVO;
-import top.aiolife.record.service.IGithubService;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import top.aiolife.core.query.PaginationRequest;
+import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.vo.GithubCommitVO;
+import top.aiolife.record.service.IGithubService;
+import top.aiolife.record.service.IUserBindService;
 
 /**
- * 类功能描述
+ * GitHub 数据服务实现
  *
  * @author Lys
  * @date 2026-01-02 23:24
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class GithubServiceImpl implements IGithubService {
+
+    private final IUserBindService userBindService;
+
+    @Override
+    public List<GithubCommitVO> searchRecentCommitsForUser(long userId, int page, int perPage) {
+        PaginationRequest.validate(page, perPage, 100);
+        UserBindEntity bind = userBindService.getBindByUserIdAndPlatform(userId, "github");
+        if (bind == null || bind.getPlatformUsername() == null) {
+            return List.of();
+        }
+        return searchRecentCommits(bind.getPlatformUsername(), bind.getAccessToken(), page, perPage);
+    }
 
     @Override
     public List<GithubCommitVO> searchRecentCommits(String username, String token, int page, int perPage) {

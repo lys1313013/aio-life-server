@@ -1,7 +1,9 @@
 package top.aiolife.sso.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import top.aiolife.core.query.PaginationRequest;
 import top.aiolife.core.query.QueryOrder;
+import top.aiolife.core.resq.PageResp;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -18,6 +20,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MessageServiceImpl extends ServiceImpl<MessageMapper, MessageEntity> implements IMessageService {
 
+    private static final int USER_PAGE_MAX = 50;
+    private static final int ADMIN_PAGE_MAX = PaginationRequest.MAX_PAGE_SIZE;
+
     @Override
     public List<MessageEntity> listByUserId(Long userId, Boolean isRead) {
         return this.list(userMessageQuery(userId, isRead));
@@ -26,6 +31,13 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, MessageEntity
     @Override
     public IPage<MessageEntity> pageByUserId(Long userId, Boolean isRead, long current, long size) {
         return this.page(new Page<>(current, size), userMessageQuery(userId, isRead));
+    }
+
+    @Override
+    public PageResp<MessageEntity> pageForUser(long userId, Boolean isRead, Integer page, Integer pageSize) {
+        requirePagination(page, pageSize, USER_PAGE_MAX);
+        Page<MessageEntity> result = this.page(new Page<>(page, pageSize), userMessageQuery(userId, isRead));
+        return PageResp.of(result.getRecords(), result.getTotal());
     }
 
     private LambdaQueryWrapper<MessageEntity> userMessageQuery(Long userId, Boolean isRead) {
@@ -93,6 +105,22 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, MessageEntity
     }
 
     @Override
+    public MessageEntity createForUser(long userId, MessageEntity message) {
+        message.setCreateUser(userId);
+        message.setUpdateUser(userId);
+        message.setSenderId(userId);
+        return createMessage(message);
+    }
+
+    @Override
+    public MessageEntity createByAdmin(long adminId, MessageEntity message) {
+        message.setCreateUser(adminId);
+        message.setUpdateUser(adminId);
+        message.setSenderId(adminId);
+        return createMessage(message);
+    }
+
+    @Override
     public IPage<MessageEntity> adminList(Long current, Long size, Long userId) {
         Page<MessageEntity> page = new Page<>(current, size);
         LambdaQueryWrapper<MessageEntity> wrapper = new LambdaQueryWrapper<>();
@@ -103,6 +131,28 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, MessageEntity
                     .eq(MessageEntity::getSenderId, userId));
         }
         return this.page(page, QueryOrder.descNullsLast(wrapper, MessageEntity::getCreateTime));
+    }
+
+    @Override
+    public PageResp<MessageEntity> adminPage(Integer page, Integer size, Long userId) {
+        requirePagination(page, size, ADMIN_PAGE_MAX);
+        Page<MessageEntity> result = this.page(new Page<>(page, size), adminQuery(userId));
+        return PageResp.of(result.getRecords(), result.getTotal());
+    }
+
+    private void requirePagination(Integer page, Integer size, int maximum) {
+        if (page == null || size == null) throw new IllegalArgumentException("分页参数不能为空");
+        PaginationRequest.validate(page, size, maximum);
+    }
+
+    private LambdaQueryWrapper<MessageEntity> adminQuery(Long userId) {
+        LambdaQueryWrapper<MessageEntity> wrapper = new LambdaQueryWrapper<>();
+        if (userId != null) {
+            wrapper.and(w -> w.eq(MessageEntity::getReceiverId, userId)
+                    .or()
+                    .eq(MessageEntity::getSenderId, userId));
+        }
+        return QueryOrder.descNullsLast(wrapper, MessageEntity::getCreateTime);
     }
 
     @Override

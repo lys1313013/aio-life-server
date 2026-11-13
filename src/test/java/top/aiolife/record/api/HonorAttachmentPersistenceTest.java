@@ -68,18 +68,18 @@ class HonorAttachmentPersistenceTest {
         factory.setDataSource(source);
         factory.setConfiguration(configuration);
         var session = new SqlSessionTemplate(factory.getObject());
-        var honors = new HonorRecordServiceImpl();
         var honorMapper = session.getMapper(IHonorRecordMapper.class);
-        ReflectionTestUtils.setField(honors, "baseMapper", honorMapper);
         var files = new FileServiceImpl(mock(MinioUtil.class), mock(MinioConfig.class), mock(StorageObjectLock.class),
                 new DoubanCoverUrlPolicy("doubanio.com"));
         ReflectionTestUtils.setField(files, "baseMapper", session.getMapper(IFileMapper.class));
-        var proxy = new ProxyFactory(new HonorRecordController(honorMapper, honors, files));
+        var honors = new HonorRecordServiceImpl(files);
+        ReflectionTestUtils.setField(honors, "baseMapper", honorMapper);
+        var proxy = new ProxyFactory(honors);
         var interceptor = new TransactionInterceptor();
         interceptor.setTransactionManager(new DataSourceTransactionManager(source));
         interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
         proxy.addAdvice(interceptor);
-        controller = (HonorRecordController) proxy.getProxy();
+        controller = new HonorRecordController((top.aiolife.record.service.IHonorRecordService) proxy.getProxy());
         stpUtil = mockStatic(StpUtil.class);
         stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
         jdbc.update("INSERT INTO honor_record (id, user_id, title) VALUES (100, 1, '原始荣誉')");
@@ -161,11 +161,11 @@ class HonorAttachmentPersistenceTest {
         request.setId(100L);
         request.setTitle("更新后的荣誉");
         request.setFileIds(fileIds);
-        assertEquals(0, controller.updateHonorRecord(ApiRequestFixtures.request(request, HonorRecordUpdateReq.class)).getCode());
+        assertEquals(0, controller.updateHonorRecord("1", ApiRequestFixtures.request(request, HonorRecordUpdateReq.class)).getCode());
     }
 
     private List<String> attachmentIds() {
-        return controller.getHonorRecord(100L).getData().getFiles().stream()
+        return controller.getHonorRecord("1", "100").getData().getFiles().stream()
                 .map(FileVO::getId).sorted().toList();
     }
 

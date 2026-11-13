@@ -1,26 +1,18 @@
 package top.aiolife.record.api;
 
 import io.swagger.v3.oas.annotations.Operation;
-
-import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import top.aiolife.core.mybatis.IlikeQuery;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
-import top.aiolife.core.util.SysUtil;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.convertor.RecordApiConvertor;
-import top.aiolife.record.mapper.IExerciseRecordMapper;
 import top.aiolife.record.pojo.dto.ExerciseStatisticsDTO;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
 import top.aiolife.record.pojo.query.ExerciseRecordQuery;
@@ -33,114 +25,69 @@ import top.aiolife.record.pojo.vo.ExerciseRecordVO;
 import top.aiolife.record.pojo.vo.ExerciseStatisticsPointVO;
 import top.aiolife.record.service.IExerciseRecordService;
 
-@Slf4j
-
 /**
  * 运动记录控制器
  *
  * @author Lys
  * @date 2025-11-29 18:40
  */
+@Tag(name = "运动记录")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/exerciseRecord")
 public class ExerciseRecordController {
 
-    private final IExerciseRecordMapper exerciseRecordMapper;
-
     private final IExerciseRecordService exerciseRecordService;
 
-    public IExerciseRecordMapper getBaseMapper() {
-        return exerciseRecordMapper;
-    }
-
-    /**
-     * 查询运动记录列表
-     */
     @Operation(summary = "分页查询运动记录")
     @GetMapping("/query")
     public ApiResponse<PageResp<ExerciseRecordVO>> query(
+            @CurrentUserId String userId,
             @QueryParams CommonQuery<ExerciseRecordQuery> requestQuery) {
-        CommonQuery<ExerciseRecordEntity> query = requestQuery.map(RecordApiConvertor.INSTANCE::fromExerciseRecordQuery);
-        Long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, userId);
-        ExerciseRecordEntity condition = query.getCondition();
-        lambdaQueryWrapper.eq(condition.getExerciseTypeId() != null, ExerciseRecordEntity::getExerciseTypeId,
-                condition.getExerciseTypeId());
-        ExerciseRecordQuery filters = requestQuery.getCondition();
-        lambdaQueryWrapper.ge(filters.getStartDate() != null, ExerciseRecordEntity::getExerciseDate, filters.getStartDate());
-        lambdaQueryWrapper.le(filters.getEndDate() != null, ExerciseRecordEntity::getExerciseDate, filters.getEndDate());
-        IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(filters.getDescription()), filters.getDescription(), ExerciseRecordEntity::getDescription);
-        lambdaQueryWrapper.orderByDesc(ExerciseRecordEntity::getExerciseDate, ExerciseRecordEntity::getId);
-        // 分页
-        Page<ExerciseRecordEntity> page = new Page<>(query.getPage(), query.getPageSize());
-        IPage<ExerciseRecordEntity> iPage = getBaseMapper().selectPage(page, lambdaQueryWrapper);
-        PageResp<ExerciseRecordEntity> pageResp = PageResp.of(iPage.getRecords(), iPage.getTotal());
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toExerciseRecordVOPage(pageResp));
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toExerciseRecordVOPage(
+                exerciseRecordService.pageForUser(IdCodec.decode(userId), requestQuery.getCondition(),
+                        requestQuery.getPage(), requestQuery.getPageSize())));
     }
 
-    /**
-     * 新增运动记录
-     */
     @Operation(summary = "新增运动记录")
     @PostMapping
-    public ApiResponse<Boolean> add(@Valid @RequestBody ExerciseRecordCreateReq exerciseRecordReq) {
-        ExerciseRecordEntity exerciseRecord = RecordApiConvertor.INSTANCE.fromExerciseRecordCreateReq(exerciseRecordReq);
-        Long userId = StpUtil.getLoginIdAsLong();
-        exerciseRecord.setUserId(userId);
-        exerciseRecord.setCreateUser(userId);
-        return ApiResponse.success(getBaseMapper().insert(exerciseRecord) > 0);
+    public ApiResponse<Boolean> add(@CurrentUserId String userId,
+                                    @Valid @RequestBody ExerciseRecordCreateReq exerciseRecordReq) {
+        ExerciseRecordEntity entity = RecordApiConvertor.INSTANCE.fromExerciseRecordCreateReq(exerciseRecordReq);
+        return ApiResponse.success(exerciseRecordService.createForUser(IdCodec.decode(userId), entity));
     }
 
-    /**
-     * 修改运动记录
-     */
     @Operation(summary = "更新运动记录")
     @PutMapping("/{id}")
-    public ApiResponse<Boolean> update(@PathVariable("id") Long id, @Valid @RequestBody ExerciseRecordUpdateReq exerciseRecordReq) {
-        ExerciseRecordEntity exerciseRecord = RecordApiConvertor.INSTANCE.fromExerciseRecordUpdateReq(exerciseRecordReq);
-        long userId = StpUtil.getLoginIdAsLong();
-        exerciseRecord.setId(id);
-        exerciseRecord.setUserId(null);
-        exerciseRecord.setUpdateUser(userId);
-
-        LambdaQueryWrapper<ExerciseRecordEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ExerciseRecordEntity::getId, exerciseRecord.getId());
-        wrapper.eq(ExerciseRecordEntity::getUserId, userId);
-
-        return ApiResponse.success(getBaseMapper().update(exerciseRecord, wrapper) > 0);
+    public ApiResponse<Boolean> update(@CurrentUserId String userId, @PathVariable String id,
+                                       @Valid @RequestBody ExerciseRecordUpdateReq exerciseRecordReq) {
+        ExerciseRecordEntity entity = RecordApiConvertor.INSTANCE.fromExerciseRecordUpdateReq(exerciseRecordReq);
+        return ApiResponse.success(exerciseRecordService.updateForUser(
+                IdCodec.decode(userId), IdCodec.decode(id), entity));
     }
 
-    // 批量删除
     @Operation(summary = "批量删除运动记录")
     @PostMapping("/deleteBatch")
-    public ApiResponse<Boolean> deleteBatch(@RequestBody CommonReq commonReq) {
-        LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, StpUtil.getLoginIdAsLong());
-        lambdaQueryWrapper.in(ExerciseRecordEntity::getId, commonReq.getIdList());
-        exerciseRecordMapper.delete(lambdaQueryWrapper);
+    public ApiResponse<Boolean> deleteBatch(@CurrentUserId String userId,
+                                            @Valid @RequestBody CommonReq commonReq) {
+        exerciseRecordService.deleteForUser(IdCodec.decode(userId), IdCodec.decodeAll(commonReq.getIdList()));
         return ApiResponse.success();
     }
 
-    /**
-     * 获取运动记录详情
-     */
     @Operation(summary = "查询运动记录详情")
     @GetMapping("/get/{id}")
-    public ApiResponse<ExerciseRecordVO> get(@PathVariable Long id) {
-        LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, StpUtil.getLoginIdAsLong());
-        lambdaQueryWrapper.eq(ExerciseRecordEntity::getId, id);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toExerciseRecordVO(getBaseMapper().selectOne(lambdaQueryWrapper)));
+    public ApiResponse<ExerciseRecordVO> get(@CurrentUserId String userId, @PathVariable String id) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toExerciseRecordVO(
+                exerciseRecordService.getOwnedOrNull(IdCodec.decode(userId), IdCodec.decode(id))));
     }
 
     /** 完整运动统计：未指定日期时统计全部历史，同日同类型合并为一个运动次数。 */
     @Operation(summary = "按日期和类型汇总运动量")
     @GetMapping("/statistics/summary")
-    public ApiResponse<List<ExerciseStatisticsPointVO>> getStatisticsSummary(@QueryParams ExerciseStatisticsQuery params) {
-        return ApiResponse.success(exerciseRecordMapper.selectStatisticsSummary(
-                StpUtil.getLoginIdAsLong(), params == null ? new ExerciseStatisticsQuery() : params));
+    public ApiResponse<List<ExerciseStatisticsPointVO>> getStatisticsSummary(
+            @CurrentUserId String userId,
+            @QueryParams ExerciseStatisticsQuery params) {
+        return ApiResponse.success(exerciseRecordService.statisticsSummary(IdCodec.decode(userId), params));
     }
 
     /**
@@ -149,90 +96,19 @@ public class ExerciseRecordController {
      */
     @Operation(summary = "查询运动统计明细", description = "无筛选时取最近一年；最多返回 1000 条，完整汇总请使用 statistics/summary。")
     @GetMapping("/statistics")
-    public ApiResponse<List<ExerciseRecordVO>> getStatistics(@QueryParams ExerciseStatisticsQuery params) {
-        Long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, userId);
-
-        // 处理查询条件
-        if (params != null && params.hasFilters()) {
-            // 运动类型
-            Long exerciseTypeId = params.getExerciseTypeId();
-            lambdaQueryWrapper.eq(exerciseTypeId != null, ExerciseRecordEntity::getExerciseTypeId, exerciseTypeId);
-
-            IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(params.getDescription()), params.getDescription(), ExerciseRecordEntity::getDescription);
-            // 日期区间
-            String startDate = params.getStartDate();
-            String endDate = params.getEndDate();
-            if (SysUtil.isNotEmpty(startDate)) {
-                lambdaQueryWrapper.ge(ExerciseRecordEntity::getExerciseDate, LocalDate.parse(startDate));
-            }
-            if (SysUtil.isNotEmpty(endDate)) {
-                lambdaQueryWrapper.le(ExerciseRecordEntity::getExerciseDate, LocalDate.parse(endDate));
-            }
-        } else {
-            // 默认限制时间范围为最近一年
-            LocalDate oneYearAgo = LocalDate.now().minusYears(1);
-            lambdaQueryWrapper.ge(ExerciseRecordEntity::getExerciseDate, oneYearAgo);
-        }
-
-        // 限制返回数据量，避免性能问题
-        lambdaQueryWrapper.orderByDesc(ExerciseRecordEntity::getExerciseDate, ExerciseRecordEntity::getId);
-        lambdaQueryWrapper.last("LIMIT 1000"); // 限制最多返回1000条记录
-
-        List<ExerciseRecordEntity> list = getBaseMapper().selectList(lambdaQueryWrapper);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toExerciseRecordVOList(list));
+    public ApiResponse<List<ExerciseRecordVO>> getStatistics(
+            @CurrentUserId String userId,
+            @QueryParams ExerciseStatisticsQuery params) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toExerciseRecordVOList(
+                exerciseRecordService.statisticsList(IdCodec.decode(userId), params)));
     }
 
-    /**
-     * 获取轻量级运动记录统计数据，仅包含统计所需字段
-     */
     @Operation(summary = "查询轻量运动统计明细", description = "无筛选时取最近一年；最多返回 1000 条，仅含统计字段。")
     @GetMapping("/statistics/light")
-    public ApiResponse<List<ExerciseStatisticsDTO>> getLightStatistics(@QueryParams ExerciseStatisticsQuery params) {
-        Long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<ExerciseRecordEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(ExerciseRecordEntity::getUserId, userId);
-
-        // 处理查询条件
-        if (params != null && params.hasFilters()) {
-            // 运动类型
-            Long exerciseTypeId = params.getExerciseTypeId();
-            lambdaQueryWrapper.eq(exerciseTypeId != null, ExerciseRecordEntity::getExerciseTypeId, exerciseTypeId);
-
-            IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(params.getDescription()), params.getDescription(), ExerciseRecordEntity::getDescription);
-            // 日期区间
-            String startDate = params.getStartDate();
-            String endDate = params.getEndDate();
-            if (SysUtil.isNotEmpty(startDate)) {
-                lambdaQueryWrapper.ge(ExerciseRecordEntity::getExerciseDate, LocalDate.parse(startDate));
-            }
-            if (SysUtil.isNotEmpty(endDate)) {
-                lambdaQueryWrapper.le(ExerciseRecordEntity::getExerciseDate, LocalDate.parse(endDate));
-            }
-        } else {
-            // 默认限制时间范围为最近一年
-            LocalDate oneYearAgo = LocalDate.now().minusYears(1);
-            lambdaQueryWrapper.ge(ExerciseRecordEntity::getExerciseDate, oneYearAgo);
-        }
-
-        // 限制返回数据量，避免性能问题
-        lambdaQueryWrapper.orderByDesc(ExerciseRecordEntity::getExerciseDate, ExerciseRecordEntity::getId);
-        lambdaQueryWrapper.last("LIMIT 1000"); // 限制最多返回1000条记录
-
-        List<ExerciseRecordEntity> entities = getBaseMapper().selectList(lambdaQueryWrapper);
-
-        // 转换为轻量级DTO
-        List<ExerciseStatisticsDTO> dtos = entities.stream().map(entity -> {
-            ExerciseStatisticsDTO dto = new ExerciseStatisticsDTO();
-            dto.setExerciseTypeId(entity.getExerciseTypeId());
-            dto.setExerciseDate(entity.getExerciseDate());
-            dto.setExerciseCount(entity.getExerciseCount());
-            dto.setDescription(entity.getDescription());
-            return dto;
-        }).collect(Collectors.toList());
-
-        return ApiResponse.success(dtos);
+    public ApiResponse<List<ExerciseStatisticsDTO>> getLightStatistics(
+            @CurrentUserId String userId,
+            @QueryParams ExerciseStatisticsQuery params) {
+        return ApiResponse.success(exerciseRecordService.lightStatistics(IdCodec.decode(userId), params));
     }
 
     /**
@@ -244,19 +120,10 @@ public class ExerciseRecordController {
     @Operation(summary = "分页查询每日运动汇总")
     @GetMapping("/dashboardSummary")
     public ApiResponse<ExerciseDashboardSummaryVO> getDashboardSummary(
+            @CurrentUserId String userId,
             @RequestParam(required = false) String lastDate,
             @RequestParam(required = false, defaultValue = "7") Integer limit) {
-        long userId = StpUtil.getLoginIdAsLong();
-        LocalDate cursor = null;
-        if (SysUtil.isNotEmpty(lastDate)) {
-            try {
-                cursor = LocalDate.parse(lastDate);
-            } catch (Exception e) {
-                log.warn("解析 lastDate 失败，使用默认值: {}", lastDate, e);
-            }
-        }
-        int safeLimit = (limit == null || limit <= 0 || limit > 30) ? 7 : limit;
-        return ApiResponse.success(exerciseRecordService.getDashboardSummary(userId, cursor, safeLimit));
+        return ApiResponse.success(exerciseRecordService.dashboardSummary(
+                IdCodec.decode(userId), lastDate, limit));
     }
-
 }

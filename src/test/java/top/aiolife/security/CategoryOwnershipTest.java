@@ -1,5 +1,7 @@
 package top.aiolife.security;
 
+import top.aiolife.record.service.RecordImageService;
+
 import static top.aiolife.support.MockMatchers.anyWrapper;
 import java.util.List;
 import cn.dev33.satoken.stp.StpUtil;
@@ -38,12 +40,12 @@ class CategoryOwnershipTest {
     void foreignTimeCategory_isRejectedBeforeRecordSave() {
         var categories = mock(ITimeTrackerCategoryService.class);
         var service = spy(new TimeRecordServiceImpl(null, null, null, null, null, null,
-                categories, mock(SecondaryLockGuard.class)));
+                categories, mock(SecondaryLockGuard.class), null));
         var req = new TimeRecordReq(); req.setCategoryId("22");
         req.setStartMinute(60); req.setEndMinute(119);
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
-            assertThrows(IllegalArgumentException.class, () -> service.saveTimeRecord(req));
+            assertThrows(IllegalArgumentException.class, () -> service.saveTimeRecord(11L, req));
             verify(service, never()).save(any(TimeRecordEntity.class));
             ArgumentCaptor<Wrapper<TimeTrackerCategoryEntity>> query = ArgumentCaptor.captor();
             verify(categories).count(query.capture());
@@ -59,30 +61,30 @@ class CategoryOwnershipTest {
         var visible = new TimeTrackerCategoryEntity(); visible.setId(22L);
         when(categories.listUserVisibleCategories(11L)).thenReturn(List.of(visible));
         var service = spy(new TimeRecordServiceImpl(null, null, null, null, null, null,
-                categories, mock(SecondaryLockGuard.class)));
+                categories, mock(SecondaryLockGuard.class), null));
         doAnswer(call -> {
             TimeRecordEntity entity = call.getArgument(0);
-            assertEquals(11L, entity.getUserId()); entity.setId("7"); return true;
+            assertEquals(11L, entity.getUserId()); entity.setId(7L); return true;
         }).when(service).save(any(TimeRecordEntity.class));
         var req = new TimeRecordReq(); req.setCategoryId("22");
         req.setStartMinute(60); req.setEndMinute(119);
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
-            assertEquals("7", service.saveTimeRecord(req));
+            assertEquals("7", service.saveTimeRecord(11L, req));
         }
     }
 
     @Test
     void foreignWardrobeCategory_isRejectedForCreateAndUpdate() {
         var categories = mock(WardrobeCategoryMapper.class);
-        var service = spy(new WardrobeItemServiceImpl(categories));
+        var service = spy(new WardrobeItemServiceImpl(categories, org.mockito.Mockito.mock(RecordImageService.class)));
         var req = new WardrobeItemReq(); req.setCategoryId(22L); req.setId(7L);
         var existing = new WardrobeItemEntity(); existing.setUserId(11L);
         doReturn(existing).when(service).getById(7L);
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
-            assertThrows(IllegalArgumentException.class, () -> service.saveItem(req));
-            assertThrows(IllegalArgumentException.class, () -> service.updateItem(req));
+            assertThrows(IllegalArgumentException.class, () -> service.saveItem(11L, req));
+            assertThrows(IllegalArgumentException.class, () -> service.updateItem(11L, req));
             verify(service, never()).save(any(WardrobeItemEntity.class));
             verify(service, never()).updateById(any(WardrobeItemEntity.class));
         }

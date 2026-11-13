@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
@@ -64,5 +65,21 @@ public class MembershipIconCatalog {
 
     public Resource resource(String key, boolean dark) {
         return new ClassPathResource("static/membership-icons/" + file(key, dark));
+    }
+
+    /** 查找内置图标资源；未在清单中的键返回空，供接口映射为 404。 */
+    public Optional<IconResource> find(String key, boolean dark) {
+        Definition icon = icons.get(key);
+        if (icon == null) {
+            return Optional.empty();
+        }
+        String file = dark && icon.darkFile() != null ? icon.darkFile() : icon.file();
+        String type = file.endsWith(".svg") ? "image/svg+xml" : file.endsWith(".webp") ? "image/webp"
+                : file.endsWith(".png") ? "image/png" : file.endsWith(".ico") ? "image/x-icon" : "image/jpeg";
+        return Optional.of(new IconResource(
+                new ClassPathResource("static/membership-icons/" + file), type));
+    }
+
+    public record IconResource(Resource resource, String contentType) {
     }
 }

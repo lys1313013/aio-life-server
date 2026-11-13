@@ -55,7 +55,9 @@ class ExpenseCalendarDetailsQueryTest {
         factory.setConfiguration(config);
         factory.setPlugins(pagination);
         var mapper = new SqlSessionTemplate(factory.getObject()).getMapper(IExpenseMapper.class);
-        var controller = new ExpController(null, null, mock(DeviceExpenseService.class), mapper);
+        var service = new top.aiolife.record.service.impl.ExpenseServiceImpl(mock(top.aiolife.record.service.UserDictDataService.class));
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "baseMapper", mapper);
+        var controller = new ExpController(service, mock(DeviceExpenseService.class));
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
             var filter = new ExpenseQuery();
@@ -64,19 +66,19 @@ class ExpenseCalendarDetailsQueryTest {
             var query = new CommonQuery<ExpenseQuery>();
             query.setCondition(filter);
             query.setPageSize(1);
-            var first = controller.query(query).getData();
+            var first = controller.query("7", query).getData();
             assertEquals(2L, first.getTotal());
             assertEquals(2L, first.getItems().getFirst().getId());
             query.setPage(2);
-            assertEquals(1L, controller.query(query).getData().getItems().getFirst().getId());
+            assertEquals(1L, controller.query("7", query).getData().getItems().getFirst().getId());
             query.setPage(3);
-            assertTrue(controller.query(query).getData().getItems().isEmpty());
+            assertTrue(controller.query("7", query).getData().getItems().isEmpty());
             filter = new ExpenseQuery();
             filter.setStartTime(LocalDateTime.of(2026, 8, 13, 0, 0));
             filter.setEndTime(LocalDateTime.of(2026, 8, 13, 0, 0));
             query.setCondition(filter);
             query.setPage(1);
-            assertEquals(List.of(3L), controller.query(query).getData().getItems().stream().map(row -> row.getId()).toList());
+            assertEquals(List.of(3L), controller.query("7", query).getData().getItems().stream().map(row -> row.getId()).toList());
         } finally {
             jdbc.execute("DROP ALL OBJECTS");
         }

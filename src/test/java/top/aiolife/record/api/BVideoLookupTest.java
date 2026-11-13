@@ -29,8 +29,9 @@ class BVideoLookupTest {
     @BeforeEach
     void setUp() throws Exception {
         database = new HomeDetailTestSupport();
-        // bvid 使用确定性精确比较，大小写不同的 BV 号不得命中。
-        mvc = database.mvc(new BVideoController(database.session.getMapper(IBVideoMapper.class), mock(VideoCoverService.class)));
+        var videoService = new top.aiolife.record.service.impl.BVideoServiceImpl(mock(VideoCoverService.class));
+        org.springframework.test.util.ReflectionTestUtils.setField(videoService, "baseMapper", database.session.getMapper(IBVideoMapper.class));
+        mvc = database.mvc(new BVideoController(videoService));
     }
 
     @AfterEach
@@ -53,6 +54,7 @@ class BVideoLookupTest {
         insert(11, 7, BVID, "not_started", 1, "2026-10-28 11:00:00");
         try (var identity = mockStatic(StpUtil.class)) {
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            identity.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc.perform(get("/b-video/by-bvid").param("bvid", BVID).param("userId", "8"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(0))
@@ -72,6 +74,7 @@ class BVideoLookupTest {
         insert(12, 7, "BV1aBcDeFgH2", "not_started", 0, "2026-10-28 10:00:00");
         try (var identity = mockStatic(StpUtil.class)) {
             identity.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            identity.when(StpUtil::getLoginIdAsString).thenReturn("7");
             for (String bvid : List.of(BVID, "BV9AbCdEfGh2")) {
                 mvc.perform(get("/b-video/by-bvid").param("bvid", bvid))
                         .andExpect(status().isOk())
@@ -83,11 +86,15 @@ class BVideoLookupTest {
 
     @Test
     void testLookup_缺失空值及非法BV号拒绝() throws Exception {
-        mvc.perform(get("/b-video/by-bvid"))
-                .andExpect(jsonPath("$.code").value(ResponseCodeConst.PARAM_FAIL));
-        for (String bvid : List.of("", "BVtarget", "bv1AbCdEfGh2", BVID + "1", BVID + "' OR 1=1")) {
-            mvc.perform(get("/b-video/by-bvid").param("bvid", bvid))
+        try (var identity = mockStatic(StpUtil.class)) {
+            identity.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            identity.when(StpUtil::getLoginIdAsString).thenReturn("7");
+            mvc.perform(get("/b-video/by-bvid"))
                     .andExpect(jsonPath("$.code").value(ResponseCodeConst.PARAM_FAIL));
+            for (String bvid : List.of("", "BVtarget", "bv1AbCdEfGh2", BVID + "1", BVID + "' OR 1=1")) {
+                mvc.perform(get("/b-video/by-bvid").param("bvid", bvid))
+                        .andExpect(jsonPath("$.code").value(ResponseCodeConst.PARAM_FAIL));
+            }
         }
     }
 

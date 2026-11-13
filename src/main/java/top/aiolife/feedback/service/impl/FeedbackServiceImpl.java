@@ -25,6 +25,7 @@ import top.aiolife.feedback.pojo.req.FeedbackBatchReq;
 import top.aiolife.feedback.pojo.req.FeedbackCommentCreateReq;
 import top.aiolife.feedback.pojo.req.FeedbackCreateReq;
 import top.aiolife.feedback.pojo.req.FeedbackStatusUpdateReq;
+import top.aiolife.feedback.pojo.vo.AdminUserVO;
 import top.aiolife.feedback.pojo.vo.FeedbackCommentVO;
 import top.aiolife.feedback.pojo.vo.FeedbackDetailVO;
 import top.aiolife.feedback.pojo.vo.FeedbackVO;
@@ -256,6 +257,21 @@ public class FeedbackServiceImpl implements IFeedbackService {
                 .set(FeedbackEntity::getUpdateTime, LocalDateTime.now())
                 .set(FeedbackEntity::getUpdateUser, adminId);
         feedbackMapper.update(null, wrapper);
+    }
+
+    @Override
+    public List<AdminUserVO> listAdminUsers() {
+        return userMapper.selectList(new LambdaQueryWrapper<UserEntity>()
+                        .like(UserEntity::getRole, "admin")
+                        .eq(UserEntity::getIsDeleted, 0)
+                        .orderByAsc(UserEntity::getId))
+                .stream().map(user -> {
+                    AdminUserVO vo = new AdminUserVO();
+                    vo.setId(String.valueOf(user.getId()));
+                    vo.setUsername(user.getUsername());
+                    vo.setNickname(user.getNickname());
+                    return vo;
+                }).toList();
     }
 
     // ========================= 通知 =========================

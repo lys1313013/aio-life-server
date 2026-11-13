@@ -15,6 +15,9 @@ public interface IApiKeyService extends IService<ApiKeyEntity> {
 
     /** 仅修改当前用户持有且未删除的密钥备注。 */
     ApiKeyEntity updateRemark(Long userId, Long id, String remark);
+
+    /** 删除当前用户持有且未删除的密钥。 */
+    void deleteOwned(Long userId, Long id);
     
     /**
      * 生成 API Key

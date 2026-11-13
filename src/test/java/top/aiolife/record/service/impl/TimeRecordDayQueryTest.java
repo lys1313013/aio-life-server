@@ -62,7 +62,7 @@ class TimeRecordDayQueryTest {
         @Bean
         TimeRecordServiceImpl records(ITimeRecordMapper mapper) {
             var service = spy(new TimeRecordServiceImpl(mapper, mock(IExerciseRecordService.class),
-                    null, null, null, null, null, null));
+                    null, null, null, null, null, null, null));
             ReflectionTestUtils.setField(service, "baseMapper", mapper);
             ReflectionTestUtils.setField(service, "entityClass", TimeRecordEntity.class);
             return service;
@@ -91,7 +91,7 @@ class TimeRecordDayQueryTest {
 
     @Test
     void testQuery_超过原分页上限完整返回且用户日期分别缓存() {
-        var records = IntStream.range(0, 151).mapToObj(i -> record("row-" + i, date)).toList();
+        var records = IntStream.range(0, 151).mapToObj(i -> record((long) i, date)).toList();
         when(mapper.selectList(anyWrapper())).thenReturn(records);
         assertEquals(151, service.queryDay(1L, date).size());
         assertEquals(151, service.queryDay(1L, date).size());
@@ -121,10 +121,10 @@ class TimeRecordDayQueryTest {
     @Test
     void testUpdate_事务提交后清理新旧两天且不影响其他用户() {
         warm(1L, date); warm(1L, date.plusDays(1)); warm(2L, date);
-        when(mapper.lockOwned("7", 1L)).thenReturn(record("7", date));
+        when(mapper.lockOwned(7L, 1L)).thenReturn(record(7L, date));
         doReturn(true).when(service).updateById(any(TimeRecordEntity.class));
         TransactionSynchronizationManager.initSynchronization();
-        service.updateTimeRecord(request("7", date.plusDays(1)));
+        service.updateTimeRecord(1L, request("7", date.plusDays(1)));
         assertCached(1L, date, true);
         assertCached(1L, date.plusDays(1), true);
         commit();
@@ -136,10 +136,10 @@ class TimeRecordDayQueryTest {
     @Test
     void testSaveRollback_回滚不清理原缓存() {
         warm(1L, date);
-        doAnswer(call -> { ((TimeRecordEntity) call.getArgument(0)).setId("8"); return true; })
+        doAnswer(call -> { ((TimeRecordEntity) call.getArgument(0)).setId(8L); return true; })
                 .when(service).save(any(TimeRecordEntity.class));
         TransactionSynchronizationManager.initSynchronization();
-        assertEquals("8", service.saveTimeRecord(request(null, date)));
+        assertEquals("8", service.saveTimeRecord(1L, request(null, date)));
         TransactionSynchronizationManager.getSynchronizations().forEach(s -> s.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
         assertCached(1L, date, true);
     }
@@ -147,9 +147,9 @@ class TimeRecordDayQueryTest {
     @Test
     void testSave_新增后仅清理对应日期() {
         warm(1L, date); warm(1L, date.plusDays(1));
-        doAnswer(call -> { ((TimeRecordEntity) call.getArgument(0)).setId("8"); return true; })
+        doAnswer(call -> { ((TimeRecordEntity) call.getArgument(0)).setId(8L); return true; })
                 .when(service).save(any(TimeRecordEntity.class));
-        service.saveTimeRecord(request(null, date));
+        service.saveTimeRecord(1L, request(null, date));
         assertCached(1L, date, false);
         assertCached(1L, date.plusDays(1), true);
     }
@@ -157,12 +157,12 @@ class TimeRecordDayQueryTest {
     @Test
     void testDelete_单条和整日删除清理对应日期() {
         warm(1L, date);
-        doReturn(record("7", date)).when(service).getOne(anyWrapper());
+        doReturn(record(7L, date)).when(service).getOne(anyWrapper());
         doReturn(true).when(service).remove(anyWrapper());
-        service.removeById("7", 1L);
+        service.removeById(7L, 1L);
         assertCached(1L, date, false);
         warm(1L, date);
-        when(mapper.selectList(anyWrapper())).thenReturn(List.of(record("7", date)));
+        when(mapper.selectList(anyWrapper())).thenReturn(List.of(record(7L, date)));
         doReturn(true).when(service).removeByIds(anyCollection());
         service.removeByDate(date, 1L);
         assertCached(1L, date, false);
@@ -175,7 +175,7 @@ class TimeRecordDayQueryTest {
         when(failed.get(any())).thenThrow(new IllegalStateException("Redis unavailable"));
         doThrow(new IllegalStateException("Redis unavailable")).when(failed).put(any(), any());
         doReturn(failed).when(caches).getCache("timeRecordDay:v1");
-        when(mapper.selectList(anyWrapper())).thenReturn(List.of(record("7", date)));
+        when(mapper.selectList(anyWrapper())).thenReturn(List.of(record(7L, date)));
         assertEquals("7", service.queryDay(1L, date).getFirst().getId());
         verify(mapper, times(1)).selectList(anyWrapper());
     }
@@ -189,7 +189,7 @@ class TimeRecordDayQueryTest {
         manager.afterPropertiesSet();
         var config = manager.getCacheConfigurations().get("timeRecordDay:v1");
         assertEquals(Duration.ofHours(1), config.getTtlFunction().getTimeToLive("test-key", null));
-        var row = RecordApiConvertor.INSTANCE.toTimeRecordListVO(record("7", date));
+        var row = RecordApiConvertor.INSTANCE.toTimeRecordListVO(record(7L, date));
         var encoded = config.getValueSerializationPair().getWriter().write(List.of(row));
         var decoded = config.getValueSerializationPair().getReader().read(encoded);
         assertEquals(List.of(row), decoded);
@@ -200,7 +200,7 @@ class TimeRecordDayQueryTest {
         assertEquals(expected, caches.getCache("timeRecordDay:v1").get(userId + ":" + day) != null);
     }
     private void commit() { TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit); }
-    private TimeRecordEntity record(String id, LocalDate day) {
+    private TimeRecordEntity record(Long id, LocalDate day) {
         var row = new TimeRecordEntity(); row.setId(id); row.setUserId(1L); row.setDate(day);
         row.setCategoryId(9223372036854775806L); row.setStartMinute(540); row.setEndMinute(599); return row;
     }

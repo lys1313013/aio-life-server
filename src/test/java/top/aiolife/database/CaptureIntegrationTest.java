@@ -44,6 +44,7 @@ import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.req.MovieReq;
 import top.aiolife.record.pojo.vo.FileVO;
 import top.aiolife.record.service.IFileService;
+import top.aiolife.record.service.RecordImageService;
 import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.service.UserDictDataService;
@@ -71,7 +72,8 @@ import java.util.concurrent.TimeUnit;
     DoubanSyncCoverService.class,
     PurchaseCaptureService.class,
     PurchaseSourceGuard.class,
-    JsonConfig.class
+    JsonConfig.class,
+    RecordImageService.class
 })
 class CaptureIntegrationTest {
     @Autowired PurchaseCaptureService purchases;
@@ -81,6 +83,7 @@ class CaptureIntegrationTest {
     @Autowired ReadRecordMapper reads;
     @Autowired IMovieMapper movieMapper;
     @Autowired IFileMapper fileMapper;
+    @Autowired RecordImageService images;
     @Autowired WardrobeItemMapper wardrobe;
     @Autowired ObjectMapper json;
     @Autowired JdbcTemplate jdbc;
@@ -584,10 +587,16 @@ class CaptureIntegrationTest {
         movie.setStatus(ProgressStatusEnum.IN_PROGRESS);
         movie.setRating(4);
         movie.setRemark("私人观影笔记");
-        movie.setFileId("personal-cover");
         movie.setStartTime(LocalDateTime.of(2019, 2, 3, 4, 5));
         movie.fillCreateCommonField(USER);
         movieMapper.insert(movie);
+        var cover = new FileEntity();
+        cover.setId("personal-cover");
+        cover.setFileName("personal.png");
+        cover.setBizType("movie");
+        cover.setBizId(movie.getId());
+        cover.fillCreateCommonField(USER);
+        fileMapper.insert(cover);
         var completed = douban.sync(USER, nativeSync("completed"));
         assertEquals("updated", completed.path("operation").asText());
         var row = movieMapper.selectById(movie.getId());
@@ -605,7 +614,7 @@ class CaptureIntegrationTest {
         assertEquals(14, row.getTotalProgress());
         assertEquals(4, row.getRating());
         assertEquals("私人观影笔记", row.getRemark());
-        assertEquals("personal-cover", row.getFileId());
+        assertEquals("personal-cover", images.find(USER, FileBizType.MOVIE, row.getId()));
         verifyNoInteractions(fileService, movieService);
     }
 
@@ -665,7 +674,7 @@ class CaptureIntegrationTest {
         assertFalse(result.path("warnings").isEmpty());
         var row = movieMapper.selectById(Long.parseLong(result.path("id").asText()));
         assertEquals(ProgressStatusEnum.COMPLETED, row.getStatus());
-        assertNull(row.getFileId());
+        assertNull(images.find(USER, FileBizType.MOVIE, row.getId()));
         assertEquals(result, douban.sync(USER, request));
     }
 
@@ -698,7 +707,7 @@ class CaptureIntegrationTest {
         assertEquals("解析取得的名称", row.getTitle());
         assertEquals(8, row.getTotalProgress());
         assertEquals(0, row.getCurrentProgress());
-        assertNotNull(row.getFileId());
+        assertNotNull(images.find(USER, FileBizType.MOVIE, row.getId()));
         assertNull(row.getFinishTime());
         verify(movieService).parseDoubanMetadata("https://movie.douban.com/subject/999992/");
     }

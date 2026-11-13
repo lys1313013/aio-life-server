@@ -110,7 +110,9 @@ class PaginationOrderingSqlTest {
 
     private MockMvc mvc(Object controller) {
         return MockMvcBuilders.standaloneSetup(controller)
-                .setCustomArgumentResolvers(new QueryParamsArgumentResolver(json))
+                .setCustomArgumentResolvers(new QueryParamsArgumentResolver(json),
+                        new top.aiolife.core.web.CurrentUserIdArgumentResolver(),
+                        new top.aiolife.core.web.CurrentTokenArgumentResolver())
                 .setControllerAdvice(new ExceptionHandle())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(json)).build();
     }
@@ -120,6 +122,7 @@ class PaginationOrderingSqlTest {
         List<String> ids = new ArrayList<>();
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             for (int page = 1; page <= 4; page++) {
                 JsonNode response = json.readTree(mvc.perform(get(path).param("page", Integer.toString(page))
                                 .param("pageSize", "2")).andExpect(status().isOk())
@@ -135,15 +138,23 @@ class PaginationOrderingSqlTest {
 
     @Test
     void testTaskAndColumns_同排序值不同列也按ID稳定跨页() throws Exception {
-        var tasks = new TaskController(mock(ITaskService.class), session.getMapper(ITaskMapper.class), mock(ITaskDetail.class));
-        var columns = new TaskColumnController(session.getMapper(ITaskColumnMapper.class), mock(ITaskColumnService.class));
+        var detail = mock(ITaskDetail.class);
+        when(detail.getUnCompletedCount(any(), anyLong())).thenReturn(java.util.Map.of());
+        var taskService = new top.aiolife.record.service.impl.TaskServiceImpl(detail);
+        org.springframework.test.util.ReflectionTestUtils.setField(taskService, "baseMapper", session.getMapper(ITaskMapper.class));
+        var tasks = new TaskController(taskService);
+        var columnService = new top.aiolife.record.service.impl.TaskColumnServiceImpl();
+        org.springframework.test.util.ReflectionTestUtils.setField(columnService, "baseMapper", session.getMapper(ITaskColumnMapper.class));
+        var columns = new TaskColumnController(columnService);
         assertPages(tasks, "/tasks", "id", List.of("1", "2", "3", "4", "5"));
         assertPages(columns, "/taskColumn/query", "id", List.of("1", "2", "3", "4", "5"));
     }
 
     @Test
     void testMemo_同更新时间按ID倒序跨页() throws Exception {
-        assertPages(new MemoController(mock(IMemoService.class), session.getMapper(IMemoMapper.class)),
+        var memoService = new top.aiolife.record.service.impl.MemoServiceImpl();
+        org.springframework.test.util.ReflectionTestUtils.setField(memoService, "baseMapper", session.getMapper(IMemoMapper.class));
+        assertPages(new MemoController(memoService),
                 "/memo/query", "id", List.of("5", "4", "3", "2", "1"));
     }
 
@@ -152,8 +163,9 @@ class PaginationOrderingSqlTest {
         var guard = mock(BankCardDictionaryGuard.class);
         var data = session.getMapper(ISysDictDataMapper.class);
         var types = session.getMapper(ISysDictTypeMapper.class);
-        assertPages(new SysDictDataController(guard, data, types), "/sysDictData/query", "dictCode", List.of("1", "2", "3", "4", "5"));
-        assertPages(new SysDictTypeController(guard, types, data), "/sysDictType/query", "dictId", List.of("1", "2", "3", "4", "5"));
+        var dictService = new top.aiolife.record.service.impl.SysDictServiceImpl(data, types, guard);
+        assertPages(new SysDictDataAdminController(dictService), "/sysDictData/query", "dictCode", List.of("1", "2", "3", "4", "5"));
+        assertPages(new SysDictTypeAdminController(dictService), "/sysDictType/query", "dictId", List.of("1", "2", "3", "4", "5"));
     }
 
     @Test
@@ -169,7 +181,7 @@ class PaginationOrderingSqlTest {
         }
         when(cache.list(0L, null)).thenReturn(entries.subList(0, 3));
         when(cache.list(7L, null)).thenReturn(entries.subList(3, 5));
-        var controller = new UserDictDataController(mock(UserDictDataMapper.class), new UserDictDataServiceImpl(cache));
+        var controller = new UserDictDataController(new UserDictDataServiceImpl(cache));
         assertPages(controller, "/userDictData/query", "id", List.of("1", "2", "3", "4", "5"));
     }
 
@@ -179,9 +191,10 @@ class PaginationOrderingSqlTest {
         UserDictDataEntity item = new UserDictDataEntity();
         item.setId(1L);
         when(service.listUserVisibleDictData(7L, null, true)).thenReturn(List.of(item));
-        var controller = new UserDictDataController(mock(UserDictDataMapper.class), service);
+        var controller = new UserDictDataController(service);
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            login.when(StpUtil::getLoginIdAsString).thenReturn("7");
             mvc(controller).perform(get("/userDictData/query").param("page", "2147483647").param("pageSize", "200"))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0))
                     .andExpect(jsonPath("$.data.total").value(1)).andExpect(jsonPath("$.data.items").isEmpty());

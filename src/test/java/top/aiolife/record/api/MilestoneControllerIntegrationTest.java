@@ -28,7 +28,7 @@ class MilestoneControllerIntegrationTest extends BaseIntegrationTest {
         Long milestoneId = System.currentTimeMillis() % 1000000 + 900000L;
         milestoneMapper.insert(createMilestone(milestoneId));
 
-        var response = milestoneController.queryMilestone();
+        var response = milestoneController.queryMilestone(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().size() >= 1);

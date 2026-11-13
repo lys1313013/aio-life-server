@@ -13,6 +13,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 import top.aiolife.core.lock.DistributedLockExecutor;
+import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.record.mapper.NotificationDeliveryMapper;
 import top.aiolife.record.mapper.NotificationPreferenceMapper;
 import top.aiolife.record.pojo.entity.NotificationDeliveryEntity;
@@ -29,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /** 一次性订阅的真实额度由微信判断，客户端上报和业务偏好都不作为授权凭证。 */
 @Service
@@ -47,6 +49,8 @@ public class WechatSubscriptionService {
     private final ObjectMapper json;
     private final DistributedLockExecutor locks;
     private final TransactionTemplate transaction;
+    @Autowired(required = false)
+    private RedisUtil redisUtil;
     @Autowired(required = false)
     private WechatSystemConfigService configuration;
 
@@ -94,6 +98,10 @@ public class WechatSubscriptionService {
     }
 
     public void sendTest(long userId) {
+        if (redisUtil != null
+                && !redisUtil.setIfAbsent("notification:wechat-mini:test:" + userId, "1", 30, TimeUnit.SECONDS)) {
+            throw new IllegalStateException("操作过于频繁，请 30 秒后重试");
+        }
         NotificationRequest request = new NotificationRequest(userId, BIZ_TYPE, "力扣未打卡提醒",
                 "这是一条测试提醒", null, "wechat:test:" + UUID.randomUUID());
         NotificationDeliveryEntity delivery = enqueue(request, true);

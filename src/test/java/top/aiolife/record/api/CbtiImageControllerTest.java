@@ -16,13 +16,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CbtiImageControllerTest {
     @Test void 仅当前人格绑定的图片可匿名读取且不能切换桶() throws Exception {
         var minio = mock(MinioUtil.class);
-        var personalities = mock(ICbtiPersonalityMapper.class);
+        var cbtiService = mock(top.aiolife.record.service.ICbtiService.class);
         var config = new CbtiConfig(); config.setBucketName("cbti");
-        var mvc = MockMvcBuilders.standaloneSetup(new CbtiImageController(minio, new MinioConfig(), config, personalities)).build();
+        var mvc = MockMvcBuilders.standaloneSetup(new CbtiImageController(minio, new MinioConfig(), config, cbtiService)).build();
         String key = "images/cbti/characters/public.png";
         mvc.perform(get("/cbti/images/" + key)).andExpect(status().isNotFound());
         verifyNoInteractions(minio);
-        when(personalities.selectCount(any())).thenReturn(1L);
+        when(cbtiService.isBoundImageObject(key)).thenReturn(true);
         byte[] image = ImageFixtures.image("png");
         when(minio.getFile("cbti", key)).thenReturn(new ByteArrayInputStream(image));
         mvc.perform(get("/cbti/images/" + key)).andExpect(status().isOk())

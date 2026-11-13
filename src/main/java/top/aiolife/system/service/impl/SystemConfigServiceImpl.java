@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import top.aiolife.core.constant.ResponseCodeConst;
+import top.aiolife.core.exception.ApiException;
 import top.aiolife.system.mapper.ISystemConfigMapper;
 import top.aiolife.system.pojo.entity.SystemConfigEntity;
 import top.aiolife.system.pojo.req.SystemConfigUpdateReq;
@@ -77,6 +79,15 @@ public class SystemConfigServiceImpl implements ISystemConfigService {
         if (WechatSystemConfigService.KEY.equals(key)) return wechatConfig.getAdminConfig();
         SystemConfigEntity entity = loadByKey(key);
         return entity == null ? null : toVO(entity);
+    }
+
+    @Override
+    public SystemConfigVO getRequiredByKey(String key) {
+        SystemConfigVO vo = getByKey(key);
+        if (vo == null) {
+            throw new ApiException(ResponseCodeConst.COMMON_FAIL, "配置项不存在");
+        }
+        return vo;
     }
 
     @Override

@@ -1,11 +1,9 @@
 package top.aiolife.export.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
-
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import lombok.RequiredArgsConstructor;
 
@@ -14,49 +12,39 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.resq.PageResp;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.export.convertor.ExportJobConvertor;
-import top.aiolife.export.mapper.ExportAuditMapper;
-import top.aiolife.export.pojo.entity.ExportAuditEntity;
-import top.aiolife.export.service.ExportAccessGuard;
-import top.aiolife.sso.service.SecondaryLockGuard;
+import top.aiolife.export.service.ExportAuditService;
 
 import java.time.LocalDateTime;
 
-/** 只读审计元数据，绝不提供他人文件下载和代导出入口。 */
+/**
+ * 只读审计元数据，绝不提供他人文件下载和代导出入口。
+ *
+ * @author Lys
+ * @date 2026/11/13
+ */
+@Tag(name = "数据导出审计")
 @RestController
 @RequestMapping("/system/data-export-audits")
 @RequiredArgsConstructor
 @SaCheckRole("admin")
 public class ExportAuditController {
-    private final ExportAuditMapper mapper;
-    private final ExportAccessGuard access;
-    private final SecondaryLockGuard locks;
+    private final ExportAuditService service;
 
     @Operation(summary = "管理员分页查询数据导出审计")
     @GetMapping
     public ApiResponse<PageResp<AuditView>> list(
+            @CurrentUserId String actorId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize,
-            @RequestParam(required = false) Long userId) {
-        long actorId = access.requestUser();
-        locks.checkMenus(actorId, "/system/operation-log");
-        if (page < 1 || pageSize < 1 || pageSize > 100)
-            throw new IllegalArgumentException("分页参数无效");
-        var result =
-                mapper.selectPage(
-                        new Page<>(page, pageSize),
-                        new LambdaQueryWrapper<ExportAuditEntity>()
-                                .eq(userId != null, ExportAuditEntity::getUserId, userId)
-                                .orderByDesc(
-                                        ExportAuditEntity::getEventTime, ExportAuditEntity::getId));
-        return ApiResponse.success(
-                new PageResp<>(
-                        result.getRecords().stream()
-                                .map(ExportJobConvertor.INSTANCE::toAuditVO)
-                                .toList(),
-                        result.getTotal()));
+            @RequestParam(required = false) String userId) {
+        return ApiResponse.success(service.page(IdCodec.decode(actorId), page, pageSize,
+                        IdCodec.decodeOrNull(userId))
+                .map(ExportJobConvertor.INSTANCE::toAuditVO));
     }
 
     public record AuditView(

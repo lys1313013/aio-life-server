@@ -44,7 +44,7 @@ class TimeRecordControllerTest {
         List<TimeRecordEntity> records = List.of(record);
         RecommendNextVO result = new RecommendNextVO(null, records);
         ITimeRecordService timeRecordService = proxy(ITimeRecordService.class, (method, args) -> {
-            assertEquals("recommendNext", method, "没有剩余时间时不应查询推荐分类");
+            assertEquals("recommendNextWithCategory", method, "没有剩余时间时不应查询推荐分类");
             return result;
         });
 
@@ -65,15 +65,12 @@ class TimeRecordControllerTest {
         recommend.setEndMinute(1439);
         RecommendNextVO result = new RecommendNextVO(recommend, List.of(previousRecord));
         ITimeRecordService timeRecordService = proxy(ITimeRecordService.class, (method, args) -> {
-            if ("recommendNext".equals(method)) {
-                return result;
-            }
-            assertEquals("recommendType", method);
+            assertEquals("recommendNextWithCategory", method);
             assertEquals(1L, args[0]);
             assertEquals("2026-09-12", args[1]);
-            assertEquals(1439, args[2]);
-            assertEquals(3, args.length);
-            return 20L;
+            assertEquals(2, args.length);
+            recommend.setCategoryId(20L);
+            return result;
         });
 
         var response = recommendNextAsUser(timeRecordService);
@@ -84,7 +81,7 @@ class TimeRecordControllerTest {
     }
 
     private ApiResponse<TimeRecordRecommendationVO> recommendNextAsUser(ITimeRecordService timeRecordService) {
-        TimeRecordController controller = new TimeRecordController(Mockito.mock(SecondaryLockGuard.class), timeRecordService, null, null, null);
+        TimeRecordController controller = new TimeRecordController(timeRecordService);
         StpLogic originalStpLogic = StpUtil.getStpLogic();
         StpUtil.setStpLogic(new StpLogic("login") {
             @Override
@@ -93,7 +90,7 @@ class TimeRecordControllerTest {
             }
         });
         try {
-            return controller.recommendNext("2026-09-12");
+            return controller.recommendNext("1", "2026-09-12");
         } finally {
             StpUtil.setStpLogic(originalStpLogic);
         }
@@ -101,84 +98,48 @@ class TimeRecordControllerTest {
 
     @Test
     void testQueryByDateRangeForAI_运动明细仅返回名称和次数() throws Exception {
-        MapperBuilderAssistant builderAssistant = new MapperBuilderAssistant(
-                new MybatisConfiguration(), "TimeRecordControllerTest");
-        TableInfoHelper.initTableInfo(builderAssistant, TimeRecordEntity.class);
-        TableInfoHelper.initTableInfo(builderAssistant, ExerciseRecordEntity.class);
+        TimeRecordDateRangeVO withExercise = new TimeRecordDateRangeVO();
+        withExercise.setId("time-1");
+        withExercise.setDate(LocalDate.of(2026, 8, 9));
+        withExercise.setStartMinute(540);
+        withExercise.setEndMinute(600);
+        withExercise.setExercises(List.of(new top.aiolife.record.pojo.vo.TimeRecordExerciseVO("俯卧撑", 30)));
 
-        TimeRecordEntity timeRecord = new TimeRecordEntity();
-        timeRecord.setId("time-1");
-        timeRecord.setDate(LocalDate.of(2026, 8, 9));
-        timeRecord.setStartMinute(540);
-        timeRecord.setEndMinute(600);
+        TimeRecordDateRangeVO withoutExercise = new TimeRecordDateRangeVO();
+        withoutExercise.setId("time-2");
+        withoutExercise.setDate(LocalDate.of(2026, 8, 8));
+        withoutExercise.setStartMinute(540);
+        withoutExercise.setEndMinute(600);
 
-        TimeRecordEntity timeRecordWithoutExercise = new TimeRecordEntity();
-        timeRecordWithoutExercise.setId("time-2");
-        timeRecordWithoutExercise.setDate(LocalDate.of(2026, 8, 8));
-        timeRecordWithoutExercise.setStartMinute(540);
-        timeRecordWithoutExercise.setEndMinute(600);
+        ITimeRecordService timeRecordService = proxy(ITimeRecordService.class, (method, args) -> {
+            assertEquals("queryByDateRangeForAI", method);
+            assertEquals(1L, args[0]);
+            return List.of(withExercise, withoutExercise);
+        });
 
-        ITimeRecordService timeRecordService = proxy(ITimeRecordService.class,
-                (method, args) -> "list".equals(method)
-                        ? List.of(timeRecord, timeRecordWithoutExercise) : null);
-
-        ExerciseRecordEntity exerciseRecord = new ExerciseRecordEntity();
-        exerciseRecord.setTimeId("time-1");
-        exerciseRecord.setExerciseTypeId(100L);
-        exerciseRecord.setExerciseCount(30);
-        exerciseRecord.setDescription("不应返回的描述");
-
-        @SuppressWarnings("unchecked")
-        BaseMapper<ExerciseRecordEntity> exerciseMapper = proxy(BaseMapper.class,
-                (method, args) -> "selectList".equals(method) ? List.of(exerciseRecord) : null);
-        IExerciseRecordService exerciseRecordService = proxy(IExerciseRecordService.class,
-                (method, args) -> "lambdaQuery".equals(method)
-                        ? new LambdaQueryChainWrapper<>(exerciseMapper) : null);
-
-        UserDictDataEntity exerciseType = new UserDictDataEntity();
-        exerciseType.setId(100L);
-        exerciseType.setDictLabel("俯卧撑");
-        UserDictDataService userDictDataService = proxy(UserDictDataService.class,
-                (method, args) -> "listUserVisibleDictData".equals(method)
-                        ? List.of(exerciseType) : null);
-        ITimeTrackerCategoryService categoryService = proxy(ITimeTrackerCategoryService.class,
-                (method, args) -> null);
-
-        TimeRecordController controller = new TimeRecordController(Mockito.mock(SecondaryLockGuard.class),
-                timeRecordService, exerciseRecordService, categoryService, userDictDataService);
+        TimeRecordController controller = new TimeRecordController(timeRecordService);
         TimeRecordDateRangeMcpReq req = new TimeRecordDateRangeMcpReq();
         req.setStartDate(LocalDate.of(2026, 8, 9));
         req.setEndDate(LocalDate.of(2026, 8, 9));
 
-        StpLogic originalStpLogic = StpUtil.getStpLogic();
-        StpUtil.setStpLogic(new StpLogic("login") {
-            @Override
-            public long getLoginIdAsLong() {
-                return 1L;
-            }
-        });
-        try {
-            List<TimeRecordDateRangeVO> result = controller.queryByDateRangeForAI(req).getData();
+        List<TimeRecordDateRangeVO> result = controller.queryByDateRangeForAI("1", req).getData();
 
-            assertEquals(2, result.size());
-            assertEquals("俯卧撑", result.getFirst().getExercises().getFirst().getExerciseName());
-            assertEquals(30, result.getFirst().getExercises().getFirst().getExerciseCount());
+        assertEquals(2, result.size());
+        assertEquals("俯卧撑", result.getFirst().getExercises().getFirst().getExerciseName());
+        assertEquals(30, result.getFirst().getExercises().getFirst().getExerciseCount());
 
-            JsonNode exerciseJson = new ObjectMapper().valueToTree(
-                    result.getFirst().getExercises().getFirst());
-            assertEquals(2, exerciseJson.size());
-            assertTrue(exerciseJson.has("exerciseName"));
-            assertTrue(exerciseJson.has("exerciseCount"));
-            assertFalse(exerciseJson.has("exerciseTypeId"));
-            assertFalse(exerciseJson.has("description"));
+        JsonNode exerciseJson = new ObjectMapper().valueToTree(
+                result.getFirst().getExercises().getFirst());
+        assertEquals(2, exerciseJson.size());
+        assertTrue(exerciseJson.has("exerciseName"));
+        assertTrue(exerciseJson.has("exerciseCount"));
+        assertFalse(exerciseJson.has("exerciseTypeId"));
+        assertFalse(exerciseJson.has("description"));
 
-            JsonNode recordWithoutExerciseJson = new ObjectMapper()
-                    .findAndRegisterModules()
-                    .valueToTree(result.getLast());
-            assertFalse(recordWithoutExerciseJson.has("exercises"));
-        } finally {
-            StpUtil.setStpLogic(originalStpLogic);
-        }
+        JsonNode recordWithoutExerciseJson = new ObjectMapper()
+                .findAndRegisterModules()
+                .valueToTree(result.getLast());
+        assertFalse(recordWithoutExerciseJson.has("exercises"));
     }
 
     @SuppressWarnings("unchecked")

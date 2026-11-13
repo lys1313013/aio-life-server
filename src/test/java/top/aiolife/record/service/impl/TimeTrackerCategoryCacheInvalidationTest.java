@@ -180,7 +180,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
 
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(USER_ID);
-            assertEquals(0, new TimeTrackerCategoryController(service).reSort(List.of(personal, shared)).getCode());
+            assertEquals(0, new TimeTrackerCategoryController(service).reSort(String.valueOf(USER_ID), List.of(personal, shared)).getCode());
         }
 
         verify(service).updateCategory(eq(7L), argThat(c -> c.getSortOrder() == 20), eq(USER_ID));

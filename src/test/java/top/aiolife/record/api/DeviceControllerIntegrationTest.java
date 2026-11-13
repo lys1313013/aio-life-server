@@ -37,7 +37,7 @@ class DeviceControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new DeviceEntity());
 
-        var response = deviceController.query(ApiRequestFixtures.query(query, DeviceQuery.class));
+        var response = deviceController.query(String.valueOf(TEST_USER_ID), ApiRequestFixtures.query(query, DeviceQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);

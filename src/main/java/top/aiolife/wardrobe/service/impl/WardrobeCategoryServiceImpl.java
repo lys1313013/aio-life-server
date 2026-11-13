@@ -1,6 +1,5 @@
 package top.aiolife.wardrobe.service.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -28,9 +27,8 @@ public class WardrobeCategoryServiceImpl extends ServiceImpl<WardrobeCategoryMap
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void saveCategory(CategoryReq req) {
+    public void saveCategory(Long userId, CategoryReq req) {
         WardrobeCategoryEntity entity = reqToEntity(req);
-        Long userId = StpUtil.getLoginIdAsLong();
         entity.setUserId(userId);
         entity.setCategoryType(1); // 用户自定义分类
         entity.fillCreateCommonField(userId);
@@ -39,8 +37,7 @@ public class WardrobeCategoryServiceImpl extends ServiceImpl<WardrobeCategoryMap
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateCategory(CategoryReq req) {
-        Long userId = StpUtil.getLoginIdAsLong();
+    public void updateCategory(Long userId, CategoryReq req) {
         WardrobeCategoryEntity existing = this.getById(req.getId());
         if (existing == null) {
             throw new RuntimeException("分类不存在");

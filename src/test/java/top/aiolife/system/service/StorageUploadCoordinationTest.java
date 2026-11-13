@@ -203,12 +203,14 @@ class StorageUploadCoordinationTest {
             if (!finish.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("test timeout");
             return key.get();
         }).when(uploads).uploadFile(anyString(), any(), anyString());
-        var controller = new CbtiAdminController(mapper, new ObjectMapper(),
+        var cbtiService = new top.aiolife.record.service.impl.CbtiServiceImpl(mapper,
+                mock(top.aiolife.record.mapper.ICbtiResultMapper.class), new ObjectMapper(),
                 uploads, config, cbti, mock(CbtiImageInitUtil.class), locks);
+        var controller = new CbtiAdminController(cbtiService);
         var result = executor.submit(() -> {
             try (var login = mockStatic(StpUtil.class)) {
                 login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
-                return controller.uploadImage("TEST", new MockMultipartFile("file", "test.png", "image/png", new byte[]{1}));
+                return controller.uploadImage("7", "TEST", new MockMultipartFile("file", "test.png", "image/png", new byte[]{1}));
             }
         });
         assertTrue(written.await(10, TimeUnit.SECONDS));

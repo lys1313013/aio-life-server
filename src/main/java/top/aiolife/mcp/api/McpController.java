@@ -1,10 +1,14 @@
 package top.aiolife.mcp.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import top.aiolife.core.constant.ResponseCodeConst;
+import top.aiolife.core.exception.ApiException;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.mcp.invoker.McpToolInvoker;
 import top.aiolife.mcp.registry.McpToolRegistry;
@@ -14,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
+@Tag(name = "MCP")
 @RestController
 @AllArgsConstructor
 @RequestMapping("/mcp")
@@ -40,10 +45,10 @@ public class McpController {
 
     @Operation(summary = "调用 MCP 工具")
     @PostMapping("/tools/call")
-    public ApiResponse<Map<String, Object>> callTool(@RequestBody ToolCallRequest request) {
+    public ApiResponse<Map<String, Object>> callTool(@Valid @RequestBody ToolCallRequest request) {
         McpToolRegistry.RegisteredMcpTool tool = toolRegistry.getTool(request.name());
         if (tool == null) {
-            return ApiResponse.error("工具不存在: " + request.name());
+            throw new ApiException(ResponseCodeConst.COMMON_FAIL, "工具不存在: " + request.name());
         }
         Map<String, Object> args = request.arguments() != null ? request.arguments() : Map.of();
         var result = toolInvoker.invoke(tool, args, null, null);

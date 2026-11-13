@@ -44,7 +44,7 @@ class ExerciseRecordControllerIntegrationTest extends BaseIntegrationTest {
         query.setPageSize(10);
         query.setCondition(new ExerciseRecordEntity());
 
-        var response = exerciseRecordController.query(ApiRequestFixtures.query(query, ExerciseRecordQuery.class));
+        var response = exerciseRecordController.query(String.valueOf(TEST_USER_ID),ApiRequestFixtures.query(query, ExerciseRecordQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertTrue(response.getData().getTotal() >= 1);
@@ -55,7 +55,7 @@ class ExerciseRecordControllerIntegrationTest extends BaseIntegrationTest {
         Long exerciseId = System.currentTimeMillis() % 1000000 + 900000L;
         exerciseRecordMapper.insert(createExerciseRecord(exerciseId));
 
-        var response = exerciseRecordController.get(exerciseId);
+        var response = exerciseRecordController.get(String.valueOf(TEST_USER_ID), String.valueOf(exerciseId));
         assertSuccess(response);
         assertNotNull(response.getData());
         assertEquals(exerciseId, response.getData().getId());
@@ -70,7 +70,7 @@ class ExerciseRecordControllerIntegrationTest extends BaseIntegrationTest {
         params.put("startDate", LocalDate.now().minusMonths(1).toString());
         params.put("endDate", LocalDate.now().plusDays(1).toString());
 
-        var response = exerciseRecordController.getStatistics(ApiRequestFixtures.request(params, ExerciseStatisticsQuery.class));
+        var response = exerciseRecordController.getStatistics(String.valueOf(TEST_USER_ID),ApiRequestFixtures.request(params, ExerciseStatisticsQuery.class));
         assertSuccess(response);
         assertNotNull(response.getData());
     }
@@ -99,7 +99,7 @@ class ExerciseRecordControllerIntegrationTest extends BaseIntegrationTest {
 
         var filters = new ExerciseStatisticsQuery();
         filters.setExerciseTypeId(typeId);
-        var points = assertSuccessWithData(exerciseRecordController.getStatisticsSummary(filters));
+        var points = assertSuccessWithData(exerciseRecordController.getStatisticsSummary(String.valueOf(TEST_USER_ID),filters));
         assertEquals(1, points.size());
         assertEquals(1005, points.getFirst().getRecordCount());
         assertEquals(0, new BigDecimal("2008").compareTo(points.getFirst().getExerciseCount()));
@@ -108,7 +108,7 @@ class ExerciseRecordControllerIntegrationTest extends BaseIntegrationTest {
         assertTrue(json.get("recordCount").isIntegralNumber());
         assertTrue(json.get("exerciseCount").isNumber());
         // 不传日期也包含一年以前的记录。
-        assertTrue(assertSuccessWithData(exerciseRecordController.getStatisticsSummary(new ExerciseStatisticsQuery()))
+        assertTrue(assertSuccessWithData(exerciseRecordController.getStatisticsSummary(String.valueOf(TEST_USER_ID),new ExerciseStatisticsQuery()))
                 .stream().anyMatch(point -> point.getExerciseTypeId().equals(typeId)));
     }
 
@@ -128,7 +128,7 @@ class ExerciseRecordControllerIntegrationTest extends BaseIntegrationTest {
         filters.setStartDate(date.toString());
         filters.setEndDate(date.plusDays(1).toString());
         filters.setDescription("边界");
-        var points = assertSuccessWithData(exerciseRecordController.getStatisticsSummary(filters));
+        var points = assertSuccessWithData(exerciseRecordController.getStatisticsSummary(String.valueOf(TEST_USER_ID),filters));
         assertEquals(2, points.size());
         assertEquals(date.plusDays(1), points.getFirst().getExerciseDate());
 
@@ -140,12 +140,12 @@ class ExerciseRecordControllerIntegrationTest extends BaseIntegrationTest {
         condition.setDescription("边界");
         query.setCondition(condition);
         query.setPageSize(1);
-        var page = assertSuccessWithData(exerciseRecordController.query(query));
+        var page = assertSuccessWithData(exerciseRecordController.query(String.valueOf(TEST_USER_ID),query));
         assertEquals(2L, page.getTotal());
         assertEquals(1, page.getItems().size());
         assertEquals(points.getFirst().getExerciseDate(), page.getItems().getFirst().getExerciseDate());
         filters.setStartDate(date.plusDays(3).toString());
-        assertTrue(assertSuccessWithData(exerciseRecordController.getStatisticsSummary(filters)).isEmpty());
+        assertTrue(assertSuccessWithData(exerciseRecordController.getStatisticsSummary(String.valueOf(TEST_USER_ID),filters)).isEmpty());
     }
 
     private ExerciseRecordEntity createExerciseRecord(Long exerciseId) {

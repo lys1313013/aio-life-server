@@ -122,28 +122,30 @@ class VideoCoverServiceTest {
         service.complete(task.getId(),"second",png); assertEquals(1,files.selectCount(null));
     }
     @Test void 新增编辑及浏览器两个入口均使用相同导入任务() {
-        var controller=proxy(new BVideoController(videos,service));
+        var videoService = new top.aiolife.record.service.impl.BVideoServiceImpl(service);
+        org.springframework.test.util.ReflectionTestUtils.setField(videoService, "baseMapper", videos);
+        var controller=proxy(new BVideoController(videoService));
         try (var stp=mockStatic(StpUtil.class)) {
             stp.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
             var create=new BVideoCreateReq();
             create.setTitle("测试"); create.setUrl("https://www.bilibili.com/video/BVtest");
             create.setDurationSeconds(60); create.setCover(URL); create.setBvid("BVone");
-            assertEquals(0,controller.insert(create).getCode());
+            assertEquals(0,controller.insert("11", create).getCode());
             var first=videos.selectList(null).getFirst();
             assertEquals("PENDING",first.getCoverState()); assertEquals(1,tasks.selectCount(null));
             var update=new BVideoUpdateReq(); update.setTitle("仅修改标题");
-            controller.update(first.getId(),update); assertEquals(1,tasks.selectCount(null));
+            controller.update("11", String.valueOf(first.getId()), update); assertEquals(1,tasks.selectCount(null));
             update.setCover("https://i0.hdslb.com/bfs/archive/replacement.jpg");
-            controller.update(first.getId(),update); assertEquals(2,tasks.selectCount(null));
-            create.setBvid("BVtwo"); controller.tagVideo(create); assertEquals(3,tasks.selectCount(null));
+            controller.update("11", String.valueOf(first.getId()), update); assertEquals(2,tasks.selectCount(null));
+            create.setBvid("BVtwo"); controller.tagVideo("11", create); assertEquals(3,tasks.selectCount(null));
             var sync=new BVideoProgressReq();
             sync.setTitle("浏览器同步"); sync.setUrl(create.getUrl()); sync.setDurationSeconds(60);
             sync.setWatchedDurationSeconds(10); sync.setCurrentEpisode(1);
             sync.setBvid("BVthree"); sync.setCover(URL);
-            controller.syncProgress(sync); assertEquals(4,tasks.selectCount(null));
-            controller.syncProgress(sync); assertEquals(4,tasks.selectCount(null));
-            sync.setCover(update.getCover()); controller.syncProgress(sync); assertEquals(5,tasks.selectCount(null));
-            update.setCover(""); controller.update(first.getId(),update);
+            controller.syncProgress("11", sync); assertEquals(4,tasks.selectCount(null));
+            controller.syncProgress("11", sync); assertEquals(4,tasks.selectCount(null));
+            sync.setCover(update.getCover()); controller.syncProgress("11", sync); assertEquals(5,tasks.selectCount(null));
+            update.setCover(""); controller.update("11", String.valueOf(first.getId()), update);
             assertEquals("NONE",videos.selectById(first.getId()).getCoverState());
         }
     }

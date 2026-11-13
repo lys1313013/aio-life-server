@@ -1,5 +1,7 @@
 package top.aiolife.capture;
 
+import top.aiolife.record.service.RecordImageService;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,7 +18,7 @@ import java.math.BigDecimal;
 class CaptureValidationTest {
     private final ObjectMapper json = new ObjectMapper();
     private final PurchaseCaptureService service =
-            new PurchaseCaptureService(null, null, null, null, json, null);
+            new PurchaseCaptureService(null, null, null, null, null, json, null);
 
     private ObjectNode order() throws Exception {
         return (ObjectNode)

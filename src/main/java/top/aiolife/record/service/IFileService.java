@@ -39,7 +39,7 @@ public interface IFileService extends IService<FileEntity> {
     
     /**
      * 从白名单豆瓣 CDN 的 HTTPS URL 下载阅读/观影封面，不跟随重定向。
-     * 自定义封面使用 upload，业务记录保存返回的 fileId。
+     * 自定义封面使用 upload，保存业务记录时将返回的 fileId 绑定至 file.biz_type/biz_id。
      *
      * @param imageUrl 图片 URL
      * @param bizType  业务类型

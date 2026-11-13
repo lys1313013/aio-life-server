@@ -25,7 +25,7 @@ class MbtiControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void testGetHistory_获取历史记录() {
-        var response = mbtiController.getHistory();
+        var response = mbtiController.getHistory(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
         assertNotNull(response.getData());
     }
@@ -39,7 +39,7 @@ class MbtiControllerIntegrationTest extends BaseIntegrationTest {
         entity.fillCreateCommonField(TEST_USER_ID);
         mbtiResultService.saveResult(entity);
 
-        var response = mbtiController.deleteResult(entity.getId());
+        var response = mbtiController.deleteResult(String.valueOf(TEST_USER_ID), String.valueOf(entity.getId()));
         assertSuccess(response);
         assertNull(mbtiResultService.getById(entity.getId()));
     }
@@ -53,7 +53,7 @@ class MbtiControllerIntegrationTest extends BaseIntegrationTest {
         entity.fillCreateCommonField(999L);
         mbtiResultService.saveResult(entity);
 
-        var response = mbtiController.deleteResult(entity.getId());
+        var response = mbtiController.deleteResult(String.valueOf(TEST_USER_ID), String.valueOf(entity.getId()));
         assertEquals(ResponseCodeConst.COMMON_FAIL, response.getCode());
         assertNotNull(mbtiResultService.getById(entity.getId()));
     }

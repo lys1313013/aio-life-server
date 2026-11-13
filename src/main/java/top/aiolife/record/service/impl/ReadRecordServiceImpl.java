@@ -23,6 +23,7 @@ import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.vo.ReadRecordVO;
 import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.service.IFileService;
+import top.aiolife.record.service.RecordImageService;
 import top.aiolife.record.pojo.entity.FileEntity;
 import top.aiolife.record.util.DoubanSubjectUrl;
 
@@ -41,6 +42,7 @@ import org.jsoup.nodes.Element;
 public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRecordEntity> implements IReadRecordService {
 
     private final IFileService fileService;
+    private final RecordImageService images;
 
     @Autowired
     private DoubanSourceGuard doubanSources;
@@ -66,6 +68,8 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         query.validatePagination();
         Page<ReadRecordEntity> page = new Page<>(query.getPage(), query.getPageSize());
         Page<ReadRecordEntity> entityPage = this.page(page, wrapper);
+
+        images.fill(userId, FileBizType.READ_RECORD, entityPage.getRecords(), ReadRecordEntity::getId, ReadRecordEntity::setFileId);
 
         Page<ReadRecordVO> voPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
 
@@ -104,6 +108,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         }
         
         this.save(entity);
+        images.replace(userId, FileBizType.READ_RECORD, entity.getId(), req.getFileId());
         return entity.getId();
     }
 
@@ -122,7 +127,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         ensureCoverUploaded(req, true);
         ReadRecordEntity entity = this.getById(req.getId());
         if (entity == null || !entity.getUserId().equals(userId)) {
-            throw new RuntimeException("记录不存在或无权限");
+            throw new IllegalArgumentException("记录不存在或无权限");
         }
         
         BeanUtil.copyProperties(req, entity);
@@ -136,6 +141,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         }
         
         this.updateById(entity);
+        images.replace(userId, FileBizType.READ_RECORD, entity.getId(), req.getFileId());
     }
 
     @Override
@@ -216,7 +222,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
             }
 
             if (StrUtil.isBlank(res.getTitle())) {
-                throw new RuntimeException("豆瓣反爬限制或页面结构改变，解析失败，请手动填写");
+                throw new IllegalArgumentException("豆瓣反爬限制或页面结构改变，解析失败，请手动填写");
             }
 
             // 下载封面图并上传到 MinIO，解决豆瓣 CDN 防盗链问题
@@ -246,7 +252,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
             
         } catch (Exception e) {
             log.error("解析豆瓣链接失败: {}", url, e);
-            throw new RuntimeException("解析豆瓣链接失败，请检查链接是否正确或稍后重试");
+            throw new IllegalArgumentException("解析豆瓣链接失败，请检查链接是否正确或稍后重试");
         }
         return res;
     }
@@ -257,11 +263,14 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
             throw new IllegalArgumentException("豆瓣 subjectId 格式不正确");
         }
         Long userId = StpUtil.getLoginIdAsLong();
-        return (ReadRecordEntity) doubanSources.find(userId,
+        ReadRecordEntity entity = (ReadRecordEntity) doubanSources.find(userId,
                 DoubanSubjectUrl.parse("https://book.douban.com/subject/" + subjectId + "/"), false);
+        if (entity != null) entity.setFileId(images.find(userId, FileBizType.READ_RECORD, entity.getId()));
+        return entity;
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateCoverFileId(Long id, String fileId) {
         if (id == null || StrUtil.isBlank(fileId)) {
             throw new IllegalArgumentException("记录ID和封面文件ID不能为空");
@@ -270,13 +279,13 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         boolean updated = this.lambdaUpdate()
                 .eq(ReadRecordEntity::getId, id)
                 .eq(ReadRecordEntity::getUserId, userId)
-                .set(ReadRecordEntity::getFileId, fileId)
                 .set(ReadRecordEntity::getUpdateUser, userId)
                 .set(ReadRecordEntity::getUpdateTime, LocalDateTime.now())
                 .update();
         if (!updated) {
             throw new IllegalArgumentException("阅读记录不存在或无权限");
         }
+        images.replace(userId, FileBizType.READ_RECORD, id, fileId);
     }
 
     private void ensureCoverUploaded(ReadRecordReq res, boolean required) {
@@ -312,6 +321,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         wrapper.orderByDesc(ReadRecordEntity::getUpdateTime);
         
         List<ReadRecordEntity> entities = this.list(wrapper);
+        images.fill(userId, FileBizType.READ_RECORD, entities, ReadRecordEntity::getId, ReadRecordEntity::setFileId);
         return entities.stream().map(entity -> {
             ReadRecordVO vo = new ReadRecordVO();
             BeanUtil.copyProperties(entity, vo);
@@ -328,6 +338,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
                 .eq(ReadRecordEntity::getUserId, userId)
                 .one();
         if (entity == null) return null;
+        entity.setFileId(images.find(userId, FileBizType.READ_RECORD, id));
         ReadRecordVO vo = new ReadRecordVO();
         BeanUtil.copyProperties(entity, vo);
         vo.setId(String.valueOf(entity.getId()));

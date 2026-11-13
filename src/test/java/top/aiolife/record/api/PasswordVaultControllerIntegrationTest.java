@@ -27,14 +27,14 @@ class PasswordVaultControllerIntegrationTest extends BaseIntegrationTest {
         Long passwordId = System.currentTimeMillis() % 1000000 + 900000L;
         passwordVaultMapper.insert(createPassword(passwordId));
 
-        var response = passwordVaultController.list();
+        var response = passwordVaultController.list(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
         assertNotNull(response.getData());
     }
 
     @Test
     void testCategories_获取分类列表() {
-        var response = passwordVaultController.categories();
+        var response = passwordVaultController.categories(String.valueOf(TEST_USER_ID));
         assertSuccess(response);
         assertNotNull(response.getData());
     }

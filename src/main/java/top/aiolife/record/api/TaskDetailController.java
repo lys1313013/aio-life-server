@@ -1,30 +1,31 @@
 package top.aiolife.record.api;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-
-import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import top.aiolife.core.query.QueryOrder;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.pojo.entity.TaskDetailEntity;
-import top.aiolife.record.pojo.entity.TaskEntity;
 import top.aiolife.record.pojo.req.TaskDetailCreateReq;
 import top.aiolife.record.pojo.req.TaskDetailSortReq;
 import top.aiolife.record.pojo.req.TaskDetailUpdateReq;
 import top.aiolife.record.pojo.vo.TaskDetailVO;
 import top.aiolife.record.service.ITaskDetail;
-import top.aiolife.record.service.ITaskService;
 
 /**
  * 任务详情控制器
@@ -39,7 +40,6 @@ import top.aiolife.record.service.ITaskService;
 public class TaskDetailController {
 
     private final ITaskDetail taskDetailService;
-    private final ITaskService taskService;
 
     /**
      * 获取任务详情列表
@@ -49,15 +49,9 @@ public class TaskDetailController {
      */
     @Operation(summary = "查询待办子任务")
     @GetMapping
-    public ApiResponse<List<TaskDetailVO>> list(@RequestParam Long taskId) {
-        Long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<TaskDetailEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(TaskDetailEntity::getTaskId, taskId);
-        queryWrapper.eq(TaskDetailEntity::getUserId, userId);
-        queryWrapper.orderByAsc(TaskDetailEntity::getIsCompleted);
-        QueryOrder.ascNullsFirst(queryWrapper, TaskDetailEntity::getPriority);
-        queryWrapper.orderByAsc(TaskDetailEntity::getSortOrder, TaskDetailEntity::getId);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVOList(taskDetailService.list(queryWrapper)));
+    public ApiResponse<List<TaskDetailVO>> list(@CurrentUserId String userId, @RequestParam String taskId) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVOList(
+                taskDetailService.listForTask(IdCodec.decode(userId), IdCodec.decode(taskId))));
     }
 
     /**
@@ -67,18 +61,11 @@ public class TaskDetailController {
      */
     @Operation(summary = "调整待办子任务排序")
     @PostMapping("/reSort")
-    public ApiResponse<Void> reSort(@NotEmpty @RequestBody List<@NotNull @Valid TaskDetailSortReq> requests) {
-        List<TaskDetailEntity> list = requests.stream().map(RecordApiConvertor.INSTANCE::fromTaskDetailSortReq).toList();
-        Long userId = StpUtil.getLoginIdAsLong();
-        for (TaskDetailEntity entity : list) {
-            TaskDetailEntity update = new TaskDetailEntity();
-            update.setSortOrder(entity.getSortOrder());
-            update.fillUpdateCommonField(userId);
-            LambdaQueryWrapper<TaskDetailEntity> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(TaskDetailEntity::getId, entity.getId());
-            wrapper.eq(TaskDetailEntity::getUserId, userId);
-            taskDetailService.update(update, wrapper);
-        }
+    public ApiResponse<Void> reSort(@CurrentUserId String userId,
+                                    @Valid @NotEmpty @RequestBody List<@NotNull @Valid TaskDetailSortReq> requests) {
+        List<TaskDetailEntity> list = requests.stream()
+                .map(RecordApiConvertor.INSTANCE::fromTaskDetailSortReq).toList();
+        taskDetailService.reSort(IdCodec.decode(userId), list);
         return ApiResponse.success();
     }
 
@@ -90,13 +77,11 @@ public class TaskDetailController {
      */
     @Operation(summary = "新增待办子任务")
     @PostMapping
-    public ApiResponse<TaskDetailVO> create(@Valid @RequestBody TaskDetailCreateReq entityReq) {
+    public ApiResponse<TaskDetailVO> create(@CurrentUserId String userId,
+                                            @Valid @RequestBody TaskDetailCreateReq entityReq) {
         TaskDetailEntity entity = RecordApiConvertor.INSTANCE.fromTaskDetailCreateReq(entityReq);
-        Long userId = StpUtil.getLoginIdAsLong();
-        entity.setUserId(userId);
-        entity.fillCreateCommonField(userId);
-        taskDetailService.save(entity);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVO(entity));
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVO(
+                taskDetailService.createForUser(IdCodec.decode(userId), entity)));
     }
 
     /**
@@ -107,18 +92,10 @@ public class TaskDetailController {
      */
     @Operation(summary = "更新待办子任务")
     @PutMapping
-    public ApiResponse<Boolean> update(@Valid @RequestBody TaskDetailUpdateReq entityReq) {
+    public ApiResponse<Boolean> update(@CurrentUserId String userId,
+                                       @Valid @RequestBody TaskDetailUpdateReq entityReq) {
         TaskDetailEntity entity = RecordApiConvertor.INSTANCE.fromTaskDetailUpdateReq(entityReq);
-        Long userId = StpUtil.getLoginIdAsLong();
-        entity.setUserId(userId);
-        entity.setCreateUser(null);
-        entity.setCreateTime(null);
-        entity.fillUpdateCommonField(userId);
-        // 确保只能更新自己的详情
-        LambdaQueryWrapper<TaskDetailEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(TaskDetailEntity::getId, entity.getId());
-        queryWrapper.eq(TaskDetailEntity::getUserId, userId);
-        return ApiResponse.success(taskDetailService.update(entity, queryWrapper));
+        return ApiResponse.success(taskDetailService.updateForUser(IdCodec.decode(userId), entity));
     }
 
     /**
@@ -129,12 +106,8 @@ public class TaskDetailController {
      */
     @Operation(summary = "删除待办子任务")
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable Long id) {
-        Long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<TaskDetailEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(TaskDetailEntity::getId, id);
-        queryWrapper.eq(TaskDetailEntity::getUserId, userId);
-        taskDetailService.remove(queryWrapper);
+    public ApiResponse<Void> delete(@CurrentUserId String userId, @PathVariable String id) {
+        taskDetailService.deleteForUser(IdCodec.decode(userId), IdCodec.decode(id));
         return ApiResponse.success();
     }
 
@@ -146,15 +119,9 @@ public class TaskDetailController {
      */
     @Operation(summary = "关注待办子任务")
     @PostMapping("/star/{id}")
-    public ApiResponse<Boolean> star(@PathVariable Long id) {
-        Long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<TaskDetailEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(TaskDetailEntity::getId, id);
-        queryWrapper.eq(TaskDetailEntity::getUserId, userId);
-        TaskDetailEntity entity = new TaskDetailEntity();
-        entity.setIsStarred(1);
-        entity.fillUpdateCommonField(userId);
-        return ApiResponse.success(taskDetailService.update(entity, queryWrapper));
+    public ApiResponse<Boolean> star(@CurrentUserId String userId, @PathVariable String id) {
+        return ApiResponse.success(
+                taskDetailService.setStarred(IdCodec.decode(userId), IdCodec.decode(id), 1));
     }
 
     /**
@@ -165,15 +132,9 @@ public class TaskDetailController {
      */
     @Operation(summary = "取消关注待办子任务")
     @PostMapping("/unstar/{id}")
-    public ApiResponse<Boolean> unstar(@PathVariable Long id) {
-        Long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<TaskDetailEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(TaskDetailEntity::getId, id);
-        queryWrapper.eq(TaskDetailEntity::getUserId, userId);
-        TaskDetailEntity entity = new TaskDetailEntity();
-        entity.setIsStarred(0);
-        entity.fillUpdateCommonField(userId);
-        return ApiResponse.success(taskDetailService.update(entity, queryWrapper));
+    public ApiResponse<Boolean> unstar(@CurrentUserId String userId, @PathVariable String id) {
+        return ApiResponse.success(
+                taskDetailService.setStarred(IdCodec.decode(userId), IdCodec.decode(id), 0));
     }
 
     /**
@@ -183,31 +144,8 @@ public class TaskDetailController {
      */
     @Operation(summary = "查询已关注的待办子任务")
     @GetMapping("/watched")
-    public ApiResponse<List<TaskDetailVO>> getWatched() {
-        Long userId = StpUtil.getLoginIdAsLong();
-        LambdaQueryWrapper<TaskDetailEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(TaskDetailEntity::getUserId, userId);
-        queryWrapper.eq(TaskDetailEntity::getIsStarred, 1);
-        queryWrapper.eq(TaskDetailEntity::getIsCompleted, 0);
-        QueryOrder.ascNullsFirst(queryWrapper, TaskDetailEntity::getPriority);
-        queryWrapper.orderByAsc(TaskDetailEntity::getSortOrder, TaskDetailEntity::getId);
-        List<TaskDetailEntity> list = taskDetailService.list(queryWrapper);
-
-        if (!list.isEmpty()) {
-            List<Long> taskIds = list.stream().map(TaskDetailEntity::getTaskId)
-                    .filter(Objects::nonNull).distinct().collect(Collectors.toList());
-            if (!taskIds.isEmpty()) {
-                LambdaQueryWrapper<TaskEntity> taskQuery = new LambdaQueryWrapper<>();
-                taskQuery.in(TaskEntity::getId, taskIds);
-                taskQuery.eq(TaskEntity::getUserId, userId);
-                Map<Long, String> taskNameMap = taskService.list(taskQuery).stream()
-                        .collect(Collectors.toMap(TaskEntity::getId, TaskEntity::getContent, (v1, v2) -> v1));
-                for (TaskDetailEntity detail : list) {
-                    detail.setTaskName(taskNameMap.get(detail.getTaskId()));
-                }
-            }
-        }
-
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVOList(list));
+    public ApiResponse<List<TaskDetailVO>> getWatched(@CurrentUserId String userId) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVOList(
+                taskDetailService.listWatched(IdCodec.decode(userId))));
     }
 }

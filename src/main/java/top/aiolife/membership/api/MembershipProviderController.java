@@ -1,6 +1,7 @@
 package top.aiolife.membership.api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +21,13 @@ import top.aiolife.membership.pojo.vo.MembershipProviderVO;
 import top.aiolife.membership.service.MembershipIconCatalog;
 import top.aiolife.membership.service.MembershipProviderService;
 
+/**
+ * 会员平台目录控制器。
+ *
+ * @author Lys
+ * @date 2026/11/13
+ */
+@Tag(name = "会员平台")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/membership")
@@ -29,27 +37,28 @@ public class MembershipProviderController {
 
     @Operation(summary = "查询可选会员平台")
     @GetMapping("/providers")
-    public ApiResponse<List<MembershipProviderVO>> providers() { return ApiResponse.success(service.list(true)); }
+    public ApiResponse<List<MembershipProviderVO>> providers() {
+        return ApiResponse.success(service.list(true));
+    }
 
     @Operation(summary = "查询会员平台可选图标")
     @GetMapping("/provider-icons")
-    public ApiResponse<List<MembershipIconCatalog.IconVO>> icons() { return ApiResponse.success(icons.list()); }
+    public ApiResponse<List<MembershipIconCatalog.IconVO>> icons() {
+        return ApiResponse.success(icons.list());
+    }
 
     @Operation(summary = "读取会员平台图标")
     @GetMapping("/provider-icons/{key}")
-    public ResponseEntity<Resource> icon(@PathVariable String key, @RequestParam(defaultValue = "false") boolean dark) {
-        String file;
-        try {
-            file = icons.file(key, dark);
-        } catch (IllegalArgumentException exception) {
+    public ResponseEntity<Resource> icon(@PathVariable String key,
+                                         @RequestParam(defaultValue = "false") boolean dark) {
+        var icon = icons.find(key, dark).orElse(null);
+        if (icon == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).cacheControl(CacheControl.noStore()).build();
         }
-        String type = file.endsWith(".svg") ? "image/svg+xml" : file.endsWith(".webp") ? "image/webp"
-                : file.endsWith(".png") ? "image/png" : file.endsWith(".ico") ? "image/x-icon" : "image/jpeg";
-        return ResponseEntity.ok().contentType(MediaType.parseMediaType(type))
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(icon.contentType()))
                 .cacheControl(CacheControl.maxAge(1, TimeUnit.DAYS).cachePublic())
                 .header("X-Content-Type-Options", "nosniff")
                 .header("Content-Security-Policy", "default-src 'none'; sandbox")
-                .body(icons.resource(key, dark));
+                .body(icon.resource());
     }
 }

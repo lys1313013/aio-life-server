@@ -55,7 +55,9 @@ class IncomeCalendarDetailsQueryTest {
         factory.setConfiguration(config);
         factory.setPlugins(pagination);
         var mapper = new SqlSessionTemplate(factory.getObject()).getMapper(IIncomeMapper.class);
-        var controller = new IncomeController(mapper, null);
+        var service = new top.aiolife.record.service.impl.IncomeServiceImpl(mock(top.aiolife.record.service.UserDictDataService.class));
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "baseMapper", mapper);
+        var controller = new IncomeController(service);
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
             var filter = new IncomeQuery();
@@ -64,19 +66,19 @@ class IncomeCalendarDetailsQueryTest {
             var query = new CommonQuery<IncomeQuery>();
             query.setCondition(filter);
             query.setPageSize(1);
-            var first = controller.query(query).getData();
+            var first = controller.query("7", query).getData();
             assertEquals(2L, first.getTotal());
             assertEquals(2L, first.getItems().getFirst().getId());
             query.setPage(2);
-            assertEquals(1L, controller.query(query).getData().getItems().getFirst().getId());
+            assertEquals(1L, controller.query("7", query).getData().getItems().getFirst().getId());
             query.setPage(3);
-            assertTrue(controller.query(query).getData().getItems().isEmpty());
+            assertTrue(controller.query("7", query).getData().getItems().isEmpty());
             filter = new IncomeQuery();
             filter.setStartTime("2026-08-13");
             filter.setEndTime("2026-08-13");
             query.setCondition(filter);
             query.setPage(1);
-            assertEquals(List.of(3L), controller.query(query).getData().getItems().stream().map(row -> row.getId()).toList());
+            assertEquals(List.of(3L), controller.query("7", query).getData().getItems().stream().map(row -> row.getId()).toList());
         } finally {
             jdbc.execute("DROP ALL OBJECTS");
         }

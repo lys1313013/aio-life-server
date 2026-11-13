@@ -158,7 +158,7 @@ aio:
       service-key: ${AIO_LIFE_QUERY_ACCESS_SERVICE_KEY:}
       allowed-apps: ${AIO_LIFE_QUERY_ACCESS_ALLOWED_APPS:aio-life-query}
     auth:
-      # 首次保存 system_config 的 wechat.mini 之前使用以下环境变量，保存后以数据库为准。
+      # 首次保存 sys_config 的 wechat.mini 之前使用以下环境变量，保存后以数据库为准。
       wechat-mini:
         enabled: ${AIO_LIFE_WECHAT_MINI_ENABLED:false}
         app-id: ${AIO_LIFE_WECHAT_MINI_APP_ID:}
@@ -177,7 +177,7 @@ aio:
       recommendation-cache:
         ttl-ms: ${AIO_LIFE_RECOMMENDATION_CACHE_TTL_MS:18000000}
       footprints:
-        # AK 和请求超时由管理员在 system_config（footprints.baidu）维护；后台未配置超时时使用以下默认值。
+        # AK 和请求超时由管理员在 sys_config（footprints.baidu）维护；后台未配置超时时使用以下默认值。
         timeout-ms: ${AIO_LIFE_MAP_TIMEOUT_MS:5000}
       base-url: ${AIO_LIFE_SERVER_BASE_URL:http://localhost:45678/api}
       douban:

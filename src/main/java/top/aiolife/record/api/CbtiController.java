@@ -1,21 +1,21 @@
 package top.aiolife.record.api;
 
 import io.swagger.v3.oas.annotations.Operation;
-
-import cn.dev33.satoken.stp.StpUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
-import top.aiolife.core.constant.ResponseCodeConst;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
-import top.aiolife.record.pojo.entity.CbtiPersonalityEntity;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.pojo.req.CbtiTestReq;
 import top.aiolife.record.service.ICbtiService;
 
@@ -27,6 +27,7 @@ import top.aiolife.record.service.ICbtiService;
  * @author Ethan
  * @date 2026/04/18
  */
+@Tag(name = "CBTI 测试")
 @RestController
 @RequestMapping("/cbti")
 @RequiredArgsConstructor
@@ -34,181 +35,50 @@ public class CbtiController {
 
     private final ICbtiService cbtiService;
 
-    private final ObjectMapper objectMapper;
-
-    @Value("${aio.life.server.base-url}")
-    private String serveBaseUrl;
-
-    /**
-     * 获取 CBTI 题库与维度定义接口。
-     *
-     * <p>用途：前端拉取题目、彩蛋题以及 15 维度定义（含每档解释文案）。</p>
-     *
-     * @return 统一返回结构，data 包含 questions/hiddenQuestions/dimensionDefs
-     */
     @Operation(summary = "查询 CBTI 题库和维度")
     @GetMapping("/questions")
     public ApiResponse<Map<String, Object>> questions() {
-        try {
-            return ApiResponse.success(cbtiService.getQuestions());
-        } catch (Exception e) {
-            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "读取题库失败: " + e.getMessage());
-        }
+        return ApiResponse.success(cbtiService.getQuestions());
     }
 
-    /**
-     * 获取 CBTI 人格类型列表接口。
-     *
-     * <p>用途：前端展示“全部人格”与结果页人格卡片。</p>
-     *
-     * @return 统一返回结构，data 为人格列表
-     */
     @Operation(summary = "查询 CBTI 人格类型")
     @GetMapping("/personalities")
     public ApiResponse<List<Map<String, Object>>> personalities() {
-        List<CbtiPersonalityEntity> list = cbtiService.listPersonalities();
-        List<Map<String, Object>> data = list.stream().map(this::toPersonalityView).toList();
-        return ApiResponse.success(data);
+        return ApiResponse.success(cbtiService.listPersonalityViews());
     }
 
-    /**
-     * 获取 CBTI 人格类型详情接口。
-     *
-     * <p>用途：前端按人格 code 查看详情。</p>
-     *
-     * @param code 人格代码
-     * @return 统一返回结构，data 为人格详情
-     */
     @Operation(summary = "查询 CBTI 人格详情")
     @GetMapping("/personalities/{code}")
     public ApiResponse<Map<String, Object>> personality(@PathVariable String code) {
-        CbtiPersonalityEntity entity = cbtiService.getPersonalityByCode(code);
-        if (entity == null) {
-            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "人格不存在");
-        }
-        return ApiResponse.success(toPersonalityView(entity));
+        return ApiResponse.success(cbtiService.getPersonalityView(code));
     }
 
-    /**
-     * CBTI 开始测试并保存历史接口。
-     *
-     * <p>用途：前端提交答题数据，后端计算匹配人格、返回结果，并写入测试历史表。</p>
-     *
-     * @param body 请求体，包含 answers（题号->选项值）与 hiddenAnswers（彩蛋答案）
-     * @return 统一返回结构，data 为测试结果（人格、匹配度、维度结果、匹配排行等）
-     */
     @Operation(summary = "计算并保存 CBTI 测试结果")
     @PostMapping("/test")
-    public ApiResponse<Map<String, Object>> test(@Valid @RequestBody CbtiTestReq body) throws Exception {
-        long userId = StpUtil.getLoginIdAsLong();
-
+    public ApiResponse<Map<String, Object>> test(@CurrentUserId String userId,
+                                                 @Valid @RequestBody CbtiTestReq body) {
         Map<Integer, Integer> answers = body.getAnswers();
-        Map<String, Object> hiddenAnswers = body.getHiddenAnswers();
-
-        Map<String, Object> result = cbtiService.testAndSave(userId, answers == null ? Map.of() : answers, hiddenAnswers);
-
-        Object personality = result.get("personality");
-        if (personality instanceof CbtiPersonalityEntity entity) {
-            result.put("personality", toPersonalityView(entity));
-        }
-
-        return ApiResponse.success(result);
+        return ApiResponse.success(cbtiService.testAndSave(
+                IdCodec.decode(userId), answers == null ? Map.of() : answers, body.getHiddenAnswers()));
     }
 
-    /**
-     * 获取 CBTI 测试历史接口。
-     *
-     * <p>用途：前端展示用户历史测试结果列表。</p>
-     *
-     * @return 统一返回结构，data 为历史列表
-     */
     @Operation(summary = "查询 CBTI 测试历史")
     @GetMapping("/results")
-    public ApiResponse<List<Map<String, Object>>> results() {
-        long userId = StpUtil.getLoginIdAsLong();
-        List<Map<String, Object>> list = cbtiService.getUserHistory(userId);
-        for (Map<String, Object> item : list) {
-            Object obj = item.remove("imageObject");
-            if (obj instanceof String objectName && StringUtils.hasText(objectName)) {
-                item.put("imageUrl", buildPreviewUrl(objectName));
-            }
-        }
-        return ApiResponse.success(list);
+    public ApiResponse<List<Map<String, Object>>> results(@CurrentUserId String userId) {
+        return ApiResponse.success(cbtiService.getUserHistoryView(IdCodec.decode(userId)));
     }
 
-    /**
-     * 获取 CBTI 测试历史详情接口。
-     *
-     * <p>用途：前端查看单条历史结果详情并复盘（包含 answers/dimensions）。</p>
-     *
-     * @param id 历史记录ID
-     * @return 统一返回结构，data 为历史详情
-     */
     @Operation(summary = "查询 CBTI 测试结果详情")
     @GetMapping("/result/{id}")
-    public ApiResponse<Map<String, Object>> resultDetail(@PathVariable Long id) {
-        long userId = StpUtil.getLoginIdAsLong();
-        Map<String, Object> detail = cbtiService.getHistoryDetail(id, userId);
-        if (detail == null) {
-            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "记录不存在");
-        }
-        detail.remove("userId");
-        Object personality = detail.get("personality");
-        if (personality instanceof CbtiPersonalityEntity entity) {
-            detail.put("personality", toPersonalityView(entity));
-        }
-        return ApiResponse.success(detail);
+    public ApiResponse<Map<String, Object>> resultDetail(@CurrentUserId String userId, @PathVariable String id) {
+        return ApiResponse.success(cbtiService.getHistoryDetailView(
+                IdCodec.decode(id), IdCodec.decode(userId)));
     }
 
-    /**
-     * 删除 CBTI 测试历史（逻辑删除）。
-     *
-     * @param id 历史记录ID
-     * @return 是否删除成功
-     */
     @Operation(summary = "删除 CBTI 测试结果")
     @DeleteMapping("/result/{id}")
-    public ApiResponse<Boolean> deleteResult(@PathVariable Long id) {
-        long userId = StpUtil.getLoginIdAsLong();
-        boolean ok = cbtiService.deleteHistory(id, userId);
-        if (!ok) {
-            return ApiResponse.error(ResponseCodeConst.COMMON_FAIL, "记录不存在");
-        }
+    public ApiResponse<Boolean> deleteResult(@CurrentUserId String userId, @PathVariable String id) {
+        cbtiService.deleteHistoryForUser(IdCodec.decode(id), IdCodec.decode(userId));
         return ApiResponse.success(true);
-    }
-
-    private Map<String, Object> toPersonalityView(CbtiPersonalityEntity entity) {
-        Map<String, Object> p = new HashMap<>();
-        p.put("code", entity.getCode());
-        p.put("name", entity.getName());
-        p.put("motto", entity.getMotto());
-        p.put("color", entity.getColor());
-        p.put("description", entity.getDescription());
-        p.put("techStack", entity.getTechStack());
-        p.put("spirit", entity.getSpirit());
-        p.put("isSpecial", Objects.equals(entity.getIsSpecial(), 1));
-        if (StringUtils.hasText(entity.getImageObject())) {
-            p.put("imageUrl", buildPreviewUrl(entity.getImageObject()));
-        }
-        p.put("vector", readJsonSafely(entity.getVector()));
-        p.put("strengths", readJsonSafely(entity.getStrengths()));
-        p.put("weaknesses", readJsonSafely(entity.getWeaknesses()));
-        return p;
-    }
-
-    private Object readJsonSafely(String json) {
-        if (!StringUtils.hasText(json)) {
-            return null;
-        }
-        try {
-            return objectMapper.readValue(json, Object.class);
-        } catch (Exception e) {
-            return json;
-        }
-    }
-
-    private String buildPreviewUrl(String objectName) {
-        String normalized = objectName.startsWith("/") ? objectName.substring(1) : objectName;
-        return serveBaseUrl + "/cbti/images/" + normalized;
     }
 }
