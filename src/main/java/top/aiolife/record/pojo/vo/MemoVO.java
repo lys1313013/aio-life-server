@@ -27,6 +27,11 @@ public class MemoVO {
      */
     private Boolean hiddenContent;
 
+    /**
+     * 是否收藏
+     */
+    private Boolean favorite;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
 

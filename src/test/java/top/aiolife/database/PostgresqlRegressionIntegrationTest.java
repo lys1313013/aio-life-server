@@ -467,6 +467,12 @@ class PostgresqlRegressionIntegrationTest {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             var hidden = new MemoUpdateReq(); hidden.setHiddenContent(true);
             controller.update("42", "1", hidden); assertEquals(OLD_TIME, updated("memo", 1));
+            var favorite = new MemoUpdateReq(); favorite.setFavorite(true);
+            controller.update("42", "1", favorite);
+            assertEquals(1, jdbc.queryForObject("SELECT favorite FROM memo WHERE id=1", Integer.class));
+            assertEquals(OLD_TIME, updated("memo", 1));
+            favorite.setFavorite(false); controller.update("42", "1", favorite);
+            assertEquals(0, jdbc.queryForObject("SELECT favorite FROM memo WHERE id=1", Integer.class));
             var content = new MemoUpdateReq(); content.setContent("after");
             controller.update("42", "1", content); assertTrue(updated("memo", 1).isAfter(OLD_TIME));
         }

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.http.MediaType;
 import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.record.mapper.IMemoMapper;
 import top.aiolife.record.service.IMemoService;
@@ -12,6 +13,8 @@ import top.aiolife.record.service.IMemoService;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,8 +51,35 @@ class HomeMemoDetailTest {
                     .andExpect(jsonPath("$.data.title").value("隐藏笔记"))
                     .andExpect(jsonPath("$.data.content").value(FULL_CONTENT))
                     .andExpect(jsonPath("$.data.hiddenContent").value(true))
+                    .andExpect(jsonPath("$.data.favorite").value(false))
                     .andExpect(jsonPath("$.data.userId").doesNotExist())
                     .andExpect(jsonPath("$.data.createUser").doesNotExist());
+        }
+    }
+
+    @Test
+    void testFavorite_独立收藏取消保留正文显隐和内容时间且拒绝跨用户() throws Exception {
+        database.jdbc.update("UPDATE memo SET update_time='2026-11-01 12:00:00' WHERE id=?", OWN_ID);
+        try (var identity = mockStatic(StpUtil.class)) {
+            identity.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            identity.when(StpUtil::getLoginIdAsString).thenReturn("7");
+            for (boolean favorite : new boolean[]{true, false}) {
+                mvc.perform(put("/memo/{id}", OWN_ID).contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"favorite\":" + favorite + "}"))
+                        .andExpect(jsonPath("$.code").value(0))
+                        .andExpect(jsonPath("$.data").value(true));
+                mvc.perform(get("/memo/{id}", OWN_ID))
+                        .andExpect(jsonPath("$.data.favorite").value(favorite))
+                        .andExpect(jsonPath("$.data.content").value(FULL_CONTENT))
+                        .andExpect(jsonPath("$.data.hiddenContent").value(true))
+                        .andExpect(jsonPath("$.data.updateTime").value("2026-11-01 12:00:00"));
+            }
+            for (long id : new long[]{20, 30, 99}) {
+                mvc.perform(put("/memo/{id}", id).contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"favorite\":true}"))
+                        .andExpect(jsonPath("$.code").value(ResponseCodeConst.COMMON_FAIL));
+            }
+            assertEquals(0, database.jdbc.queryForObject("SELECT favorite FROM memo WHERE id=20", Integer.class));
         }
     }
 

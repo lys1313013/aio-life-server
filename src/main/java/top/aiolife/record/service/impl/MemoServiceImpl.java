@@ -47,6 +47,7 @@ public class MemoServiceImpl extends ServiceImpl<IMemoMapper, MemoEntity> implem
     @Transactional
     public MemoEntity createForUser(long userId, MemoEntity entity) {
         entity.setUserId(userId);
+        if (entity.getFavorite() == null) entity.setFavorite(false);
         entity.setCreateUser(userId);
         entity.setCreateTime(LocalDateTime.now());
         entity.setUpdateTime(LocalDateTime.now());
@@ -66,13 +67,16 @@ public class MemoServiceImpl extends ServiceImpl<IMemoMapper, MemoEntity> implem
         LambdaQueryWrapper<MemoEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(MemoEntity::getId, id);
         wrapper.eq(MemoEntity::getUserId, userId);
-        baseMapper.update(entity, wrapper);
+        if (baseMapper.update(entity, wrapper) == 0) {
+            throw new IllegalArgumentException("笔记不存在或无权访问");
+        }
     }
 
     @Override
     public void deleteForUser(long userId, long id) {
-        baseMapper.delete(new LambdaQueryWrapper<MemoEntity>()
+        int deleted = baseMapper.delete(new LambdaQueryWrapper<MemoEntity>()
                 .eq(MemoEntity::getId, id)
                 .eq(MemoEntity::getUserId, userId));
+        if (deleted == 0) throw new IllegalArgumentException("笔记不存在或无权访问");
     }
 }

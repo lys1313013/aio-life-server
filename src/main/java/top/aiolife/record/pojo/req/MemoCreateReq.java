@@ -22,4 +22,9 @@ public class MemoCreateReq {
      * 是否隐藏内容
      */
     private Boolean hiddenContent;
+
+    /**
+     * 是否收藏
+     */
+    private Boolean favorite;
 }

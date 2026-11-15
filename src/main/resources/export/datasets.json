@@ -1443,6 +1443,11 @@
         "type": "TEXT"
       },
       {
+        "key": "favorite",
+        "label": "是否收藏",
+        "type": "NUMBER"
+      },
+      {
         "key": "hidden_content",
         "label": "是否隐藏内容",
         "type": "NUMBER"
