@@ -186,7 +186,7 @@ Compose 示例中的默认账号和密码仅供本地使用。镜像发布流程
 
 ### 文件、头像与对象存储
 
-- 头像保存 `avatar_file_id`，资料更新使用 `avatarFileId`：不传保持，`null` 清除。当前公开头像地址由 `AIO_LIFE_SERVER_BASE_URL` 生成，路径为 `/public/images/{fileId}.{ext}`；部署需保证此 URL 可达。MinIO 桶无需改为公开；普通附件仍通过文件接口按权限访问。
+- 头像保存为 `file.biz_type='avatar'`、`file.biz_id=用户ID` 的单条关联，资料更新使用 `avatarFileId`：不传保持，`null` 解除关联。当前公开头像地址由 `AIO_LIFE_SERVER_BASE_URL` 生成，路径为 `/public/images/{fileId}.{ext}`；部署需保证此 URL 可达。MinIO 桶无需改为公开；普通附件仍通过文件接口按权限访问。
 - 阅读、观影远程封面只允许配置白名单域名的 HTTPS 地址，不跟随重定向。`AIO_LIFE_DOUBAN_COVER_ALLOWED_DOMAINS` 默认 `doubanio.com`，信任其全部子域名；显式空值禁用远程下载。其他来源使用上传得到的 `fileId`。相关安全修复记录见[文件内容安全](docs/file-content-security.md)，接口行为以当前实现为准。
 - Web「系统管理 → 对象存储」仅管理员可用，按前缀和游标浏览当前业务桶，支持预览、下载及删除无业务引用的单个对象。已有 `file` 记录（含软删除）或 CBTI 引用的对象不能删除；不提供上传、批量目录删除或桶策略修改。MinIO 凭据需具备 `ListBucket` / `GetObject` / `DeleteObject` 权限；入口种子为 `sql/migrations/V20261110_02_006__menus.sql`。
 
