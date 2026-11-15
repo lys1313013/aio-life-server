@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import top.aiolife.core.id.IdCodec;
+import top.aiolife.core.query.QueryOrder;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.core.util.SysUtil;
 import top.aiolife.record.enums.DictTypeEnum;
@@ -54,7 +55,9 @@ public class IncomeServiceImpl extends ServiceImpl<IIncomeMapper, IncomeEntity> 
             wrapper.lt(SysUtil.isNotEmpty(condition.getEndTimeBefore()), IncomeEntity::getIncDate,
                     condition.getEndTimeBefore());
         }
-        wrapper.orderByDesc(IncomeEntity::getIncDate, IncomeEntity::getId);
+        wrapper.orderByDesc(IncomeEntity::getIncDate);
+        QueryOrder.ascNullsFirst(wrapper, IncomeEntity::getIncTypeId);
+        wrapper.orderByDesc(IncomeEntity::getId);
         Page<IncomeEntity> result = baseMapper.selectPage(new Page<>(page, pageSize), wrapper);
         return PageResp.of(result.getRecords(), result.getTotal());
     }
