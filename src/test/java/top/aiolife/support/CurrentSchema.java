@@ -17,9 +17,9 @@ public final class CurrentSchema {
         if (end < 0) throw new IllegalStateException("表定义没有结束：" + name);
         String definition = source.substring(start.start(), end + 4);
         // 静态字段清单与 H2 夹具应用简单增删列；PostgreSQL DDL 仍由迁移集成测试验证。
-        var addedColumn = Pattern.compile("(?m)^ALTER TABLE \"?" + Pattern.quote(name)
+        var addedColumn = Pattern.compile("(?m)^[ \\t]*ALTER TABLE \"?" + Pattern.quote(name)
                 + "\"?\\s+ADD COLUMN ([a-z_][a-z_0-9]*) ([^;]+);");
-        var droppedColumn = Pattern.compile("(?m)^ALTER TABLE \\\"?" + Pattern.quote(name)
+        var droppedColumn = Pattern.compile("(?m)^[ \\t]*ALTER TABLE \\\"?" + Pattern.quote(name)
                 + "\\\"?\\s+DROP COLUMN(?: IF EXISTS)? \\\"?([a-z_][a-z_0-9]*)\\\"?\\s*;");
         try (var migrations = Files.list(Path.of("sql/migrations"))) {
             for (var migration : migrations.filter(path -> path.getFileName().toString().matches("V\\d.*\\.sql"))

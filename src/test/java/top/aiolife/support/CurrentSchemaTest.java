@@ -69,6 +69,15 @@ class CurrentSchemaTest {
     }
 
     @Test
+    void table_应用迁移块内带缩进的头像删列语句() throws IOException {
+        String user = CurrentSchema.table("sys_user");
+        assertFalse(user.contains("\"avatar_file_id\""));
+        assertTrue(user.contains("\"nickname\""));
+        assertTrue(user.contains("\"email\""));
+        assertFalse(CurrentSchema.h2Table("sys_user").contains("\"avatar_file_id\""));
+    }
+
+    @Test
     void table_无条件建表语句同样属于当前结构() throws IOException {
         String sql = CurrentSchema.table("device_expense");
         assertTrue(sql.startsWith("CREATE TABLE \"device_expense\""));
