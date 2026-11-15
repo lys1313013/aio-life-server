@@ -8,13 +8,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
@@ -31,13 +35,18 @@ import top.aiolife.sso.pojo.entity.UserEntity;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.DriverManager;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 /** 专用隔离 PostgreSQL 中验证生产 Mapper/事务；不能用生产库执行这些写入夹具。 */
 @ActiveProfiles("test")
+@Tag("integration")
 @SpringBootTest(
         classes = PhysicalTableEntitySelectIntegrationTest.DatabaseMapperTestApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE)
@@ -50,6 +59,32 @@ import java.util.stream.IntStream;
     ExportProperties.class
 })
 class PersonalDataExportIntegrationTest {
+    private static final GenericContainer<?> POSTGRES = new GenericContainer<>("postgres:18-alpine")
+            .withEnv("POSTGRES_PASSWORD", "isolated-export")
+            .withEnv("POSTGRES_DB", "fixture").withExposedPorts(5432)
+            .waitingFor(Wait.forLogMessage(".*database system is ready to accept connections.*\\n", 2))
+            .withStartupTimeout(Duration.ofMinutes(2));
+
+    @DynamicPropertySource
+    static void 隔离数据库(DynamicPropertyRegistry properties) throws Exception {
+        POSTGRES.start();
+        String url = "jdbc:postgresql://" + POSTGRES.getHost() + ":" + POSTGRES.getMappedPort(5432)
+                + "/fixture?stringtype=unspecified";
+        try (var connection = DriverManager.getConnection(url, "postgres", "isolated-export");
+                var statement = connection.createStatement();
+                var paths = Files.list(Path.of("sql/migrations"))) {
+            for (var migration : paths.filter(path -> path.getFileName().toString().matches("V\\d.*\\.sql"))
+                    .sorted().toList()) statement.execute(Files.readString(migration));
+        }
+        // 显式覆盖属性，不允许测试读取运行环境中的业务数据源。
+        properties.add("spring.datasource.url", () -> url);
+        properties.add("spring.datasource.username", () -> "postgres");
+        properties.add("spring.datasource.password", () -> "isolated-export");
+    }
+
+    @AfterAll
+    static void 关闭隔离数据库() { POSTGRES.stop(); }
+
     private static final long USER = 880000000000000101L;
     @Autowired JdbcTemplate sql;
     @Autowired ExportJobService service;
