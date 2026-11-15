@@ -110,6 +110,7 @@ LLM 会话、消息和模型密钥业务接口、数据表及实体 Mapper 已�
 
 ### 数据库
 
+- **禁止外键**：不创建数据库外键约束，普通主从关系和多态关联均由应用层维护引用有效性、用户归属及删除规则；具体要求见 [SQL 脚本规范](docs/SQL脚本规范.md#5-字段与约束设计)。
 - **逻辑删除**：实体通过 `@TableLogic` 显式标注 `isDeleted`（0=未删除，1=已删除），不依赖全局字段名配置
 - **ID 生成**：使用雪花算法 `IdType.ASSIGN_ID`
 - **基础实体**：所有业务实体继承 `BaseEntity`，包含 `id`、`createUser`、`createTime`、`updateUser`、`updateTime`、`isDeleted` 字段
