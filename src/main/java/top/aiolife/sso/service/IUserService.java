@@ -93,9 +93,8 @@ public interface IUserService {
     /** 获取系统中已使用的角色选项。 */
     List<String> listRoleOptions();
 
-    void updateUser(UserEntity userEntity);
-
-    void updateUser(UserEntity userEntity, boolean avatarFileIdSpecified);
+    /** 资料字段按请求更新；头像单独通过 file.biz 关联维护。 */
+    void updateUser(UserEntity userEntity, String avatarFileId, boolean avatarFileIdSpecified);
 
     /**
      * 修改密码
@@ -110,7 +109,7 @@ public interface IUserService {
     /**
      * 新增用户
      */
-    void addUser(UserEntity userEntity);
+    void addUser(UserEntity userEntity, String avatarFileId);
 
     /**
      * 删除用户

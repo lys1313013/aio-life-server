@@ -13,8 +13,8 @@ public interface PublicImageMapper {
         AND f.storage_object_id IS NULL AND (
           (f.biz_type='bank_card_template_cover' AND EXISTS (
             SELECT 1 FROM bank_card_cover_template t WHERE t.id=f.biz_id AND t.is_deleted=0))
-          OR (f.biz_type='avatar' AND f.is_public=1 AND EXISTS (
-            SELECT 1 FROM sys_user u WHERE u.id=f.create_user AND u.avatar_file_id=f.id AND u.is_deleted=0))
+          OR (f.biz_type='avatar' AND f.is_public=1 AND f.biz_id IS NOT NULL AND EXISTS (
+            SELECT 1 FROM sys_user u WHERE u.id=f.biz_id AND u.id=f.create_user AND u.is_deleted=0))
         )
         """)
     FileEntity selectPublished(@Param("id") String id);

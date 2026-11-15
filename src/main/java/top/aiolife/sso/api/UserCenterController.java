@@ -46,7 +46,7 @@ public class UserCenterController {
     @PostMapping
     public ApiResponse<Void> add(@Valid @RequestBody UserCreateReq userEntityReq) {
         UserEntity userEntity = SsoApiConvertor.INSTANCE.fromUserCreateReq(userEntityReq);
-        userService.addUser(userEntity);
+        userService.addUser(userEntity, userEntityReq.getAvatarFileId());
         return ApiResponse.success();
     }
 
@@ -56,7 +56,7 @@ public class UserCenterController {
                                     @Valid @RequestBody UserUpdateReq userEntityReq) {
         UserEntity userEntity = SsoApiConvertor.INSTANCE.fromUserUpdateReq(userEntityReq);
         userEntity.setUpdateUser(IdCodec.decode(currentUserId));
-        userService.updateUser(userEntity, userEntityReq.isAvatarFileIdSpecified());
+        userService.updateUser(userEntity, userEntityReq.getAvatarFileId(), userEntityReq.isAvatarFileIdSpecified());
         return ApiResponse.success();
     }
 

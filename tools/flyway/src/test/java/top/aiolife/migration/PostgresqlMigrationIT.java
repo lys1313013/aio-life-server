@@ -30,7 +30,7 @@ class PostgresqlMigrationIT {
                     .locations("filesystem:" + root.resolve("sql/migrations"))
                     .validateMigrationNaming(true).placeholderReplacement(false).callbacks(new MigrationGuard());
             var flyway = configuration.load();
-            assertEquals(17, flyway.migrate().migrationsExecuted);
+            assertEquals(18, flyway.migrate().migrationsExecuted);
             assertEquals(0, flyway.migrate().migrationsExecuted);
             try (var connection = DriverManager.getConnection(url,"postgres","isolated-fixture")) {
                 var snapshot = SchemaSnapshot.read(connection);
@@ -39,10 +39,10 @@ class PostgresqlMigrationIT {
                 assertEquals("2", SchemaSnapshot.rows(connection, "SELECT count(*) FROM sys_menu WHERE path IN ('/query/workbench','/query/models')").getFirst().getFirst());
                 assertEquals("0", SchemaSnapshot.rows(connection, "SELECT visible_clients & 2 FROM sys_menu WHERE path='/query/models'").getFirst().getFirst());
                 Path contract = temporary.resolve("contract.json");
-                SchemaContract.write(contract,root,"20261113.01",connection);
+                SchemaContract.write(contract,root,"20261115.01",connection);
                 SchemaContract.read(contract,root).check(connection);
                 SchemaContract.write(Path.of(System.getProperty("schema.reportDirectory", "target/schema"))
-                        .resolve("schema-contract.json"), MigrationProject.root(), "20261113.01", connection);
+                        .resolve("schema-contract.json"), MigrationProject.root(), "20261115.01", connection);
                 try (var statement = connection.createStatement()) {
                     statement.execute("INSERT INTO sys_menu(id,name,path) VALUES(9001,'探针A','/CollationProbe')");
                     statement.execute("INSERT INTO sys_menu(id,name,path) VALUES(9002,'探针B','/collationprobe')");
@@ -57,11 +57,11 @@ class PostgresqlMigrationIT {
                 try (var statement = connection.createStatement()) {
                     statement.execute("INSERT INTO goal(id,user_id,title) VALUES(101,1,'fixture')");
                 }
-                Files.writeString(root.resolve("sql/migrations/V20261114_01__fixture.sql"),
+                Files.writeString(root.resolve("sql/migrations/V20261116_01__fixture.sql"),
                         "ALTER TABLE goal ADD COLUMN test_value integer DEFAULT 7; COMMENT ON COLUMN goal.test_value IS '测试字段';");
                 assertEquals(1, configuration.load().migrate().migrationsExecuted);
                 assertEquals("7", SchemaSnapshot.rows(connection,"SELECT test_value FROM goal WHERE id=101").getFirst().getFirst());
-                Files.writeString(root.resolve("sql/migrations/V20261114_02__failure.sql"),
+                Files.writeString(root.resolve("sql/migrations/V20261116_02__failure.sql"),
                         "CREATE TABLE rolled_back(id bigint); SELECT 1/0;");
                 assertThrows(Exception.class, () -> configuration.load().migrate());
                 assertNull(SchemaSnapshot.rows(connection,"SELECT to_regclass('rolled_back')").getFirst().getFirst());

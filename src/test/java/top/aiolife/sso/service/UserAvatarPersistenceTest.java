@@ -6,7 +6,6 @@ import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mybatis.spring.SqlSessionTemplate;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -40,11 +39,10 @@ class UserAvatarPersistenceTest {
         jdbc.execute("""
             CREATE TABLE sys_user(policy_version VARCHAR(32), policy_accepted_at TIMESTAMP, erasure_requested_at TIMESTAMP, erasure_retry_at TIMESTAMP, id BIGINT PRIMARY KEY, username VARCHAR(255), password VARCHAR(255), password_salt VARCHAR(255),
               secondary_password VARCHAR(255), secondary_password_salt VARCHAR(255), nickname VARCHAR(255),
-              avatar_file_id VARCHAR(32), email VARCHAR(255), phone_country_code VARCHAR(32), phone VARCHAR(64),
+              email VARCHAR(255), phone_country_code VARCHAR(32), phone VARCHAR(64),
               phone_verified_at TIMESTAMP, wechat_openid VARCHAR(255), wechat_unionid VARCHAR(255), role VARCHAR(255),
               introduction VARCHAR(255), is_deleted INT DEFAULT 0, last_active_at TIMESTAMP,
-              create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP,
-              FOREIGN KEY(avatar_file_id) REFERENCES file(id) ON DELETE RESTRICT)
+              create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP)
             """);
         jdbc.update("INSERT INTO sys_user(id,nickname) VALUES(42,'fixture')");
         jdbc.update("INSERT INTO file(id,create_user,biz_type,is_public,file_type) VALUES(?,42,'avatar',1,'image/png')", ID);
@@ -58,30 +56,28 @@ class UserAvatarPersistenceTest {
             mock(SecondaryLockMenuResolver.class), new UserAvatarFileService(session.getMapper(IFileMapper.class), minio));
         tx = new TransactionTemplate(new DataSourceTransactionManager(source));
     }
-    private UserEntity update(String id) { var e = new UserEntity(); e.setId(42L); e.setAvatarFileId(id); return e; }
-    private String saved() { return jdbc.queryForObject("SELECT avatar_file_id FROM sys_user WHERE id=42",String.class); }
+    private UserEntity update() { var e = new UserEntity(); e.setId(42L); return e; }
+    private String saved() { return jdbc.queryForObject("SELECT (SELECT id FROM file WHERE biz_type='avatar' AND biz_id=42)",String.class); }
 
     @Test void 仅更新头像也能保存且两个查询接口返回ID与URL() {
-        tx.executeWithoutResult(s -> users.updateUser(update(ID),true));
+        tx.executeWithoutResult(s -> users.updateUser(update(),ID,true));
         assertEquals(ID,saved());
         assertEquals(ID,users.getUserInfo(42L).getAvatarFileId());
         assertEquals("https://example.test/api/public/images/"+ID+".png",users.getUserInfo(42L).getAvatarUrl());
         assertEquals(ID,users.getUserBasicInfo(42L).getAvatarFileId());
         assertEquals("https://example.test/api/public/images/"+ID+".png",users.getUserBasicInfo(42L).getAvatarUrl());
     }
-    @Test void 缺省不变显式null清除并允许后续删除文件() {
-        tx.executeWithoutResult(s -> users.updateUser(update(ID),true));
-        var other = update(null); other.setNickname("changed");
-        tx.executeWithoutResult(s -> users.updateUser(other,false)); assertEquals(ID,saved());
-        assertThrows(DataIntegrityViolationException.class, () -> jdbc.update("DELETE FROM file WHERE id=?",ID));
-        tx.executeWithoutResult(s -> users.updateUser(update(null),true)); assertNull(saved());
+    @Test void 缺省不变显式null解除关联且不删除文件() {
+        tx.executeWithoutResult(s -> users.updateUser(update(),ID,true));
+        tx.executeWithoutResult(s -> users.updateUser(update(),null,false)); assertEquals(ID,saved());
+        tx.executeWithoutResult(s -> users.updateUser(update(),null,true)); assertNull(saved());
         assertNull(users.getUserInfo(42L).getAvatarUrl());
         assertEquals(1,jdbc.update("DELETE FROM file WHERE id=?",ID));
     }
     @Test void 他人文件拒绝绑定且其他资料不被部分更新() {
         jdbc.update("UPDATE file SET create_user=99 WHERE id=?",ID);
-        var e=update(ID);e.setNickname("must-not-save");
-        assertThrows(IllegalArgumentException.class, () -> tx.executeWithoutResult(s -> users.updateUser(e,true)));
+        var e=update();e.setNickname("must-not-save");
+        assertThrows(IllegalArgumentException.class, () -> tx.executeWithoutResult(s -> users.updateUser(e,ID,true)));
         assertNull(saved()); assertEquals("fixture",jdbc.queryForObject("SELECT nickname FROM sys_user WHERE id=42",String.class));
     }
 }

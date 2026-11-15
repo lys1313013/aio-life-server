@@ -8,7 +8,7 @@ import top.aiolife.sso.pojo.entity.UserEntity;
 /** 注销只物理清理明确归属的个人记录；系统预设与共享资源保留。 */
 @Mapper
 public interface AccountErasureMapper {
-    @Update("UPDATE sys_user SET is_deleted=1, avatar_file_id=NULL, erasure_requested_at=#{now}, erasure_retry_at=#{retryAt} WHERE id=#{userId} AND is_deleted=0")
+    @Update("UPDATE sys_user SET is_deleted=1, erasure_requested_at=#{now}, erasure_retry_at=#{retryAt} WHERE id=#{userId} AND is_deleted=0")
     int request(@Param("userId") long userId, @Param("now") LocalDateTime now, @Param("retryAt") LocalDateTime retryAt);
 
     @Update("UPDATE data_export_job SET cancel_requested=1 WHERE user_id=#{userId}")

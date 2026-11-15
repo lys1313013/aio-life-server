@@ -417,20 +417,16 @@ class PostgresqlRegressionIntegrationTest {
         assertEquals("{}", jdbc.queryForObject("SELECT meta_fields::text FROM user_bind WHERE id=2", String.class));
     }
 
-    @Test void 修改资料和头像显式清空都会更新审计时间且不覆盖创建时间() {
+    @Test void 修改资料都会更新审计时间且不覆盖创建时间() {
         var users = new UserServiceImpl(mapper(UserMapper.class), mock(ApiKeyMapper.class), mock(LoginSessionService.class),
                 mock(LoginLogMapper.class), mock(IMailService.class), mock(RedisUtil.class), mock(UserSecondaryLockMenuMapper.class),
                 mock(SecondaryLockMenuResolver.class), mock(UserAvatarFileService.class));
         var change = new UserEntity(); change.setId(42L); change.setNickname("after"); change.setUpdateUser(99L);
         var created = mapper(UserMapper.class).selectById(42).getCreateTime();
-        users.updateUser(change, false);
+        users.updateUser(change, null, false);
         assertTrue(updated("sys_user", 42).isAfter(OLD_TIME));
         assertEquals(99L, mapper(UserMapper.class).selectById(42).getUpdateUser());
-        jdbc.update("UPDATE sys_user SET update_time=? WHERE id=42", OLD_TIME);
-        var clear = new UserEntity(); clear.setId(42L);
-        users.updateUser(clear, true);
-        var saved = mapper(UserMapper.class).selectById(42);
-        assertTrue(saved.getUpdateTime().isAfter(OLD_TIME)); assertEquals(created, saved.getCreateTime());
+        assertEquals(created, mapper(UserMapper.class).selectById(42).getCreateTime());
     }
 
     @Test void 设备空日期放最后且同日期记录跨页不重不漏() {

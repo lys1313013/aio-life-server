@@ -4,7 +4,6 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -145,8 +144,9 @@ public class UserServiceImpl implements IUserService {
             userInfoVO.setPhoneMasked("+" + userEntity.getPhoneCountryCode() + " ****"
                     + phone.substring(Math.max(0, phone.length() - 4)));
         }
-        userInfoVO.setAvatarFileId(userEntity.getAvatarFileId());
-        userInfoVO.setAvatarUrl(avatarFiles.publicUrl(userEntity.getId(), userEntity.getAvatarFileId()));
+        var avatar = avatarFiles.current(userEntity.getId());
+        userInfoVO.setAvatarFileId(avatar.fileId());
+        userInfoVO.setAvatarUrl(avatar.url());
         userInfoVO.setEmail(userEntity.getEmail());
         userInfoVO.setIntroduction(userEntity.getIntroduction());
         userInfoVO.setRoles(StringUtils.hasText(userEntity.getRole()) ? Arrays.asList(userEntity.getRole().split(",")) : Collections.singletonList("user"));
@@ -163,8 +163,9 @@ public class UserServiceImpl implements IUserService {
         UserBasicInfoVO vo = new UserBasicInfoVO();
         vo.setId(userEntity.getId());
         vo.setNickname(userEntity.getNickname());
-        vo.setAvatarFileId(userEntity.getAvatarFileId());
-        vo.setAvatarUrl(avatarFiles.publicUrl(userEntity.getId(), userEntity.getAvatarFileId()));
+        var avatar = avatarFiles.current(userEntity.getId());
+        vo.setAvatarFileId(avatar.fileId());
+        vo.setAvatarUrl(avatar.url());
         return vo;
     }
 
@@ -194,9 +195,8 @@ public class UserServiceImpl implements IUserService {
         userEntity.setId(userId);
         userEntity.setNickname(req.getNickname());
         userEntity.setIntroduction(req.getIntroduction());
-        userEntity.setAvatarFileId(req.getAvatarFileId());
         userEntity.setUpdateUser(userId);
-        updateUser(userEntity, req.isAvatarFileIdSpecified());
+        updateUser(userEntity, req.getAvatarFileId(), req.isAvatarFileIdSpecified());
     }
 
     @Override
@@ -228,32 +228,21 @@ public class UserServiceImpl implements IUserService {
     @Override
     @CacheEvict(value = {"userInfo", "userBasicInfo"}, key = "#userEntity.id")
     @Transactional(rollbackFor = Exception.class)
-    public void updateUser(UserEntity userEntity) {
-        updateUser(userEntity, userEntity.getAvatarFileId() != null);
-    }
-
-    @Override
-    @CacheEvict(value = {"userInfo", "userBasicInfo"}, key = "#userEntity.id")
-    @Transactional(rollbackFor = Exception.class)
-    public void updateUser(UserEntity userEntity, boolean avatarFileIdSpecified) {
+    public void updateUser(UserEntity userEntity, String avatarFileId, boolean avatarFileIdSpecified) {
         // 禁止通过此接口修改密码
         userEntity.setPassword(null);
         userEntity.setPasswordSalt(null);
         clearExternalCredentials(userEntity);
         userEntity.setUpdateTime(LocalDateTime.now());
-        if (avatarFileIdSpecified) avatarFiles.validateForBinding(userEntity.getId(), userEntity.getAvatarFileId());
         try {
-            if (avatarFileIdSpecified) {
-                userMapper.update(userEntity, new LambdaUpdateWrapper<UserEntity>()
-                        .eq(UserEntity::getId, userEntity.getId())
-                        .set(UserEntity::getAvatarFileId, userEntity.getAvatarFileId()));
-            } else if (userEntity.getNickname() != null || userEntity.getIntroduction() != null
+            if (userEntity.getNickname() != null || userEntity.getIntroduction() != null
                     || userEntity.getUsername() != null || userEntity.getEmail() != null || userEntity.getRole() != null) {
                 userMapper.updateById(userEntity);
             }
         } catch (DuplicateKeyException e) {
             throw new IllegalStateException("用户名或邮箱已被占用");
         }
+        if (avatarFileIdSpecified) avatarFiles.replace(userEntity.getId(), avatarFileId);
     }
 
     @Override
@@ -361,9 +350,8 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addUser(UserEntity userEntity) {
+    public void addUser(UserEntity userEntity, String avatarFileId) {
         clearExternalCredentials(userEntity);
-        avatarFiles.validateForBinding(userEntity.getId(), userEntity.getAvatarFileId());
         if (!StringUtils.hasText(userEntity.getPassword())) {
             userEntity.setPassword("123456");
         }
@@ -375,6 +363,7 @@ public class UserServiceImpl implements IUserService {
         } catch (DuplicateKeyException e) {
             throw new IllegalStateException("用户名或邮箱已被占用，请更换后重试");
         }
+        if (avatarFileId != null) avatarFiles.replace(userEntity.getId(), avatarFileId);
     }
 
     @Override

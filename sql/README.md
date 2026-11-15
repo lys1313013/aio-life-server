@@ -27,6 +27,8 @@
 
 - [V20261113_01__record_images_use_file_binding.sql](migrations/V20261113_01__record_images_use_file_binding.sql)：迁移设备、观影、阅读、衣物图片至 `file.biz_type/biz_id`，删除四表 `file_id`，保留文件和存储对象并约束单图唯一。
 
+- [V20261115_01__user_avatar_use_file_binding.sql](migrations/V20261115_01__user_avatar_use_file_binding.sql)：迁移用户头像至 `file.biz_type='avatar'`、`file.biz_id=sys_user.id`，删除 `sys_user.avatar_file_id` 及索引，保留文件和存储对象并约束每用户单头像。
+
 本次按明确要求同步修改历史初始脚本：新库不再创建上述四列；已有库仍保留可执行的迁移。历史校验和调整需先备份并完成实际数据、结构迁移，再执行 `flyway:repair`；`repair` 本身不迁移业务数据。
 
 新库先用独立 Flyway 入口迁移，再启动应用；应用启动不自动建表或导入种子。后续结构、菜单和数据变更新增更高版本 `V`，不改写已执行文件。
