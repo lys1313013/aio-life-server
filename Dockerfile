@@ -16,7 +16,8 @@ RUN mvn dependency:go-offline -B
 # 复制源码并构建
 COPY src ./src
 RUN mvn clean package -DskipTests
-RUN java -Djarmode=tools -jar target/*.jar extract --layers --destination extracted \
+RUN cp target/*.jar app.jar \
+    && java -Djarmode=tools -jar app.jar extract --layers --destination extracted \
     && find extracted -exec touch -h -t 198001010000.00 {} +
 
 # ================================
