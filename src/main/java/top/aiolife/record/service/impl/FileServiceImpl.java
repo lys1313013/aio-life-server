@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import top.aiolife.core.util.FileContentPolicy;
+import top.aiolife.core.id.AttachmentKey;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.record.enums.FileBizType;
 import top.aiolife.record.mapper.IFileMapper;
@@ -34,6 +35,12 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper,FileEntity> impleme
     private final VideoCoverStorage storage;
     private final StorageObjectMapper objects;
     private final ExternalResourceService sources;
+
+    @Override
+    public FileEntity getByKey(String fileKey) {
+        AttachmentKey.require(fileKey);
+        return getOne(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getFileKey, fileKey));
+    }
 
     @Override
     @Transactional(rollbackFor=Exception.class)
@@ -90,6 +97,7 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper,FileEntity> impleme
     @Override
     @Transactional(rollbackFor=Exception.class)
     public void bindBizId(List<String> ids,String type,Long bizId) {
+        if (ids != null) ids.forEach(AttachmentKey::require);
         if(ids==null || ids.isEmpty()) return;
         if(bizId==null) throw new IllegalArgumentException("绑定业务ID不能为空");
         if(!Set.of("feedback","feedback_comment","honor_record","event_record").contains(type))
@@ -97,7 +105,7 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper,FileEntity> impleme
         long owner=StpUtil.getLoginIdAsLong();
         if(baseMapper.lockBusiness(type,bizId,owner)==null) throw new IllegalArgumentException("业务记录不存在或无权限");
         for(int i=0;i<ids.size();i++) {
-            var attachment=baseMapper.selectForAvatarBinding(ids.get(i));
+            var attachment=baseMapper.selectForBindingByKey(ids.get(i));
             if(attachment==null || !Long.valueOf(owner).equals(attachment.getUserId()) || !type.equals(attachment.getBizType())
                     || (attachment.getBizId()!=null && !attachment.getBizId().equals(bizId)))
                 throw new IllegalArgumentException("附件不存在、已绑定其他业务或无权限");
@@ -118,10 +126,11 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper,FileEntity> impleme
     public FileVO toVO(FileEntity attachment) {
         if(attachment==null) return null;
         var vo=new FileVO(); BeanUtils.copyProperties(attachment,vo);
+        vo.setId(attachment.getFileKey());
         var object=objects.selectById(attachment.getStorageObjectId());
         if(object==null) throw new IllegalStateException("附件对象不存在");
         vo.setFileSize(object.getFileSize()); vo.setFileType(object.getContentType());
-        vo.setFileUrl(minio.getFilePreviewUrl(attachment.getId()));
+        vo.setFileUrl(minio.getFilePreviewUrl(attachment.getFileKey()));
         return vo;
     }
 }

@@ -88,7 +88,7 @@ public class EventRecordService {
         List<String> fileIds = entity.getFileIds().stream().distinct().toList();
         if (!fileIds.isEmpty()) {
             List<FileEntity> ownedFiles = fileService.list(new LambdaQueryWrapper<FileEntity>()
-                    .in(FileEntity::getId, fileIds)
+                    .in(FileEntity::getFileKey, fileIds)
                     .eq(FileEntity::getUserId, userId));
             if (ownedFiles.size() != fileIds.size()) {
                 throw new IllegalArgumentException("附件不存在或无权操作");
@@ -98,7 +98,7 @@ public class EventRecordService {
                 .eq(FileEntity::getBizType, BIZ_TYPE)
                 .eq(FileEntity::getBizId, entity.getId())
                 .eq(FileEntity::getUserId, userId)
-                .notIn(!fileIds.isEmpty(), FileEntity::getId, fileIds)
+                .notIn(!fileIds.isEmpty(), FileEntity::getFileKey, fileIds)
                 .set(FileEntity::getBizId, null)
                 .set(FileEntity::getUpdateUser, userId)
                 .set(FileEntity::getUpdateTime, LocalDateTime.now());

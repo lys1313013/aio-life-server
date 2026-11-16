@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class UserAvatarPersistenceTest {
-    private static final String ID = "1234567890123456789";
+    private static final String ID = "a1b2c3d4-1234-4abc-8def-1234567890ab";
     private JdbcTemplate jdbc;
     private TransactionTemplate tx;
     private UserServiceImpl users;
@@ -41,7 +41,7 @@ class UserAvatarPersistenceTest {
               create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP)
             """);
         jdbc.update("INSERT INTO sys_user(id,nickname) VALUES(42,'fixture')");
-        jdbc.update("INSERT INTO attachment(id,user_id,create_user,biz_type,is_public) VALUES(?,42,42,'avatar',0)", ID);
+        jdbc.update("INSERT INTO attachment(id,file_key,user_id,create_user,biz_type,is_public) VALUES(1234567890123456789,?,42,42,'avatar',0)", ID);
         var config = new MybatisConfiguration(); config.setMapUnderscoreToCamelCase(true);
         config.addMapper(UserMapper.class); config.addMapper(IFileMapper.class);
         var factory = new MybatisSqlSessionFactoryBean(); factory.setDataSource(source); factory.setConfiguration(config);
@@ -53,7 +53,7 @@ class UserAvatarPersistenceTest {
         tx = new TransactionTemplate(new DataSourceTransactionManager(source));
     }
     private UserEntity update() { var e = new UserEntity(); e.setId(42L); return e; }
-    private String saved() { return jdbc.queryForObject("SELECT (SELECT id FROM attachment WHERE biz_type='avatar' AND biz_id=42)",String.class); }
+    private String saved() { return jdbc.queryForObject("SELECT (SELECT file_key FROM attachment WHERE biz_type='avatar' AND biz_id=42)",String.class); }
 
     @Test void 仅更新头像也能保存且两个查询接口返回ID与URL() {
         tx.executeWithoutResult(s -> users.updateUser(update(),ID,true));
@@ -68,10 +68,10 @@ class UserAvatarPersistenceTest {
         tx.executeWithoutResult(s -> users.updateUser(update(),null,false)); assertEquals(ID,saved());
         tx.executeWithoutResult(s -> users.updateUser(update(),null,true)); assertNull(saved());
         assertNull(users.getUserInfo(42L).getAvatarUrl());
-        assertEquals(1,jdbc.update("DELETE FROM attachment WHERE id=?",ID));
+        assertEquals(1,jdbc.update("DELETE FROM attachment WHERE file_key=?",ID));
     }
     @Test void 他人文件拒绝绑定且其他资料不被部分更新() {
-        jdbc.update("UPDATE attachment SET user_id=99 WHERE id=?",ID);
+        jdbc.update("UPDATE attachment SET user_id=99 WHERE file_key=?",ID);
         var e=update();e.setNickname("must-not-save");
         assertThrows(IllegalArgumentException.class, () -> tx.executeWithoutResult(s -> users.updateUser(e,ID,true)));
         assertNull(saved()); assertEquals("fixture",jdbc.queryForObject("SELECT nickname FROM sys_user WHERE id=42",String.class));

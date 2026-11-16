@@ -33,6 +33,7 @@ class AttachmentMigrationIT {
             try(var c=DriverManager.getConnection(url,"postgres","fixture");var q=c.createStatement()) {
                 assertEquals("42",SchemaSnapshot.rows(c,"SELECT user_id FROM attachment").getFirst().getFirst());
                 assertEquals("1234567890123456789",SchemaSnapshot.rows(c,"SELECT id FROM attachment").getFirst().getFirst());
+                assertEquals("4",SchemaSnapshot.rows(c,"SELECT uuid_extract_version(file_key) FROM attachment").getFirst().getFirst());
                 assertEquals("1",SchemaSnapshot.rows(c,"SELECT is_public FROM attachment").getFirst().getFirst());
                 assertNull(SchemaSnapshot.rows(c,"SELECT to_regclass('file')").getFirst().getFirst());
                 assertNull(SchemaSnapshot.rows(c,"SELECT to_regclass('image_import_task')").getFirst().getFirst());

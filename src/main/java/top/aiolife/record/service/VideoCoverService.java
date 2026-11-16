@@ -115,7 +115,7 @@ public class VideoCoverService {
     public Map<Long,String> coverFiles(long owner,Collection<Long> ids) {
         var result=new HashMap<Long,String>();
         if(!ids.isEmpty()) files.selectList(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getUserId,owner)
-            .eq(FileEntity::getBizType,TYPE).in(FileEntity::getBizId,ids)).forEach(f->result.put(f.getBizId(),f.getId()));
+            .eq(FileEntity::getBizType,TYPE).in(FileEntity::getBizId,ids)).forEach(f->result.put(f.getBizId(),f.getFileKey()));
         return result;
     }
     public void fillCoverFiles(long owner,List<BVideoEntity> rows) {
@@ -132,7 +132,7 @@ public class VideoCoverService {
         if(!sourceIds.isEmpty()) sources.selectByIds(sourceIds).forEach(r->sourceById.put(r.getId(),r));
         for(var row:rows) {
             var file=fileByVideo.get(row.getId()); var job=jobs.get(row.getId());
-            row.setCoverFileId(file==null?null:file.getId());
+            row.setCoverFileId(file==null?null:file.getFileKey());
             boolean pending=job!=null && ("PENDING".equals(job.getState()) || "RUNNING".equals(job.getState()));
             boolean failed=job!=null && "FAILED".equals(job.getState());
             row.setCoverState(pending?"PENDING":failed?"FAILED":file!=null?"READY":"NONE");

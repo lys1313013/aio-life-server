@@ -31,7 +31,7 @@ class FilePreviewSecurityTest {
     private final FileEntity file = new FileEntity();
     private final StorageObjectEntity object = new StorageObjectEntity();
     private MockMvc mvc;
-    private static final String ID = "1234567890123456789";
+    private static final String ID = "a1b2c3d4-1234-4abc-8def-1234567890ab";
     private static final String OBJECT = "1/avatar/fake.png";
 
     @BeforeEach
@@ -44,17 +44,28 @@ class FilePreviewSecurityTest {
         when(objects.selectById(11L)).thenReturn(object);file.setStorageObjectId(11L);
         mvc = MockMvcBuilders.standaloneSetup(new SysFileController(new top.aiolife.record.service.FileAccessService(
                 objects, files, minio, guard, mock(SecondaryLockGuard.class)))).build();
-        file.setId(ID);
+        file.setId("1234567890123456789"); file.setFileKey(ID);
         file.setFileName(OBJECT);
         file.setFileType("text/html");
         file.setIsPublic(1);
-        when(files.getById(ID)).thenReturn(file);
+        when(files.getByKey(ID)).thenReturn(file);
         when(guard.resolveLoginUserId()).thenReturn(null);
         when(guard.check(file, null)).thenReturn(FilePreviewGuard.AccessDecision.ALLOW);
         when(minio.objectExists("aiolife", OBJECT)).thenReturn(true);
     }
 
     private String url() { return "/file/preview/" + ID; }
+
+    @Test
+    void 数字主键及非v4标识不能进入预览下载入口() throws Exception {
+        for (String id : new String[]{"1234567890123456789", "019535d9-3df7-79fb-b466-fa907fa17f9e"}) {
+            mvc.perform(get("/file/preview/" + id)).andExpect(status().isNotFound());
+            mvc.perform(get("/file/download/" + id)).andExpect(status().isNotFound());
+        }
+        verify(files, never()).getById(any());
+        verify(files, never()).getByKey(any());
+        verify(minio, never()).getFile(anyString(), anyString());
+    }
 
     @Test
     void 伪装图片按附件返回() throws Exception {

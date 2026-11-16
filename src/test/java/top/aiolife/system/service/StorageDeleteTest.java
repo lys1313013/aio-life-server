@@ -52,7 +52,7 @@ class StorageDeleteTest {
 
     void record(String name, Long owner, String type, Long bizId, int deleted) {
         jdbc.update("UPDATE storage_object SET object_key=? WHERE id=11",name);
-        jdbc.update("INSERT INTO attachment(id,file_name,user_id,biz_type,biz_id,is_deleted) VALUES(?,?,?,?,?,?)", "file-reference",name,owner,type,bizId,deleted);
+        jdbc.update("INSERT INTO attachment(id,file_key,file_name,user_id,biz_type,biz_id,is_deleted) VALUES(?,?,?,?,?,?,?)", "file-reference","11111111-1111-4111-8111-111111111111",name,owner,type,bizId,deleted);
     }
 
     @Test
@@ -60,7 +60,8 @@ class StorageDeleteTest {
         record("7/honor/a.jpg", 7L, "honor_record", 99L, 0);
         var error = assertThrows(ResponseStatusException.class, () -> service.delete("7/honor/a.jpg"));
         assertEquals(409, error.getStatusCode().value());
-        assertTrue(error.getReason().contains("file-reference"));
+        assertTrue(error.getReason().contains("11111111-1111-4111-8111-111111111111"));
+        assertFalse(error.getReason().contains("file-reference"));
         verifyNoInteractions(minio);
     }
 

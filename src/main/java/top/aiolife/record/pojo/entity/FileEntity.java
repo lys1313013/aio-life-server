@@ -6,8 +6,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import top.aiolife.core.pojo.entity.AuditEntity;
+import top.aiolife.core.id.AttachmentKey;
 
-/** 用户附件；接口沿用 fileId 字符串名称，数据库主键为雪花 BIGINT。 */
+/** 用户附件；内部雪花主键不对外暴露，接口统一使用 fileKey 的 UUIDv4 字符串。 */
 @Getter
 @Setter
 @ToString
@@ -15,6 +16,7 @@ import top.aiolife.core.pojo.entity.AuditEntity;
 public class FileEntity extends AuditEntity {
     @TableId(type = IdType.ASSIGN_ID)
     private String id;
+    private String fileKey;
     private Long userId;
     private Long storageObjectId;
     private Long externalResourceId;
@@ -31,6 +33,7 @@ public class FileEntity extends AuditEntity {
     @TableField(exist = false) private String hashValue;
 
     public void fillCreateCommonField(Long userId) {
+        if (fileKey == null) fileKey = AttachmentKey.next();
         setUserId(userId);
         setCreateUser(userId);
         setUpdateUser(userId);

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.BeanUtils;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.record.enums.FileBizType;
+import top.aiolife.core.id.AttachmentKey;
 import top.aiolife.record.mapper.IFileMapper;
 import top.aiolife.record.mapper.RecordImageMapper;
 import top.aiolife.record.pojo.entity.FileEntity;
@@ -37,7 +38,8 @@ public class RecordImageService {
         }
         String selected = fileId == null || fileId.isBlank() ? null : fileId;
         if (selected != null) {
-            FileEntity file = files.selectForAvatarBinding(selected);
+            AttachmentKey.require(selected);
+            FileEntity file = files.selectForBindingByKey(selected);
             if (file == null || !Objects.equals(file.getUserId(), userId)
                     || !bizType.equals(file.getBizType())) {
                 throw new IllegalArgumentException("图片不存在、类型不匹配或无权限");
@@ -48,22 +50,23 @@ public class RecordImageService {
                 var copy = new FileEntity();
                 BeanUtils.copyProperties(file, copy);
                 copy.setId(null);
+                copy.setFileKey(null);
                 copy.setBizId(null);
                 copy.fillCreateCommonField(userId);
                 files.insert(copy);
-                selected = copy.getId();
+                selected = copy.getFileKey();
             }
         }
         var detach = new LambdaUpdateWrapper<FileEntity>()
                 .eq(FileEntity::getBizType, bizType).eq(FileEntity::getBizId, bizId)
                 .eq(FileEntity::getUserId, userId)
-                .ne(selected != null, FileEntity::getId, selected)
+                .ne(selected != null, FileEntity::getFileKey, selected)
                 .set(FileEntity::getBizId, null)
                 .set(FileEntity::getUpdateUser, userId).set(FileEntity::getUpdateTime, LocalDateTime.now());
         files.update(null, detach);
         if (selected != null) {
             files.update(null, new LambdaUpdateWrapper<FileEntity>()
-                    .eq(FileEntity::getId, selected).eq(FileEntity::getUserId, userId)
+                    .eq(FileEntity::getFileKey, selected).eq(FileEntity::getUserId, userId)
                     .set(FileEntity::getBizId, bizId)
                     .set(FileEntity::getUpdateUser, userId).set(FileEntity::getUpdateTime, LocalDateTime.now()));
         }
@@ -91,10 +94,10 @@ public class RecordImageService {
         if (bizIds.isEmpty()) return Map.of();
         var result = new HashMap<Long, String>();
         files.selectList(new LambdaQueryWrapper<FileEntity>()
-                .select(FileEntity::getId, FileEntity::getBizId)
+                .select(FileEntity::getFileKey, FileEntity::getBizId)
                 .eq(FileEntity::getUserId, userId).eq(FileEntity::getBizType, type.getBizType())
                 .in(FileEntity::getBizId, bizIds))
-                .forEach(file -> result.put(file.getBizId(), file.getId()));
+                .forEach(file -> result.put(file.getBizId(), file.getFileKey()));
         return result;
     }
 

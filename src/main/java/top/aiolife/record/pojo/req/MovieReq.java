@@ -1,5 +1,7 @@
 package top.aiolife.record.pojo.req;
 
+import jakarta.validation.constraints.Pattern;
+import top.aiolife.core.id.AttachmentKey;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
@@ -18,6 +20,7 @@ public class MovieReq {
     private Integer type;
     private String director;
     private String url;
+    @Pattern(regexp = AttachmentKey.PATTERN)
     private String fileId;
     private String coverImgUrl;
     private ProgressStatusEnum status;

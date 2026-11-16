@@ -184,7 +184,7 @@ public class BankCardService {
         }
         fileMapper.deletePrivateCoversExcept(userId, cardId, fileId);
         if (fileId != null) {
-            storage.hold(attachments.selectWithObject(fileId).getStorageObjectId());
+            storage.hold(attachments.selectWithObjectByKey(fileId).getStorageObjectId());
             fileMapper.bindPrivateCover(cardId,userId,fileId);
         }
     }

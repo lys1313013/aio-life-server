@@ -17,20 +17,20 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 class UserAvatarFileServiceTest {
-    static final String ID = "1234567890123456789";
+    static final String ID = "a1b2c3d4-1234-4abc-8def-1234567890ab";
     private final IFileMapper files = mock(IFileMapper.class);
     private final MinioUtil minio = new MinioUtil();
     private final UserAvatarFileService avatars = new UserAvatarFileService(files, minio,org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class));
 
     private FileEntity image() {
-        var f = new FileEntity(); f.setId(ID); f.setUserId(42L); f.setCreateUser(42L); f.setStorageObjectId(11L); f.setHashValue("a".repeat(64));
+        var f = new FileEntity(); f.setId("1234567890123456789"); f.setFileKey(ID); f.setUserId(42L); f.setCreateUser(42L); f.setStorageObjectId(11L); f.setHashValue("a".repeat(64));
         f.setIsDeleted(0); f.setIsPublic(1); f.setBizType("avatar"); f.setFileType("image/png");
         return f;
     }
 
     @Test void 当前头像按业务关联读取并以当前配置生成预览地址() {
         when(files.selectOne(any())).thenReturn(image());
-        when(files.selectWithObject(ID)).thenReturn(image());
+        when(files.selectWithObject("1234567890123456789")).thenReturn(image());
         ReflectionTestUtils.setField(minio, "serveBaseUrl", "https://example.test/api/");
         assertEquals(new UserAvatarFileService.Avatar(ID, "https://example.test/api/f/" + "a".repeat(64) + ".png"), avatars.current(42L));
         ReflectionTestUtils.setField(minio, "serveBaseUrl", "https://new.example.test/api");
@@ -43,9 +43,9 @@ class UserAvatarFileServiceTest {
     }
 
     @Test void 绑定只接受文件ID并锁定文件() {
-        when(files.selectForAvatarBinding(ID)).thenReturn(image());
+        when(files.selectForBindingByKey(ID)).thenReturn(image());
         avatars.validateForBinding(42L, ID);
-        verify(files).selectForAvatarBinding(ID);
+        verify(files).selectForBindingByKey(ID);
     }
 
     @ParameterizedTest
@@ -61,7 +61,7 @@ class UserAvatarFileServiceTest {
             case "not-image" -> f.setFileType("text/html");
             case "bound-other" -> f.setBizId(99L);
         }
-        when(files.selectForAvatarBinding(ID)).thenReturn(f);
+        when(files.selectForBindingByKey(ID)).thenReturn(f);
         assertThrows(IllegalArgumentException.class, () -> avatars.validateForBinding(42L, ID));
     }
 
@@ -78,7 +78,7 @@ class UserAvatarFileServiceTest {
     }
 
     @Test void 替换只解除旧关联并绑定新文件() {
-        when(files.selectForAvatarBinding(ID)).thenReturn(image());
+        when(files.selectForBindingByKey(ID)).thenReturn(image());
         avatars.replace(42L, ID);
         verify(files, times(2)).update(isNull(), any());
     }
@@ -86,7 +86,7 @@ class UserAvatarFileServiceTest {
     @Test void 显式清空只解除关联不查询文件() {
         avatars.replace(42L, null);
         verify(files).update(isNull(), any());
-        verify(files, never()).selectForAvatarBinding(any());
+        verify(files, never()).selectForBindingByKey(any());
     }
 
     @Test void 请求解析区分缺省与显式null且标记不进入JSON() throws Exception {

@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.core.util.MinioUtil;
+import top.aiolife.core.id.AttachmentKey;
 import top.aiolife.record.mapper.IFileMapper;
 import top.aiolife.record.pojo.entity.FileEntity;
 
@@ -32,7 +33,7 @@ public class UserAvatarFileService {
                 .eq(FileEntity::getUserId, userId));
         if(file!=null) file=files.selectWithObject(file.getId());
         if (!isAvatar(file, userId)) return new Avatar(null, null);
-        return new Avatar(file.getId(), minio.getPublicImageUrl(file.getHashValue(), file.getFileType()));
+        return new Avatar(file.getFileKey(), minio.getPublicImageUrl(file.getHashValue(), file.getFileType()));
     }
 
     /** null 或空白清除当前头像；替换只解除旧关联，不删除存储对象。 */
@@ -44,12 +45,12 @@ public class UserAvatarFileService {
                 .eq(FileEntity::getBizType, BIZ_TYPE)
                 .eq(FileEntity::getBizId, userId)
                 .eq(FileEntity::getUserId, userId)
-                .ne(selected != null, FileEntity::getId, selected)
+                .ne(selected != null, FileEntity::getFileKey, selected)
                 .set(FileEntity::getBizId, null).set(FileEntity::getIsPublic, 0)
                 .set(FileEntity::getUpdateUser, userId).set(FileEntity::getUpdateTime, LocalDateTime.now()));
         if (selected != null) {
             files.update(null, new LambdaUpdateWrapper<FileEntity>()
-                    .eq(FileEntity::getId, selected).eq(FileEntity::getUserId, userId)
+                    .eq(FileEntity::getFileKey, selected).eq(FileEntity::getUserId, userId)
                     .set(FileEntity::getBizId, userId).set(FileEntity::getIsPublic, 1)
                     .set(FileEntity::getUpdateUser, userId).set(FileEntity::getUpdateTime, LocalDateTime.now()));
         }
@@ -58,9 +59,9 @@ public class UserAvatarFileService {
     /** 在用户保存事务中锁定文件，阻止绑定检查与文件删除之间的竞态。 */
     public void validateForBinding(Long userId, String fileId) {
         if (fileId == null) return;
-        if (userId == null || !fileId.matches("[1-9][0-9]{0,18}"))
+        if (userId == null || !AttachmentKey.isValid(fileId))
             throw new IllegalArgumentException("头像文件 ID 无效");
-        FileEntity file = files.selectForAvatarBinding(fileId);
+        FileEntity file = files.selectForBindingByKey(fileId);
         if (!isAvatar(file, userId)) throw new IllegalArgumentException("头像文件不存在、不可用或不属于该用户");
         storage.hold(file.getStorageObjectId());
         if (file.getBizId() != null && !Objects.equals(file.getBizId(), userId))

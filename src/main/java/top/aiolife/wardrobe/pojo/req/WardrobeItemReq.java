@@ -1,5 +1,7 @@
 package top.aiolife.wardrobe.pojo.req;
 
+import jakarta.validation.constraints.Pattern;
+import top.aiolife.core.id.AttachmentKey;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -52,6 +54,7 @@ public class WardrobeItemReq {
     /**
      * 图片文件ID
      */
+    @Pattern(regexp = AttachmentKey.PATTERN)
     private String fileId;
 
     /**

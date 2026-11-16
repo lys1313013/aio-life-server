@@ -1,5 +1,7 @@
 package top.aiolife.record.pojo.req;
 
+import jakarta.validation.constraints.Pattern;
+import top.aiolife.core.id.AttachmentKey;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotNull;
@@ -41,5 +43,5 @@ public class HonorRecordUpdateReq {
 
     private Integer sortOrder;
 
-    private List<String> fileIds;
+    private List<@Pattern(regexp = AttachmentKey.PATTERN) String> fileIds;
 }

@@ -1,5 +1,7 @@
 package top.aiolife.feedback.pojo.req;
 
+import jakarta.validation.constraints.Pattern;
+import top.aiolife.core.id.AttachmentKey;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,5 +25,5 @@ public class FeedbackCommentCreateReq {
     /**
      * 上传后返回的文件 ID 列表
      */
-    private List<String> fileIds;
+    private List<@Pattern(regexp = AttachmentKey.PATTERN) String> fileIds;
 }

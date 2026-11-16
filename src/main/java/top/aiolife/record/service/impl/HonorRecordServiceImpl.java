@@ -83,7 +83,7 @@ public class HonorRecordServiceImpl extends ServiceImpl<IHonorRecordMapper, Hono
             removedFiles.eq(FileEntity::getBizType, BIZ_TYPE)
                     .eq(FileEntity::getBizId, entity.getId())
                     .eq(FileEntity::getUserId, userId)
-                    .notIn(!fileIds.isEmpty(), FileEntity::getId, fileIds)
+                    .notIn(!fileIds.isEmpty(), FileEntity::getFileKey, fileIds)
                     .set(FileEntity::getBizId, null)
                     .set(FileEntity::getUpdateUser, userId)
                     .set(FileEntity::getUpdateTime, LocalDateTime.now());

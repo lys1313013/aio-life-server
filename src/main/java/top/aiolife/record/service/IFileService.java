@@ -10,6 +10,9 @@ import java.util.List;
 
 public interface IFileService extends IService<FileEntity> {
 
+    /** 仅按对外 UUIDv4 标识定位附件；内部主键不作为业务接口参数。 */
+    FileEntity getByKey(String fileKey);
+
     /**
      * 上传并保存文件记录
      *

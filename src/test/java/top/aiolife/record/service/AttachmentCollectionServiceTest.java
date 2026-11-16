@@ -18,7 +18,7 @@ class AttachmentCollectionServiceTest extends AttachmentDatabaseFixture {
         jdbc.update("INSERT INTO storage_object(id,bucket,object_key,content_hash,file_size,content_type,create_time) VALUES(11,'fixture',?, ?,68,'image/png',CURRENT_TIMESTAMP-INTERVAL '8 days')","objects/aa/"+"a".repeat(64)+".png","a".repeat(64));
     }
     @Test void 待绑定附件过期后才允许回收且字节只在提交后删除() throws Exception {
-        jdbc.update("INSERT INTO attachment(id,storage_object_id,user_id,biz_type,update_time) VALUES(12,11,42,'avatar',CURRENT_TIMESTAMP-INTERVAL '8 days')");
+        jdbc.update("INSERT INTO attachment(file_key,id,storage_object_id,user_id,biz_type,update_time) VALUES(gen_random_uuid(),12,11,42,'avatar',CURRENT_TIMESTAMP-INTERVAL '8 days')");
         collection.collect(11);verifyNoInteractions(minio);
         collection.expire();assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM attachment",Integer.class));
         transaction.executeWithoutResult(t->{try{collection.collect(11);}catch(Exception e){throw new RuntimeException(e);}verifyNoInteractions(minio);});

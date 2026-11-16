@@ -11,12 +11,19 @@ public final class ExportDatasetSql {
 
     public static String select(Map<String, Object> parameters) {
         var definition = (SqlDatasetDefinition) parameters.get("definition");
+        boolean attachment = definition.table().equals("attachment");
         String projection =
                 definition.columns().stream()
                         .map(
                                 column ->
-                                        "d."
+                                        (attachment ? switch (column.key()) {
+                                            case "id" -> "d.file_key";
+                                            case "file_size" -> "o.file_size";
+                                            case "file_type" -> "o.content_type";
+                                            default -> "d." + identifier(column.key());
+                                        } : "d."
                                                 + identifier(column.key())
+                                        )
                                                 + " AS "
                                                 + identifier(column.key()))
                         .collect(Collectors.joining(", "));
@@ -25,7 +32,8 @@ public final class ExportDatasetSql {
                         .append(projection)
                         .append(" FROM ")
                         .append(identifier(definition.table()))
-                        .append(" d WHERE d.is_deleted = 0");
+                        .append(attachment ? " d JOIN storage_object o ON o.id=d.storage_object_id" : " d")
+                        .append(" WHERE d.is_deleted = 0");
         if (definition.ownerColumn() != null)
             sql.append(" AND d.")
                     .append(identifier(definition.ownerColumn()))
@@ -42,7 +50,8 @@ public final class ExportDatasetSql {
                     .append(identifier(parent.ownerColumn()))
                     .append(" = #{ownerId} AND p.is_deleted = 0)");
         }
-        if (parameters.get("cursor") != null) sql.append(" AND d.id > #{cursor}");
-        return sql.append(" ORDER BY d.id ASC LIMIT #{limit}").toString();
+        String cursorColumn = attachment ? "d.file_key" : "d.id";
+        if (parameters.get("cursor") != null) sql.append(" AND ").append(cursorColumn).append(" > #{cursor}");
+        return sql.append(" ORDER BY ").append(cursorColumn).append(" ASC LIMIT #{limit}").toString();
     }
 }

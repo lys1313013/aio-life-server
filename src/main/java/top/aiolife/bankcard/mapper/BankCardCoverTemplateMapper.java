@@ -23,7 +23,7 @@ public interface BankCardCoverTemplateMapper extends BaseMapper<BankCardCoverTem
 
     String DETAIL_SELECT = """
         SELECT t.id,t.name,t.bank_id,d.dict_label AS bank_name,t.card_type,t.source_url,
-          t.is_enabled,t.sort_order,f.id AS file_id,
+          t.is_enabled,t.sort_order,f.file_key AS file_id,
           (SELECT COUNT(*) FROM bank_card c WHERE c.cover_template_id=t.id AND c.is_deleted=0) AS usage_count
         FROM bank_card_cover_template t
         LEFT JOIN sys_dict_data d ON d.dict_code=t.bank_id
@@ -56,7 +56,7 @@ public interface BankCardCoverTemplateMapper extends BaseMapper<BankCardCoverTem
     BankCardCoverTemplateVO selectDetail(@Param("id") long id);
 
     @Select("""
-        SELECT t.id,t.name,f.id AS file_id FROM bank_card_cover_template t
+        SELECT t.id,t.name,f.file_key AS file_id FROM bank_card_cover_template t
         JOIN attachment f ON f.biz_id=t.id AND f.biz_type='bank_card_template_face' AND f.is_deleted=0
         JOIN sys_dict_data d ON d.dict_code=t.bank_id AND d.is_deleted=0 AND d.is_enabled=1
         JOIN sys_dict_type dt ON dt.dict_id=d.dict_id AND dt.dict_type='bank' AND dt.is_deleted=0 AND dt.is_enabled=1
@@ -74,7 +74,7 @@ public interface BankCardCoverTemplateMapper extends BaseMapper<BankCardCoverTem
     List<Long> lockBankReferences(@Param("bankId") long bankId);
 
     @Select("""
-        SELECT DISTINCT t.id,t.name,t.source_url,f.id AS file_id FROM bank_card c
+        SELECT DISTINCT t.id,t.name,t.source_url,f.file_key AS file_id FROM bank_card c
         JOIN bank_card_cover_template t ON t.id=c.cover_template_id AND t.is_deleted=0
         LEFT JOIN attachment f ON f.biz_id=t.id AND f.biz_type='bank_card_template_face' AND f.is_deleted=0
         WHERE c.user_id=#{userId} AND c.is_deleted=0

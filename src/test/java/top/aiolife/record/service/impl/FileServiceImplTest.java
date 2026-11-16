@@ -38,7 +38,10 @@ class FileServiceImplTest extends AttachmentDatabaseFixture {
             var second=files.upload(new MockMultipartFile("file","second.png","image/png",image("png")),FileBizType.DEVICE);
             assertNotEquals(first.getId(),second.getId());assertEquals("image/png",first.getFileType());
             assertEquals("first.png",first.getFileName());assertEquals("second.png",second.getFileName());
-            var a=mapper(IFileMapper.class).selectById(first.getId());var b=mapper(IFileMapper.class).selectById(second.getId());
+            var a=files.getByKey(first.getId());var b=files.getByKey(second.getId());
+            assertEquals(4,UUID.fromString(first.getId()).version());
+            assertNotEquals(first.getId(),a.getId());assertEquals(first.getId(),a.getFileKey());
+            assertThrows(IllegalArgumentException.class, () -> files.getByKey(a.getId()));
             assertEquals(a.getStorageObjectId(),b.getStorageObjectId());assertEquals(11L,a.getUserId());assertEquals(22L,b.getUserId());
             assertEquals(0,a.getIsPublic());assertEquals(0,b.getIsPublic());assertEquals("device_cover",b.getBizType());
             assertEquals(1,mapper(StorageObjectMapper.class).selectCount(null));

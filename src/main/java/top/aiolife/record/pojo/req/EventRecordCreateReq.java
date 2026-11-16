@@ -1,5 +1,7 @@
 package top.aiolife.record.pojo.req;
 
+import jakarta.validation.constraints.Pattern;
+import top.aiolife.core.id.AttachmentKey;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
@@ -78,5 +80,5 @@ public class EventRecordCreateReq {
     /**
      * 关联文件ID列表（提交时用于绑定）
      */
-    private List<String> fileIds;
+    private List<@Pattern(regexp = AttachmentKey.PATTERN) String> fileIds;
 }

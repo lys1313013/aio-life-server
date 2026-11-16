@@ -1,5 +1,7 @@
 package top.aiolife.sso.pojo.req;
 
+import jakarta.validation.constraints.Pattern;
+import top.aiolife.core.id.AttachmentKey;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
@@ -28,6 +30,7 @@ public class UserCreateReq {
     /**
      * 头像文件 ID
      */
+    @Pattern(regexp = AttachmentKey.PATTERN)
     private String avatarFileId;
 
     /**

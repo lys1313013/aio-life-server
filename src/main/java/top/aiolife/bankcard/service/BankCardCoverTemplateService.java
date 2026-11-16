@@ -35,7 +35,7 @@ public class BankCardCoverTemplateService {
 
     public String publicUrl(String fileId) {
         if(fileId==null || fileMapper.countPublishedTemplateFile(fileId)==0) return null;
-        var attachment=attachments.selectWithObject(fileId);
+        var attachment=attachments.selectWithObjectByKey(fileId);
         return attachment==null?null:minio.getPublicImageUrl(attachment.getHashValue(),attachment.getFileType());
     }
     private BankCardCoverTemplateVO withUrl(BankCardCoverTemplateVO cover) {
@@ -111,7 +111,7 @@ public class BankCardCoverTemplateService {
         }
         var file = fileMapper.lockTemplateCover(req.getFileId());
         if (file == null) throw new IllegalArgumentException("请选择有效的公共卡面图片");
-        var attachment=attachments.selectWithObject(req.getFileId());
+        var attachment=attachments.selectWithObjectByKey(req.getFileId());
         storage.hold(attachment.getStorageObjectId());
         Long bound = file.bizId();
         if (bound == null ? !Objects.equals(file.createUser(), userId) : bound != templateId)

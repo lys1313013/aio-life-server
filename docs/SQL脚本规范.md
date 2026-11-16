@@ -73,7 +73,7 @@ ALTER TABLE life_footprint ADD CONSTRAINT ck_footprint_end CHECK (end_date >= st
 
 跨表同义字段、单位、状态取值及冗余保留理由集中维护在[数据库设计审查与字段规范](数据库设计审查与字段规范.md)。新增字段先核对该文档；其中目标命名不代表已有字段已完成迁移。
 
-- ID 使用 BIGINT，与现有雪花 ID 和实体映射一致；API 按项目约定输出字符串。
+- 内部主键使用 BIGINT，与现有雪花 ID 和实体映射一致。附件 `file_key` 是独立对外标识，使用 PostgreSQL 原生 UUID、生成 UUIDv4 并设置非空、唯一及版本约束；`attachment.id` 与 `import_job.result_attachment_id` 继续使用 BIGINT。API 按项目约定输出字符串。
 - 精确到日使用 DATE，日期时间使用项目既有 TIMESTAMP WITHOUT TIME ZONE 约定；不为方便展示而保存日期字符串。
 - 金额和需要固定精度的坐标使用 NUMERIC，明确精度及单位。金额字段与接口的序列化遵循对应业务契约。
 - 必填字段明确 NOT NULL。不要为了迁移成功而盲目添加 0、空字符串或某个日期作为默认值。

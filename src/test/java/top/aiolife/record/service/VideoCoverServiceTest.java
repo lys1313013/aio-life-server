@@ -60,7 +60,8 @@ class VideoCoverServiceTest extends AttachmentDatabaseFixture {
         verify(minio,times(1)).putObject(eq("fixture"),matches("objects/[0-9a-f]{2}/[0-9a-f]{64}\\.png"),any(InputStream.class),anyLong(),eq("image/png"));
         service.enqueue(1,11,url,false);run();verify(downloader,times(1)).download(url);
         var row=mapper(IBVideoMapper.class).selectById(1);service.fillCoverFiles(11,List.of(row));assertEquals("READY",row.getCoverState());
-        assertEquals(cover(1).getId(),row.getCoverFileId());assertTrue(row.getCoverFileId().matches("[1-9][0-9]{0,18}"));
+        assertEquals(cover(1).getFileKey(),row.getCoverFileId());assertTrue(top.aiolife.core.id.AttachmentKey.isValid(row.getCoverFileId()));
+        assertEquals(cover(1).getId(),tasks.latest("b_video_cover",1).getResultAttachmentId());
         service.fillCoverFiles(22,List.of(row));assertNull(row.getCoverFileId());
     }
     @Test void 更换和清空会取消旧任务且旧完成不能覆盖() {
@@ -106,8 +107,8 @@ class VideoCoverServiceTest extends AttachmentDatabaseFixture {
             var first=uploader.uploadFromUrl("https://img1.doubanio.com/view/photo/l/public/p123.jpg",top.aiolife.record.enums.FileBizType.MOVIE);
             auth.when(cn.dev33.satoken.stp.StpUtil::getLoginIdAsLong).thenReturn(22L);
             var second=uploader.uploadFromUrl("https://img2.doubanio.com/view/photo/l/public/p123.jpg?sign=changed",top.aiolife.record.enums.FileBizType.MOVIE);
-            assertNotEquals(first.getId(),second.getId());assertNull(files.selectById(first.getId()).getBizId());
-            assertEquals(11L,files.selectById(first.getId()).getUserId());assertEquals(22L,files.selectById(second.getId()).getUserId());
+            assertNotEquals(first.getId(),second.getId());assertNull(files.selectOne(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getFileKey,first.getId())).getBizId());
+            assertEquals(11L,files.selectOne(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getFileKey,first.getId())).getUserId());assertEquals(22L,files.selectOne(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getFileKey,second.getId())).getUserId());
             verify(downloader,times(1)).downloadDouban(anyString());assertEquals(1,sources.selectCount(null));
         }
     }

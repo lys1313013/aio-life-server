@@ -1,5 +1,6 @@
 package top.aiolife.bankcard.pojo.req;
 
+import top.aiolife.core.id.AttachmentKey;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,5 +15,5 @@ public class BankCardCoverTemplateReq {
     @Size(max=1000) private String sourceUrl;
     @NotNull @Min(0) @Max(1) private Integer isEnabled = 1;
     @NotNull @Min(0) private Integer sortOrder = 0;
-    @NotNull @Pattern(regexp="[1-9][0-9]{0,18}") private String fileId;
+    @NotNull @Pattern(regexp = AttachmentKey.PATTERN) private String fileId;
 }

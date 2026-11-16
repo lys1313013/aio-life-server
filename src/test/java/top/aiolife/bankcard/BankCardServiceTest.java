@@ -45,8 +45,8 @@ class BankCardServiceTest {
     BankCardMapper cardMapper;
     BankCardCoverTemplateMapper coverMapper;
     static final String NUMBER = "6222000000001234";
-    static final String FILE_A = "a".repeat(32);
-    static final String FILE_B = "b".repeat(32);
+    static final String FILE_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    static final String FILE_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
     @BeforeEach void setup() throws Exception {
         var ds = new JdbcDataSource();
         ds.setURL("jdbc:h2:mem:"+UUID.randomUUID()+";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=USER;DB_CLOSE_DELAY=-1");
@@ -89,7 +89,7 @@ class BankCardServiceTest {
         var req=new BankCardReq(); req.setBankId(20L);req.setCardType("debit");req.setStatus("normal");req.setCardNo(NUMBER);return req;
     }
     BankCardVO create(long userId,BankCardReq req) { return tx.execute(s->service.save(userId,null,req)); }
-    void file(String id,long userId) { jdbc.update("INSERT INTO attachment(id,biz_type,user_id,create_user) VALUES(?,?,?,?)",id,"bank_card_face",userId,userId); }
+    void file(String id,long userId) { jdbc.update("INSERT INTO attachment(id,file_key,biz_type,user_id,create_user) VALUES(?,?,?,?,?)","internal-"+id.hashCode(),id,"bank_card_face",userId,userId); }
     @Test void testBalance_保存修改清空及字符串金额契约() throws Exception {
         var req = request();
         assertNull(create(2, req).getBalance());
@@ -257,11 +257,11 @@ class BankCardServiceTest {
         req.setCardNo(null);req.setAlias("不得提交");req.setCoverFileIds(List.of(FILE_B));
         assertThrows(IllegalArgumentException.class,()->tx.execute(s->service.save(1,id,req)));
         assertNull(service.detail(1,id).getAlias());assertEquals(List.of(FILE_A),service.detail(1,id).getCoverFileIds());
-        jdbc.update("UPDATE attachment SET user_id=1 WHERE id=?",FILE_B);
+        jdbc.update("UPDATE attachment SET user_id=1 WHERE file_key=?",FILE_B);
         var otherReq=request();otherReq.setCardNo("6222000000005678");otherReq.setCoverFileIds(List.of(FILE_B));create(1,otherReq);
         assertThrows(IllegalArgumentException.class,()->tx.execute(s->service.save(1,id,req)));
         req.setCoverFileIds(List.of());tx.execute(s->service.save(1,id,req));
-        assertTrue(service.detail(1,id).getCoverFileIds().isEmpty());assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE id=?",Integer.class,FILE_A));
+        assertTrue(service.detail(1,id).getCoverFileIds().isEmpty());assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE file_key=?",Integer.class,FILE_A));
     }
     @Test void tagsArePrivateRenamableAndRemovedWithRelations() {
         var tag=tx.execute(s->service.saveTag(1,null,new BankCardTagReq("工资卡","#64748b",1)));
@@ -321,7 +321,7 @@ class BankCardServiceTest {
         return req;
     }
     void templateFile(String id,long userId) {
-        jdbc.update("INSERT INTO attachment(id,biz_type,user_id,create_user) VALUES(?,?,?,?)",id,BankCardCoverTemplateService.FILE_TYPE,null,userId);
+        jdbc.update("INSERT INTO attachment(id,file_key,biz_type,user_id,create_user) VALUES(?,?,?,?,?)","internal-"+id.hashCode(),id,BankCardCoverTemplateService.FILE_TYPE,null,userId);
     }
     long template() {
         templateFile(FILE_A,1);
@@ -344,7 +344,7 @@ class BankCardServiceTest {
                 service.detail(1,Long.parseLong(first.getId())).getCoverTemplatePublicUrl());
         assertEquals("新版卡面",service.detail(2,Long.parseLong(second.getId())).getCoverTemplateName());
         assertEquals("https://example.com/card",service.list(1).getFirst().getCoverSourceUrl());
-        assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE id=?",Integer.class,FILE_A));
+        assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE file_key=?",Integer.class,FILE_A));
     }
     @Test void 停用不允许新选用但既有引用可编辑并显示() {
         long id=template();var req=request();req.setCoverTemplateId(id);var card=create(1,req);
@@ -375,10 +375,10 @@ class BankCardServiceTest {
         long id=template();file(FILE_B,1);var req=request();req.setCoverFileIds(List.of(FILE_B));var card=create(1,req);
         req.setCoverFileIds(List.of());req.setCoverTemplateId(id);
         tx.execute(s->service.save(1,Long.valueOf(card.getId()),req));
-        assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE id=?",Integer.class,FILE_B));
+        assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE file_key=?",Integer.class,FILE_B));
         tx.executeWithoutResult(s->service.delete(1,Long.parseLong(card.getId())));
         assertEquals(0,templates().detail(id).usageCount());
-        assertEquals(0,jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE id=?",Integer.class,FILE_A));
+        assertEquals(0,jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE file_key=?",Integer.class,FILE_A));
     }
     @Test void 保存失败保留旧图并拒绝绑定其他模板和他人临时图片() {
         long id=template();templateFile(FILE_B,2);

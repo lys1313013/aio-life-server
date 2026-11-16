@@ -6,12 +6,14 @@ import top.aiolife.record.pojo.entity.FileEntity;
 
 @Mapper
 public interface IFileMapper extends BaseMapper<FileEntity> {
-    String WITH_OBJECT="SELECT a.*,o.file_size,o.content_type AS file_type,o.content_hash AS hash_value FROM attachment a JOIN storage_object o ON o.id=a.storage_object_id WHERE a.id=#{id} AND a.is_deleted=0";
-    @Select(WITH_OBJECT+" FOR UPDATE OF a")
+    String WITH_OBJECT="SELECT a.*,o.file_size,o.content_type AS file_type,o.content_hash AS hash_value FROM attachment a JOIN storage_object o ON o.id=a.storage_object_id";
+    @Select(WITH_OBJECT+" WHERE a.file_key=#{key} AND a.is_deleted=0 FOR UPDATE OF a")
     @Options(useCache=false,flushCache=Options.FlushCachePolicy.TRUE)
-    FileEntity selectForAvatarBinding(@Param("id") String id);
-    @Select(WITH_OBJECT)
+    FileEntity selectForBindingByKey(@Param("key") String key);
+    @Select(WITH_OBJECT+" WHERE a.id=#{id} AND a.is_deleted=0")
     FileEntity selectWithObject(@Param("id") String id);
+    @Select(WITH_OBJECT+" WHERE a.file_key=#{key} AND a.is_deleted=0")
+    FileEntity selectWithObjectByKey(@Param("key") String key);
     @Select("""
         <script>SELECT id FROM
         <choose>

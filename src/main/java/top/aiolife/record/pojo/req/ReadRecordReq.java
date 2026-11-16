@@ -1,5 +1,7 @@
 package top.aiolife.record.pojo.req;
 
+import jakarta.validation.constraints.Pattern;
+import top.aiolife.core.id.AttachmentKey;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -20,6 +22,7 @@ public class ReadRecordReq {
     @Schema(description = "原文或豆瓣书籍条目地址；同一用户的相同豆瓣条目只保存一次")
     private String url;
     @Schema(description = "已上传的封面文件 ID；通过文件上传接口获取")
+    @Pattern(regexp = AttachmentKey.PATTERN)
     private String fileId;
     @Schema(description = "待导入的封面图片 URL；服务端上传为文件后保存 fileId")
     private String coverImgUrl;

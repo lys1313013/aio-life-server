@@ -45,6 +45,8 @@
 
 - [V20261116_09__unify_preset_owner.sql](migrations/V20261116_09__unify_preset_owner.sql)：公共预设统一用 `user_id IS NULL` 表达，把时迹分类与用户字典的 0 号预设改为 NULL，新增归属检查与预设索引；衣柜分类删除冗余的 `category_type`。
 
+- [V20261116_12__attachment_file_key.sql](migrations/V20261116_12__attachment_file_key.sql)：为全部附件新增并回填原生 UUIDv4 `file_key`，设为非空且全局唯一；内部附件主键及导入结果引用仍为 BIGINT，配套应用不接受数字附件标识。
+
 本次按明确要求同步修改历史初始脚本：新库不再创建上述四列；已有库仍保留可执行的迁移。另按明确要求不为 B 站视频封面新增增量脚本：`b_video.cover_file_id` 已直接在目标库迁移并从初始脚本移除，新库改由 `uk_file_b_video_cover` 约束 `file.biz_type='b_video_cover'` 的单封面关联；执行与校验记录见[数据库初始化与验证](../docs/数据库初始化与验证.md)。历史校验和调整需先备份并完成实际数据、结构迁移，再执行 `flyway:repair`；`repair` 本身不迁移业务数据。
 
 新库先用独立 Flyway 入口迁移，再启动应用；应用启动不自动建表或导入种子。后续结构、菜单和数据变更新增更高版本 `V`，不改写已执行文件。

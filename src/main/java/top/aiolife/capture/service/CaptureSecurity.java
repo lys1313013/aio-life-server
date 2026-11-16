@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import top.aiolife.record.mapper.IFileMapper;
+import top.aiolife.core.id.AttachmentKey;
 import top.aiolife.record.pojo.entity.FileEntity;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.service.UserDictDataService;
@@ -35,10 +36,11 @@ public class CaptureSecurity {
 
     public void file(long user, String id, String biz) {
         if (id == null || id.isBlank()) return;
+        AttachmentKey.require(id);
         FileEntity f =
                 files.selectOne(
                         new LambdaQueryWrapper<FileEntity>()
-                                .eq(FileEntity::getId, id)
+                                .eq(FileEntity::getFileKey, id)
                                 .eq(FileEntity::getUserId, user));
         if (f == null || !biz.equals(f.getBizType())) throw bad("图片不存在、业务类型不匹配或无权使用");
     }

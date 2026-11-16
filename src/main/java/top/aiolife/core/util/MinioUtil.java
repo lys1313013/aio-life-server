@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import top.aiolife.config.MinioConfig;
+import top.aiolife.core.id.AttachmentKey;
 
 import java.io.InputStream;
 import java.util.UUID;
@@ -27,10 +28,9 @@ public class MinioUtil {
     @Value("${aio.life.server.base-url}")
     private String serveBaseUrl;
 
-    /** 私有附件按雪花 ID 读取，客户端不绑定物理对象路径。 */
+    /** 私有附件按 UUIDv4 读取，客户端不绑定物理对象路径。 */
     public String getFilePreviewUrl(String fileId) {
-        if (fileId == null || !fileId.matches("[1-9][0-9]{0,18}"))
-            throw new IllegalArgumentException("文件 ID 无效");
+        AttachmentKey.require(fileId);
         return serveBaseUrl.replaceAll("/+$", "") + "/file/preview/" + fileId;
     }
 

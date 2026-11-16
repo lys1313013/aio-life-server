@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class FileVO {
 
+    /** 附件对外 UUIDv4，对应 attachment.file_key；不返回内部主键。 */
     private String id;
 
     private String fileName;

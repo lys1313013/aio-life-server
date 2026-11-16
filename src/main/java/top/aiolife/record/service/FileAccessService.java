@@ -25,7 +25,7 @@ public class FileAccessService {
     }
     public void write(String id,boolean download,HttpServletResponse response) {
         response.setHeader("Cache-Control","private, no-store");
-        var attachment=fileService.getById(id);
+        var attachment=fileService.getByKey(id);
         if(attachment==null) { response.setStatus(404); return; }
         var decision=guard.check(attachment,guard.resolveLoginUserId());
         if(decision!=FilePreviewGuard.AccessDecision.ALLOW) {

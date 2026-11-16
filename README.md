@@ -196,7 +196,8 @@ Compose 示例中的默认账号和密码仅供本地使用。镜像发布流程
 
 ### 文件、头像与对象存储
 
-- 头像保存为 `file.biz_type='avatar'`、`file.biz_id=用户ID` 的单条关联，资料更新使用 `avatarFileId`：不传保持，`null` 解除关联。当前公开头像地址由 `AIO_LIFE_SERVER_BASE_URL` 生成，路径为 `/public/images/{fileId}.{ext}`；部署需保证此 URL 可达。MinIO 桶无需改为公开；普通附件仍通过文件接口按权限访问。
+- 附件内部主键与导入结果引用保持 bigint；所有业务接口中的附件标识（含上传 `FileVO.id`、`avatarFileId`、`fileId`、`coverFileId`、`fileIds`）统一使用 `attachment.file_key` 的 UUIDv4，不接受内部数字主键。迁移执行 `V20261116_12__attachment_file_key.sql`，应用以 Java `UUID.randomUUID()` 生成新 key。
+- 头像保存为 `attachment.biz_type='avatar'`、`attachment.biz_id=用户ID` 的单条关联，资料更新不传 `avatarFileId` 保持、`null` 解除关联。公开图片路径为 `/f/{content_hash}.{ext}`；私有附件通过 `/file/preview/{fileKey}`、`/file/download/{fileKey}` 登录并校验归属及业务权限，MinIO 桶保持私有。
 - 阅读、观影远程封面只允许配置白名单域名的 HTTPS 地址，不跟随重定向。`AIO_LIFE_DOUBAN_COVER_ALLOWED_DOMAINS` 默认 `doubanio.com`，信任其全部子域名；显式空值禁用远程下载。其他来源使用上传得到的 `fileId`。相关安全修复记录见[文件内容安全](docs/file-content-security.md)，接口行为以当前实现为准。
 - Web「系统管理 → 对象存储」仅管理员可用，按前缀和游标浏览当前业务桶，支持预览、下载及删除无业务引用的单个对象。已有 `file` 记录（含软删除）或 CBTI 引用的对象不能删除；不提供上传、批量目录删除或桶策略修改。MinIO 凭据需具备 `ListBucket` / `GetObject` / `DeleteObject` 权限；入口种子为 `sql/migrations/V20261110_02_006__menus.sql`。
 

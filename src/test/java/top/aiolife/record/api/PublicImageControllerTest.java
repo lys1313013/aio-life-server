@@ -29,13 +29,13 @@ class PublicImageControllerTest extends AttachmentDatabaseFixture {
     private String url() { return "/f/"+hash+".png"; }
     private void avatar(long id,long owner) {
         jdbc.update("INSERT INTO sys_user(id,username,nickname) VALUES(?,?,'fixture')",owner,"fixture"+owner);
-        jdbc.update("INSERT INTO attachment(id,storage_object_id,user_id,biz_type,biz_id,is_public) VALUES(?,11,?,'avatar',?,1)",id,owner,owner);
+        jdbc.update("INSERT INTO attachment(file_key,id,storage_object_id,user_id,biz_type,biz_id,is_public) VALUES(gen_random_uuid(),?,11,?,'avatar',?,1)",id,owner,owner);
     }
     private void template() {
         jdbc.update("INSERT INTO sys_dict_type(dict_id,dict_type,is_enabled) VALUES(1,'bank',1)");
         jdbc.update("INSERT INTO sys_dict_data(dict_code,dict_id,dict_label,dict_value,is_enabled) VALUES(2,1,'fixture','fixture',1)");
         jdbc.update("INSERT INTO bank_card_cover_template(id,name,bank_id,card_type,is_enabled,create_user,update_user) VALUES(3,'fixture',2,'debit',1,42,42)");
-        jdbc.update("INSERT INTO attachment(id,storage_object_id,biz_type,biz_id,is_public) VALUES(4,11,'bank_card_template_face',3,1)");
+        jdbc.update("INSERT INTO attachment(file_key,id,storage_object_id,biz_type,biz_id,is_public) VALUES(gen_random_uuid(),4,11,'bank_card_template_face',3,1)");
     }
     @Test void 已发布模板可匿名访问并协商缓存不重读对象() throws Exception {
         template();
@@ -57,7 +57,7 @@ class PublicImageControllerTest extends AttachmentDatabaseFixture {
         mvc.perform(get(url()).header("If-None-Match","\""+hash+"\"")).andExpect(status().isNotFound());
     }
     @Test void 私有附件和错误扩展名不能通过公开地址读取() throws Exception {
-        jdbc.update("INSERT INTO attachment(id,storage_object_id,user_id,biz_type,biz_id,is_public) VALUES(101,11,42,'device_cover',1,1)");
+        jdbc.update("INSERT INTO attachment(file_key,id,storage_object_id,user_id,biz_type,biz_id,is_public) VALUES(gen_random_uuid(),101,11,42,'device_cover',1,1)");
         mvc.perform(get(url())).andExpect(status().isNotFound());
         avatar(102,42);mvc.perform(get("/f/"+hash+".jpg")).andExpect(status().isNotFound());
         verifyNoInteractions(minio);

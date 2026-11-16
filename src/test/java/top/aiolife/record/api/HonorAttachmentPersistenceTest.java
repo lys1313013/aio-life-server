@@ -153,13 +153,13 @@ class HonorAttachmentPersistenceTest {
         var request = new HonorRecordEntity();
         request.setId(100L);
         request.setTitle("更新后的荣誉");
-        request.setFileIds(fileIds);
+        request.setFileIds(fileIds == null ? null : fileIds.stream().map(top.aiolife.support.AttachmentTestFixtures::key).toList());
         assertEquals(0, controller.updateHonorRecord("1", ApiRequestFixtures.request(request, HonorRecordUpdateReq.class)).getCode());
     }
 
     private List<String> attachmentIds() {
         return controller.getHonorRecord("1", "100").getData().getFiles().stream()
-                .map(FileVO::getId).sorted().toList();
+                .map(file -> jdbc.queryForObject("SELECT id FROM attachment WHERE file_key=?", String.class, file.getId())).sorted().toList();
     }
 
     private Long bizId(String fileId) {
@@ -167,7 +167,7 @@ class HonorAttachmentPersistenceTest {
     }
 
     private void addFile(String id, Long userId, String bizType, Long bizId) {
-        jdbc.update("INSERT INTO attachment (id, create_user, user_id, biz_type, biz_id) VALUES (?, ?, ?, ?, ?)",
-                id, userId, userId, bizType, bizId);
+        jdbc.update("INSERT INTO attachment (id, file_key, create_user, user_id, biz_type, biz_id) VALUES (?, ?, ?, ?, ?, ?)",
+                id, top.aiolife.support.AttachmentTestFixtures.key(id), userId, userId, bizType, bizId);
     }
 }

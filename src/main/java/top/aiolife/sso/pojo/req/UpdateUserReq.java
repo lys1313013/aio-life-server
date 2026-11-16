@@ -1,5 +1,7 @@
 package top.aiolife.sso.pojo.req;
 
+import jakarta.validation.constraints.Pattern;
+import top.aiolife.core.id.AttachmentKey;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import lombok.Data;
@@ -26,6 +28,7 @@ public class UpdateUserReq {
     /**
      * 头像文件 ID
      */
+    @Pattern(regexp = AttachmentKey.PATTERN)
     private String avatarFileId;
     @JsonIgnore
     private boolean avatarFileIdSpecified;

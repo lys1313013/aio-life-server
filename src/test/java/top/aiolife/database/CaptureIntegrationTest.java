@@ -601,6 +601,7 @@ class CaptureIntegrationTest {
         movieMapper.insert(movie);
         var cover = new FileEntity();
         cover.setId("92200101");
+        cover.setFileKey("11111111-1111-4111-8111-111111111111");
         cover.setFileName("personal.png");
         cover.setBizType("movie_cover");
         cover.setBizId(movie.getId());
@@ -624,7 +625,7 @@ class CaptureIntegrationTest {
         assertEquals(14, row.getTotalProgress());
         assertEquals(4, row.getRating());
         assertEquals("私人观影笔记", row.getRemark());
-        assertEquals("92200101", images.find(USER, FileBizType.MOVIE, row.getId()));
+        assertEquals("11111111-1111-4111-8111-111111111111", images.find(USER, FileBizType.MOVIE, row.getId()));
         verifyNoInteractions(fileService, movieService);
     }
 
@@ -708,7 +709,7 @@ class CaptureIntegrationTest {
                             file.fillCreateCommonField(USER);
                             fileMapper.insert(file);
                             var uploaded = new FileVO();
-                            uploaded.setId(file.getId());
+                            uploaded.setId(file.getFileKey());
                             return uploaded;
                         });
         var request = nativeSync("not_started");
