@@ -210,7 +210,7 @@ class PermissionMutationTest {
             var files = mock(IFileService.class); var mapper = mock(IEventRecordMapper.class);
             when(mapper.update(any(EventRecordEntity.class), anyWrapper())).thenReturn(1);
             // 附件同步会先查询当前用户拥有的文件，再执行绑定。
-            var ownedFile = new FileEntity(); ownedFile.setId("31"); ownedFile.setCreateUser(11L);
+            var ownedFile = new FileEntity(); ownedFile.setId("31"); ownedFile.setUserId(11L);
             when(files.list(anyWrapper())).thenReturn(List.of(ownedFile));
             var input = new EventRecordEntity(); input.setId(7L); input.setFileIds(List.of("31"));
             new EventRecordController(new EventRecordService(mapper, files))
@@ -218,7 +218,7 @@ class PermissionMutationTest {
             ArgumentCaptor<Wrapper<FileEntity>> query = ArgumentCaptor.captor();
             verify(files).list(query.capture());
             assertTrue(query.getValue().getSqlSegment().contains("id IN"));
-            assertTrue(query.getValue().getSqlSegment().contains("create_user ="));
+            assertTrue(query.getValue().getSqlSegment().contains("user_id ="));
             assertTrue(((AbstractWrapper<?, ?, ?>) query.getValue()).getParamNameValuePairs()
                     .values().containsAll(List.of("31", 11L)));
             verify(files).bindBizId(List.of("31"), "event_record", 7L);

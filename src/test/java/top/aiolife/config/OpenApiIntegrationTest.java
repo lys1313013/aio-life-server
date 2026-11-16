@@ -412,7 +412,7 @@ class OpenApiIntegrationTest {
     @Test
     void 匿名图片及协议文档不要求凭据而相邻业务仍需鉴权() throws Exception {
         JsonNode api = document("/v3/api-docs");
-        for (String path : List.of("/auth/legal", "/public/images/{id}.{extension}",
+        for (String path : List.of("/auth/legal", "/f/{id}.{extension}",
                 "/membership/provider-icons/{key}", "/cbti/images/{objectName}")) {
             JsonNode security = api.path("paths").path(path).path("get").path("security");
             assertTrue(security.isArray() && security.isEmpty(), path);
