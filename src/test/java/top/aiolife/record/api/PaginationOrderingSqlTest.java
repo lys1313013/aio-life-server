@@ -105,7 +105,7 @@ class PaginationOrderingSqlTest {
             jdbc.update("INSERT INTO task_column(id,user_id,title,sort_order) VALUES (?,7,'任务栏',0)", id);
             jdbc.update("INSERT INTO memo(id,user_id,title,update_time) VALUES (?,7,'笔记','2026-10-22 10:00:00')", id);
             jdbc.update("INSERT INTO sys_dict_type(dict_id,dict_name,dict_type) VALUES (?,'分类',?)", id, "type-" + id);
-            jdbc.update("INSERT INTO sys_dict_data(dict_code,dict_id,sort_order,dict_label) VALUES (?,1,0,'字典')", id);
+            jdbc.update("INSERT INTO sys_dict_data(dict_code,dict_id,sort_order,dict_label,dict_value) VALUES (?,1,0,'字典',?)", id, "value-" + id);
         }
     }
 
