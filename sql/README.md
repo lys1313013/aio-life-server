@@ -33,10 +33,29 @@
 
 - [V20261116_01__goal_sleep_query_minute_fields.sql](migrations/V20261116_01__goal_sleep_query_minute_fields.sql)：将已保存的旧标准休息天数查询改为 `startMinute/endMinute`，保留变量和进度快照，递增修订号以拒绝在途旧结果；不修改其他自定义查询。
 
-本次按明确要求同步修改历史初始脚本：新库不再创建上述四列；已有库仍保留可执行的迁移。历史校验和调整需先备份并完成实际数据、结构迁移，再执行 `flyway:repair`；`repair` 本身不迁移业务数据。
+- [V20261116_03__password_vault_username_comment.sql](migrations/V20261116_03__password_vault_username_comment.sql)：把密码库账号明确为明文存储，仅更新表和列注释，不改结构、数据与回填。
+
+- [V20261116_04__drop_sys_dict_data_dict_type.sql](migrations/V20261116_04__drop_sys_dict_data_dict_type.sql)：删除字典项中重复保存的所属类型列，类型统一由 `dict_id` 关联 `sys_dict_type` 得出，保留字典项与关联。
+
+- [V20261116_05__integrity_constraints_and_dict_flags.sql](migrations/V20261116_05__integrity_constraints_and_dict_flags.sql)：补齐通知投递、设备与衣物采集来源、用户快捷导航和二级锁菜单的唯一约束，存储对象唯一键改为只约束有效对象；把有默认值的状态、排序列改为必填；字典默认/只读标记由 `char(1)` 的 `Y/N` 改为 `smallint` 的 `1/0`。
+
+- [V20261116_07__goal_honor_tags_jsonb.sql](migrations/V20261116_07__goal_honor_tags_jsonb.sql)：把 `goal.tags`、`honor_record.tags` 由 `varchar` 改为 `jsonb`，与 `milestone.tags` 一致；历史空串转 NULL，合法数组原样保留，其余旧文本包成单元素数组。
+
+- [V20261116_08__rename_wardrobe_purchase_price.sql](migrations/V20261116_08__rename_wardrobe_purchase_price.sql)：把衣柜衣物 `price` 更名为 `purchase_price`，与设备购入价及接口 `purchasePrice` 统一，只改列名与注释。
+
+- [V20261116_09__unify_preset_owner.sql](migrations/V20261116_09__unify_preset_owner.sql)：公共预设统一用 `user_id IS NULL` 表达，把时迹分类与用户字典的 0 号预设改为 NULL，新增归属检查与预设索引；衣柜分类删除冗余的 `category_type`。
+
+本次按明确要求同步修改历史初始脚本：新库不再创建上述四列；已有库仍保留可执行的迁移。另按明确要求不为 B 站视频封面新增增量脚本：`b_video.cover_file_id` 已直接在目标库迁移并从初始脚本移除，新库改由 `uk_file_b_video_cover` 约束 `file.biz_type='b_video_cover'` 的单封面关联；执行与校验记录见[数据库初始化与验证](../docs/数据库初始化与验证.md)。历史校验和调整需先备份并完成实际数据、结构迁移，再执行 `flyway:repair`；`repair` 本身不迁移业务数据。
 
 新库先用独立 Flyway 入口迁移，再启动应用；应用启动不自动建表或导入种子。后续结构、菜单和数据变更新增更高版本 `V`，不改写已执行文件。
 
 ## 公共来源与后续维护
 
 `reference/banks/` 等目录保存公共来源快照与许可，不是可执行脚本。生成器只输出待审阅草稿，不覆盖已执行迁移。后续 SQL 按同类合并、异类分开维护，并遵守 Flyway 版本不可改写的约定。
+
+## 附件四表切换
+
+- [V20261116_10__prepare_attachment_objects.sql](migrations/V20261116_10__prepare_attachment_objects.sql)：已有库准备列与图片尺寸；补齐仍保留视频封面指针的升级路径。
+- [V20261116_11__attachment_sources_and_jobs.sql](migrations/V20261116_11__attachment_sources_and_jobs.sql)：切换 `attachment/external_resource/import_job/storage_object`，成功来源持续复用，删除文件重复元数据及视频来源/状态/版本列。
+
+已有库停写并先迁移到 `20261116.10`，执行 `tools/attachments/prepare.py --stopped-writes`，完成真实字节校验后再继续迁移。空库可直接 migrate；完整说明见[附件四表升级](../docs/数据库初始化与验证.md#附件四表升级)。本次未执行实际环境升级。
