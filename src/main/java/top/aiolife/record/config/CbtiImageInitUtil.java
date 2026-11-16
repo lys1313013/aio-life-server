@@ -9,10 +9,12 @@ import org.springframework.util.StringUtils;
 import top.aiolife.config.CbtiConfig;
 import top.aiolife.config.MinioConfig;
 import top.aiolife.core.util.MinioUtil;
+import top.aiolife.core.util.FileContentPolicy;
 import top.aiolife.record.mapper.ICbtiPersonalityMapper;
 import top.aiolife.record.pojo.entity.CbtiPersonalityEntity;
 
 import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -80,8 +82,9 @@ public class CbtiImageInitUtil {
         try (var lease = objectLock.acquire(bucketName, imageObject);
              InputStream inputStream = Files.newInputStream(filePath)) {
             if (minioUtil.objectExists(bucketName, imageObject)) return;
-            long size = Files.size(filePath);
-            minioUtil.putObject(bucketName, imageObject, inputStream, size, "image/png");
+            byte[] bytes = inputStream.readNBytes(FileContentPolicy.MAX_IMAGE_BYTES + 1);
+            var image = FileContentPolicy.requireImage(bytes);
+            minioUtil.putObject(bucketName, imageObject, new ByteArrayInputStream(bytes), bytes.length, image.contentType());
             log.info("CBTI 图片上传成功: {}/{}", bucketName, imageObject);
         } catch (Exception e) {
             log.warn("CBTI 图片上传失败: bucket={}, object={}", bucketName, imageObject, e);

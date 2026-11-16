@@ -37,7 +37,7 @@ public class CbtiImageController {
                 : StringUtils.hasText(minioConfig.getBucketName()) ? minioConfig.getBucketName() : "aiolife";
         // 二进制响应已无法走统一 JSON 异常格式，读取失败直接返回 404。
         try (var input = minio.getFile(bucket, key)) {
-            FileContentPolicy.writeResponse(input, response, key, false);
+            FileContentPolicy.writeResponse(input, response, key, false, minio.getContentType(bucket, key));
         } catch (Exception exception) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         }

@@ -6,6 +6,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -25,6 +27,7 @@ import top.aiolife.core.exception.ApiException;
 import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.core.query.QueryOrder;
 import top.aiolife.core.util.MinioUtil;
+import top.aiolife.core.util.FileContentPolicy;
 import top.aiolife.record.config.CbtiImageInitUtil;
 import top.aiolife.record.mapper.ICbtiPersonalityMapper;
 import top.aiolife.record.mapper.ICbtiResultMapper;
@@ -334,10 +337,8 @@ public class CbtiServiceImpl implements ICbtiService {
         if (file == null || file.isEmpty()) {
             throw new ApiException(ResponseCodeConst.PARAM_FAIL, "文件不能为空");
         }
-        String contentType = file.getContentType();
-        if (!StringUtils.hasText(contentType) || !contentType.startsWith("image/")) {
-            throw new ApiException(ResponseCodeConst.PARAM_FAIL, "仅支持图片文件");
-        }
+        if (file.getSize() > FileContentPolicy.MAX_IMAGE_BYTES)
+            throw new ApiException(ResponseCodeConst.PARAM_FAIL, "图片不能超过10MB");
 
         String normalizedCode = normalizeCode(code);
         CbtiPersonalityEntity exist = getPersonalityByCode(normalizedCode);
@@ -345,14 +346,20 @@ public class CbtiServiceImpl implements ICbtiService {
             throw new ApiException(ResponseCodeConst.PARAM_FAIL, "人格不存在");
         }
 
-        String ext = detectExt(file.getOriginalFilename(), contentType);
+        byte[] bytes;
+        try (var input = file.getInputStream()) {
+            bytes = input.readNBytes(FileContentPolicy.MAX_IMAGE_BYTES + 1);
+        } catch (IOException e) {
+            throw new ApiException(ResponseCodeConst.PARAM_FAIL, "图片无法读取");
+        }
+        var image = FileContentPolicy.requireImage(bytes);
         String objectPrefix = normalizePrefix(cbtiConfig.getObjectPrefix());
-        String objectName = objectPrefix + normalizedCode + "." + ext;
+        String objectName = objectPrefix + normalizedCode + "." + image.extension();
         String bucketName = resolveBucketName();
 
         // 本方法无外层事务，Mapper 更新返回前已提交；锁覆盖对象写入与引用更新。
         try (var lease = objectLock.acquire(bucketName, objectName)) {
-            minioUtil.uploadFile(bucketName, file, objectName);
+            minioUtil.putObject(bucketName, objectName, new ByteArrayInputStream(bytes), bytes.length, image.contentType());
             exist.setImageObject(objectName);
             exist.fillUpdateCommonField(userId);
             cbtiPersonalityMapper.updateById(exist);
@@ -562,28 +569,6 @@ public class CbtiServiceImpl implements ICbtiService {
 
     private String buildPreviewUrl(String objectName) {
         return serveBaseUrl + "/cbti/images/" + normalizeObjectName(objectName);
-    }
-
-    private String detectExt(String filename, String contentType) {
-        if (StringUtils.hasText(filename) && filename.contains(".")) {
-            String ext = filename.substring(filename.lastIndexOf('.') + 1).trim().toLowerCase();
-            if (StringUtils.hasText(ext)) {
-                return ext;
-            }
-        }
-        if (Objects.equals("image/jpeg", contentType)) {
-            return "jpg";
-        }
-        if (Objects.equals("image/png", contentType)) {
-            return "png";
-        }
-        if (Objects.equals("image/gif", contentType)) {
-            return "gif";
-        }
-        if (Objects.equals("image/webp", contentType)) {
-            return "webp";
-        }
-        return "png";
     }
 
     private boolean isCoffeeAddict(Map<String, Object> hiddenAnswers) {

@@ -115,6 +115,11 @@ public class MinioUtil {
         );
     }
 
+    /** 读取由服务端上传入口确认并写入的对象类型。 */
+    public String getContentType(String bucketName, String objectName) throws Exception {
+        return minioClient.statObject(StatObjectArgs.builder().bucket(bucketName).object(objectName).build()).contentType();
+    }
+
     /**
      * 生成唯一的文件名
      * @param originalFilename 原始文件名

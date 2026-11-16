@@ -163,10 +163,10 @@ class StorageUploadCoordinationTest extends top.aiolife.support.AttachmentDataba
         when(mapper.updateById(any(CbtiPersonalityEntity.class))).thenAnswer(call ->
                 jdbc.update("UPDATE cbti_personality SET image_object=? WHERE id=7", call.getArgument(0, CbtiPersonalityEntity.class).getImageObject()));
         doAnswer(call -> {
-            key.set(call.getArgument(2)); written.countDown();
+            key.set(call.getArgument(1)); written.countDown();
             if (!finish.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("test timeout");
             return key.get();
-        }).when(uploads).uploadFile(anyString(), any(), anyString());
+        }).when(uploads).putObject(anyString(), anyString(), any(), anyLong(), eq("image/png"));
         var cbtiService = new top.aiolife.record.service.impl.CbtiServiceImpl(mapper,
                 mock(top.aiolife.record.mapper.ICbtiResultMapper.class), new ObjectMapper(),
                 uploads, config, cbti, mock(CbtiImageInitUtil.class), locks);
@@ -174,7 +174,7 @@ class StorageUploadCoordinationTest extends top.aiolife.support.AttachmentDataba
         var result = executor.submit(() -> {
             try (var login = mockStatic(StpUtil.class)) {
                 login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
-                return controller.uploadImage("7", "TEST", new MockMultipartFile("file", "test.png", "image/png", new byte[]{1}));
+                return controller.uploadImage("7", "TEST", new MockMultipartFile("file", "fake.html", "text/html", ImageFixtures.image("png")));
             }
         });
         assertTrue(written.await(10, TimeUnit.SECONDS));
