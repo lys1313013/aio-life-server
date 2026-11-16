@@ -27,12 +27,12 @@ class BankCardCoverPaginationTest {
         jdbc.execute("CREATE TABLE bank_card_cover_template(id BIGINT PRIMARY KEY,name VARCHAR(100),bank_id BIGINT,card_type VARCHAR(10),source_url VARCHAR(1000),is_enabled INT,sort_order INT,is_deleted INT)");
         jdbc.execute("CREATE TABLE sys_dict_data(dict_code BIGINT PRIMARY KEY,dict_label VARCHAR(100))");
         jdbc.execute("INSERT INTO sys_dict_data VALUES(20,'测试银行')");
-        jdbc.execute("CREATE TABLE file(id VARCHAR(32),biz_id BIGINT,biz_type VARCHAR(50),is_deleted INT)");
+        jdbc.execute("CREATE TABLE attachment(id VARCHAR(32),biz_id BIGINT,biz_type VARCHAR(50),is_deleted INT)");
         jdbc.execute("CREATE TABLE bank_card(cover_template_id BIGINT,is_deleted INT)");
         var config=new MybatisConfiguration();config.addMapper(BankCardCoverTemplateMapper.class);
         var factory=new MybatisSqlSessionFactoryBean();factory.setDataSource(ds);factory.setConfiguration(config);
         var mapper=new SqlSessionTemplate(factory.getObject()).getMapper(BankCardCoverTemplateMapper.class);
-        service=new BankCardCoverTemplateService(mapper,null,null,null,null,new MinioUtil());
+        service=new BankCardCoverTemplateService(mapper,null,null,null,null,new MinioUtil(),org.mockito.Mockito.mock(top.aiolife.record.mapper.IFileMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class));
     }
     @Test void 公共卡面按页查询并在数据库筛选和排序() {
         for (int i=1; i<=28; i++) {

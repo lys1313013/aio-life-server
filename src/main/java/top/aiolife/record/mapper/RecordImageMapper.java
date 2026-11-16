@@ -12,10 +12,10 @@ public interface RecordImageMapper {
         <script>
         SELECT id FROM
         <choose>
-          <when test="bizType == 'device'">device</when>
-          <when test="bizType == 'movie'">movie</when>
-          <when test="bizType == 'read'">read_record</when>
-          <when test="bizType == 'wardrobe_item'">wardrobe_item</when>
+          <when test="bizType == 'device_cover'">device</when>
+          <when test="bizType == 'movie_cover'">movie</when>
+          <when test="bizType == 'read_cover'">read_record</when>
+          <when test="bizType == 'wardrobe_item_cover'">wardrobe_item</when>
         </choose>
         WHERE id=#{bizId} AND user_id=#{userId} AND is_deleted=0 FOR UPDATE
         </script>

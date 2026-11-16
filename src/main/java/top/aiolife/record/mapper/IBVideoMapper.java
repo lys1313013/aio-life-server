@@ -39,13 +39,12 @@ public interface IBVideoMapper extends BaseMapper<BVideoEntity> {
      */
     @Insert("""
             INSERT INTO b_video (
-              id, cover_file_id, cover_state, cover_version, title, url, cover, duration_seconds,
+              id, title, url, duration_seconds,
               watched_duration_seconds, episodes, current_episode, status, last_watched, notes,
               bvid, aid, description, owner_name, pages_info, user_id,
               create_user, create_time, update_user, update_time, is_deleted
             ) VALUES (
-              #{id}, #{coverFileId}, COALESCE(#{coverState}, 'NONE'), COALESCE(#{coverVersion}, 0),
-              #{title}, #{url}, #{cover}, #{durationSeconds},
+              #{id}, #{title}, #{url}, #{durationSeconds},
               COALESCE(#{watchedDurationSeconds}, 0), #{episodes}, #{currentEpisode},
               COALESCE(#{status.code}, 'in_progress'), #{lastWatched}, #{notes},
               #{bvid}, #{aid}, #{description}, #{ownerName},
@@ -61,8 +60,8 @@ public interface IBVideoMapper extends BaseMapper<BVideoEntity> {
     BVideoEntity lockOwned(long id, long userId);
 
 
-    @Select("SELECT COUNT(*) FROM b_video WHERE id=#{videoId} AND user_id=#{userId} AND cover_file_id=#{fileId} AND is_deleted=0")
-    long countCoverReference(long videoId, long userId, String fileId);
+    @Select("SELECT COUNT(*) FROM b_video WHERE id=#{videoId} AND user_id=#{userId} AND is_deleted=0")
+    long countOwnedVideo(long videoId, long userId);
 
     /**
      * 按业务状态顺序分页查询

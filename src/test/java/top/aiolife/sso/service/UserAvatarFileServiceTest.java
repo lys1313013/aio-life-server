@@ -17,23 +17,24 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 class UserAvatarFileServiceTest {
-    static final String ID = "0123456789abcdef0123456789abcdef";
+    static final String ID = "1234567890123456789";
     private final IFileMapper files = mock(IFileMapper.class);
     private final MinioUtil minio = new MinioUtil();
-    private final UserAvatarFileService avatars = new UserAvatarFileService(files, minio);
+    private final UserAvatarFileService avatars = new UserAvatarFileService(files, minio,org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class));
 
     private FileEntity image() {
-        var f = new FileEntity(); f.setId(ID); f.setCreateUser(42L);
+        var f = new FileEntity(); f.setId(ID); f.setUserId(42L); f.setCreateUser(42L); f.setStorageObjectId(11L); f.setHashValue("a".repeat(64));
         f.setIsDeleted(0); f.setIsPublic(1); f.setBizType("avatar"); f.setFileType("image/png");
         return f;
     }
 
     @Test void 当前头像按业务关联读取并以当前配置生成预览地址() {
         when(files.selectOne(any())).thenReturn(image());
+        when(files.selectWithObject(ID)).thenReturn(image());
         ReflectionTestUtils.setField(minio, "serveBaseUrl", "https://example.test/api/");
-        assertEquals(new UserAvatarFileService.Avatar(ID, "https://example.test/api/public/images/" + ID + ".png"), avatars.current(42L));
+        assertEquals(new UserAvatarFileService.Avatar(ID, "https://example.test/api/f/" + "a".repeat(64) + ".png"), avatars.current(42L));
         ReflectionTestUtils.setField(minio, "serveBaseUrl", "https://new.example.test/api");
-        assertEquals("https://new.example.test/api/public/images/" + ID + ".png", avatars.current(42L).url());
+        assertEquals("https://new.example.test/api/f/" + "a".repeat(64) + ".png", avatars.current(42L).url());
     }
 
     @Test void 无绑定时返回空头像() {
@@ -48,13 +49,13 @@ class UserAvatarFileServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"missing", "deleted", "other-owner", "private", "other-biz", "not-image", "bound-other"})
+    @ValueSource(strings = {"missing", "deleted", "other-owner", "other-biz", "not-image", "bound-other"})
     void 不允许绑定不可用或非本人头像(String scenario) {
         var f = image();
         switch (scenario) {
             case "missing" -> f = null;
             case "deleted" -> f.setIsDeleted(1);
-            case "other-owner" -> f.setCreateUser(99L);
+            case "other-owner" -> f.setUserId(99L);
             case "private" -> f.setIsPublic(0);
             case "other-biz" -> f.setBizType("device");
             case "not-image" -> f.setFileType("text/html");
@@ -65,7 +66,7 @@ class UserAvatarFileServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "123", "https://example.test/avatar.png", "../avatar.png"})
+    @ValueSource(strings = {"", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "https://example.test/avatar.png", "../avatar.png"})
     void 不接受旧地址或不合法文件ID(String value) {
         assertThrows(IllegalArgumentException.class, () -> avatars.validateForBinding(42L, value));
         verifyNoInteractions(files);

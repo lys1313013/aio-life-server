@@ -20,10 +20,10 @@ import java.io.IOException;
 @RestController
 @RequiredArgsConstructor
 public class PublicImageController {
-    public static final String PATH = "/public/images/*";
+    public static final String PATH = "/f/*";
     private final PublicImageService publicImageService;
 
-    @GetMapping("/public/images/{id:[a-fA-F0-9]{32}}.{extension:png|jpg|webp|gif|bmp}")
+    @GetMapping("/f/{id:[a-f0-9]{64}}.{extension:png|jpg|webp|gif|bmp}")
     @Operation(summary = "读取公共图片", description = "匿名读取已发布图片。")
     @ApiResponse(responseCode = "200", description = "图片二进制内容，不是 ApiResponse JSON",
             content = @Content(mediaType = "image/*",

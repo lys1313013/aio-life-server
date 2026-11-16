@@ -10,17 +10,17 @@ import java.util.Arrays;
 @Getter
 public enum FileBizType {
 
-    BANK_CARD_TEMPLATE_COVER("bank_card_template_cover", "system/bank-card-covers", FileVisibility.PRIVATE),
-    BANK_CARD_COVER("bank_card_cover", "bank-card", FileVisibility.PRIVATE),
+    BANK_CARD_TEMPLATE_COVER("bank_card_template_face", "system/bank-card-covers", FileVisibility.PRIVATE),
+    BANK_CARD_COVER("bank_card_face", "bank-card", FileVisibility.PRIVATE),
     AVATAR("avatar", "avatar", FileVisibility.PUBLIC),
-    WARDROBE_ITEM("wardrobe_item", "wardrobe", FileVisibility.PRIVATE),
+    WARDROBE_ITEM("wardrobe_item_cover", "wardrobe", FileVisibility.PRIVATE),
     FEEDBACK("feedback", "feedback", FileVisibility.PRIVATE),
     FEEDBACK_COMMENT("feedback_comment", "feedback", FileVisibility.PRIVATE),
-    MOVIE("movie", "movie", FileVisibility.PRIVATE),
+    MOVIE("movie_cover", "movie", FileVisibility.PRIVATE),
     HONOR_RECORD("honor_record", "honor", FileVisibility.PRIVATE),
-    READ_RECORD("read", "read", FileVisibility.PRIVATE),
+    READ_RECORD("read_cover", "read", FileVisibility.PRIVATE),
     EVENT_RECORD("event_record", "event-record", FileVisibility.PRIVATE),
-    DEVICE("device", "device", FileVisibility.PRIVATE);
+    DEVICE("device_cover", "device", FileVisibility.PRIVATE);
 
     private final String bizType;
     private final String directory;

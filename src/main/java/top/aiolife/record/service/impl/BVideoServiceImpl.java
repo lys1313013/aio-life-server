@@ -57,6 +57,7 @@ public class BVideoServiceImpl extends ServiceImpl<IBVideoMapper, BVideoEntity> 
         Page<BVideoEntity> pageRequest = new Page<>(page, pageSize);
         IPage<BVideoEntity> result = baseMapper.selectPageWithStatusOrder(
                 pageRequest, wrapper, STATUS_ORDER_CODES);
+        videoCovers.fillCoverFiles(userId, result.getRecords());
         return PageResp.of(result.getRecords(), result.getTotal());
     }
 
@@ -68,6 +69,7 @@ public class BVideoServiceImpl extends ServiceImpl<IBVideoMapper, BVideoEntity> 
         if (entity == null) {
             throw new IllegalArgumentException("视频不存在或无权访问");
         }
+        videoCovers.fillCoverFiles(userId, List.of(entity));
         return entity;
     }
 
@@ -77,7 +79,11 @@ public class BVideoServiceImpl extends ServiceImpl<IBVideoMapper, BVideoEntity> 
         if (bvid == null || !bvid.matches("BV[0-9A-Za-z]{10}")) {
             throw new ApiException(ResponseCodeConst.PARAM_FAIL, "BV 号格式不正确");
         }
-        return baseMapper.findOwnedByBvid(userId, bvid);
+        BVideoEntity video = baseMapper.findOwnedByBvid(userId, bvid);
+        if (video != null) {
+            videoCovers.fillCoverFiles(userId, List.of(video));
+        }
+        return video;
     }
 
     @Override
@@ -125,7 +131,7 @@ public class BVideoServiceImpl extends ServiceImpl<IBVideoMapper, BVideoEntity> 
         if (entity.getCover() != null) {
             videoCovers.enqueue(id, userId, entity.getCover(), false);
         }
-        entity.setCover(null); // 封面来源及版本由导入服务在同一事务内维护。
+        entity.setCover(null); // 来源在附件/任务中维护，业务实体不持久化。
         entity.setId(id);
         entity.setUserId(userId);
         entity.setUpdateUser(userId);
@@ -143,6 +149,7 @@ public class BVideoServiceImpl extends ServiceImpl<IBVideoMapper, BVideoEntity> 
         wrapper.eq(BVideoEntity::getId, id);
         wrapper.eq(BVideoEntity::getUserId, userId);
 
+        videoCovers.delete(id, userId);
         boolean deleted = baseMapper.delete(wrapper) > 0;
         if (!deleted) {
             throw new IllegalArgumentException("无权限删除该数据或数据不存在");
@@ -210,6 +217,7 @@ public class BVideoServiceImpl extends ServiceImpl<IBVideoMapper, BVideoEntity> 
         }
         var rows = baseMapper.selectList(new LambdaQueryWrapper<BVideoEntity>()
                 .eq(BVideoEntity::getUserId, userId).in(BVideoEntity::getId, ids));
+        videoCovers.fillCoverFiles(userId, rows);
         return rows.stream().map(v -> new BVideoCoverVO(
                 v.getId(), v.getCoverFileId(), v.getCoverState())).toList();
     }

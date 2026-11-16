@@ -35,7 +35,7 @@ class StorageDeleteTest {
         var ds = new JdbcDataSource();
         ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds);
-        jdbc.execute("CREATE TABLE file(id VARCHAR(32), file_name VARCHAR(1024), create_user BIGINT, biz_type VARCHAR(50), biz_id BIGINT, is_deleted INT)");
+        top.aiolife.support.AttachmentTestFixtures.create(jdbc);
         jdbc.execute("CREATE TABLE cbti_personality(id BIGINT, image_object VARCHAR(1024), is_deleted INT)");
         var config = new MinioConfig();
         config.setBucketName("business");
@@ -51,7 +51,8 @@ class StorageDeleteTest {
     }
 
     void record(String name, Long owner, String type, Long bizId, int deleted) {
-        jdbc.update("INSERT INTO file VALUES(?,?,?,?,?,?)", "file-reference", name, owner, type, bizId, deleted);
+        jdbc.update("UPDATE storage_object SET object_key=? WHERE id=11",name);
+        jdbc.update("INSERT INTO attachment(id,file_name,user_id,biz_type,biz_id,is_deleted) VALUES(?,?,?,?,?,?)", "file-reference",name,owner,type,bizId,deleted);
     }
 
     @Test
@@ -83,17 +84,17 @@ class StorageDeleteTest {
         verify(minio).removeObject(args.capture());
         assertEquals("business", args.getValue().bucket());
         assertEquals("中文 +#OTHER.png", args.getValue().object());
-        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM file", Integer.class));
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM attachment", Integer.class));
     }
 
     @Test
     void 不会因同名但不同属主业务或桶的文件误判关联() throws Exception {
         record("8/honor/a.jpg", 8L, "honor_record", 99L, 0);
         service.delete("7/honor/a.jpg");
-        jdbc.update("DELETE FROM file");
+        jdbc.update("DELETE FROM attachment");
         record("7/movie/a.jpg", 7L, "movie", 99L, 0);
         service.delete("7/honor/a.jpg");
-        jdbc.update("DELETE FROM file");
+        jdbc.update("DELETE FROM attachment");
         record("7/other/a.jpg", 7L, "honor_record", 99L, 0);
         service.delete("7/honor/a.jpg");
         verify(minio, times(3)).removeObject(any());
@@ -101,7 +102,7 @@ class StorageDeleteTest {
 
     @Test
     void 查库失败时拒绝继续删除() {
-        jdbc.execute("DROP TABLE file");
+        jdbc.execute("DROP TABLE attachment");
         assertThrows(DataAccessException.class, () -> service.delete("orphan.jpg"));
         verifyNoInteractions(minio);
     }

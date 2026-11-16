@@ -36,20 +36,13 @@ public class AccountErasureService {
         if (mapper.runningExports(userId, LocalDateTime.now(ZoneId.of("Asia/Shanghai"))) > 0)
             throw new IllegalStateException("等待导出任务停止");
         for (String object : mapper.exportObjects(userId)) exports.delete(object);
-        var objects = mapper.storedObjects(userId);
-        for (var object : objects) {
-            locks.holdUntilTransactionCompletion(object.bucket(), object.objectKey());
-            if (mapper.otherReferences(userId, object.id(), object.objectKey()) == 0)
-                minio.removeObject(object.bucket(), object.objectKey());
-        }
-        for (String key : mapper.privateObjects(userId)) {
-            locks.holdUntilTransactionCompletion(config.getBucketName(), key);
-            if (mapper.otherReferences(userId, null, key) == 0) minio.removeObject(config.getBucketName(), key);
-        }
+        // 字节由统一回收器在提交后清理，事务回滚不会破坏仍然有效的附件。
         var repository = people.getIfAvailable();
         if (repository != null) repository.eraseByUserId(userId);
         mapper.purgePersonalRecords(userId, user.getEmail());
-        for (var object : objects) mapper.purgeStoredObject(object.id());
+        mapper.scrubObjectAudit(userId);
+        mapper.scrubSourceAudit(userId);
+        mapper.scrubAttachmentAudit(userId);
         if (mapper.finish(userId) != 1) throw new IllegalStateException("注销清理状态已变化");
         categoryCache.evictAfterCommit(userId);
         for (String name : caches.getCacheNames()) {

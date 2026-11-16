@@ -52,25 +52,18 @@ class HonorAttachmentPersistenceTest {
                     create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP,
                     is_deleted INT DEFAULT 0)
                 """);
-        jdbc.execute("""
-                CREATE TABLE file (
-                    storage_object_id BIGINT,
-                    id VARCHAR(32) PRIMARY KEY, biz_type VARCHAR(50), biz_id BIGINT,
-                    file_name VARCHAR(255), file_size BIGINT, file_type VARCHAR(100), hash_value VARCHAR(255),
-                    create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP,
-                    is_deleted INT DEFAULT 0, is_public INT DEFAULT 0)
-                """);
+        top.aiolife.support.AttachmentTestFixtures.create(jdbc);
         var configuration = new MybatisConfiguration();
         configuration.setMapUnderscoreToCamelCase(true);
         configuration.addMapper(IHonorRecordMapper.class);
         configuration.addMapper(IFileMapper.class);
+        configuration.addMapper(top.aiolife.system.mapper.StorageObjectMapper.class);
         var factory = new MybatisSqlSessionFactoryBean();
         factory.setDataSource(source);
         factory.setConfiguration(configuration);
         var session = new SqlSessionTemplate(factory.getObject());
         var honorMapper = session.getMapper(IHonorRecordMapper.class);
-        var files = new FileServiceImpl(mock(MinioUtil.class), mock(MinioConfig.class), mock(StorageObjectLock.class),
-                new DoubanCoverUrlPolicy("doubanio.com"));
+        var files = new FileServiceImpl(mock(MinioUtil.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class),session.getMapper(top.aiolife.system.mapper.StorageObjectMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.ExternalResourceService.class));
         ReflectionTestUtils.setField(files, "baseMapper", session.getMapper(IFileMapper.class));
         var honors = new HonorRecordServiceImpl(files);
         ReflectionTestUtils.setField(honors, "baseMapper", honorMapper);
@@ -98,7 +91,7 @@ class HonorAttachmentPersistenceTest {
         save(List.of("second"));
         assertEquals(List.of("second"), attachmentIds());
         assertNull(bizId("first"));
-        assertEquals(0, jdbc.queryForObject("SELECT is_deleted FROM file WHERE id = 'first'", Integer.class));
+        assertEquals(0, jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE id = 'first'", Integer.class));
     }
 
     @Test
@@ -131,7 +124,7 @@ class HonorAttachmentPersistenceTest {
         addFile("other-user", 2L, "honor_record", 100L);
         addFile("other-type", 1L, "device", 100L);
         addFile("deleted", 1L, "honor_record", 100L);
-        jdbc.update("UPDATE file SET is_deleted = 1 WHERE id = 'deleted'");
+        jdbc.update("UPDATE attachment SET is_deleted = 1 WHERE id = 'deleted'");
         save(List.of());
         assertNull(bizId("first"));
         assertEquals(101L, bizId("other-honor"));
@@ -150,7 +143,7 @@ class HonorAttachmentPersistenceTest {
 
     @Test
     void update_绑定失败时回滚荣誉修改和附件解绑() {
-        addFile("bank-cover", 1L, "bank_card_cover", null);
+        addFile("bank-cover", 1L, "bank_card_face", null);
         assertThrows(IllegalArgumentException.class, () -> save(List.of("bank-cover")));
         assertEquals(List.of("first", "second"), attachmentIds());
         assertEquals("原始荣誉", jdbc.queryForObject("SELECT title FROM honor_record WHERE id = 100", String.class));
@@ -170,11 +163,11 @@ class HonorAttachmentPersistenceTest {
     }
 
     private Long bizId(String fileId) {
-        return jdbc.queryForObject("SELECT biz_id FROM file WHERE id = ?", Long.class, fileId);
+        return jdbc.queryForObject("SELECT biz_id FROM attachment WHERE id = ?", Long.class, fileId);
     }
 
     private void addFile(String id, Long userId, String bizType, Long bizId) {
-        jdbc.update("INSERT INTO file (id, create_user, biz_type, biz_id) VALUES (?, ?, ?, ?)",
-                id, userId, bizType, bizId);
+        jdbc.update("INSERT INTO attachment (id, create_user, user_id, biz_type, biz_id) VALUES (?, ?, ?, ?, ?)",
+                id, userId, userId, bizType, bizId);
     }
 }

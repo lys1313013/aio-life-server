@@ -145,10 +145,12 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteRecord(Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
         ReadRecordEntity entity = this.getById(id);
         if (entity != null && entity.getUserId().equals(userId)) {
+            images.delete(userId,FileBizType.READ_RECORD,id);
             this.removeById(id);
         }
     }

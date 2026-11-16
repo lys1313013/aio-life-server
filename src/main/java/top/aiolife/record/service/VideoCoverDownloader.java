@@ -91,10 +91,16 @@ public class VideoCoverDownloader {
     }
 
     public byte[] download(String source) {
-        String url = normalize(source);
+        return downloadValidated(normalize(source), false);
+    }
+
+    /** 调用方必须先通过豆瓣域名和路径校验，连接仍使用已校验的公网DNS。 */
+    public byte[] downloadDouban(String validatedUrl) { return downloadValidated(validatedUrl, true); }
+
+    private byte[] downloadValidated(String url, boolean douban) {
         try (var response = client.newCall(new Request.Builder().url(url)
                 .header("User-Agent", "AIO-Life/1.0")
-                .header("Accept", "image/*").build()).execute()) {
+                .header("Accept", "image/*").header("Referer", douban ? "https://movie.douban.com/" : "https://www.bilibili.com/").build()).execute()) {
             if (response.code() != 200 || response.body() == null)
                 throw new IllegalStateException("IMAGE_HTTP_" + response.code());
             if (response.body().contentLength() > FileContentPolicy.MAX_IMAGE_BYTES)

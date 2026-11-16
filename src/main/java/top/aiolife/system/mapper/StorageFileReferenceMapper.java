@@ -8,9 +8,9 @@ import java.util.List;
 public interface StorageFileReferenceMapper {
     /** 显式 SQL 保留软删除关联；普通 BaseMapper 查询会自动过滤 @TableLogic 字段。 */
     @Select("""
-        SELECT id, file_name AS name, create_user AS owner, biz_type, biz_id, is_deleted AS deleted
-        FROM file
-        WHERE file_name = #{key}
+        SELECT a.id,a.file_name AS name,a.user_id AS owner,a.biz_type,a.biz_id,a.is_deleted AS deleted
+        FROM attachment a JOIN storage_object o ON o.id=a.storage_object_id
+        WHERE o.object_key=#{key}
         """)
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
     List<StorageFileReference> selectReferencesIncludingDeleted(@Param("key") String key);

@@ -189,6 +189,7 @@ public class DeviceExpenseService {
     public boolean deleteDevice(long userId, long deviceId) {
         if (devices.lockOwned(userId, deviceId) == null) return false;
         clearLinks(userId, null, deviceId);
+        images.delete(userId,FileBizType.DEVICE,deviceId);
         return devices.delete(new LambdaQueryWrapper<DeviceEntity>()
                 .eq(DeviceEntity::getUserId, userId).eq(DeviceEntity::getId, deviceId)) > 0;
     }

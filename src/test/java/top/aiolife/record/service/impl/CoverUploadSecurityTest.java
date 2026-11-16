@@ -39,65 +39,18 @@ class CoverUploadSecurityTest {
         TransactionSynchronizationManager.clearSynchronization();
     }
 
-    private final MinioUtil minio = mock(MinioUtil.class);
-    private final FileServiceImpl files = new FileServiceImpl(minio, new MinioConfig(),
-            mock(StorageObjectLock.class), new DoubanCoverUrlPolicy("doubanio.com")) {
-        @Override
-        public boolean save(FileEntity entity) {
-            entity.setId("cover-file-id");
-            return true;
-        }
-    };
-
     @ParameterizedTest
-    @EnumSource(value = FileBizType.class, names = {"MOVIE", "READ_RECORD"})
-    void uploadFromUrl_非法来源在发出HTTP前拒绝(FileBizType bizType) {
-        try (var http = mockStatic(HttpRequest.class)) {
-            assertThrows(IllegalArgumentException.class,
-                    () -> files.uploadFromUrl("https://127.0.0.1/cover.jpg", bizType));
-            http.verifyNoInteractions();
-            verifyNoInteractions(minio);
-        }
-    }
-
-    @Test
-    void uploadFromUrl_拒绝重定向且关闭响应() {
-        var request = mock(HttpRequest.class, RETURNS_SELF);
-        when(request.header(anyString(), anyString())).thenReturn(request);
-        var response = mock(HttpResponse.class);
-        when(request.executeAsync()).thenReturn(response);
-        when(response.getStatus()).thenReturn(302);
-        try (var http = mockStatic(HttpRequest.class); var auth = mockStatic(StpUtil.class)) {
-            http.when(() -> HttpRequest.get(anyString())).thenReturn(request);
-            auth.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
-            assertThrows(IllegalStateException.class,
-                    () -> files.uploadFromUrl("https://img1.doubanio.com/cover.jpg", FileBizType.MOVIE));
-            verify(request).setFollowRedirects(false);
-            verify(response, never()).bodyBytes();
-            verify(response).close();
-            verifyNoInteractions(minio);
-        }
-    }
-
-    @ParameterizedTest
-    @EnumSource(value = FileBizType.class, names = {"MOVIE", "READ_RECORD"})
-    void uploadFromUrl_白名单下载仍保存FileId(FileBizType bizType) throws Exception {
-        var request = mock(HttpRequest.class, RETURNS_SELF);
-        when(request.header(anyString(), anyString())).thenReturn(request);
-        var response = mock(HttpResponse.class);
-        when(request.executeAsync()).thenReturn(response);
-        when(response.getStatus()).thenReturn(200);
-        byte[] content = ImageFixtures.image("jpeg");
-        when(response.bodyStream()).thenReturn(new ByteArrayInputStream(content));
-        try (var http = mockStatic(HttpRequest.class); var auth = mockStatic(StpUtil.class)) {
-            http.when(() -> HttpRequest.get(anyString())).thenReturn(request);
-            auth.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
-            assertEquals("cover-file-id",
-                    files.uploadFromUrl("https://img1.doubanio.com/cover.jpg", bizType).getId());
-            verify(request).setFollowRedirects(false);
-            verify(minio).putObject(eq("aiolife"), anyString(), any(), eq((long) content.length), eq("image/jpeg"));
-            verify(response).close();
-        }
+    @EnumSource(value=FileBizType.class,names={"MOVIE","READ_RECORD"})
+    void 非白名单或不稳定路径在下载之前拒绝(FileBizType type) {
+        var downloader=new top.aiolife.record.service.VideoCoverDownloader();
+        var sources=new top.aiolife.record.service.ExternalResourceService(
+            mock(top.aiolife.record.mapper.ExternalResourceMapper.class),downloader,new DoubanCoverUrlPolicy("doubanio.com"),
+            mock(top.aiolife.record.service.VideoCoverStorage.class),mock(org.springframework.transaction.PlatformTransactionManager.class));
+        for(String url:java.util.List.of("https://127.0.0.1/cover.jpg","https://img.doubanio.com/unknown.jpg","https://img.doubanio.com.evil.test/view/photo/l/public/p1.jpg"))
+            assertThrows(IllegalArgumentException.class,()->sources.identity(url,type));
+        var identity=sources.identity("https://img1.doubanio.com/view/photo/l/public/p123.jpg?signature=x",type);
+        assertEquals("p123",identity.getExternalKey());assertEquals("l",identity.getVariant());
+        assertEquals(type==FileBizType.MOVIE?"movie_poster":"book_cover",identity.getResourceType());
     }
 
     @Test

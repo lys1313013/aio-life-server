@@ -40,8 +40,11 @@ class AccountErasureMapperTest {
                 if (columns.contains("is_deleted")) jdbc.update("UPDATE \"" + table + "\" SET is_deleted=1 WHERE user_id=7");
             }
         }
+        jdbc.execute("ALTER TABLE file RENAME TO attachment");
+        jdbc.execute("ALTER TABLE attachment ADD COLUMN user_id BIGINT");
+        jdbc.execute("CREATE TABLE import_job(id BIGINT,create_user BIGINT,biz_type VARCHAR(50),biz_id BIGINT)");
         jdbc.update("INSERT INTO sys_user(id,username,email,is_deleted,erasure_requested_at) VALUES(7,'fixture','fixture@example.test',0,?)", LocalDateTime.now());
-        jdbc.update("INSERT INTO file(id,create_user,biz_type) VALUES(11,7,'avatar'),(12,8,'avatar'),(13,7,'bank_card_template_cover')");
+        jdbc.update("INSERT INTO attachment(id,user_id,create_user,biz_type) VALUES(11,7,7,'avatar'),(12,8,8,'avatar'),(13,NULL,7,'bank_card_template_face')");
         jdbc.update("INSERT INTO thought_rela_event(id,thought_id,create_user) VALUES(1,1,8),(2,2,8)");
         var config = new Configuration(new Environment("fixture", new JdbcTransactionFactory(), source));
         config.setMapUnderscoreToCamelCase(true); config.addMapper(AccountErasureMapper.class);
@@ -61,7 +64,7 @@ class AccountErasureMapperTest {
                 assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM \"" + table.getKey() + "\" WHERE user_id=8", Long.class), table.getKey());
                 assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM \"" + table.getKey() + "\" WHERE user_id IS NULL", Long.class), table.getKey());
             }
-            assertEquals(2L, jdbc.queryForObject("SELECT COUNT(*) FROM file", Long.class));
+            assertEquals(2L, jdbc.queryForObject("SELECT COUNT(*) FROM attachment", Long.class));
             assertEquals(1L, jdbc.queryForObject("SELECT COUNT(*) FROM thought_rela_event", Long.class));
             assertEquals(1, mapper.finish(7));
         }

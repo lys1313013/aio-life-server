@@ -1,285 +1,126 @@
 package top.aiolife.record.service.impl;
 
-import java.time.LocalDateTime;
-
-import javax.imageio.ImageIO;
-import top.aiolife.core.lock.StorageObjectLock;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import lombok.extern.slf4j.Slf4j;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
+import javax.imageio.ImageIO;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import top.aiolife.config.MinioConfig;
-import top.aiolife.core.util.MinioUtil;
 import top.aiolife.core.util.FileContentPolicy;
+import top.aiolife.core.util.MinioUtil;
 import top.aiolife.record.enums.FileBizType;
 import top.aiolife.record.mapper.IFileMapper;
 import top.aiolife.record.pojo.entity.FileEntity;
 import top.aiolife.record.pojo.vo.FileVO;
+import top.aiolife.record.service.ExternalResourceService;
 import top.aiolife.record.service.IFileService;
-import top.aiolife.record.service.DoubanCoverUrlPolicy;
+import top.aiolife.record.service.VideoCoverStorage;
+import top.aiolife.system.mapper.StorageObjectMapper;
 
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
-
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-@Slf4j
 @Service
-public class FileServiceImpl extends ServiceImpl<IFileMapper, FileEntity> implements IFileService {
-
-    private final MinioUtil minioUtil;
-    private final MinioConfig minioConfig;
-    private final StorageObjectLock objectLock;
-    private final DoubanCoverUrlPolicy coverUrlPolicy;
-
-    public FileServiceImpl(MinioUtil minioUtil, MinioConfig minioConfig, StorageObjectLock objectLock,
-                           DoubanCoverUrlPolicy coverUrlPolicy) {
-        this.minioUtil = minioUtil;
-        this.minioConfig = minioConfig;
-        this.objectLock = objectLock;
-        this.coverUrlPolicy = coverUrlPolicy;
-    }
+@RequiredArgsConstructor
+public class FileServiceImpl extends ServiceImpl<IFileMapper,FileEntity> implements IFileService {
+    private final MinioUtil minio;
+    private final VideoCoverStorage storage;
+    private final StorageObjectMapper objects;
+    private final ExternalResourceService sources;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public FileVO upload(MultipartFile file, FileBizType bizType) {
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("文件不能为空");
-        }
-
-        boolean template = bizType == FileBizType.BANK_CARD_TEMPLATE_COVER;
-        if (template) StpUtil.checkRole("admin");
-        if (file.getSize() > FileContentPolicy.MAX_IMAGE_BYTES) {
-            throw new IllegalArgumentException("文件不能超过10MB");
-        }
-        byte[] uploadBytes;
-        try (var input = file.getInputStream()) {
-            uploadBytes = input.readNBytes(FileContentPolicy.MAX_IMAGE_BYTES + 1);
-        } catch (IOException e) {
-            throw new IllegalArgumentException("文件无法读取", e);
-        }
-        if (uploadBytes.length > FileContentPolicy.MAX_IMAGE_BYTES) {
-            throw new IllegalArgumentException("文件不能超过10MB");
-        }
-        var imageType = switch (bizType) {
-            case AVATAR, WARDROBE_ITEM, MOVIE, READ_RECORD, BANK_CARD_COVER, BANK_CARD_TEMPLATE_COVER ->
-                    FileContentPolicy.requireImage(uploadBytes);
-            default -> FileContentPolicy.detectImage(uploadBytes);
+    @Transactional(rollbackFor=Exception.class)
+    public FileVO upload(MultipartFile file,FileBizType bizType) {
+        if(file==null || file.isEmpty() || file.getSize()>FileContentPolicy.MAX_IMAGE_BYTES)
+            throw new IllegalArgumentException("文件必须为1字节至10MB");
+        byte[] bytes;
+        try(var input=file.getInputStream()) { bytes=input.readNBytes(FileContentPolicy.MAX_IMAGE_BYTES+1); }
+        catch(IOException e) { throw new IllegalArgumentException("文件无法读取",e); }
+        boolean template=bizType==FileBizType.BANK_CARD_TEMPLATE_COVER;
+        if(template) StpUtil.checkRole("admin");
+        var image=switch(bizType) {
+            case AVATAR,WARDROBE_ITEM,MOVIE,READ_RECORD,DEVICE,BANK_CARD_COVER,BANK_CARD_TEMPLATE_COVER -> FileContentPolicy.requireImage(bytes);
+            default -> FileContentPolicy.detectImage(bytes);
         };
-        String validatedContentType = imageType == null ? "application/octet-stream" : imageType.contentType();
-        if (bizType == FileBizType.BANK_CARD_COVER || template) {
-            validateBankCover(uploadBytes, validatedContentType);
+        if(template || bizType==FileBizType.BANK_CARD_COVER) {
+            if(bytes.length>5*1024*1024 || image==null || !Set.of("image/png","image/jpeg").contains(image.contentType()))
+                throw new IllegalArgumentException("卡面仅支持5MB以内的PNG或JPEG图片");
         }
-        long userId = StpUtil.getLoginIdAsLong();
-        String bucketName = resolveBucketName();
-        String objectName = buildObjectName(userId, bizType,
-                imageType == null ? file.getOriginalFilename() : "image." + imageType.extension());
+        if(template) try(var input=new ByteArrayInputStream(bytes)) {
+            var output=new ByteArrayOutputStream();
+            ImageIO.write(ImageIO.read(input),"png",output);
+            bytes=output.toByteArray();
+            if(bytes.length>5*1024*1024) throw new IllegalArgumentException("处理后的卡面不能超过5MB");
+        } catch(IOException e) { throw new IllegalArgumentException("卡面处理失败",e); }
+        long owner=StpUtil.getLoginIdAsLong();
+        var object=storage.store(bytes,owner);
+        var attachment=new FileEntity(); attachment.fillCreateCommonField(owner);
+        attachment.setStorageObjectId(object.getId()); attachment.setFileName(file.getOriginalFilename());
+        attachment.setBizType(bizType.getBizType());
+        // 头像保存绑定之前也不公开；模板归属为系统，但创建审计仍记录管理员。
+        attachment.setIsPublic(0);
+        if(template) attachment.setUserId(null);
+        save(attachment);
+        return toVO(attachment);
+    }
 
-        objectLock.holdUntilTransactionCompletion(bucketName, objectName);
-        long storedSize=uploadBytes.length;
-        try {
-            if (template) {
-                // 无论源文件是 JPEG 还是 PNG，系统卡面统一解码重编码为 PNG。
-                BufferedImage image;
-                try (var input=new ByteArrayInputStream(uploadBytes)) { image=ImageIO.read(input); }
-                if (image==null) throw new IllegalArgumentException("卡面图片无法读取");
-                var output=new ByteArrayOutputStream();
-                ImageIO.write(image,"png",output);
-                if (output.size()>5*1024*1024) throw new IllegalArgumentException("处理后的卡面不能超过5MB");
-                byte[] bytes=output.toByteArray();
-                storedSize=bytes.length;
-                minioUtil.putObject(bucketName,objectName,new ByteArrayInputStream(bytes),bytes.length,"image/png");
-                validatedContentType="image/png";
-            } else minioUtil.putObject(bucketName, objectName, new ByteArrayInputStream(uploadBytes),
-                    storedSize, validatedContentType);
-            registerRollbackCleanup(bucketName, objectName);
+    @Override
+    @Transactional(rollbackFor=Exception.class)
+    public FileVO uploadFromUrl(String url,FileBizType type) {
+        if(type!=FileBizType.MOVIE && type!=FileBizType.READ_RECORD) throw new IllegalArgumentException("该业务请使用图片上传");
+        long owner=StpUtil.getLoginIdAsLong();
+        var source=sources.image(url,type,owner);
+        var object=storage.hold(source.getStorageObjectId());
+        var attachment=new FileEntity(); attachment.fillCreateCommonField(owner);
+        attachment.setStorageObjectId(source.getStorageObjectId()); attachment.setExternalResourceId(source.getId());
+        attachment.setBizType(type.getBizType()); attachment.setIsPublic(0);
+        attachment.setFileName("cover."+object.getObjectKey().substring(object.getObjectKey().lastIndexOf('.')+1));
+        save(attachment);
+        return toVO(attachment);
+    }
 
-            FileEntity fileEntity = new FileEntity();
-            fileEntity.setFileName(objectName);
-            fileEntity.setFileSize(storedSize);
-            fileEntity.setFileType(validatedContentType);
-            fileEntity.setBizType(bizType.getBizType());
-            fileEntity.setIsPublic(bizType.getVisibility().getValue());
-            fileEntity.setHashValue("");
-            fileEntity.fillCreateCommonField(userId);
-
-            if (!this.save(fileEntity)) {
-                throw new IllegalStateException("文件记录保存失败");
-            }
-            return toVO(fileEntity);
-        } catch (Exception e) {
-            throw new IllegalStateException("上传失败: " + e.getMessage(), e);
+    @Override
+    @Transactional(rollbackFor=Exception.class)
+    public void bindBizId(List<String> ids,String type,Long bizId) {
+        if(ids==null || ids.isEmpty()) return;
+        if(bizId==null) throw new IllegalArgumentException("绑定业务ID不能为空");
+        if(!Set.of("feedback","feedback_comment","honor_record","event_record").contains(type))
+            throw new IllegalArgumentException("该附件必须通过对应业务入口绑定");
+        long owner=StpUtil.getLoginIdAsLong();
+        if(baseMapper.lockBusiness(type,bizId,owner)==null) throw new IllegalArgumentException("业务记录不存在或无权限");
+        for(int i=0;i<ids.size();i++) {
+            var attachment=baseMapper.selectForAvatarBinding(ids.get(i));
+            if(attachment==null || !Long.valueOf(owner).equals(attachment.getUserId()) || !type.equals(attachment.getBizType())
+                    || (attachment.getBizId()!=null && !attachment.getBizId().equals(bizId)))
+                throw new IllegalArgumentException("附件不存在、已绑定其他业务或无权限");
+            storage.hold(attachment.getStorageObjectId());
+            update(null,new LambdaUpdateWrapper<FileEntity>().eq(FileEntity::getId,attachment.getId())
+                .set(FileEntity::getBizId,bizId).set(FileEntity::getSortOrder,i)
+                .set(FileEntity::getUpdateUser,owner).set(FileEntity::getUpdateTime,LocalDateTime.now()));
         }
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public FileVO uploadFromUrl(String imageUrl, FileBizType bizType) {
-        if (bizType==FileBizType.BANK_CARD_TEMPLATE_COVER) throw new IllegalArgumentException("公共卡面请使用图片上传");
-        if (bizType != FileBizType.MOVIE && bizType != FileBizType.READ_RECORD) {
-            throw new IllegalArgumentException("该业务请使用文件上传");
-        }
-        String validatedUrl = coverUrlPolicy.validate(imageUrl);
-        long userId = StpUtil.getLoginIdAsLong();
-        String bucketName = resolveBucketName();
-
-        byte[] bodyBytes;
-        String contentType;
-        try (HttpResponse response = HttpRequest.get(validatedUrl)
-                .header("Referer", "https://movie.douban.com/")
-                .header("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1")
-                .timeout(10000)
-                // 禁止白名单 CDN 通过重定向转向其他主机。
-                .setFollowRedirects(false)
-                // 流式读取，避免默认 execute() 在限额校验前缓冲整个响应。
-                .executeAsync()) {
-            int status = response.getStatus();
-            if (status != 200) {
-                throw new IllegalStateException("下载封面图失败，HTTP " + status);
-            }
-            try (var input = response.bodyStream()) {
-                bodyBytes = input.readNBytes(FileContentPolicy.MAX_IMAGE_BYTES + 1);
-            } catch (IOException e) {
-                throw new IllegalStateException("读取封面图失败", e);
-            }
-        }
-
-        var imageType = FileContentPolicy.requireImage(bodyBytes);
-        contentType = imageType.contentType();
-        String extension = "." + imageType.extension();
-        String objectName = buildObjectName(userId, bizType, "cover" + extension);
-        objectLock.holdUntilTransactionCompletion(bucketName, objectName);
-
-        try {
-            minioUtil.putObject(bucketName, objectName, new ByteArrayInputStream(bodyBytes), bodyBytes.length, contentType);
-            registerRollbackCleanup(bucketName, objectName);
-
-            FileEntity fileEntity = new FileEntity();
-            fileEntity.setFileName(objectName);
-            fileEntity.setFileSize((long) bodyBytes.length);
-            fileEntity.setFileType(contentType);
-            fileEntity.setBizType(bizType.getBizType());
-            fileEntity.setIsPublic(bizType.getVisibility().getValue());
-            fileEntity.setHashValue("");
-            fileEntity.fillCreateCommonField(userId);
-
-            if (!this.save(fileEntity)) {
-                throw new IllegalStateException("文件记录保存失败");
-            }
-            return toVO(fileEntity);
-        } catch (Exception e) {
-            throw new IllegalStateException("URL 文件上传失败: " + e.getMessage(), e);
-        }
-    }
-
-    private void validateBankCover(byte[] bytes, String contentType) {
-        if (bytes.length > 5 * 1024 * 1024) throw new IllegalArgumentException("卡面图片不能超过5MB");
-        if (!Set.of("image/png", "image/jpeg").contains(contentType)) {
-            throw new IllegalArgumentException("卡面仅支持PNG或JPEG图片");
-        }
-    }
-
-    private String resolveBucketName() {
-        return StringUtils.hasText(minioConfig.getBucketName()) ? minioConfig.getBucketName() : "aiolife";
-    }
-
-    private String buildObjectName(long userId, FileBizType bizType, String originalFilename) {
-        if (bizType==FileBizType.BANK_CARD_TEMPLATE_COVER)
-            return "system/bank-card-covers/" + UUID.randomUUID() + ".png";
-        String extension = StringUtils.getFilenameExtension(originalFilename);
-        String suffix = StringUtils.hasText(extension) && extension.matches("[A-Za-z0-9]{1,10}")
-                ? "." + extension.toLowerCase(Locale.ROOT)
-                : "";
-        return userId + "/" + bizType.getDirectory() + "/" + UUID.randomUUID() + suffix;
-    }
-
-    private void registerRollbackCleanup(String bucketName, String objectName) {
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            // 回滚清理必须先于对象锁释放，防止清理期间另一个操作进入。
-            @Override public int getOrder() { return Integer.MAX_VALUE - 1; }
-            @Override
-            public void afterCompletion(int status) {
-                if (status != STATUS_ROLLED_BACK) {
-                    return;
-                }
-                try {
-                    minioUtil.removeObject(bucketName, objectName);
-                } catch (Exception cleanupException) {
-                    log.error("回滚后清理 MinIO 文件失败: bucket={}, objectName={}", bucketName, objectName, cleanupException);
-                }
-            }
-        });
+    public List<FileVO> getByBiz(String type,Long id) {
+        return list(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getBizType,type).eq(FileEntity::getBizId,id)
+            .orderByAsc(FileEntity::getSortOrder,FileEntity::getId)).stream().map(this::toVO).toList();
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void bindBizId(List<String> fileIds, String bizType, Long bizId) {
-        if (CollectionUtils.isEmpty(fileIds)) {
-            return;
-        }
-        if ("b_video_cover".equals(bizType))
-            throw new IllegalArgumentException("视频封面只能通过视频导入绑定");
-        if ("bank_card_cover".equals(bizType) || "bank_card_template_cover".equals(bizType))
-            throw new IllegalArgumentException("请通过银行卡页面绑定卡面");
-        if (this.count(new LambdaQueryWrapper<FileEntity>()
-                .in(FileEntity::getId, fileIds).eq(FileEntity::getBizType, "b_video_cover")) > 0)
-            throw new IllegalArgumentException("视频封面只能通过视频导入绑定");
-        // 银行卡卡面只能通过银行卡事务绑定，不能被通用入口迁走。
-        if (this.count(new LambdaQueryWrapper<FileEntity>()
-                .in(FileEntity::getId, fileIds).in(FileEntity::getBizType, "bank_card_cover", "bank_card_template_cover")) > 0)
-            throw new IllegalArgumentException("请通过银行卡页面绑定卡面");
-        // 只允许绑定当前用户自己上传的文件
-        long userId = StpUtil.getLoginIdAsLong();
-        LambdaUpdateWrapper<FileEntity> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.in(FileEntity::getId, fileIds)
-                .eq(FileEntity::getCreateUser, userId)
-                .set(FileEntity::getBizId, bizId)
-                .set(FileEntity::getBizType, bizType)
-                .set(FileEntity::getUpdateUser, userId)
-                .set(FileEntity::getUpdateTime, LocalDateTime.now());
-        this.update(updateWrapper);
-    }
-
-    @Override
-    public List<FileVO> getByBiz(String bizType, Long bizId) {
-        LambdaQueryWrapper<FileEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(FileEntity::getBizType, bizType)
-                .eq(FileEntity::getBizId, bizId)
-                .eq(FileEntity::getIsDeleted, 0);
-        List<FileEntity> list = this.list(queryWrapper);
-        if (CollectionUtils.isEmpty(list)) {
-            return Collections.emptyList();
-        }
-        return list.stream().map(this::toVO).collect(Collectors.toList());
-    }
-
-    @Override
-    public FileVO toVO(FileEntity entity) {
-        if (entity == null) {
-            return null;
-        }
-        FileVO vo = new FileVO();
-        BeanUtils.copyProperties(entity, vo);
-        vo.setId(entity.getId());
-        vo.setFileUrl(minioUtil.getFilePreviewUrl(entity.getId()));
+    public FileVO toVO(FileEntity attachment) {
+        if(attachment==null) return null;
+        var vo=new FileVO(); BeanUtils.copyProperties(attachment,vo);
+        var object=objects.selectById(attachment.getStorageObjectId());
+        if(object==null) throw new IllegalStateException("附件对象不存在");
+        vo.setFileSize(object.getFileSize()); vo.setFileType(object.getContentType());
+        vo.setFileUrl(minio.getFilePreviewUrl(attachment.getId()));
         return vo;
     }
 }

@@ -1,5 +1,8 @@
 package top.aiolife.bankcard.service;
 
+import top.aiolife.record.mapper.IFileMapper;
+import top.aiolife.record.service.VideoCoverStorage;
+
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import java.net.URI;
 import java.util.*;
@@ -19,7 +22,7 @@ import top.aiolife.core.util.MinioUtil;
 @Service
 @RequiredArgsConstructor
 public class BankCardCoverTemplateService {
-    public static final String FILE_TYPE = "bank_card_template_cover";
+    public static final String FILE_TYPE = "bank_card_template_face";
     private final BankCardCoverTemplateMapper mapper;
     private final BankCardDictionaryGuard guard;
     private final BankCardDictionaryMapper dictionaryMapper;
@@ -27,8 +30,14 @@ public class BankCardCoverTemplateService {
     private final BankCardFileMapper fileMapper;
 
     private final MinioUtil minio;
+    private final IFileMapper attachments;
+    private final VideoCoverStorage storage;
 
-    public String publicUrl(String fileId) { return minio.getPublicImageUrl(fileId, "image/png"); }
+    public String publicUrl(String fileId) {
+        if(fileId==null || fileMapper.countPublishedTemplateFile(fileId)==0) return null;
+        var attachment=attachments.selectWithObject(fileId);
+        return attachment==null?null:minio.getPublicImageUrl(attachment.getHashValue(),attachment.getFileType());
+    }
     private BankCardCoverTemplateVO withUrl(BankCardCoverTemplateVO cover) {
         return cover.withPublicUrl(publicUrl(cover.fileId()));
     }
@@ -102,6 +111,8 @@ public class BankCardCoverTemplateService {
         }
         var file = fileMapper.lockTemplateCover(req.getFileId());
         if (file == null) throw new IllegalArgumentException("请选择有效的公共卡面图片");
+        var attachment=attachments.selectWithObject(req.getFileId());
+        storage.hold(attachment.getStorageObjectId());
         Long bound = file.bizId();
         if (bound == null ? !Objects.equals(file.createUser(), userId) : bound != templateId)
             throw new IllegalArgumentException("图片已被使用或不属于本次上传");

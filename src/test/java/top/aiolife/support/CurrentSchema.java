@@ -21,6 +21,8 @@ public final class CurrentSchema {
                 + "\"?\\s+ADD COLUMN ([a-z_][a-z_0-9]*) ([^;]+);");
         var droppedColumn = Pattern.compile("(?m)^[ \\t]*ALTER TABLE \\\"?" + Pattern.quote(name)
                 + "\\\"?\\s+DROP COLUMN(?: IF EXISTS)? \\\"?([a-z_][a-z_0-9]*)\\\"?\\s*;");
+        var renamedColumn = Pattern.compile("(?m)^[ \\t]*ALTER TABLE \\\"?" + Pattern.quote(name)
+                + "\\\"?\\s+RENAME COLUMN \\\"?([a-z_][a-z_0-9]*)\\\"?\\s+TO \\\"?([a-z_][a-z_0-9]*)\\\"?\\s*;");
         try (var migrations = Files.list(Path.of("sql/migrations"))) {
             for (var migration : migrations.filter(path -> path.getFileName().toString().matches("V\\d.*\\.sql"))
                     .sorted().toList()) {
@@ -34,6 +36,11 @@ public final class CurrentSchema {
                 while (matcher.find()) {
                     definition = definition.replaceAll("(?m)^[ \\t]*\\\"" + Pattern.quote(matcher.group(1))
                             + "\\\"[^\\n]*\\n", "");
+                }
+                var renames = renamedColumn.matcher(sql);
+                while (renames.find()) {
+                    definition = definition.replaceAll("(?m)^([ \\t]*)\\\"" + Pattern.quote(renames.group(1))
+                            + "\\\"", "$1\"" + renames.group(2) + "\"");
                 }
             }
         }

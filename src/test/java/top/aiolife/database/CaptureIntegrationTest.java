@@ -181,7 +181,7 @@ class CaptureIntegrationTest {
         long deviceId = Long.parseLong(result.path("assets").get(0).path("id").asText());
         long wardrobeId = Long.parseLong(result.path("assets").get(1).path("id").asText());
         assertEquals(new BigDecimal("5.01"), devices.selectById(deviceId).getPurchasePrice());
-        assertEquals(new BigDecimal("5.00"), wardrobe.selectById(wardrobeId).getPrice());
+        assertEquals(new BigDecimal("5.00"), wardrobe.selectById(wardrobeId).getPurchasePrice());
         assertEquals("line:0", devices.selectById(deviceId).getSourceItemId());
         assertEquals(1, devices.selectById(deviceId).getSourceUnitIndex());
         assertEquals("line:0", wardrobe.selectById(wardrobeId).getSourceItemId());

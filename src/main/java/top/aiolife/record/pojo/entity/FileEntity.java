@@ -1,90 +1,47 @@
 package top.aiolife.record.pojo.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.baomidou.mybatisplus.annotation.*;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import top.aiolife.core.pojo.entity.IdentityEntity;
+import top.aiolife.core.pojo.entity.AuditEntity;
 
+/** 用户附件；接口沿用 fileId 字符串名称，数据库主键为雪花 BIGINT。 */
 @Getter
 @Setter
 @ToString
-@TableName("file")
-public class FileEntity extends IdentityEntity {
-    private Long storageObjectId;
-
-
-    @TableId(type = IdType.ASSIGN_UUID)
+@TableName("attachment")
+public class FileEntity extends AuditEntity {
+    @TableId(type = IdType.ASSIGN_ID)
     private String id;
-
-    private Long createUser;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createTime;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime updateTime;
-
-    private Long updateUser;
-
+    private Long userId;
+    private Long storageObjectId;
+    private Long externalResourceId;
+    private String fileName;
+    private String bizType;
+    private Long bizId;
+    private Integer isPublic;
+    private Integer sortOrder;
     @TableLogic
     private Integer isDeleted;
+    // 只用于接口投影，物理元数据唯一维护在 storage_object。
+    @TableField(exist = false) private Long fileSize;
+    @TableField(exist = false) private String fileType;
+    @TableField(exist = false) private String hashValue;
 
     public void fillCreateCommonField(Long userId) {
-        this.createUser = userId;
-        this.updateUser = userId;
-        this.createTime = LocalDateTime.now();
-        this.updateTime = LocalDateTime.now();
-        this.isDeleted = 0;
+        setUserId(userId);
+        setCreateUser(userId);
+        setUpdateUser(userId);
+        setCreateTime(LocalDateTime.now());
+        setUpdateTime(LocalDateTime.now());
+        isDeleted = 0;
+        sortOrder = 0;
     }
-
     public void fillUpdateCommonField(Long userId) {
-        this.updateUser = userId;
-        this.updateTime = LocalDateTime.now();
+        setUpdateUser(userId);
+        setUpdateTime(LocalDateTime.now());
     }
-
-    /**
-     * 文件原名/MinIO对象名
-     */
-    private String fileName;
-
-    /**
-     * 文件大小(字节)
-     */
-    private Long fileSize;
-
-    /**
-     * 文件MIME类型
-     */
-    private String fileType;
-
-    /**
-     * 文件哈希值
-     */
-    private String hashValue;
-
-    /**
-     * 业务类型
-     */
-    private String bizType;
-
-    /**
-     * 业务记录ID
-     */
-    private Long bizId;
-
-    /**
-     * 是否公开：0-否，1-是
-     */
-    private Integer isPublic;
-
-    @Override
-    protected Object identityKey() {
-        return id;
-    }
+    @Override protected Object identityKey() { return id; }
 }

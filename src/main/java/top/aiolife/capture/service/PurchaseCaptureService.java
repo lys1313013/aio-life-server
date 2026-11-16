@@ -244,7 +244,7 @@ public class PurchaseCaptureService {
         w.setRemark(text(f, "remark", false, 500));
         w.setFileId(file);
         w.setPurchaseDate(purchaseDate);
-        w.setPrice(price);
+        w.setPurchasePrice(price);
         w.fillCreateCommonField(user);
         wardrobe.insert(w);
         images.replace(user, FileBizType.WARDROBE_ITEM, w.getId(), file);

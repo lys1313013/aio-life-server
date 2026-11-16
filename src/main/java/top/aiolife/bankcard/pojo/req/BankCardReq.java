@@ -33,5 +33,5 @@ public class BankCardReq {
     @Min(0) private Integer sortOrder = 0;
     @Size(max = 1000) private String remark;
     @NotNull @Size(max = 20) private List<@NotNull Long> tagIds = List.of();
-    @NotNull @Size(max = 1) private List<@NotNull @Pattern(regexp = "[a-fA-F0-9]{32}") String> coverFileIds = List.of();
+    @NotNull @Size(max = 1) private List<@NotNull @Pattern(regexp = "[1-9][0-9]{0,18}") String> coverFileIds = List.of();
 }

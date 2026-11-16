@@ -20,29 +20,37 @@ public interface BankCardFileMapper {
         """)
     long countVisibleTemplate(@Param("templateId") long templateId, @Param("userId") long userId);
 
-    @Select("SELECT id,biz_id,create_user FROM file WHERE biz_type='bank_card_cover' AND create_user=#{userId} AND is_deleted=0 AND is_public=0 AND biz_id IS NOT NULL")
+    @Select("SELECT id,biz_id,create_user FROM attachment WHERE biz_type='bank_card_face' AND user_id=#{userId} AND is_deleted=0 AND is_public=0 AND biz_id IS NOT NULL")
     List<BankCardFileBinding> selectPrivateCovers(@Param("userId") long userId);
 
-    @Select("SELECT id,biz_id,create_user FROM file WHERE id=#{fileId} AND biz_type='bank_card_cover' AND create_user=#{userId} AND is_public=0 AND is_deleted=0 FOR UPDATE")
+    @Select("SELECT id,biz_id,create_user FROM attachment WHERE id=#{fileId} AND biz_type='bank_card_face' AND user_id=#{userId} AND is_public=0 AND is_deleted=0 FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
     BankCardFileBinding lockPrivateCover(@Param("fileId") String fileId, @Param("userId") long userId);
 
-    @Select("SELECT id,biz_id,create_user FROM file WHERE id=#{fileId} AND biz_type='bank_card_template_cover' AND is_deleted=0 AND is_public=0 FOR UPDATE")
+    @Select("SELECT id,biz_id,create_user FROM attachment WHERE id=#{fileId} AND biz_type='bank_card_template_face' AND is_deleted=0 FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
     BankCardFileBinding lockTemplateCover(@Param("fileId") String fileId);
 
-    @Select("SELECT COUNT(*) FROM file WHERE biz_type='bank_card_template_cover' AND biz_id=#{templateId} AND is_deleted=0")
+    @Select("SELECT COUNT(*) FROM attachment WHERE biz_type='bank_card_template_face' AND biz_id=#{templateId} AND is_deleted=0")
     long countTemplateFiles(@Param("templateId") long templateId);
 
-    @Update("<script>UPDATE file SET is_deleted=1,update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE biz_type='bank_card_cover' AND biz_id=#{cardId} AND create_user=#{userId} AND is_deleted=0 <if test='fileId != null'>AND id&lt;&gt;#{fileId}</if></script>")
+    @Update("<script>UPDATE attachment SET is_deleted=1,update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE biz_type='bank_card_face' AND biz_id=#{cardId} AND user_id=#{userId} AND is_deleted=0 <if test='fileId != null'>AND id&lt;&gt;#{fileId}</if></script>")
     int deletePrivateCoversExcept(@Param("userId") long userId, @Param("cardId") long cardId, @Param("fileId") String fileId);
 
-    @Update("UPDATE file SET biz_id=#{cardId},update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE id=#{fileId} AND create_user=#{userId} AND is_deleted=0")
+    @Update("UPDATE attachment SET biz_id=#{cardId},update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE id=#{fileId} AND user_id=#{userId} AND is_deleted=0")
     int bindPrivateCover(@Param("cardId") long cardId, @Param("userId") long userId, @Param("fileId") String fileId);
 
-    @Update("<script>UPDATE file SET is_deleted=1,update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE biz_type='bank_card_template_cover' AND biz_id=#{templateId} AND is_deleted=0 <if test='fileId != null'>AND id&lt;&gt;#{fileId}</if></script>")
+    @Update("<script>UPDATE attachment SET is_deleted=1,update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE biz_type='bank_card_template_face' AND biz_id=#{templateId} AND is_deleted=0 <if test='fileId != null'>AND id&lt;&gt;#{fileId}</if></script>")
     int deleteTemplateCoversExcept(@Param("userId") long userId, @Param("templateId") long templateId, @Param("fileId") String fileId);
 
-    @Update("UPDATE file SET biz_id=#{templateId},update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE id=#{fileId}")
+    @Update("UPDATE attachment SET biz_id=#{templateId},is_public=1,update_user=#{userId},update_time=CURRENT_TIMESTAMP WHERE id=#{fileId}")
     int bindTemplateCover(@Param("templateId") long templateId, @Param("userId") long userId, @Param("fileId") String fileId);
+    @Select("""
+        SELECT count(*) FROM attachment a JOIN bank_card_cover_template t ON t.id=a.biz_id
+        JOIN sys_dict_data d ON d.dict_code=t.bank_id JOIN sys_dict_type dt ON dt.dict_id=d.dict_id
+        WHERE a.id=#{fileId} AND a.biz_type='bank_card_template_face' AND a.is_deleted=0 AND a.is_public=1
+          AND t.is_deleted=0 AND t.is_enabled=1 AND d.is_deleted=0 AND d.is_enabled=1
+          AND dt.is_deleted=0 AND dt.is_enabled=1 AND dt.dict_type='bank'
+        """)
+    long countPublishedTemplateFile(String fileId);
 }

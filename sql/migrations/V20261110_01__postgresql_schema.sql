@@ -94,7 +94,6 @@ CREATE INDEX "api_key_log_idx_api_key_id" ON "api_key_log" ("api_key_id");
 COMMENT ON INDEX "api_key_log_idx_api_key_id" IS '业务检索索引：idx_api_key_id';
 
 CREATE TABLE "b_video" (
-    "cover_file_id" varchar(32),
     "cover_state" varchar(16) DEFAULT 'NONE' NOT NULL,
     "cover_version" bigint DEFAULT '0' NOT NULL,
     "id" bigint NOT NULL,
@@ -122,7 +121,6 @@ CREATE TABLE "b_video" (
     PRIMARY KEY ("id")
  );
 COMMENT ON TABLE "b_video" IS 'B 站视频记录表';
-COMMENT ON COLUMN "b_video"."cover_file_id" IS '当前封面附件ID，关联file.id；尚无内部封面时为空';
 COMMENT ON COLUMN "b_video"."cover_state" IS '封面状态：NONE=无来源，PENDING=导入中，READY=可用，FAILED=失败';
 COMMENT ON COLUMN "b_video"."cover_version" IS '封面导入版本，从0开始，每次重新入队递增，防止旧任务覆盖新封面';
 COMMENT ON COLUMN "b_video"."id" IS '主键ID';
@@ -798,6 +796,8 @@ CREATE INDEX "file_idx_file_storage_object" ON "file" ("storage_object_id");
 COMMENT ON INDEX "file_idx_file_storage_object" IS '业务检索索引：idx_file_storage_object';
 CREATE INDEX "file_idx_hash" ON "file" ("hash_value");
 COMMENT ON INDEX "file_idx_hash" IS '业务检索索引：idx_hash';
+CREATE UNIQUE INDEX "uk_file_b_video_cover" ON "file" ("biz_type", "biz_id") WHERE "is_deleted" = 0 AND "biz_id" IS NOT NULL AND "biz_type" = 'b_video_cover';
+COMMENT ON INDEX "uk_file_b_video_cover" IS '每个B站视频至多关联一张有效封面';
 
 CREATE TABLE "goal" (
     "id" bigint NOT NULL,

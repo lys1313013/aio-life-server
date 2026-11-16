@@ -82,7 +82,7 @@ public class HonorRecordServiceImpl extends ServiceImpl<IHonorRecordMapper, Hono
             LambdaUpdateWrapper<FileEntity> removedFiles = new LambdaUpdateWrapper<>();
             removedFiles.eq(FileEntity::getBizType, BIZ_TYPE)
                     .eq(FileEntity::getBizId, entity.getId())
-                    .eq(FileEntity::getCreateUser, userId)
+                    .eq(FileEntity::getUserId, userId)
                     .notIn(!fileIds.isEmpty(), FileEntity::getId, fileIds)
                     .set(FileEntity::getBizId, null)
                     .set(FileEntity::getUpdateUser, userId)
@@ -103,6 +103,10 @@ public class HonorRecordServiceImpl extends ServiceImpl<IHonorRecordMapper, Hono
         wrapper.set(HonorRecordEntity::getUpdateTime, LocalDateTime.now());
         wrapper.set(HonorRecordEntity::getUpdateUser, userId);
         update(null, wrapper);
+        fileService.update(new LambdaUpdateWrapper<FileEntity>().eq(FileEntity::getUserId,userId)
+            .eq(FileEntity::getBizType,BIZ_TYPE).in(FileEntity::getBizId,ids)
+            .set(FileEntity::getIsDeleted,1).set(FileEntity::getIsPublic,0)
+            .set(FileEntity::getUpdateUser,userId).set(FileEntity::getUpdateTime,LocalDateTime.now()));
     }
 
     @Override

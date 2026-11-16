@@ -171,10 +171,12 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteRecord(Long id) {
         Long userId = StpUtil.getLoginIdAsLong();
         MovieEntity entity = this.getById(id);
         if (entity != null && entity.getUserId().equals(userId)) {
+            images.delete(userId,FileBizType.MOVIE,id);
             this.removeById(id);
         }
     }

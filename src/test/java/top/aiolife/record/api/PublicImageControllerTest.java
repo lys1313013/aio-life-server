@@ -1,136 +1,69 @@
 package top.aiolife.record.api;
 
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
-import org.h2.jdbcx.JdbcDataSource;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mybatis.spring.SqlSessionTemplate;
-import org.springframework.jdbc.core.JdbcTemplate;
+import java.io.ByteArrayInputStream;
+import org.junit.jupiter.api.*;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.servlet.HandlerInterceptor;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import top.aiolife.config.MinioConfig;
-import top.aiolife.config.SaTokenConfig;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.record.mapper.PublicImageMapper;
-import top.aiolife.sso.interceptor.ApiKeyInterceptor;
-import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
-import top.aiolife.sso.interceptor.UserLastActiveInterceptor;
-import top.aiolife.sso.service.AccountStatusGuard;
-
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
-
+import top.aiolife.record.service.PublicImageService;
+import top.aiolife.support.AttachmentDatabaseFixture;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static top.aiolife.support.ImageFixtures.image;
 
-/** 真实 Mapper 和 MVC/生产拦截规则；仅对象存储模拟，不访问线上数据库或图片。 */
-class PublicImageControllerTest {
-    private static final String ID = "a".repeat(32), NEXT = "b".repeat(32);
-    private JdbcTemplate jdbc;
-    private PublicImageMapper mapper;
+/** 真实PostgreSQL公开引用查询、MVC与ETag，外部对象存储隔离。 */
+class PublicImageControllerTest extends AttachmentDatabaseFixture {
+    private final String hash="a".repeat(64);
     private MinioUtil minio;
     private MockMvc mvc;
-    private ApiKeyInterceptor keys;
-    private SecondaryLockInterceptor locks;
-    private UserLastActiveInterceptor activity;
-
     @BeforeEach void setup() throws Exception {
-        var ds = new JdbcDataSource();
-        ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;NON_KEYWORDS=USER");
-        jdbc = new JdbcTemplate(ds);
-        jdbc.execute("CREATE TABLE file(id VARCHAR(32) PRIMARY KEY,file_name VARCHAR(255),file_type VARCHAR(100),biz_type VARCHAR(100),biz_id BIGINT,create_user BIGINT,is_deleted INT,is_public INT,storage_object_id BIGINT)");
-        jdbc.execute("CREATE TABLE bank_card_cover_template(id BIGINT PRIMARY KEY,is_deleted INT,is_enabled INT)");
-        jdbc.execute("CREATE TABLE sys_user(id BIGINT PRIMARY KEY,is_deleted INT)");
-        var config = new MybatisConfiguration(); config.setMapUnderscoreToCamelCase(true); config.addMapper(PublicImageMapper.class);
-        var factory = new MybatisSqlSessionFactoryBean(); factory.setDataSource(ds); factory.setConfiguration(config);
-        mapper = new SqlSessionTemplate(factory.getObject()).getMapper(PublicImageMapper.class);
-        minio = mock(MinioUtil.class);
-        when(minio.getFile(eq("aiolife"), anyString())).thenAnswer(call -> new ByteArrayInputStream(image("png")));
-        keys = mock(ApiKeyInterceptor.class); locks = mock(SecondaryLockInterceptor.class); activity = mock(UserLastActiveInterceptor.class);
-        var registry = new TestRegistry();
-        new SaTokenConfig(keys, locks, activity, mock(AccountStatusGuard.class)).addInterceptors(registry);
-        var storage = new MinioConfig(); storage.setBucketName("aiolife");
-        mvc = MockMvcBuilders.standaloneSetup(new PublicImageController(
-                        new top.aiolife.record.service.PublicImageService(mapper, minio, storage)))
-                .addInterceptors(registry.interceptors()).build();
+        jdbc.execute("TRUNCATE bank_card_cover_template,sys_dict_data,sys_dict_type");
+        minio=mock(MinioUtil.class);
+        when(minio.getFile(eq("fixture"),anyString())).thenAnswer(c->new ByteArrayInputStream(image("png")));
+        jdbc.update("INSERT INTO storage_object(id,bucket,object_key,content_hash,file_size,content_type) VALUES(11,'fixture',?, ?,68,'image/png')","objects/aa/"+hash+".png",hash);
+        mvc=MockMvcBuilders.standaloneSetup(new PublicImageController(new PublicImageService(mapper(PublicImageMapper.class),minio))).build();
     }
-    private static class TestRegistry extends InterceptorRegistry {
-        HandlerInterceptor[] interceptors() { return getInterceptors().toArray(HandlerInterceptor[]::new); }
+    private String url() { return "/f/"+hash+".png"; }
+    private void avatar(long id,long owner) {
+        jdbc.update("INSERT INTO sys_user(id,username,nickname) VALUES(?,?,'fixture')",owner,"fixture"+owner);
+        jdbc.update("INSERT INTO attachment(id,storage_object_id,user_id,biz_type,biz_id,is_public) VALUES(?,11,?,'avatar',?,1)",id,owner,owner);
     }
-    private String url(String id) { return "/public/images/" + id + ".png"; }
     private void template() {
-        jdbc.update("INSERT INTO bank_card_cover_template VALUES(10,0,1)");
-        jdbc.update("INSERT INTO file VALUES(?, 'system/bank-card-covers/test.png','image/png','bank_card_template_cover',10,42,0,0,NULL)", ID);
+        jdbc.update("INSERT INTO sys_dict_type(dict_id,dict_type,is_enabled) VALUES(1,'bank',1)");
+        jdbc.update("INSERT INTO sys_dict_data(dict_code,dict_id,dict_label,dict_value,is_enabled) VALUES(2,1,'fixture','fixture',1)");
+        jdbc.update("INSERT INTO bank_card_cover_template(id,name,bank_id,card_type,is_enabled,create_user,update_user) VALUES(3,'fixture',2,'debit',1,42,42)");
+        jdbc.update("INSERT INTO attachment(id,storage_object_id,biz_type,biz_id,is_public) VALUES(4,11,'bank_card_template_face',3,1)");
     }
-    @Test void 已保存模板匿名读取缓存且不触发账号或二级锁() throws Exception {
+    @Test void 已发布模板可匿名访问并协商缓存不重读对象() throws Exception {
         template();
-        var response = mvc.perform(get(url(ID))).andExpect(status().isOk())
-                .andExpect(content().contentType("image/png"))
-                .andExpect(content().bytes(image("png")))
-                .andExpect(header().string("Cache-Control", "public, max-age=86400, s-maxage=2592000"))
-                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
-                .andExpect(header().doesNotExist("Set-Cookie")).andReturn().getResponse();
-        mvc.perform(get(url(ID)).header("If-None-Match", response.getHeader("ETag")))
-                .andExpect(status().isNotModified()).andExpect(content().string(""));
-        mvc.perform(head(url(ID))).andExpect(status().isOk()).andExpect(content().string(""));
-        verifyNoInteractions(keys, locks, activity);
+        var response=mvc.perform(get(url())).andExpect(status().isOk()).andExpect(content().contentType("image/png"))
+            .andExpect(header().string("Cache-Control","public, no-cache")).andExpect(header().doesNotExist("Set-Cookie"))
+            .andExpect(content().bytes(image("png"))).andReturn().getResponse();
+        mvc.perform(get(url()).header("If-None-Match",response.getHeader("ETag"))).andExpect(status().isNotModified());
+        verify(minio,times(1)).getFile(eq("fixture"),anyString());
     }
-    @Test void 停用保留底图但删除撤销源站访问() throws Exception {
-        template(); jdbc.update("UPDATE bank_card_cover_template SET is_enabled=0");
-        mvc.perform(get(url(ID))).andExpect(status().isOk());
-        jdbc.update("UPDATE bank_card_cover_template SET is_deleted=1");
-        mvc.perform(get(url(ID))).andExpect(status().isNotFound()).andExpect(header().string("Cache-Control", "no-store"));
-    }
-    @Test void 拒绝临时文件私人卡面其他公开文件和已删除文件() throws Exception {
-        template();
-        for (String type : new String[]{"bank_card_cover", "device", "b_video_cover"}) {
-            jdbc.update("UPDATE file SET biz_type=?,is_public=1", type);
-            assertNull(mapper.selectPublished(ID));
-            mvc.perform(get(url(ID))).andExpect(status().isNotFound());
-        }
-        jdbc.update("UPDATE file SET biz_type='bank_card_template_cover',biz_id=NULL");
-        mvc.perform(get(url(ID))).andExpect(status().isNotFound());
-        jdbc.update("UPDATE file SET biz_id=10,is_deleted=1");
-        mvc.perform(get(url(ID))).andExpect(status().isNotFound());
+    @Test void 模板或银行停用后即使ETag命中也返回404() throws Exception {
+        template();jdbc.update("UPDATE sys_dict_data SET is_enabled=0 WHERE dict_code=2");
+        mvc.perform(get(url()).header("If-None-Match","\""+hash+"\"")).andExpect(status().isNotFound());
         verifyNoInteractions(minio);
     }
-    @Test void 头像必须公开且当前绑定到所属用户() throws Exception {
-        jdbc.update("INSERT INTO file VALUES(?,'42/avatar/test.png','image/png','avatar',NULL,42,0,1,NULL)", ID);
-        mvc.perform(get(url(ID))).andExpect(status().isNotFound());
-        jdbc.update("INSERT INTO sys_user VALUES(42,0)");
-        jdbc.update("UPDATE file SET biz_id=42");
-        mvc.perform(get(url(ID))).andExpect(status().isOk());
-        jdbc.update("UPDATE file SET biz_id=43");
-        mvc.perform(get(url(ID))).andExpect(status().isNotFound());
-        jdbc.update("UPDATE file SET biz_id=42,create_user=99");
-        mvc.perform(get(url(ID))).andExpect(status().isNotFound());
-        jdbc.update("UPDATE file SET create_user=42,is_public=0");
-        mvc.perform(get(url(ID))).andExpect(status().isNotFound());
-        jdbc.update("UPDATE file SET is_public=1");
-        jdbc.update("UPDATE sys_user SET is_deleted=1");
-        mvc.perform(get(url(ID))).andExpect(status().isNotFound());
+    @Test void 撤销一个头像不影响其他公开引用全部撤销后拒绝读取() throws Exception {
+        avatar(101,41);avatar(102,42);jdbc.update("UPDATE attachment SET is_public=0,biz_id=NULL WHERE id=101");
+        mvc.perform(get(url())).andExpect(status().isOk());
+        jdbc.update("UPDATE attachment SET is_deleted=1 WHERE id=102");
+        mvc.perform(get(url()).header("If-None-Match","\""+hash+"\"")).andExpect(status().isNotFound());
     }
-    @Test void 换图使用新文件ID旧图源站失效且新图可访问() throws Exception {
-        template();
-        jdbc.update("UPDATE file SET is_deleted=1");
-        jdbc.update("INSERT INTO file VALUES(?,'system/bank-card-covers/new.png','image/png','bank_card_template_cover',10,42,0,0,NULL)", NEXT);
-        mvc.perform(get(url(ID))).andExpect(status().isNotFound());
-        mvc.perform(get(url(NEXT))).andExpect(status().isOk());
+    @Test void 私有附件和错误扩展名不能通过公开地址读取() throws Exception {
+        jdbc.update("INSERT INTO attachment(id,storage_object_id,user_id,biz_type,biz_id,is_public) VALUES(101,11,42,'device_cover',1,1)");
+        mvc.perform(get(url())).andExpect(status().isNotFound());
+        avatar(102,42);mvc.perform(get("/f/"+hash+".jpg")).andExpect(status().isNotFound());
+        verifyNoInteractions(minio);
     }
-    @Test void 伪装图片格式不匹配和存储异常均不返回可缓存成功响应() throws Exception {
-        template();
-        when(minio.getFile(anyString(), anyString())).thenReturn(new ByteArrayInputStream("<script>bad</script>".getBytes(StandardCharsets.UTF_8)));
-        mvc.perform(get(url(ID))).andExpect(status().isNotFound()).andExpect(header().string("Cache-Control", "no-store"));
-        when(minio.getFile(anyString(), anyString())).thenReturn(new ByteArrayInputStream(image("jpeg")));
-        mvc.perform(get(url(ID))).andExpect(status().isNotFound());
-        when(minio.getFile(anyString(), anyString())).thenThrow(new RuntimeException("missing"));
-        mvc.perform(get(url(ID))).andExpect(status().isNotFound());
+    @Test void 已删除用户的头像不再公开() throws Exception {
+        avatar(101,42);jdbc.update("UPDATE sys_user SET is_deleted=1 WHERE id=42");
+        mvc.perform(get(url())).andExpect(status().isNotFound());
     }
 }

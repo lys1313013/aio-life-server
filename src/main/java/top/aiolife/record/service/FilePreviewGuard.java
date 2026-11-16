@@ -1,5 +1,8 @@
 package top.aiolife.record.service;
 
+import java.util.Set;
+import top.aiolife.record.mapper.AttachmentBusinessMapper;
+
 import lombok.RequiredArgsConstructor;
 import cn.dev33.satoken.context.SaHolder;
 import cn.dev33.satoken.stp.StpUtil;
@@ -28,6 +31,7 @@ public class FilePreviewGuard {
     private final AccountStatusGuard accountStatusGuard;
 
     private final IBVideoMapper videoMapper;
+    private final AttachmentBusinessMapper bindings;
 
     /**
      * 访问判定结果
@@ -83,7 +87,7 @@ public class FilePreviewGuard {
     }
 
     /**
-     * 校验对文件记录的访问权限：公开文件直接放行；私有文件要求登录，且仅属主或管理员可读。
+     * 私有入口要求登录并校验附件归属与业务授权；匿名公开读取使用独立内容地址。
      *
      * @param fileEntity 文件记录
      * @param userId     当前登录用户 ID（未登录为 null）
@@ -92,13 +96,13 @@ public class FilePreviewGuard {
     public AccessDecision check(FileEntity fileEntity, Long userId) {
         if ("b_video_cover".equals(fileEntity.getBizType())) {
             if (userId == null) return AccessDecision.UNAUTHORIZED;
-            if (!userId.equals(fileEntity.getCreateUser()) || fileEntity.getBizId() == null)
+            if (!userId.equals(fileEntity.getUserId()) || fileEntity.getBizId() == null)
                 return AccessDecision.FORBIDDEN;
             secondaryLockGuard.checkMenus(userId, "/record/videoWatch");
-            return videoMapper.countCoverReference(fileEntity.getBizId(), userId, fileEntity.getId()) > 0
+            return videoMapper.countOwnedVideo(fileEntity.getBizId(), userId) > 0
                     ? AccessDecision.ALLOW : AccessDecision.FORBIDDEN;
         }
-        if ("bank_card_template_cover".equals(fileEntity.getBizType())) {
+        if ("bank_card_template_face".equals(fileEntity.getBizType())) {
             if (userId==null) return AccessDecision.UNAUTHORIZED;
             if (isAdmin(userId)) return AccessDecision.ALLOW;
             if (fileEntity.getBizId()==null) return AccessDecision.FORBIDDEN;
@@ -106,33 +110,34 @@ public class FilePreviewGuard {
             long visible = bankCardFileMapper.countVisibleTemplate(fileEntity.getBizId(), userId);
             return visible>0 ? AccessDecision.ALLOW : AccessDecision.FORBIDDEN;
         }
-        if ("bank_card_cover".equals(fileEntity.getBizType())) {
+        if ("bank_card_face".equals(fileEntity.getBizType())) {
             if (userId == null) return AccessDecision.UNAUTHORIZED;
-            if (!userId.equals(fileEntity.getCreateUser())) return AccessDecision.FORBIDDEN;
+            if (!userId.equals(fileEntity.getUserId())) return AccessDecision.FORBIDDEN;
             secondaryLockGuard.checkMenus(userId, "/finance/bank-cards");
             if (fileEntity.getBizId() != null && bankCardFileMapper.countOwnedCard(fileEntity.getBizId(), userId) == 0) return AccessDecision.FORBIDDEN;
-            return AccessDecision.ALLOW;
-        }
-        if (fileEntity.getIsPublic() == null || fileEntity.getIsPublic() != 0) {
             return AccessDecision.ALLOW;
         }
         if (userId == null) {
             return AccessDecision.UNAUTHORIZED;
         }
-        if (!isAdmin(userId) && fileEntity.getCreateUser() != null && !fileEntity.getCreateUser().equals(userId)) {
+        if (!userId.equals(fileEntity.getUserId()) && !(isAdmin(userId) && Set.of("feedback","feedback_comment").contains(fileEntity.getBizType()))) {
             return AccessDecision.FORBIDDEN;
         }
         String menu = switch (fileEntity.getBizType() == null ? "" : fileEntity.getBizType()) {
-            case "wardrobe_item" -> "/wardrobe";
+            case "wardrobe_item_cover" -> "/wardrobe";
             case "feedback", "feedback_comment" -> "/my-hub/feedback";
-            case "movie" -> "/record/movie";
+            case "movie_cover" -> "/record/movie";
             case "honor_record" -> "/my-hub/honor";
-            case "read" -> "/record/read";
+            case "read_cover" -> "/record/read";
             case "event_record" -> "/record/event-records";
-            case "device" -> "/my-hub/device";
+            case "device_cover" -> "/my-hub/device";
             default -> null;
         };
         if (menu != null) secondaryLockGuard.checkMenus(userId, menu);
+        if(fileEntity.getBizId()!=null && Set.of("movie_cover","read_cover","device_cover","wardrobe_item_cover","honor_record","event_record","feedback","feedback_comment","avatar").contains(fileEntity.getBizType())) {
+            if(fileEntity.getUserId()==null || bindings.countOwned(fileEntity.getBizType(),fileEntity.getBizId(),fileEntity.getUserId())==0)
+                return AccessDecision.FORBIDDEN;
+        }
         return AccessDecision.ALLOW;
     }
 }

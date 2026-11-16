@@ -1,170 +1,60 @@
 package top.aiolife.record.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
+import java.util.*;
+import org.junit.jupiter.api.*;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import top.aiolife.config.MinioConfig;
 import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.record.enums.FileBizType;
-import top.aiolife.record.mapper.IFileMapper;
-import top.aiolife.record.pojo.entity.FileEntity;
-import top.aiolife.record.service.DoubanCoverUrlPolicy;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.anyLong;
+import top.aiolife.record.mapper.*;
+import top.aiolife.record.service.*;
+import top.aiolife.support.AttachmentDatabaseFixture;
+import top.aiolife.system.mapper.StorageObjectMapper;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 import static top.aiolife.support.ImageFixtures.image;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.mock;
 
-@ExtendWith(MockitoExtension.class)
-class FileServiceImplTest {
-
-    @Mock
-    private MinioUtil minioUtil;
-
-    @Mock
-    private MinioConfig minioConfig;
-
-    @Mock
-    private IFileMapper fileMapper;
-
-    private FileServiceImpl fileService;
-
-    @BeforeEach
-    void setUp() {
-        fileService = new FileServiceImpl(minioUtil, minioConfig, mock(StorageObjectLock.class), new DoubanCoverUrlPolicy("doubanio.com"));
-        ReflectionTestUtils.setField(fileService, "baseMapper", fileMapper);
-        TransactionSynchronizationManager.initSynchronization();
+class FileServiceImplTest extends AttachmentDatabaseFixture {
+    private MinioUtil minio;
+    private FileServiceImpl files;
+    @BeforeEach void setup() throws Exception {
+        minio=mock(MinioUtil.class);var stored=new HashSet<String>();
+        when(minio.objectExists(anyString(),anyString())).thenAnswer(c->stored.contains(c.getArgument(1)));
+        doAnswer(c->{stored.add(c.getArgument(1));return null;}).when(minio).putObject(anyString(),anyString(),any(),anyLong(),anyString());
+        when(minio.getFilePreviewUrl(anyString())).thenAnswer(c->"/file/preview/"+c.getArgument(0));
+        var config=new MinioConfig();config.setBucketName("fixture");
+        var storage=proxy(new VideoCoverStorage(mapper(StorageObjectMapper.class),mock(StorageObjectLock.class),minio,config));
+        files=new FileServiceImpl(minio,storage,mapper(StorageObjectMapper.class),mock(ExternalResourceService.class));
+        ReflectionTestUtils.setField(files,"baseMapper",mapper(IFileMapper.class));files=proxy(files);
     }
-
-    @AfterEach
-    void tearDown() {
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.clearSynchronization();
+    @Test void 相同字节跨用户上传只保存一次归属和文件名各自独立() throws Exception {
+        try(var auth=mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
+            var first=files.upload(new MockMultipartFile("file","first.png","text/html",image("png")),FileBizType.AVATAR);
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(22L);
+            var second=files.upload(new MockMultipartFile("file","second.png","image/png",image("png")),FileBizType.DEVICE);
+            assertNotEquals(first.getId(),second.getId());assertEquals("image/png",first.getFileType());
+            assertEquals("first.png",first.getFileName());assertEquals("second.png",second.getFileName());
+            var a=mapper(IFileMapper.class).selectById(first.getId());var b=mapper(IFileMapper.class).selectById(second.getId());
+            assertEquals(a.getStorageObjectId(),b.getStorageObjectId());assertEquals(11L,a.getUserId());assertEquals(22L,b.getUserId());
+            assertEquals(0,a.getIsPublic());assertEquals(0,b.getIsPublic());assertEquals("device_cover",b.getBizType());
+            assertEquals(1,mapper(StorageObjectMapper.class).selectCount(null));
+            verify(minio,times(1)).putObject(anyString(),anyString(),any(),anyLong(),eq("image/png"));
         }
     }
-
-    @Test
-    void upload_使用MockMinio生成路径并保存公开头像() throws Exception {
-        when(minioConfig.getBucketName()).thenReturn("test-bucket");
-        MockMultipartFile file = new MockMultipartFile(
-                "file", "Avatar.JPG", "image/jpeg", image("jpeg")
-        );
-        when(fileMapper.insert(any(FileEntity.class))).thenAnswer(invocation -> {
-            FileEntity entity = invocation.getArgument(0);
-            entity.setId("file-id");
-            return 1;
-        });
-        when(minioUtil.getFilePreviewUrl("file-id")).thenReturn("https://preview/file-id");
-
-        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
-            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-
-            var result = fileService.upload(file, FileBizType.AVATAR);
-
-            assertEquals("file-id", result.getId());
-            assertEquals("https://preview/file-id", result.getFileUrl());
-
-            ArgumentCaptor<String> objectNameCaptor = ArgumentCaptor.forClass(String.class);
-            verify(minioUtil).putObject(eq("test-bucket"), objectNameCaptor.capture(), any(), eq(file.getSize()), any());
-            assertTrue(objectNameCaptor.getValue().matches("42/avatar/[0-9a-f-]+\\.jpg"));
-
-            ArgumentCaptor<FileEntity> entityCaptor = ArgumentCaptor.forClass(FileEntity.class);
-            verify(fileMapper).insert(entityCaptor.capture());
-            FileEntity saved = entityCaptor.getValue();
-            assertEquals("avatar", saved.getBizType());
-            assertEquals(1, saved.getIsPublic());
-            assertEquals(objectNameCaptor.getValue(), saved.getFileName());
-
-            completeTransaction(TransactionSynchronization.STATUS_COMMITTED);
-            verify(minioUtil, never()).removeObject(any(), any());
+    @Test void 上传事务回滚保留共享字节不误删已有文件() throws Exception {
+        try(var auth=mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
+            transaction.executeWithoutResult(t->{files.upload(new MockMultipartFile("file","file.png","image/png",image("png")),FileBizType.AVATAR);t.setRollbackOnly();});
+            assertEquals(0,mapper(IFileMapper.class).selectCount(null));assertEquals(0,mapper(StorageObjectMapper.class).selectCount(null));
+            verify(minio,never()).removeObject(anyString(),anyString());
         }
     }
-
-    @Test
-    void upload_私有业务写入私有标记() throws Exception {
-        when(minioConfig.getBucketName()).thenReturn("test-bucket");
-        MockMultipartFile file = new MockMultipartFile(
-                "file", "device.png", "image/png", image("png")
-        );
-        when(fileMapper.insert(any(FileEntity.class))).thenAnswer(invocation -> {
-            FileEntity entity = invocation.getArgument(0);
-            entity.setId("private-file-id");
-            return 1;
-        });
-
-        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
-            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
-
-            fileService.upload(file, FileBizType.DEVICE);
-
-            ArgumentCaptor<FileEntity> entityCaptor = ArgumentCaptor.forClass(FileEntity.class);
-            verify(fileMapper).insert(entityCaptor.capture());
-            assertEquals(0, entityCaptor.getValue().getIsPublic());
-            assertEquals("device", entityCaptor.getValue().getBizType());
-        }
-    }
-
-    @Test
-    void upload_数据库回滚时通过Mock删除Minio对象() throws Exception {
-        when(minioConfig.getBucketName()).thenReturn("test-bucket");
-        MockMultipartFile file = new MockMultipartFile(
-                "file", "photo.png", "image/png", image("png")
-        );
-        when(fileMapper.insert(any(FileEntity.class)))
-                .thenThrow(new IllegalStateException("database error"));
-
-        try (MockedStatic<StpUtil> stpUtil = mockStatic(StpUtil.class)) {
-            stpUtil.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
-
-            IllegalStateException exception = assertThrows(
-                    IllegalStateException.class,
-                    () -> fileService.upload(file, FileBizType.DEVICE)
-            );
-            assertTrue(exception.getMessage().startsWith("上传失败:"));
-
-            ArgumentCaptor<String> objectNameCaptor = ArgumentCaptor.forClass(String.class);
-            verify(minioUtil).putObject(eq("test-bucket"), objectNameCaptor.capture(), any(), eq(file.getSize()), any());
-
-            completeTransaction(TransactionSynchronization.STATUS_ROLLED_BACK);
-            verify(minioUtil).removeObject("test-bucket", objectNameCaptor.getValue());
-        }
-    }
-
-    @Test
-    void upload_空文件直接拒绝且不调用Minio() throws Exception {
-        MockMultipartFile emptyFile = new MockMultipartFile(
-                "file", "empty.png", "image/png", new byte[0]
-        );
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> fileService.upload(emptyFile, FileBizType.DEVICE)
-        );
-
-        verify(minioUtil, never()).putObject(any(), any(), any(), anyLong(), any());
-    }
-
-    private void completeTransaction(int status) {
-        TransactionSynchronizationManager.getSynchronizations()
-                .forEach(synchronization -> synchronization.afterCompletion(status));
+    @Test void 空文件拒绝且不访问对象存储() {
+        assertThrows(IllegalArgumentException.class,()->files.upload(new MockMultipartFile("file",new byte[0]),FileBizType.DEVICE));
+        verifyNoInteractions(minio);
     }
 }

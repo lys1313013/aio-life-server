@@ -33,18 +33,12 @@ public interface AccountErasureMapper {
     @Select("SELECT object_key FROM data_export_job WHERE user_id=#{userId} AND object_key IS NOT NULL")
     List<String> exportObjects(@Param("userId") long userId);
 
-    @Select("SELECT DISTINCT f.file_name FROM file f WHERE f.create_user=#{userId} AND f.storage_object_id IS NULL AND (f.biz_type IS NULL OR f.biz_type <> 'bank_card_template_cover') AND NOT EXISTS (SELECT 1 FROM file other WHERE other.file_name=f.file_name AND (other.create_user IS NULL OR other.create_user <> #{userId} OR other.biz_type='bank_card_template_cover'))")
-    List<String> privateObjects(@Param("userId") long userId);
-
-    @Select("SELECT DISTINCT o.id, o.bucket, o.object_key AS objectKey FROM storage_object o JOIN file f ON f.storage_object_id=o.id WHERE f.create_user=#{userId} AND NOT EXISTS (SELECT 1 FROM file other WHERE other.storage_object_id=o.id AND (other.create_user IS NULL OR other.create_user <> #{userId} OR other.biz_type='bank_card_template_cover'))")
-    List<StoredObject> storedObjects(@Param("userId") long userId);
-
-    @Select("SELECT COUNT(*) FROM file f WHERE (f.storage_object_id=#{id} OR f.file_name=#{key}) AND (f.create_user IS NULL OR f.create_user <> #{userId} OR f.biz_type='bank_card_template_cover')")
-    @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
-    long otherReferences(@Param("userId") long userId, @Param("id") Long id, @Param("key") String key);
-
-    @Delete("DELETE FROM storage_object WHERE id=#{id} AND NOT EXISTS (SELECT 1 FROM file WHERE storage_object_id=#{id})")
-    int purgeStoredObject(@Param("id") long id);
+    @Update("UPDATE storage_object SET create_user=CASE WHEN create_user=#{userId} THEN NULL ELSE create_user END,update_user=CASE WHEN update_user=#{userId} THEN NULL ELSE update_user END WHERE create_user=#{userId} OR update_user=#{userId}")
+    int scrubObjectAudit(long userId);
+    @Update("UPDATE external_resource SET create_user=CASE WHEN create_user=#{userId} THEN NULL ELSE create_user END,update_user=CASE WHEN update_user=#{userId} THEN NULL ELSE update_user END WHERE create_user=#{userId} OR update_user=#{userId}")
+    int scrubSourceAudit(long userId);
+    @Update("UPDATE attachment SET create_user=CASE WHEN create_user=#{userId} THEN NULL ELSE create_user END,update_user=CASE WHEN update_user=#{userId} THEN NULL ELSE update_user END WHERE create_user=#{userId} OR update_user=#{userId}")
+    int scrubAttachmentAudit(long userId);
 
     @Delete("DELETE FROM sys_user WHERE id=#{userId} AND is_deleted=1 AND erasure_requested_at IS NOT NULL")
     int finish(@Param("userId") long userId);
@@ -60,7 +54,7 @@ public interface AccountErasureMapper {
     @Delete("DELETE FROM api_key_log WHERE api_key_id IN (SELECT id FROM api_key WHERE user_id = #{userId})")
     int purgeApiLogs(@Param("userId") long userId, @Param("email") String email);
 
-    @Delete("DELETE FROM image_import_task WHERE video_id IN (SELECT id FROM b_video WHERE user_id = #{userId})")
+    @Delete("DELETE FROM import_job WHERE create_user=#{userId} OR (biz_type='b_video_cover' AND biz_id IN (SELECT id FROM b_video WHERE user_id=#{userId}))")
     int purgeImageTasks(@Param("userId") long userId, @Param("email") String email);
 
     @Delete("DELETE FROM message WHERE receiver_id = #{userId} OR sender_id = #{userId}")
@@ -72,7 +66,7 @@ public interface AccountErasureMapper {
     @Delete("DELETE FROM mail_log WHERE send_to = #{email} AND create_time <= (SELECT erasure_requested_at FROM sys_user WHERE id = #{userId})")
     int purgeMailLogs(@Param("userId") long userId, @Param("email") String email);
 
-    @Delete("DELETE FROM file WHERE create_user = #{userId} AND (biz_type IS NULL OR biz_type <> 'bank_card_template_cover')")
+    @Delete("DELETE FROM attachment WHERE user_id=#{userId}")
     int purgeFiles(@Param("userId") long userId, @Param("email") String email);
 
     @Delete("DELETE FROM \"user_bind\" WHERE user_id = #{userId}")

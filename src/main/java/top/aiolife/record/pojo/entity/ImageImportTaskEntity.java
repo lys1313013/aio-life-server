@@ -4,23 +4,18 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 import top.aiolife.core.pojo.entity.BaseEntity;
 
-/** 下载任务与视频修改同事务入库；租约允许进程重启后恢复。 */
+/** 按目标位置等待来源完成；不领取下载租约，执行器可反复扫描推进。 */
 @Getter
 @Setter
-@ToString
-@TableName("image_import_task")
+@TableName("import_job")
 public class ImageImportTaskEntity extends BaseEntity {
-    private Long videoId;
-    private Long coverVersion;
-    private String sourceUrl;
+    private String bizType;
+    private Long bizId;
+    private Long externalResourceId;
     private String state;
-    private Integer attempts;
     private LocalDateTime nextAttemptAt;
-    private String leaseToken;
-    private LocalDateTime leaseUntil;
-    /** 最近一次失败码，重试成功后保留，便于回溯导入延迟。 */
     private String errorCode;
+    private String resultAttachmentId;
 }

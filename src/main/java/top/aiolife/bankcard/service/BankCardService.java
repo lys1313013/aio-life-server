@@ -1,5 +1,8 @@
 package top.aiolife.bankcard.service;
 
+import top.aiolife.record.mapper.IFileMapper;
+import top.aiolife.record.service.VideoCoverStorage;
+
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import java.net.URI;
 import java.util.*;
@@ -21,7 +24,7 @@ import top.aiolife.bankcard.pojo.vo.BankCardVO;
 @RequiredArgsConstructor
 public class BankCardService {
     public static final String TAG_TYPE = "bank_card_tag";
-    public static final String COVER_TYPE = "bank_card_cover";
+    public static final String COVER_TYPE = "bank_card_face";
     private final BankCardMapper cardMapper;
     private final BankCardCrypto crypto;
     private final BankCardDictionaryGuard guard;
@@ -29,6 +32,8 @@ public class BankCardService {
     private final BankCardTagMapper tagMapper;
     private final BankCardTagRelMapper tagRelMapper;
     private final BankCardFileMapper fileMapper;
+    private final IFileMapper attachments;
+    private final VideoCoverStorage storage;
     private final BankCardCoverTemplateMapper templateMapper;
     private final BankCardCoverTemplateService templates;
 
@@ -178,7 +183,10 @@ public class BankCardService {
                 throw new IllegalArgumentException("卡面文件不存在、已被使用或无权绑定");
         }
         fileMapper.deletePrivateCoversExcept(userId, cardId, fileId);
-        if (fileId != null) fileMapper.bindPrivateCover(cardId, userId, fileId);
+        if (fileId != null) {
+            storage.hold(attachments.selectWithObject(fileId).getStorageObjectId());
+            fileMapper.bindPrivateCover(cardId,userId,fileId);
+        }
     }
     @Transactional(rollbackFor = Exception.class)
     public void delete(long userId,long id) {
@@ -208,8 +216,8 @@ public class BankCardService {
             tag.setColor(req.color());
             tag.setSortOrder(0);
             tag.setIsEnabled(req.isEnabled());
-            tag.setIsDefault("N");
-            tag.setIsReadonly("N");
+            tag.setIsDefault(0);
+            tag.setIsReadonly(0);
             tag.fillCreateCommonField(userId);
             tagMapper.insert(tag);
         } else {

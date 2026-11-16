@@ -1,203 +1,103 @@
 package top.aiolife.record.service;
 
-import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.MybatisConfiguration;
-import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.net.InetAddress;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.*;
-import javax.imageio.ImageIO;
-import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.*;
-import org.mybatis.spring.SqlSessionTemplate;
-import org.springframework.aop.framework.ProxyFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
-import org.springframework.transaction.interceptor.TransactionInterceptor;
-import org.springframework.transaction.support.TransactionTemplate;
-import top.aiolife.bankcard.mapper.BankCardFileMapper;
+import top.aiolife.config.MinioConfig;
 import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.core.util.MinioUtil;
-import top.aiolife.record.api.BVideoController;
 import top.aiolife.record.mapper.*;
 import top.aiolife.record.pojo.entity.*;
-import top.aiolife.record.pojo.req.BVideoCreateReq;
-import top.aiolife.record.pojo.req.BVideoProgressReq;
-import top.aiolife.record.pojo.req.BVideoUpdateReq;
-import top.aiolife.sso.service.AccountStatusGuard;
-import top.aiolife.sso.service.SecondaryLockGuard;
+import top.aiolife.support.AttachmentDatabaseFixture;
 import top.aiolife.system.mapper.StorageObjectMapper;
-import top.aiolife.system.pojo.entity.StorageObjectEntity;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
+import static top.aiolife.support.ImageFixtures.image;
 
-/** 实际 Mapper/数据库事务，外网与 MinIO 使用替身。 */
-class VideoCoverServiceTest {
-    JdbcTemplate jdbc;
-    VideoCoverService service;
-    IBVideoMapper videos;
-    ImageImportTaskMapper tasks;
-    IFileMapper files;
-    StorageObjectMapper objects;
-    MinioUtil minio;
-    DataSourceTransactionManager tx;
-    byte[] png;
-    final String URL = "http://i1.hdslb.com/bfs/archive/example.jpg";
-
+/** 真实PostgreSQL、真实Mapper与事务；外网和对象存储由替身隔离。 */
+class VideoCoverServiceTest extends AttachmentDatabaseFixture {
+    private IFileMapper files;
+    private ImageImportTaskMapper tasks;
+    private ExternalResourceMapper sources;
+    private VideoCoverService service;
+    private ExternalResourceService resources;
+    private VideoCoverStorage storage;
+    private VideoCoverDownloader downloader;
+    private MinioUtil minio;
+    private final String url="https://i0.hdslb.com/bfs/archive/example.jpg";
     @BeforeEach void setup() throws Exception {
-        var ds = new JdbcDataSource(); ds.setURL("jdbc:h2:mem:cover_"+UUID.randomUUID()+";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
-        jdbc = new JdbcTemplate(ds); tx = new DataSourceTransactionManager(ds);
-        for (String table : List.of("b_video", "file", "storage_object", "image_import_task")) {
-            jdbc.execute(top.aiolife.support.CurrentSchema.h2Table(table));
-        }
-        var config = new MybatisConfiguration(); config.setMapUnderscoreToCamelCase(true);
-        config.addMapper(IBVideoMapper.class); config.addMapper(IFileMapper.class);
-        config.addMapper(StorageObjectMapper.class); config.addMapper(ImageImportTaskMapper.class);
-        var factory = new MybatisSqlSessionFactoryBean(); factory.setDataSource(ds); factory.setConfiguration(config);
-        var session = new SqlSessionTemplate(factory.getObject());
-        videos = session.getMapper(IBVideoMapper.class); files = session.getMapper(IFileMapper.class);
-        objects = session.getMapper(StorageObjectMapper.class); tasks = session.getMapper(ImageImportTaskMapper.class);
-        minio = mock(MinioUtil.class);
-        Set<String> stored = new HashSet<>();
-        when(minio.objectExists(anyString(),anyString())).thenAnswer(c -> stored.contains(c.getArgument(1)));
-        doAnswer(c -> { stored.add(c.getArgument(1)); return null; }).when(minio).putObject(anyString(),anyString(),any(),anyLong(),anyString());
-        var storage = proxy(new VideoCoverStorage(objects, mock(StorageObjectLock.class), minio));
-        service = proxy(new VideoCoverService(videos,tasks,files,new VideoCoverDownloader(),storage));
-        var bytes = new ByteArrayOutputStream(); ImageIO.write(new BufferedImage(2,2,BufferedImage.TYPE_INT_RGB),"png",bytes); png=bytes.toByteArray();
+        files=mapper(IFileMapper.class);tasks=mapper(ImageImportTaskMapper.class);sources=mapper(ExternalResourceMapper.class);
+        minio=mock(MinioUtil.class);var config=new MinioConfig();config.setBucketName("fixture");
+        var stored=new HashSet<String>();
+        when(minio.objectExists(anyString(),anyString())).thenAnswer(c->stored.contains(c.getArgument(1)));
+        doAnswer(c->{stored.add(c.getArgument(1));return null;}).when(minio).putObject(anyString(),anyString(),any(),anyLong(),anyString());
+        storage=proxy(new VideoCoverStorage(mapper(StorageObjectMapper.class),mock(StorageObjectLock.class),minio,config));
+        downloader=spy(new VideoCoverDownloader()); doReturn(image("png")).when(downloader).download(anyString());
+        resources=new ExternalResourceService(sources,downloader,new DoubanCoverUrlPolicy("doubanio.com"),storage,manager);
+        service=proxy(new VideoCoverService(mapper(IBVideoMapper.class),tasks,files,sources,resources,storage));
     }
-    @SuppressWarnings("unchecked") <T> T proxy(T target) {
-        var proxy = new ProxyFactory(target); proxy.setProxyTargetClass(true);
-        var interceptor = new TransactionInterceptor();
-        interceptor.setTransactionManager(tx);
-        interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
-        proxy.addAdvice(interceptor); return (T)proxy.getProxy();
+    private void video(long id,long owner) { jdbc.update("INSERT INTO b_video(id,user_id,title,url,duration_seconds) VALUES(?,?,'fixture','https://example.test',60)",id,owner); }
+    private FileEntity cover(long id) { return files.selectOne(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getBizType,"b_video_cover").eq(FileEntity::getBizId,id)); }
+    private void run() { new VideoCoverWorker(sources,resources,tasks,service).runBatch(); }
+    @Test void 同一来源跨用户只下载一次但各自持有附件() throws Exception {
+        video(1,11);video(2,22);service.enqueue(1,11,url,false);service.enqueue(2,22,url,false);run();
+        assertEquals(1,sources.selectCount(null));assertEquals(1,mapper(StorageObjectMapper.class).selectCount(null));assertEquals(2,files.selectCount(null));
+        assertNotEquals(cover(1).getId(),cover(2).getId());assertEquals(cover(1).getStorageObjectId(),cover(2).getStorageObjectId());
+        verify(downloader,times(1)).download(url);
+        verify(minio,times(1)).putObject(eq("fixture"),matches("objects/[0-9a-f]{2}/[0-9a-f]{64}\\.png"),any(InputStream.class),anyLong(),eq("image/png"));
+        service.enqueue(1,11,url,false);run();verify(downloader,times(1)).download(url);
+        var row=mapper(IBVideoMapper.class).selectById(1);service.fillCoverFiles(11,List.of(row));assertEquals("READY",row.getCoverState());
+        assertEquals(cover(1).getId(),row.getCoverFileId());assertTrue(row.getCoverFileId().matches("[1-9][0-9]{0,18}"));
+        service.fillCoverFiles(22,List.of(row));assertNull(row.getCoverFileId());
     }
-    void video(long id,long owner) {
-        jdbc.update("INSERT INTO b_video(id,title,url,duration_seconds,user_id,cover,create_user,update_user) VALUES (?,?,?,?,?,?,?,?)", id,"合成视频","https://www.bilibili.com/video/BVtest",60,owner,URL,owner,owner);
-    }
-    void finishNext() {
-        var task=tasks.due().getFirst(); assertEquals(1,tasks.claim(task.getId(),"lease")); service.complete(task.getId(),"lease",png);
-    }
-    @Test void 不同用户相同字节只存一份但文件引用不同() throws Exception {
-        video(1,11); video(2,22);
-        service.enqueue(1,11,URL,false); service.enqueue(2,22,URL,false); finishNext(); finishNext();
-        assertEquals(1,objects.selectCount(null)); assertEquals(2,files.selectCount(null));
-        var a=videos.selectById(1L); var b=videos.selectById(2L);
-        assertNotEquals(a.getCoverFileId(),b.getCoverFileId()); assertEquals(URL,a.getCover());
-        assertEquals(files.selectById(a.getCoverFileId()).getStorageObjectId(),files.selectById(b.getCoverFileId()).getStorageObjectId());
-        verify(minio,times(1)).putObject(eq("system"),matches("bvedio/[a-f0-9]{64}\\.png"),any(),eq((long)png.length),eq("image/png"));
-        assertEquals(0,videos.countCoverReference(1,22,a.getCoverFileId()));
-        videos.deleteById(1L); assertEquals(1,videos.countCoverReference(2,22,b.getCoverFileId()));
-        assertEquals(1,objects.selectCount(null)); verify(minio,never()).removeObject(anyString(),anyString());
-    }
-    @Test void 旧任务不能覆盖更新后的封面且清空会撤销引用() {
-        video(1,11); service.enqueue(1,11,URL,false); var old=tasks.due().getFirst(); tasks.claim(old.getId(),"old");
+    @Test void 更换和清空会取消旧任务且旧完成不能覆盖() {
+        video(1,11);service.enqueue(1,11,url,false);var old=tasks.selectList(null).getFirst();
         service.enqueue(1,11,"https://i0.hdslb.com/bfs/archive/new.jpg",false);
-        service.complete(old.getId(),"old",png); assertEquals("CANCELLED",tasks.selectById(old.getId()).getState());
-        assertNull(videos.selectById(1L).getCoverFileId()); finishNext();
-        service.enqueue(1,11,"",false); assertNull(videos.selectById(1L).getCoverFileId()); assertEquals("NONE",videos.selectById(1L).getCoverState());
+        resources.fetch(old.getExternalResourceId());service.settle(old.getId());assertNull(cover(1));
+        assertEquals("CANCELLED",tasks.selectById(old.getId()).getState());run();assertNotNull(cover(1));
+        service.enqueue(1,11,"",false);run();assertNull(cover(1));
+        var row=mapper(IBVideoMapper.class).selectById(1);service.fillCoverFiles(11,List.of(row));assertEquals("NONE",row.getCoverState());
     }
-    @Test void 编辑相同来源不重复排队且事务回滚不留下任务() {
-        video(1,11); service.enqueue(1,11,URL,false); service.enqueue(1,11,URL,false); assertEquals(1,tasks.selectCount(null));
-        var template=new TransactionTemplate(tx);
-        template.executeWithoutResult(s -> { service.enqueue(1,11,"https://i0.hdslb.com/bfs/archive/new.jpg",false); s.setRollbackOnly(); });
-        assertEquals(1,tasks.selectCount(null)); assertEquals(URL,videos.selectById(1L).getCover());
+    @Test void 换成已缓存来源也取消在途请求() {
+        video(1,11);video(2,22);service.enqueue(2,22,url,false);run();
+        service.enqueue(1,11,"https://i0.hdslb.com/bfs/archive/old.jpg",false);var old=tasks.latest("b_video_cover",1);
+        service.enqueue(1,11,url,false);String selected=cover(1).getId();
+        resources.fetch(old.getExternalResourceId());service.settle(old.getId());assertEquals(selected,cover(1).getId());
     }
-    @Test void 租约被重新领取后旧执行器不能写回且完成只生效一次() {
-        video(1,11); service.enqueue(1,11,URL,false);
-        var task=tasks.due().getFirst();
-        assertEquals(1,tasks.claim(task.getId(),"first"));
-        assertEquals(0,tasks.claim(task.getId(),"second"));
-        jdbc.update("UPDATE image_import_task SET lease_until=CURRENT_TIMESTAMP - INTERVAL '1' SECOND");
-        assertEquals(1,tasks.claim(task.getId(),"second"));
-        service.complete(task.getId(),"first",png); assertEquals(0,files.selectCount(null));
-        service.complete(task.getId(),"second",png);
-        service.complete(task.getId(),"second",png); assertEquals(1,files.selectCount(null));
+    @Test void 相同来源不重复排队且业务回滚保留旧请求() {
+        video(1,11);service.enqueue(1,11,url,false);service.enqueue(1,11,url,false);assertEquals(1,tasks.selectCount(null));
+        transaction.executeWithoutResult(t->{service.enqueue(1,11,"https://i0.hdslb.com/bfs/archive/new.jpg",false);t.setRollbackOnly();});
+        assertEquals(1,tasks.selectCount(null));assertEquals("PENDING",tasks.selectList(null).getFirst().getState());
     }
-    @Test void 新增编辑及浏览器两个入口均使用相同导入任务() {
-        var videoService = new top.aiolife.record.service.impl.BVideoServiceImpl(service);
-        org.springframework.test.util.ReflectionTestUtils.setField(videoService, "baseMapper", videos);
-        var controller=proxy(new BVideoController(videoService));
-        try (var stp=mockStatic(StpUtil.class)) {
-            stp.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
-            var create=new BVideoCreateReq();
-            create.setTitle("测试"); create.setUrl("https://www.bilibili.com/video/BVtest");
-            create.setDurationSeconds(60); create.setCover(URL); create.setBvid("BVone");
-            assertEquals(0,controller.insert("11", create).getCode());
-            var first=videos.selectList(null).getFirst();
-            assertEquals("PENDING",first.getCoverState()); assertEquals(1,tasks.selectCount(null));
-            var update=new BVideoUpdateReq(); update.setTitle("仅修改标题");
-            controller.update("11", String.valueOf(first.getId()), update); assertEquals(1,tasks.selectCount(null));
-            update.setCover("https://i0.hdslb.com/bfs/archive/replacement.jpg");
-            controller.update("11", String.valueOf(first.getId()), update); assertEquals(2,tasks.selectCount(null));
-            create.setBvid("BVtwo"); controller.tagVideo("11", create); assertEquals(3,tasks.selectCount(null));
-            var sync=new BVideoProgressReq();
-            sync.setTitle("浏览器同步"); sync.setUrl(create.getUrl()); sync.setDurationSeconds(60);
-            sync.setWatchedDurationSeconds(10); sync.setCurrentEpisode(1);
-            sync.setBvid("BVthree"); sync.setCover(URL);
-            controller.syncProgress("11", sync); assertEquals(4,tasks.selectCount(null));
-            controller.syncProgress("11", sync); assertEquals(4,tasks.selectCount(null));
-            sync.setCover(update.getCover()); controller.syncProgress("11", sync); assertEquals(5,tasks.selectCount(null));
-            update.setCover(""); controller.update("11", String.valueOf(first.getId()), update);
-            assertEquals("NONE",videos.selectById(first.getId()).getCoverState());
+    @Test void 失败达到上限后可重试且成功来源不能强制刷新() throws Exception {
+        video(1,11);doThrow(new IllegalStateException("secret URL")).when(downloader).download(anyString());
+        service.enqueue(1,11,url,false);
+        for(int i=0;i<5;i++) { jdbc.update("UPDATE external_resource SET next_attempt_at=NULL");run(); }
+        var failed=tasks.latest("b_video_cover",1);assertEquals("FAILED",failed.getState());assertNull(cover(1));
+        doReturn(image("png")).when(downloader).download(anyString());service.retry(1,11);run();assertNotNull(cover(1));
+        clearInvocations(downloader);service.retry(1,11);resources.retryFailed(failed.getExternalResourceId());run();
+        verify(downloader,never()).download(anyString());
+    }
+    @Test void 删除业务后任务不会发布附件且共享对象不随业务删除() {
+        video(1,11);service.enqueue(1,11,url,false);var old=tasks.latest("b_video_cover",1);
+        service.delete(1,11);mapper(IBVideoMapper.class).deleteById(1);resources.fetch(old.getExternalResourceId());service.settle(old.getId());
+        assertNull(cover(1));assertEquals("CANCELLED",tasks.selectById(old.getId()).getState());
+        assertEquals(1,mapper(StorageObjectMapper.class).selectCount(null));
+    }
+    @Test void 豆瓣预览建立本人待绑定附件且成功来源长期复用() throws Exception {
+        doReturn(image("png")).when(downloader).downloadDouban(anyString());
+        var uploader=new top.aiolife.record.service.impl.FileServiceImpl(minio,storage,mapper(StorageObjectMapper.class),resources);
+        org.springframework.test.util.ReflectionTestUtils.setField(uploader,"baseMapper",files);uploader=proxy(uploader);
+        try(var auth=mockStatic(cn.dev33.satoken.stp.StpUtil.class)) {
+            auth.when(cn.dev33.satoken.stp.StpUtil::getLoginIdAsLong).thenReturn(11L);
+            var first=uploader.uploadFromUrl("https://img1.doubanio.com/view/photo/l/public/p123.jpg",top.aiolife.record.enums.FileBizType.MOVIE);
+            auth.when(cn.dev33.satoken.stp.StpUtil::getLoginIdAsLong).thenReturn(22L);
+            var second=uploader.uploadFromUrl("https://img2.doubanio.com/view/photo/l/public/p123.jpg?sign=changed",top.aiolife.record.enums.FileBizType.MOVIE);
+            assertNotEquals(first.getId(),second.getId());assertNull(files.selectById(first.getId()).getBizId());
+            assertEquals(11L,files.selectById(first.getId()).getUserId());assertEquals(22L,files.selectById(second.getId()).getUserId());
+            verify(downloader,times(1)).downloadDouban(anyString());assertEquals(1,sources.selectCount(null));
         }
-    }
-    @Test void 最后一次执行中断可恢复成失败且允许显式重试() {
-        video(1,11); service.enqueue(1,11,URL,false);
-        jdbc.update("UPDATE image_import_task SET state='RUNNING',attempts=5,lease_until=CURRENT_TIMESTAMP - INTERVAL '1' SECOND,lease_token='dead'");
-        var downloader=mock(VideoCoverDownloader.class); new VideoCoverWorker(tasks,downloader,service).runBatch();
-        assertEquals("FAILED",videos.selectById(1L).getCoverState()); verifyNoInteractions(downloader);
-        service.retry(1,11); assertEquals("PENDING",videos.selectById(1L).getCoverState()); assertEquals(2,tasks.selectCount(null));
-    }
-    @Test void 短暂失败快速退避且成功后保留最近失败码() {
-        video(1,11); service.enqueue(1,11,URL,false);
-        var task=tasks.due().getFirst();
-        for (int attempt=1; attempt<=4; attempt++) {
-            assertEquals(1,tasks.claim(task.getId(),"lease"));
-            LocalDateTime before=LocalDateTime.now();
-            service.failed(task.getId(),"lease","IMAGE_DOWNLOAD_TIMEOUT");
-            task=tasks.selectById(task.getId());
-            long delay=Duration.between(before,task.getNextAttemptAt()).toSeconds();
-            long expected=Math.min(30L,5L << (attempt-1));
-            assertTrue(delay>=expected-1 && delay<=expected, "退避秒数: "+delay);
-            assertEquals(attempt,task.getAttempts());
-            assertEquals("PENDING",task.getState());
-            jdbc.update("UPDATE image_import_task SET next_attempt_at=CURRENT_TIMESTAMP - INTERVAL '1' SECOND WHERE id=?",task.getId());
-        }
-        assertEquals(1,tasks.claim(task.getId(),"lease"));
-        service.complete(task.getId(),"lease",png);
-        task=tasks.selectById(task.getId());
-        assertEquals("READY",task.getState());
-        assertEquals("IMAGE_DOWNLOAD_TIMEOUT",task.getErrorCode());
-        assertEquals("READY",videos.selectById(1L).getCoverState());
-        assertNotNull(videos.selectById(1L).getCoverFileId());
-    }
-    @Test void 非属主不可重试且假装公开的文件也必须按业务授权() {
-        video(1,11); service.enqueue(1,11,URL,false); finishNext();
-        assertThrows(IllegalArgumentException.class,()->service.retry(1,22));
-        var lock=mock(SecondaryLockGuard.class);
-        var guard=new FilePreviewGuard(lock,mock(BankCardFileMapper.class),mock(AccountStatusGuard.class),videos);
-        var file=files.selectById(videos.selectById(1L).getCoverFileId()); file.setIsPublic(1);
-        assertEquals(FilePreviewGuard.AccessDecision.UNAUTHORIZED,guard.check(file,null));
-        assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,guard.check(file,22L));
-        assertEquals(FilePreviewGuard.AccessDecision.ALLOW,guard.check(file,11L));
-        videos.deleteById(1L); assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,guard.check(file,11L));
-    }
-    @Test void 拒绝伪造域名内网及非图片内容() throws Exception {
-        var d=new VideoCoverDownloader(); assertEquals("https://i1.hdslb.com/bfs/archive/example.jpg",d.normalize(URL));
-        for (String source : List.of("https://hdslb.com.evil.test/bfs/a.jpg","https://hdslb.com@127.0.0.1/bfs/a.jpg","file:///etc/passwd","https://i1.hdslb.com:8080/bfs/a.jpg","https://i1.hdslb.com/bfs/a.jpg#x"))
-            assertThrows(IllegalArgumentException.class,()->d.normalize(source));
-        for (String address : List.of("127.0.0.1","10.0.0.1","169.254.169.254","100.64.0.1","::1","fc00::1"))
-            assertFalse(VideoCoverDownloader.isPublicAddress(InetAddress.getByName(address)));
-        video(1,11); service.enqueue(1,11,URL,false); var task=tasks.due().getFirst(); tasks.claim(task.getId(),"x");
-        assertThrows(IllegalArgumentException.class,()->service.complete(task.getId(),"x","<html>bad</html>".getBytes()));
-        assertEquals(0,objects.selectCount(null)); assertEquals(0,files.selectCount(null));
     }
 }

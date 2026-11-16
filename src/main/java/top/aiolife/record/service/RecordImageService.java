@@ -19,12 +19,13 @@ import top.aiolife.record.mapper.IFileMapper;
 import top.aiolife.record.mapper.RecordImageMapper;
 import top.aiolife.record.pojo.entity.FileEntity;
 
-/** 四类单图业务统一使用 file.biz_type/biz_id，不在业务表保存文件引用。 */
+/** 四类单图业务统一使用 attachment.biz_type/biz_id，不在业务表保存文件引用。 */
 @Service
 @RequiredArgsConstructor
 public class RecordImageService {
     private final IFileMapper files;
     private final RecordImageMapper records;
+    private final VideoCoverStorage storage;
 
     /** null 或空白清除当前图片；替换只解除旧关联，不删除存储对象。 */
     @Transactional(rollbackFor = Exception.class)
@@ -37,10 +38,11 @@ public class RecordImageService {
         String selected = fileId == null || fileId.isBlank() ? null : fileId;
         if (selected != null) {
             FileEntity file = files.selectForAvatarBinding(selected);
-            if (file == null || !Objects.equals(file.getCreateUser(), userId)
+            if (file == null || !Objects.equals(file.getUserId(), userId)
                     || !bizType.equals(file.getBizType())) {
                 throw new IllegalArgumentException("图片不存在、类型不匹配或无权限");
             }
+            storage.hold(file.getStorageObjectId());
             if (file.getBizId() != null && !Objects.equals(file.getBizId(), bizId)) {
                 // 同一商品多件可复用图片字节，每件仍有独立的附件归属，不能迁走原记录的图片。
                 var copy = new FileEntity();
@@ -54,18 +56,29 @@ public class RecordImageService {
         }
         var detach = new LambdaUpdateWrapper<FileEntity>()
                 .eq(FileEntity::getBizType, bizType).eq(FileEntity::getBizId, bizId)
-                .eq(FileEntity::getCreateUser, userId)
+                .eq(FileEntity::getUserId, userId)
                 .ne(selected != null, FileEntity::getId, selected)
                 .set(FileEntity::getBizId, null)
                 .set(FileEntity::getUpdateUser, userId).set(FileEntity::getUpdateTime, LocalDateTime.now());
         files.update(null, detach);
         if (selected != null) {
             files.update(null, new LambdaUpdateWrapper<FileEntity>()
-                    .eq(FileEntity::getId, selected).eq(FileEntity::getCreateUser, userId)
+                    .eq(FileEntity::getId, selected).eq(FileEntity::getUserId, userId)
                     .set(FileEntity::getBizId, bizId)
                     .set(FileEntity::getUpdateUser, userId).set(FileEntity::getUpdateTime, LocalDateTime.now()));
         }
         return selected;
+    }
+
+    /** 删除业务时在同一个业务记录行锁下软删附件，字节与成功来源继续保留。 */
+    @Transactional(rollbackFor=Exception.class)
+    public void delete(long userId,FileBizType type,long bizId) {
+        requireSupported(type);
+        if(records.lockOwned(userId,type.getBizType(),bizId)==null) return;
+        files.update(null,new LambdaUpdateWrapper<FileEntity>().eq(FileEntity::getUserId,userId)
+            .eq(FileEntity::getBizType,type.getBizType()).eq(FileEntity::getBizId,bizId)
+            .set(FileEntity::getIsDeleted,1).set(FileEntity::getIsPublic,0)
+            .set(FileEntity::getUpdateUser,userId).set(FileEntity::getUpdateTime,LocalDateTime.now()));
     }
 
     public String find(long userId, FileBizType type, long bizId) {
@@ -79,7 +92,7 @@ public class RecordImageService {
         var result = new HashMap<Long, String>();
         files.selectList(new LambdaQueryWrapper<FileEntity>()
                 .select(FileEntity::getId, FileEntity::getBizId)
-                .eq(FileEntity::getCreateUser, userId).eq(FileEntity::getBizType, type.getBizType())
+                .eq(FileEntity::getUserId, userId).eq(FileEntity::getBizType, type.getBizType())
                 .in(FileEntity::getBizId, bizIds))
                 .forEach(file -> result.put(file.getBizId(), file.getId()));
         return result;

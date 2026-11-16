@@ -49,8 +49,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /** H2真实事务+Mapper；用线程互斥实现Redis锁测试替身，MinIO无外部副作用。 */
-class StorageUploadCoordinationTest {
-    JdbcTemplate jdbc;
+class StorageUploadCoordinationTest extends top.aiolife.support.AttachmentDatabaseFixture {
     MinioUtil uploads;
     MinioClient deletes;
     StorageObjectLock locks;
@@ -65,14 +64,7 @@ class StorageUploadCoordinationTest {
     @BeforeEach void setup() throws Exception {
         written = new CountDownLatch(1); finish = new CountDownLatch(1); key = new AtomicReference<>();
         executor = Executors.newSingleThreadExecutor();
-        var ds = new JdbcDataSource(); ds.setURL("jdbc:h2:mem:upload_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
-        jdbc = new JdbcTemplate(ds);
-        jdbc.execute("CREATE TABLE file(id VARCHAR(32) PRIMARY KEY, storage_object_id BIGINT, file_name VARCHAR(1024), file_size BIGINT, file_type VARCHAR(100), hash_value VARCHAR(255), biz_type VARCHAR(50), biz_id BIGINT, is_public INT, create_user BIGINT, update_user BIGINT, create_time TIMESTAMP, update_time TIMESTAMP, is_deleted INT DEFAULT 0)");
-        jdbc.execute("CREATE TABLE cbti_personality(id BIGINT, image_object VARCHAR(1024), is_deleted INT)");
-        var cfg = new MybatisConfiguration(); cfg.setMapUnderscoreToCamelCase(true);
-        cfg.addMapper(IFileMapper.class); cfg.addMapper(StorageFileReferenceMapper.class);
-        var factory = new MybatisSqlSessionFactoryBean(); factory.setDataSource(ds); factory.setConfiguration(cfg);
-        var session = new SqlSessionTemplate(factory.getObject());
+        jdbc.execute("DELETE FROM cbti_personality");
         var redis = mock(RedissonClient.class);
         when(redis.getLock(anyString())).thenAnswer(call -> {
             var mutex = mutexes.computeIfAbsent(call.getArgument(0), ignored -> new ReentrantLock());
@@ -86,7 +78,8 @@ class StorageUploadCoordinationTest {
         uploads = mock(MinioUtil.class); deletes = mock(MinioClient.class);
         doAnswer(call -> { key.set(call.getArgument(1)); return null; }).when(uploads).putObject(anyString(), anyString(), any(), anyLong(), anyString());
         var config = new MinioConfig(); config.setBucketName("business");
-        var target = new FileServiceImpl(uploads, config, locks, new DoubanCoverUrlPolicy("doubanio.com")) {
+        var objectStorage=proxy(new top.aiolife.record.service.VideoCoverStorage(session.getMapper(StorageObjectMapper.class),locks,uploads,config));
+        var target = new FileServiceImpl(uploads,objectStorage,session.getMapper(StorageObjectMapper.class),mock(top.aiolife.record.service.ExternalResourceService.class)) {
             @Override public boolean save(FileEntity entity) {
                 boolean saved = super.save(entity);
                 written.countDown();
@@ -99,17 +92,17 @@ class StorageUploadCoordinationTest {
         ReflectionTestUtils.setField(target, "baseMapper", session.getMapper(IFileMapper.class));
         var proxy = new ProxyFactory(target); proxy.setProxyTargetClass(true);
         var interceptor = new TransactionInterceptor();
-        interceptor.setTransactionManager(new DataSourceTransactionManager(ds));
+        interceptor.setTransactionManager(manager);
         interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
         proxy.addAdvice(interceptor);
         files = (FileServiceImpl) proxy.getProxy();
         admin = new StorageAdminService(config, mock(StorageListClient.class), deletes,
-                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class), new CbtiConfig(), mock(StorageObjectMapper.class)), locks);
+                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class), new CbtiConfig(), session.getMapper(StorageObjectMapper.class)), locks);
     }
 
     @AfterEach void close() throws Exception {
         finish.countDown(); executor.shutdown(); assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
-        jdbc.execute("DROP ALL OBJECTS");
+
     }
 
     Future<?> upload() {
@@ -123,28 +116,24 @@ class StorageUploadCoordinationTest {
 
     @Test void 未提交上传阻止管理员删除且提交后引用继续保护() throws Exception {
         var result = upload(); assertTrue(written.await(10, TimeUnit.SECONDS));
-        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM file", Integer.class));
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM attachment", Integer.class));
         assertEquals(409, assertThrows(ResponseStatusException.class, () -> admin.delete(key.get())).getStatusCode().value());
         verifyNoInteractions(deletes);
         finish.countDown(); result.get(10, TimeUnit.SECONDS);
-        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM file", Integer.class));
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM attachment", Integer.class));
         assertEquals(409, assertThrows(ResponseStatusException.class, () -> admin.delete(key.get())).getStatusCode().value());
         verifyNoInteractions(deletes);
         assertTrue(mutexes.values().stream().noneMatch(ReentrantLock::isLocked));
     }
 
-    @Test void 回滚清理完成前保持对象锁且最终释放() throws Exception {
-        failSave = true;
-        doAnswer(call -> {
-            assertTrue(mutexes.values().stream().anyMatch(ReentrantLock::isHeldByCurrentThread), "回滚清理时仍须持锁");
-            return null;
-        }).when(uploads).removeObject(anyString(), anyString());
-        var result = upload(); assertTrue(written.await(10, TimeUnit.SECONDS));
-        finish.countDown(); assertThrows(ExecutionException.class, () -> result.get(10, TimeUnit.SECONDS));
-        verify(uploads).removeObject("business", key.get());
-        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM file", Integer.class));
+    @Test void 回滚不删除共享字节但仍释放对象锁() throws Exception {
+        failSave=true;
+        var result=upload();assertTrue(written.await(10,TimeUnit.SECONDS));
+        finish.countDown();assertThrows(ExecutionException.class,()->result.get(10,TimeUnit.SECONDS));
+        verify(uploads,never()).removeObject(anyString(),anyString());
+        assertEquals(0,jdbc.queryForObject("SELECT count(*) FROM attachment",Integer.class));
         assertTrue(mutexes.values().stream().noneMatch(ReentrantLock::isLocked));
-        admin.delete(key.get()); verify(deletes).removeObject(any());
+        admin.delete(key.get());verify(deletes).removeObject(any());
     }
 
     @Test void 未经事务代理的上传在写对象前被拒绝() {
@@ -152,41 +141,16 @@ class StorageUploadCoordinationTest {
         assertTrue(mutexes.isEmpty());
     }
 
-    @ParameterizedTest
-    @EnumSource(value = FileBizType.class, names = {"MOVIE", "READ_RECORD"})
-    void URL上传同样保持锁直到文件事务提交(FileBizType bizType) throws Exception {
-        String imageUrl = "https://img1.doubanio.com/cover.png";
-        var request = mock(HttpRequest.class, RETURNS_SELF);
-        when(request.header(anyString(), anyString())).thenReturn(request);
-        var response = mock(HttpResponse.class);
-        when(request.executeAsync()).thenReturn(response);
-        when(response.getStatus()).thenReturn(200);
-        when(response.bodyStream()).thenReturn(new ByteArrayInputStream(ImageFixtures.image("png")));
-        doAnswer(call -> { key.set(call.getArgument(1)); return null; }).when(uploads).putObject(anyString(), anyString(), any(), anyLong(), anyString());
-        try {
-            var result = executor.submit(() -> {
-                // 静态替身仅对当前线程生效；保留真实来源校验、事务和对象锁。
-                try (var http = mockStatic(HttpRequest.class); var login = mockStatic(StpUtil.class)) {
-                    http.when(() -> HttpRequest.get(imageUrl)).thenReturn(request);
-                    login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
-                    files.uploadFromUrl(imageUrl, bizType);
-                }
-            });
-            if (!written.await(10, TimeUnit.SECONDS)) {
-                result.get(1, TimeUnit.SECONDS); // 优先暴露上传线程的实际异常。
-                fail("URL 上传未进入文件保存阶段");
-            }
-            assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM file", Integer.class));
-            assertEquals(409, assertThrows(ResponseStatusException.class, () -> admin.delete(key.get())).getStatusCode().value());
-            finish.countDown(); result.get(10, TimeUnit.SECONDS);
-            assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM file", Integer.class));
-            assertEquals(bizType.getBizType(), jdbc.queryForObject("SELECT biz_type FROM file", String.class));
-            assertEquals(409, assertThrows(ResponseStatusException.class, () -> admin.delete(key.get())).getStatusCode().value());
-            verifyNoInteractions(deletes);
-            assertTrue(mutexes.values().stream().noneMatch(ReentrantLock::isLocked));
-            verify(request).setFollowRedirects(false);
-            verify(response).close();
-        } finally { finish.countDown(); }
+    @Test void 复用现有对象也持锁直到业务事务提交() throws Exception {
+        var result=upload();assertTrue(written.await(10,TimeUnit.SECONDS));finish.countDown();result.get(10,TimeUnit.SECONDS);
+        String objectKey=key.get();
+        var file=session.getMapper(IFileMapper.class).selectList(null).getFirst();
+        var storage=proxy(new top.aiolife.record.service.VideoCoverStorage(session.getMapper(StorageObjectMapper.class),locks,uploads,new MinioConfig()));
+        transaction.executeWithoutResult(t->{storage.hold(file.getStorageObjectId());
+            assertTrue(mutexes.values().stream().anyMatch(ReentrantLock::isHeldByCurrentThread));
+            assertEquals(objectKey,key.get());
+        });
+        assertTrue(mutexes.values().stream().noneMatch(ReentrantLock::isLocked));
     }
 
     @Test void CBTI直接上传的对象与人格引用更新也在共享锁内() throws Exception {
@@ -195,7 +159,7 @@ class StorageUploadCoordinationTest {
         var mapper = mock(ICbtiPersonalityMapper.class);
         var entity = new CbtiPersonalityEntity(); entity.setId(7L); entity.setCode("TEST");
         when(mapper.selectOne(any())).thenReturn(entity);
-        jdbc.update("INSERT INTO cbti_personality VALUES(7, 'old.png', 0)");
+        jdbc.update("INSERT INTO cbti_personality(id,code,name,image_object) VALUES(7,'TEST','fixture','old.png')");
         when(mapper.updateById(any(CbtiPersonalityEntity.class))).thenAnswer(call ->
                 jdbc.update("UPDATE cbti_personality SET image_object=? WHERE id=7", call.getArgument(0, CbtiPersonalityEntity.class).getImageObject()));
         doAnswer(call -> {

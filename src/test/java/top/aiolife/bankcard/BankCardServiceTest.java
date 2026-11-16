@@ -57,14 +57,15 @@ class BankCardServiceTest {
         jdbc.execute("CREATE TABLE sys_dict_data(dict_code BIGINT PRIMARY KEY,dict_id BIGINT,dict_label VARCHAR(100),dict_value VARCHAR(100),sort_order INT,is_enabled SMALLINT,is_deleted INT DEFAULT 0)");
         jdbc.execute("INSERT INTO sys_dict_type VALUES(10,'bank',1,0),(11,'other',1,0)");
         jdbc.execute("INSERT INTO sys_dict_data VALUES(20,10,'测试银行','TEST',0,1,0),(21,11,'其他字典','OTHER',0,1,0)");
-        jdbc.execute("CREATE TABLE user_dict_data(id BIGINT PRIMARY KEY,user_id BIGINT,dict_type VARCHAR(100),dict_label VARCHAR(100),dict_value VARCHAR(100),color VARCHAR(20),sort_order INT,is_enabled SMALLINT,is_default CHAR(1),is_readonly CHAR(1),is_deleted INT DEFAULT 0,create_user BIGINT,update_user BIGINT,create_time DATETIME,update_time DATETIME)");
-        jdbc.execute("CREATE TABLE file(id VARCHAR(32) PRIMARY KEY,biz_type VARCHAR(50),biz_id BIGINT,create_user BIGINT,update_user BIGINT,is_deleted INT DEFAULT 0,is_public INT DEFAULT 0,update_time DATETIME)");
+        jdbc.execute("CREATE TABLE user_dict_data(id BIGINT PRIMARY KEY,user_id BIGINT,dict_type VARCHAR(100),dict_label VARCHAR(100),dict_value VARCHAR(100),color VARCHAR(20),sort_order INT,is_enabled SMALLINT,is_default SMALLINT,is_readonly SMALLINT,is_deleted INT DEFAULT 0,create_user BIGINT,update_user BIGINT,create_time DATETIME,update_time DATETIME)");
+        top.aiolife.support.AttachmentTestFixtures.create(jdbc);
         for (String table : List.of("bank_card", "bank_card_tag_rel", "bank_card_cover_template")) {
             jdbc.execute(CurrentSchema.h2Table(table));
         }
         crypto = new BankCardCrypto(Base64.getEncoder().encodeToString(new byte[32]));
         var config = new MybatisConfiguration();
         config.addMappers("top.aiolife.bankcard.mapper");
+        config.addMapper(top.aiolife.record.mapper.IFileMapper.class);
         var factory = new MybatisSqlSessionFactoryBean();
         factory.setDataSource(ds);
         factory.setConfiguration(config);
@@ -79,16 +80,16 @@ class BankCardServiceTest {
         guard = new BankCardDictionaryGuard(dictionaries, cards, covers);
         var minio = new MinioUtil();
         ReflectionTestUtils.setField(minio, "serveBaseUrl", "https://example.test/api");
-        templateService = new BankCardCoverTemplateService(covers, guard, dictionaries, cards, files, minio);
+        templateService = new BankCardCoverTemplateService(covers, guard, dictionaries, cards, files, minio,session.getMapper(top.aiolife.record.mapper.IFileMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class));
         service = new BankCardService(cards, crypto, guard, dictionaries,
                 session.getMapper(BankCardTagMapper.class), session.getMapper(BankCardTagRelMapper.class),
-                files, covers, templateService);
+                files,session.getMapper(top.aiolife.record.mapper.IFileMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class), covers, templateService);
     }
     BankCardReq request() {
         var req=new BankCardReq(); req.setBankId(20L);req.setCardType("debit");req.setStatus("normal");req.setCardNo(NUMBER);return req;
     }
     BankCardVO create(long userId,BankCardReq req) { return tx.execute(s->service.save(userId,null,req)); }
-    void file(String id,long userId) { jdbc.update("INSERT INTO file(id,biz_type,create_user) VALUES(?,?,?)",id,"bank_card_cover",userId); }
+    void file(String id,long userId) { jdbc.update("INSERT INTO attachment(id,biz_type,user_id,create_user) VALUES(?,?,?,?)",id,"bank_card_face",userId,userId); }
     @Test void testBalance_保存修改清空及字符串金额契约() throws Exception {
         var req = request();
         assertNull(create(2, req).getBalance());
@@ -256,11 +257,11 @@ class BankCardServiceTest {
         req.setCardNo(null);req.setAlias("不得提交");req.setCoverFileIds(List.of(FILE_B));
         assertThrows(IllegalArgumentException.class,()->tx.execute(s->service.save(1,id,req)));
         assertNull(service.detail(1,id).getAlias());assertEquals(List.of(FILE_A),service.detail(1,id).getCoverFileIds());
-        jdbc.update("UPDATE file SET create_user=1 WHERE id=?",FILE_B);
+        jdbc.update("UPDATE attachment SET user_id=1 WHERE id=?",FILE_B);
         var otherReq=request();otherReq.setCardNo("6222000000005678");otherReq.setCoverFileIds(List.of(FILE_B));create(1,otherReq);
         assertThrows(IllegalArgumentException.class,()->tx.execute(s->service.save(1,id,req)));
         req.setCoverFileIds(List.of());tx.execute(s->service.save(1,id,req));
-        assertTrue(service.detail(1,id).getCoverFileIds().isEmpty());assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM file WHERE id=?",Integer.class,FILE_A));
+        assertTrue(service.detail(1,id).getCoverFileIds().isEmpty());assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE id=?",Integer.class,FILE_A));
     }
     @Test void tagsArePrivateRenamableAndRemovedWithRelations() {
         var tag=tx.execute(s->service.saveTag(1,null,new BankCardTagReq("工资卡","#64748b",1)));
@@ -302,9 +303,9 @@ class BankCardServiceTest {
     @Test void privateCoverGuardChecksOwnerAndDeletedBankCard() {
         var lock=Mockito.mock(SecondaryLockGuard.class);
         var preview=new FilePreviewGuard(lock,fileMapper,
-                Mockito.mock(AccountStatusGuard.class), Mockito.mock(IBVideoMapper.class));
+                Mockito.mock(AccountStatusGuard.class), Mockito.mock(IBVideoMapper.class), org.mockito.Mockito.mock(top.aiolife.record.mapper.AttachmentBusinessMapper.class));
         var file=new FileEntity();
-        file.setBizType("bank_card_cover");file.setCreateUser(1L);file.setIsPublic(1);
+        file.setBizType("bank_card_face");file.setUserId(1L);file.setCreateUser(1L);file.setIsPublic(1);
         assertEquals(FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));
         assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,2L));
         assertEquals(FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,1L));
@@ -320,7 +321,7 @@ class BankCardServiceTest {
         return req;
     }
     void templateFile(String id,long userId) {
-        jdbc.update("INSERT INTO file(id,biz_type,create_user) VALUES(?,?,?)",id,BankCardCoverTemplateService.FILE_TYPE,userId);
+        jdbc.update("INSERT INTO attachment(id,biz_type,user_id,create_user) VALUES(?,?,?,?)",id,BankCardCoverTemplateService.FILE_TYPE,null,userId);
     }
     long template() {
         templateFile(FILE_A,1);
@@ -331,7 +332,7 @@ class BankCardServiceTest {
         var first=create(1,req);var second=create(2,req);
         assertEquals(FILE_A,first.getCoverTemplateFileId());assertTrue(first.getCoverFileIds().isEmpty());
         assertEquals(2,templates().detail(id).usageCount());
-        String firstUrl = "https://example.test/api/public/images/" + FILE_A + ".png";
+        String firstUrl = "https://example.test/api/f/" + "a".repeat(64) + ".png";
         assertEquals(firstUrl, first.getCoverTemplatePublicUrl());
         assertEquals(firstUrl, templates().detail(id).publicUrl());
         assertEquals(firstUrl, templates().options(20,"debit").getFirst().publicUrl());
@@ -339,11 +340,11 @@ class BankCardServiceTest {
         var edit=templateReq(FILE_B);edit.setName("新版卡面");edit.setSourceUrl("https://example.com/card");
         tx.execute(s->templates().save(2,id,edit));
         assertEquals(FILE_B,service.detail(1,Long.parseLong(first.getId())).getCoverTemplateFileId());
-        assertEquals("https://example.test/api/public/images/" + FILE_B + ".png",
+        assertEquals("https://example.test/api/f/" + "a".repeat(64) + ".png",
                 service.detail(1,Long.parseLong(first.getId())).getCoverTemplatePublicUrl());
         assertEquals("新版卡面",service.detail(2,Long.parseLong(second.getId())).getCoverTemplateName());
         assertEquals("https://example.com/card",service.list(1).getFirst().getCoverSourceUrl());
-        assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM file WHERE id=?",Integer.class,FILE_A));
+        assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE id=?",Integer.class,FILE_A));
     }
     @Test void 停用不允许新选用但既有引用可编辑并显示() {
         long id=template();var req=request();req.setCoverTemplateId(id);var card=create(1,req);
@@ -374,10 +375,10 @@ class BankCardServiceTest {
         long id=template();file(FILE_B,1);var req=request();req.setCoverFileIds(List.of(FILE_B));var card=create(1,req);
         req.setCoverFileIds(List.of());req.setCoverTemplateId(id);
         tx.execute(s->service.save(1,Long.valueOf(card.getId()),req));
-        assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM file WHERE id=?",Integer.class,FILE_B));
+        assertEquals(1,jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE id=?",Integer.class,FILE_B));
         tx.executeWithoutResult(s->service.delete(1,Long.parseLong(card.getId())));
         assertEquals(0,templates().detail(id).usageCount());
-        assertEquals(0,jdbc.queryForObject("SELECT is_deleted FROM file WHERE id=?",Integer.class,FILE_A));
+        assertEquals(0,jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE id=?",Integer.class,FILE_A));
     }
     @Test void 保存失败保留旧图并拒绝绑定其他模板和他人临时图片() {
         long id=template();templateFile(FILE_B,2);
@@ -398,7 +399,7 @@ class BankCardServiceTest {
         long id=template();var req=request();req.setCoverTemplateId(id);create(1,req);
         var menu=Mockito.mock(SecondaryLockGuard.class);
         var preview=Mockito.spy(new FilePreviewGuard(menu,fileMapper,
-                Mockito.mock(AccountStatusGuard.class), Mockito.mock(IBVideoMapper.class)));
+                Mockito.mock(AccountStatusGuard.class), Mockito.mock(IBVideoMapper.class), org.mockito.Mockito.mock(top.aiolife.record.mapper.AttachmentBusinessMapper.class)));
         Mockito.doReturn(false).when(preview).isAdmin(ArgumentMatchers.anyLong());
         var file=new FileEntity();file.setBizType(BankCardCoverTemplateService.FILE_TYPE);file.setIsPublic(1);
         assertEquals(FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));

@@ -33,21 +33,12 @@ class AccountErasureServiceTest {
         when(config.getBucketName()).thenReturn("fixture-bucket");
         when(mapper.finish(7L)).thenReturn(1);
     }
-    @Test void 文件删除失败保留数据库索引以便重试() throws Exception {
-        when(mapper.privateObjects(7L)).thenReturn(List.of("fixture-avatar.png"));
-        doThrow(new IllegalStateException("fixture storage failure")).when(minio).removeObject("fixture-bucket", "fixture-avatar.png");
-        assertThrows(IllegalStateException.class, () -> service.erase(7));
-        verify(mapper, never()).purgePersonalRecords(anyLong(), any()); verify(mapper, never()).finish(anyLong());
-        verifyNoInteractions(categoryCache);
-    }
-    @Test void 共享引用出现后不会删除对象且锁覆盖整个事务() throws Exception {
-        var object = new AccountErasureMapper.StoredObject(99L, "fixture-bucket", "fixture-shared.png");
-        when(mapper.storedObjects(7L)).thenReturn(List.of(object));
-        when(mapper.otherReferences(7L, 99L, "fixture-shared.png")).thenReturn(1L);
+    @Test void 注销移除本人引用并清除共享审计不提前删除共享字节() throws Exception {
         service.erase(7);
-        verify(locks).holdUntilTransactionCompletion("fixture-bucket", "fixture-shared.png");
-        verifyNoInteractions(minio); verify(mapper).purgePersonalRecords(7L, "fixture@example.test"); verify(mapper).finish(7L);
-        verify(categoryCache).evictAfterCommit(7L);
+        verifyNoInteractions(minio,locks);
+        verify(mapper).purgePersonalRecords(7L,"fixture@example.test");
+        verify(mapper).scrubObjectAudit(7L);verify(mapper).scrubSourceAudit(7L);verify(mapper).scrubAttachmentAudit(7L);
+        verify(mapper).finish(7L);verify(categoryCache).evictAfterCommit(7L);
     }
     @Test void 导出任务未停止时不能删除文件或清理数据库() {
         when(mapper.runningExports(eq(7L), any())).thenReturn(1L);

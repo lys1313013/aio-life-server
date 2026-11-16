@@ -95,13 +95,13 @@ class CountResponseContractTest {
         assertNumber(json.path("seasonCount").path("夏"), 0);
         assertNumber(json.path("seasonCount").path("秋"), 2);
         assertEquals(0, new BigDecimal("40").compareTo(json.path("totalValue").decimalValue()));
-        assertEquals(0, new BigDecimal("20").compareTo(json.path("avgPrice").decimalValue()));
+        assertEquals(0, new BigDecimal("20").compareTo(json.path("avgPurchasePrice").decimalValue()));
         json = mapper.valueToTree(service.getStats(11L));
         assertNumber(json.path("totalCount"), 0);
         assertTrue(json.path("categoryCount").isEmpty());
         json.path("seasonCount").forEach(value -> assertNumber(value, 0));
         assertEquals(0, json.path("totalValue").decimalValue().signum());
-        assertEquals(0, json.path("avgPrice").decimalValue().signum());
+        assertEquals(0, json.path("avgPurchasePrice").decimalValue().signum());
     }
 
     @Test

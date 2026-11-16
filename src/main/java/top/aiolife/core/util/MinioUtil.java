@@ -27,16 +27,16 @@ public class MinioUtil {
     @Value("${aio.life.server.base-url}")
     private String serveBaseUrl;
 
-    /** 公开头像按文件 ID 预览，客户端不再绑定对象路径或历史域名。 */
+    /** 私有附件按雪花 ID 读取，客户端不绑定物理对象路径。 */
     public String getFilePreviewUrl(String fileId) {
-        if (fileId == null || !fileId.matches("[a-fA-F0-9]{32}"))
+        if (fileId == null || !fileId.matches("[1-9][0-9]{0,18}"))
             throw new IllegalArgumentException("文件 ID 无效");
         return serveBaseUrl.replaceAll("/+$", "") + "/file/preview/" + fileId;
     }
 
     /** 仅为业务已确认公开的图片生成地址；实际读取还会校验绑定与真实图片格式。 */
     public String getPublicImageUrl(String fileId, String contentType) {
-        if (fileId == null || !fileId.matches("[a-fA-F0-9]{32}")) return null;
+        if (fileId == null || !fileId.matches("[a-f0-9]{64}")) return null;
         String extension = switch (contentType == null ? "" : contentType) {
             case "image/png" -> "png";
             case "image/jpeg" -> "jpg";
@@ -46,7 +46,7 @@ public class MinioUtil {
             default -> null;
         };
         return extension == null ? null : serveBaseUrl.replaceAll("/+$", "")
-                + "/public/images/" + fileId + "." + extension;
+                + "/f/" + fileId + "." + extension;
     }
 
     /**

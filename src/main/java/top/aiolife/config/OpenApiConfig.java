@@ -122,7 +122,7 @@ public class OpenApiConfig {
                 operation.setOperationId(method.name().toLowerCase(Locale.ROOT)
                         + path.replaceAll("[^a-zA-Z0-9]+", "_").replaceAll("_$", ""));
                 if (PUBLIC_AUTH_PATHS.contains(path) || path.startsWith("/cbti/images/")
-                        || path.startsWith("/public/images/") || path.startsWith("/membership/provider-icons/")
+                        || path.startsWith("/f/") || path.startsWith("/membership/provider-icons/")
                         || Arrays.asList(WechatAuthController.PUBLIC_PATHS).contains(path)
                         || Arrays.asList(top.aiolife.sso.api.QrLoginController.PUBLIC_PATHS).contains(path)
                         || path.equals("/auth/qr-login/{id}/status")

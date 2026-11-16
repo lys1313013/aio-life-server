@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-/** 删除前检查 file 原始记录，包括尚未绑定业务以及逻辑删除的记录。 */
+/** 删除前检查附件原始记录，包括尚未绑定业务以及逻辑删除的记录。 */
 @Component
 @RequiredArgsConstructor
 public class StorageFileReferenceGuard {
@@ -28,7 +28,7 @@ public class StorageFileReferenceGuard {
         if (reference.isPresent()) {
             var row = reference.get();
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "不允许删除：file 表存在关联记录（ID：" + row.id()
+                    "不允许删除：attachment 表存在关联记录（ID：" + row.id()
                             + "，业务类型：" + (StringUtils.hasText(row.bizType()) ? row.bizType() : "未指定")
                             + "，业务 ID：" + (row.bizId() == null ? "未绑定" : row.bizId())
                             + (row.deleted() == 1 ? "，已软删除" : "") + "）");

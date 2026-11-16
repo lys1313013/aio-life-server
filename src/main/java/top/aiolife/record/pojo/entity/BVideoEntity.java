@@ -1,5 +1,6 @@
 package top.aiolife.record.pojo.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 import lombok.Getter;
@@ -19,9 +20,11 @@ import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 @ToString
 @TableName("b_video")
 public class BVideoEntity extends BaseEntity{
+    /** 从 file 业务关联填充，不映射业务表字段。 */
+    @TableField(exist = false)
     private String coverFileId;
+    @TableField(exist = false)
     private String coverState;
-    private Long coverVersion;
 
 
     /**
@@ -37,6 +40,7 @@ public class BVideoEntity extends BaseEntity{
     /**
      * 视频封面URL
      */
+    @TableField(exist = false)
     private String cover;
 
     /**

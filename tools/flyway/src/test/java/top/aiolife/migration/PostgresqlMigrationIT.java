@@ -39,8 +39,9 @@ class PostgresqlMigrationIT {
             assertEquals(0, flyway.migrate().migrationsExecuted);
             try (var connection = DriverManager.getConnection(url,"postgres","isolated-fixture")) {
                 var snapshot = SchemaSnapshot.read(connection);
-                assertEquals(68, snapshot.sections().get("tables").size());
+                assertEquals(69, snapshot.sections().get("tables").size());
                 assertTrue(snapshot.sections().get("columns").stream().allMatch(c -> c.get(9)!=null && !c.get(9).isBlank()));
+                assertEquals("0", SchemaSnapshot.rows(connection, "SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='sys_dict_data' AND column_name='dict_type'").getFirst().getFirst());
                 assertEquals("2", SchemaSnapshot.rows(connection, "SELECT count(*) FROM sys_menu WHERE path IN ('/query/workbench','/query/models')").getFirst().getFirst());
                 assertEquals("0", SchemaSnapshot.rows(connection, "SELECT visible_clients & 2 FROM sys_menu WHERE path='/query/models'").getFirst().getFirst());
                 Path contract = temporary.resolve("contract.json");

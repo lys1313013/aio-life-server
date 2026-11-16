@@ -29,15 +29,18 @@ class FilePreviewSecurityTest {
     private final FilePreviewGuard guard = mock(FilePreviewGuard.class);
     private final FileEntity file = new FileEntity();
     private MockMvc mvc;
-    private static final String ID = "a".repeat(32);
+    private static final String ID = "1234567890123456789";
     private static final String OBJECT = "1/avatar/fake.png";
 
     @BeforeEach
     void setup() {
         var config = new MinioConfig();
         config.setBucketName("aiolife");
+        var objects=mock(StorageObjectMapper.class);
+        var object=new top.aiolife.system.pojo.entity.StorageObjectEntity();object.setId(11L);object.setBucket("aiolife");object.setObjectKey(OBJECT);
+        when(objects.selectById(11L)).thenReturn(object);file.setStorageObjectId(11L);
         mvc = MockMvcBuilders.standaloneSetup(new SysFileController(new top.aiolife.record.service.FileAccessService(
-                mock(StorageObjectMapper.class), files, minio, config, guard, mock(SecondaryLockGuard.class)))).build();
+                objects, files, minio, guard, mock(SecondaryLockGuard.class)))).build();
         file.setId(ID);
         file.setFileName(OBJECT);
         file.setFileType("text/html");

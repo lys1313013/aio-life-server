@@ -44,20 +44,20 @@ public class SysFileController {
         return ApiResponse.success(fileAccessService.upload(file, bizType, IdCodec.decode(userId)));
     }
 
-    @GetMapping("/preview/{id:[a-fA-F0-9]{32}}")
+    @GetMapping("/preview/{id:[1-9][0-9]{0,18}}")
     @Operation(summary = "预览文件")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "文件内容，Content-Type 取决于文件类型；不是 ApiResponse JSON",
             content = @Content(mediaType = "*/*", schema = @Schema(type = "string", format = "binary")))
-    public void preview(@Parameter(description = "上传响应中的文件 ID", schema = @Schema(pattern = "^[a-fA-F0-9]{32}$"))
+    public void preview(@Parameter(description = "上传响应中的文件 ID", schema = @Schema(pattern = "^[1-9][0-9]{0,18}$"))
                         @PathVariable("id") String id, HttpServletResponse response) {
         fileAccessService.write(id, false, response);
     }
 
-    @GetMapping("/download/{id:[a-fA-F0-9]{32}}")
+    @GetMapping("/download/{id:[1-9][0-9]{0,18}}")
     @Operation(summary = "下载文件")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "文件内容，Content-Disposition 为 attachment；不是 ApiResponse JSON",
             content = @Content(mediaType = "*/*", schema = @Schema(type = "string", format = "binary")))
-    public void download(@Parameter(description = "上传响应中的文件 ID", schema = @Schema(pattern = "^[a-fA-F0-9]{32}$"))
+    public void download(@Parameter(description = "上传响应中的文件 ID", schema = @Schema(pattern = "^[1-9][0-9]{0,18}$"))
                          @PathVariable("id") String id, HttpServletResponse response) {
         fileAccessService.write(id, true, response);
     }

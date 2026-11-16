@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +54,7 @@ import top.aiolife.record.api.DeviceController;
 import top.aiolife.record.api.ExpController;
 import top.aiolife.record.api.IncomeController;
 import top.aiolife.record.api.MemoController;
+import top.aiolife.record.api.MilestoneController;
 import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.mapper.IDeviceMapper;
 import top.aiolife.record.mapper.IExpenseMapper;
@@ -62,6 +64,7 @@ import top.aiolife.record.service.RecordImageService;
 import top.aiolife.record.enums.FileBizType;
 import top.aiolife.record.mapper.IIncomeMapper;
 import top.aiolife.record.mapper.IMemoMapper;
+import top.aiolife.record.mapper.IMilestoneMapper;
 import top.aiolife.record.mapper.ITaskMapper;
 import top.aiolife.record.mapper.ITimeRecordMapper;
 import top.aiolife.record.mapper.ITimeTrackerCategoryMapper;
@@ -76,6 +79,8 @@ import top.aiolife.record.pojo.query.IncomeQuery;
 import top.aiolife.record.pojo.req.ExpenseUpdateReq;
 import top.aiolife.record.pojo.req.IncomeUpdateReq;
 import top.aiolife.record.pojo.req.MemoUpdateReq;
+import top.aiolife.record.pojo.req.MilestoneCreateReq;
+import top.aiolife.record.pojo.req.MilestoneUpdateReq;
 import top.aiolife.record.service.DeviceExpenseService;
 import top.aiolife.record.service.DoubanCoverUrlPolicy;
 import top.aiolife.record.service.IExpenseService;
@@ -87,6 +92,7 @@ import top.aiolife.record.service.VideoCoverDownloader;
 import top.aiolife.record.service.VideoCoverService;
 import top.aiolife.record.service.VideoCoverStorage;
 import top.aiolife.record.service.impl.FileServiceImpl;
+import top.aiolife.record.service.impl.MilestoneServicesImpl;
 import top.aiolife.record.service.impl.TimeTrackerCategoryServiceImpl;
 import top.aiolife.record.service.impl.WereadServiceImpl;
 import top.aiolife.record.weread.WereadClient;
@@ -143,8 +149,8 @@ class PostgresqlRegressionIntegrationTest {
         for (var mapper : List.of(BankCardFileMapper.class, BankCardMapper.class, BankCardDictionaryMapper.class,
                 BankCardTagMapper.class, BankCardTagRelMapper.class, BankCardCoverTemplateMapper.class,
                 UserBindMapper.class, UserMapper.class, IDeviceMapper.class, IIncomeMapper.class, IExpenseMapper.class,
-                IMemoMapper.class, ITaskMapper.class,
-                IBVideoMapper.class, IFileMapper.class, RecordImageMapper.class, ImageImportTaskMapper.class, ITimeTrackerCategoryMapper.class,
+                IMemoMapper.class, IMilestoneMapper.class, ITaskMapper.class,
+                top.aiolife.system.mapper.StorageObjectMapper.class, IBVideoMapper.class, IFileMapper.class, RecordImageMapper.class, ImageImportTaskMapper.class, ITimeTrackerCategoryMapper.class,
                 ScheduledJobMapper.class)) configuration.addMapper(mapper);
         var factory = new MybatisSqlSessionFactoryBean();
         factory.setDataSource(source); factory.setConfiguration(configuration);
@@ -162,56 +168,88 @@ class PostgresqlRegressionIntegrationTest {
     @AfterAll static void 清理数据库() { POSTGRES.stop(); }
 
     private <T> T mapper(Class<T> type) { return session.getMapper(type); }
+
+    @Test void 里程碑日期读写更新与清空保持DATE映射() {
+        var service = new MilestoneServicesImpl();
+        ReflectionTestUtils.setField(service, "baseMapper", mapper(IMilestoneMapper.class));
+        var controller = new MilestoneController(service);
+        var request = new MilestoneCreateReq();
+        request.setTitle("模拟里程碑");
+        request.setDate(LocalDate.of(2024, 2, 29));
+        request.setEndDate(LocalDate.of(2024, 3, 1));
+        var created = controller.createMilestone("42", request).getData();
+        var id = created.getId();
+        assertEquals(request.getDate(), mapper(IMilestoneMapper.class).selectById(id).getDate());
+        assertEquals(request.getEndDate(), controller.queryMilestone("42").getData().getFirst().getEndDate());
+
+        var update = new MilestoneUpdateReq();
+        update.setId(id);
+        update.setDate(LocalDate.of(2024, 2, 28));
+        controller.updateMilestone("42", update);
+        assertEquals(request.getEndDate(), mapper(IMilestoneMapper.class).selectById(id).getEndDate());
+
+        update.setEndDate(LocalDate.of(2024, 3, 2));
+        controller.updateMilestone("42", update);
+        assertEquals(update.getEndDate(), mapper(IMilestoneMapper.class).selectById(id).getEndDate());
+
+        update.setEndDate(null);
+        controller.updateMilestone("42", update);
+        var saved = mapper(IMilestoneMapper.class).selectById(id);
+        assertEquals(update.getDate(), saved.getDate());
+        assertNull(saved.getEndDate());
+        assertNull(jdbc.queryForObject("SELECT end_date FROM milestone WHERE id=?", LocalDate.class, id));
+    }
+
     private RecordImageService images() {
-        return new RecordImageService(mapper(IFileMapper.class), mapper(RecordImageMapper.class));
+        return new RecordImageService(mapper(IFileMapper.class), mapper(RecordImageMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class));
     }
 
     @Test void 四类业务图片从文件关联读取替换和清除() {
         for (var type : List.of(FileBizType.DEVICE, FileBizType.MOVIE, FileBizType.READ_RECORD, FileBizType.WARDROBE_ITEM)) {
-            String table = type == FileBizType.READ_RECORD ? "read_record" : type.getBizType();
+            String table = switch(type) { case DEVICE -> "device"; case MOVIE -> "movie"; case READ_RECORD -> "read_record"; case WARDROBE_ITEM -> "wardrobe_item"; default -> throw new IllegalStateException(); };
             String columns = type == FileBizType.MOVIE || type == FileBizType.READ_RECORD
                     ? "title,type" : "name";
             String values = columns.equals("name") ? "'测试图片'" : "'测试图片',1";
             jdbc.update("INSERT INTO " + table + "(id,user_id," + columns + ") VALUES(811,42," + values + ")");
-            file("first-" + table, type.getBizType(), 42, 811);
-            file("second-" + table, type.getBizType(), 42, 812);
-            jdbc.update("UPDATE file SET biz_id=NULL WHERE id=?", "second-" + table);
+            file(testId("first-" + table), type.getBizType(), 42, 811);
+            file(testId("second-" + table), type.getBizType(), 42, 812);
+            jdbc.update("UPDATE attachment SET biz_id=NULL WHERE id=?", testId("second-" + table));
             var images = images();
-            assertEquals("first-" + table, images.find(42, type, 811));
-            images.replace(42, type, 811, "second-" + table);
-            assertEquals("second-" + table, images.find(42, type, 811));
-            assertNull(mapper(IFileMapper.class).selectById("first-" + table).getBizId());
+            assertEquals(testId("first-" + table), images.find(42, type, 811));
+            images.replace(42, type, 811, testId("second-" + table));
+            assertEquals(testId("second-" + table), images.find(42, type, 811));
+            assertNull(mapper(IFileMapper.class).selectById(testId("first-" + table)).getBizId());
             assertNull(images.find(43, type, 811));
             images.replace(42, type, 811, "");
             assertNull(images.find(42, type, 811));
-            assertNotNull(mapper(IFileMapper.class).selectById("second-" + table));
+            assertNotNull(mapper(IFileMapper.class).selectById(testId("second-" + table)));
         }
     }
 
     @Test void 图片绑定校验归属类型和删除状态且失败保留原图() {
         jdbc.update("INSERT INTO device(id,user_id,name) VALUES(811,42,'图片测试'),(812,43,'其他人')");
-        file("original", "device", 42, 811);
-        file("foreign", "device", 43, 812);
-        file("wrong-type", "movie", 42, 900);
-        file("deleted", "device", 42, 813);
-        jdbc.update("UPDATE file SET is_deleted=1 WHERE id='deleted'");
+        file("100001", "device_cover", 42, 811);
+        file("100002", "device_cover", 43, 812);
+        file("100003", "movie_cover", 42, 900);
+        file("100004", "device_cover", 42, 813);
+        jdbc.update("UPDATE attachment SET is_deleted=1 WHERE id='100004'");
         var images = images();
-        for (String id : List.of("missing", "foreign", "wrong-type", "deleted")) {
+        for (String id : List.of("100006", "100002", "100003", "100004")) {
             assertThrows(IllegalArgumentException.class, () -> images.replace(42, FileBizType.DEVICE, 811, id));
-            assertEquals("original", images.find(42, FileBizType.DEVICE, 811));
+            assertEquals("100001", images.find(42, FileBizType.DEVICE, 811));
         }
-        assertThrows(IllegalArgumentException.class, () -> images.replace(42, FileBizType.DEVICE, 812, "original"));
+        assertThrows(IllegalArgumentException.class, () -> images.replace(42, FileBizType.DEVICE, 812, "100001"));
     }
 
     @Test void 同图用于多件物品时复制附件归属而不迁走原图() {
         jdbc.update("INSERT INTO device(id,user_id,name) VALUES(811,42,'物品一'),(812,42,'物品二')");
-        file("shared", "device", 42, 811);
+        file("100005", "device_cover", 42, 811);
         var images = images();
-        String copied = images.replace(42, FileBizType.DEVICE, 812, "shared");
-        assertNotEquals("shared", copied);
-        assertEquals("shared", images.find(42, FileBizType.DEVICE, 811));
+        String copied = images.replace(42, FileBizType.DEVICE, 812, "100005");
+        assertNotEquals("100005", copied);
+        assertEquals("100005", images.find(42, FileBizType.DEVICE, 811));
         assertEquals(copied, images.find(42, FileBizType.DEVICE, 812));
-        assertEquals(mapper(IFileMapper.class).selectById("shared").getFileName(),
+        assertEquals(mapper(IFileMapper.class).selectById("100005").getFileName(),
                 mapper(IFileMapper.class).selectById(copied).getFileName());
     }
 
@@ -228,9 +266,14 @@ class PostgresqlRegressionIntegrationTest {
         ReflectionTestUtils.setField(service, "baseMapper", mapper(IExpenseMapper.class));
         return new ExpController(service, mock(DeviceExpenseService.class));
     }
-    private void file(String id, String type, long owner, long business) {
-        jdbc.update("INSERT INTO file(id,file_name,biz_type,biz_id,create_user,create_time,update_time) VALUES (?,?,?,?,?,?,?)",
-                id, "fixture.png", type, business, owner, OLD_TIME, OLD_TIME);
+    private static String testId(String label) { return String.valueOf(1000000000000000000L+Integer.toUnsignedLong(label.hashCode())); }
+    private void file(String id,String type,long owner,long business) {
+        jdbc.update("INSERT INTO storage_object(id,bucket,object_key,content_hash,file_size,content_type) VALUES(11,'fixture',?, ?,68,'image/png') ON CONFLICT DO NOTHING",
+            "objects/aa/"+"a".repeat(64)+".png","a".repeat(64));
+        Long bound=jdbc.queryForObject("SELECT count(*) FROM attachment WHERE biz_type=? AND biz_id=? AND is_deleted=0",Long.class,type,business)>0
+            && !type.equals("honor_record")?null:business;
+        jdbc.update("INSERT INTO attachment(id,storage_object_id,file_name,biz_type,biz_id,user_id,create_user,create_time,update_time) VALUES(?,11,?,?,?,?,?,?,?)",
+            id,"fixture.png",type,bound,type.equals("bank_card_template_face")?null:owner,owner,OLD_TIME,OLD_TIME);
     }
 
     @Test void 收入按年份筛选包含年初年末并保留其他筛选条件() {
@@ -327,21 +370,21 @@ class PostgresqlRegressionIntegrationTest {
         var files = mapper(BankCardFileMapper.class);
         var service = new BankCardService(mapper(BankCardMapper.class), mock(BankCardCrypto.class),
                 mock(BankCardDictionaryGuard.class), mapper(BankCardDictionaryMapper.class),
-                mapper(BankCardTagMapper.class), mapper(BankCardTagRelMapper.class), files,
+                mapper(BankCardTagMapper.class), mapper(BankCardTagRelMapper.class), files,mapper(IFileMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class),
                 mapper(BankCardCoverTemplateMapper.class), mock(BankCardCoverTemplateService.class));
         var request = new BankCardReq();
         request.setCustomBankName("Fixture Bank"); request.setCardType("debit"); request.setStatus("normal");
         long id = Long.parseLong(service.save(42, null, request).getId());
-        String first = "a".repeat(32), second = "b".repeat(32), foreign = "c".repeat(32);
-        file(first, "bank_card_cover", 42, id); file(second, "bank_card_cover", 42, id);
-        file(foreign, "bank_card_cover", 43, id);
+        String first = "1".repeat(18), second = "2".repeat(18), foreign = "3".repeat(18);
+        file(first, "bank_card_face", 42, id); file(second, "bank_card_face", 42, id);
+        file(foreign, "bank_card_face", 43, id);
         request.setCoverFileIds(List.of(second));
         service.save(42, id, request);
-        assertEquals(1, jdbc.queryForObject("SELECT is_deleted FROM file WHERE id=?", Integer.class, first));
-        assertEquals(0, jdbc.queryForObject("SELECT is_deleted FROM file WHERE id=?", Integer.class, second));
+        assertEquals(1, jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE id=?", Integer.class, first));
+        assertEquals(0, jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE id=?", Integer.class, second));
         request.setCoverFileIds(List.of()); service.save(42, id, request);
-        assertEquals(1, jdbc.queryForObject("SELECT is_deleted FROM file WHERE id=?", Integer.class, second));
-        assertEquals(0, jdbc.queryForObject("SELECT is_deleted FROM file WHERE id=?", Integer.class, foreign));
+        assertEquals(1, jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE id=?", Integer.class, second));
+        assertEquals(0, jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE id=?", Integer.class, foreign));
         service.delete(42, id);
         assertNull(mapper(BankCardMapper.class).selectById(id));
     }
@@ -361,14 +404,15 @@ class PostgresqlRegressionIntegrationTest {
     }
 
     @Test void 模板卡面排除指定文件及传空删除均不越过业务范围() {
-        String first = "a".repeat(32), second = "b".repeat(32), other = "c".repeat(32);
-        file(first, "bank_card_template_cover", 42, 10);
-        file(second, "bank_card_template_cover", 42, 10);
-        file(other, "bank_card_template_cover", 42, 11);
+        String first = "1".repeat(18), second = "2".repeat(18), other = "3".repeat(18);
+        file(first, "bank_card_template_face", 42, 10);
+        file(second, "bank_card_template_face", 42, 10);
+        file(other, "bank_card_template_face", 42, 11);
         var files = mapper(BankCardFileMapper.class);
         assertEquals(1, files.deleteTemplateCoversExcept(42, 10, second));
+        files.bindTemplateCover(10,42,second);
         assertEquals(1, files.deleteTemplateCoversExcept(42, 10, null));
-        assertEquals(0, jdbc.queryForObject("SELECT is_deleted FROM file WHERE id=?", Integer.class, other));
+        assertEquals(0, jdbc.queryForObject("SELECT is_deleted FROM attachment WHERE id=?", Integer.class, other));
     }
 
     private WereadServiceImpl weread(WereadClient client) {
@@ -479,7 +523,7 @@ class PostgresqlRegressionIntegrationTest {
     }
 
     @Test void 公共分类覆盖修改和隐藏维护更新时间() {
-        jdbc.update("INSERT INTO time_tracker_category(id,user_id,name,update_time) VALUES (1,0,'public',?),(2,42,'override',?)", OLD_TIME, OLD_TIME);
+        jdbc.update("INSERT INTO time_tracker_category(id,user_id,name,update_time) VALUES (1,NULL,'public',?),(2,42,'override',?)", OLD_TIME, OLD_TIME);
         jdbc.update("UPDATE time_tracker_category SET template_id=1 WHERE id=2");
         var service = new TimeTrackerCategoryServiceImpl(new TimeTrackerCategoryCache(mock(ApplicationEventPublisher.class)));
         ReflectionTestUtils.setField(service, "baseMapper", mapper(ITimeTrackerCategoryMapper.class));
@@ -495,14 +539,16 @@ class PostgresqlRegressionIntegrationTest {
     }
 
     @Test void 文件绑定维护审计字段且不修改他人文件() {
-        String own = "a".repeat(32), other = "b".repeat(32);
+        jdbc.update("INSERT INTO honor_record(id,user_id,title) VALUES(2,42,'附件绑定目标')");
+        String own = "1".repeat(18), other = "2".repeat(18);
         file(own, "honor_record", 42, 1); file(other, "honor_record", 43, 1);
-        var service = new FileServiceImpl(mock(MinioUtil.class), mock(MinioConfig.class),
-                mock(StorageObjectLock.class), mock(DoubanCoverUrlPolicy.class));
+        var service = new FileServiceImpl(mock(MinioUtil.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class),mapper(top.aiolife.system.mapper.StorageObjectMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.ExternalResourceService.class));
         ReflectionTestUtils.setField(service, "baseMapper", mapper(IFileMapper.class));
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
-            service.bindBizId(List.of(own, other), "honor_record", 2L);
+            jdbc.update("UPDATE attachment SET biz_id=NULL WHERE id=?",own);
+            service.bindBizId(List.of(own), "honor_record", 2L);
+            assertThrows(IllegalArgumentException.class,()->service.bindBizId(List.of(other),"honor_record",2L));
         }
         assertEquals(42L, mapper(IFileMapper.class).selectById(own).getUpdateUser());
         assertTrue(mapper(IFileMapper.class).selectById(own).getUpdateTime().isAfter(OLD_TIME));
@@ -510,17 +556,10 @@ class PostgresqlRegressionIntegrationTest {
         assertEquals(OLD_TIME, mapper(IFileMapper.class).selectById(other).getUpdateTime());
     }
 
-    @Test void 视频封面排队和任务完成维护更新时间() {
-        jdbc.update("INSERT INTO b_video(id,user_id,title,url,duration_seconds,update_time) VALUES (1,42,'fixture','https://example.test/v',10,?)", OLD_TIME);
-        var service = new VideoCoverService(mapper(IBVideoMapper.class), mapper(ImageImportTaskMapper.class),
-                mapper(IFileMapper.class), mock(VideoCoverDownloader.class), mock(VideoCoverStorage.class));
-        service.enqueue(1, 42, "https://example.test/cover.png", false);
-        assertTrue(updated("b_video", 1).isAfter(OLD_TIME));
-        jdbc.update("UPDATE image_import_task SET state='RUNNING',lease_token='fixture',attempts=5,update_time=? WHERE video_id=1", OLD_TIME);
-        long id = jdbc.queryForObject("SELECT id FROM image_import_task WHERE video_id=1", Long.class);
-        service.failed(id, "fixture", "FIXTURE_FAILURE");
-        assertTrue(updated("image_import_task", id).isAfter(OLD_TIME));
-        assertEquals("FAILED", mapper(IBVideoMapper.class).selectById(1).getCoverState());
+    @Test void 视频封面任务字段保持审计归属且无业务版本字段() {
+        assertDoesNotThrow(() -> mapper(IBVideoMapper.class).selectList(null));
+        assertDoesNotThrow(() -> mapper(ImageImportTaskMapper.class).selectList(null));
+        assertEquals(0,jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_name='b_video' AND column_name IN ('cover','cover_state','cover_version')",Integer.class));
     }
 
     @Test void 定时任务与视频写入的冲突目标匹配部分唯一索引() {

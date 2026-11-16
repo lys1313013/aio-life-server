@@ -39,7 +39,7 @@ public class CaptureSecurity {
                 files.selectOne(
                         new LambdaQueryWrapper<FileEntity>()
                                 .eq(FileEntity::getId, id)
-                                .eq(FileEntity::getCreateUser, user));
+                                .eq(FileEntity::getUserId, user));
         if (f == null || !biz.equals(f.getBizType())) throw bad("图片不存在、业务类型不匹配或无权使用");
     }
 
@@ -55,19 +55,8 @@ public class CaptureSecurity {
     public List<WardrobeCategoryEntity> categories(long user) {
         return categories.selectList(
                 new LambdaQueryWrapper<WardrobeCategoryEntity>()
-                        .and(
-                                w ->
-                                        w.eq(WardrobeCategoryEntity::getCategoryType, 0)
-                                                .or(
-                                                        o ->
-                                                                o.eq(
-                                                                                WardrobeCategoryEntity
-                                                                                        ::getCategoryType,
-                                                                                1)
-                                                                        .eq(
-                                                                                WardrobeCategoryEntity
-                                                                                        ::getUserId,
-                                                                                user))));
+                        .and(w -> w.isNull(WardrobeCategoryEntity::getUserId)
+                                .or().eq(WardrobeCategoryEntity::getUserId, user)));
     }
 
     public void category(long user, Long id) {

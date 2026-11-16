@@ -70,10 +70,16 @@ public class EventRecordService {
         return entity;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public boolean delete(long id, long userId) {
-        return eventRecordMapper.delete(new LambdaQueryWrapper<EventRecordEntity>()
+        boolean deleted=eventRecordMapper.delete(new LambdaQueryWrapper<EventRecordEntity>()
                 .eq(EventRecordEntity::getId, id)
                 .eq(EventRecordEntity::getUserId, userId)) > 0;
+        if(deleted) fileService.update(new LambdaUpdateWrapper<FileEntity>().eq(FileEntity::getUserId,userId)
+            .eq(FileEntity::getBizType,BIZ_TYPE).eq(FileEntity::getBizId,id)
+            .set(FileEntity::getIsDeleted,1).set(FileEntity::getIsPublic,0)
+            .set(FileEntity::getUpdateUser,userId).set(FileEntity::getUpdateTime,LocalDateTime.now()));
+        return deleted;
     }
 
     // 未传保留附件，空列表解除关联；附件实体本身不删除。
@@ -83,7 +89,7 @@ public class EventRecordService {
         if (!fileIds.isEmpty()) {
             List<FileEntity> ownedFiles = fileService.list(new LambdaQueryWrapper<FileEntity>()
                     .in(FileEntity::getId, fileIds)
-                    .eq(FileEntity::getCreateUser, userId));
+                    .eq(FileEntity::getUserId, userId));
             if (ownedFiles.size() != fileIds.size()) {
                 throw new IllegalArgumentException("附件不存在或无权操作");
             }
@@ -91,7 +97,7 @@ public class EventRecordService {
         var removedFiles = new LambdaUpdateWrapper<FileEntity>()
                 .eq(FileEntity::getBizType, BIZ_TYPE)
                 .eq(FileEntity::getBizId, entity.getId())
-                .eq(FileEntity::getCreateUser, userId)
+                .eq(FileEntity::getUserId, userId)
                 .notIn(!fileIds.isEmpty(), FileEntity::getId, fileIds)
                 .set(FileEntity::getBizId, null)
                 .set(FileEntity::getUpdateUser, userId)

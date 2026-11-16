@@ -426,8 +426,8 @@
       },
       {
         "key": "is_default",
-        "label": "是否默认（Y是 N否）",
-        "type": "TEXT"
+        "label": "是否默认（1是、0否）",
+        "type": "NUMBER"
       },
       {
         "key": "is_enabled",
@@ -436,8 +436,8 @@
       },
       {
         "key": "is_readonly",
-        "label": "是否只读（Y是 N否）",
-        "type": "TEXT"
+        "label": "是否只读（1是、0否）",
+        "type": "NUMBER"
       },
       {
         "key": "create_time",
@@ -2309,11 +2309,6 @@
         "type": "TEXT"
       },
       {
-        "key": "cover_file_id",
-        "label": "封面附件ID",
-        "type": "TEXT"
-      },
-      {
         "key": "owner_name",
         "label": "视频作者",
         "type": "TEXT"
@@ -2607,13 +2602,8 @@
         "type": "NUMBER"
       },
       {
-        "key": "category_type",
-        "label": "0=系统预设 1=用户自定义",
-        "type": "NUMBER"
-      },
-      {
         "key": "user_id",
-        "label": "用户ID(用户自定义分类时)",
+        "label": "用户ID；NULL表示系统预设",
         "type": "TEXT"
       },
       {
@@ -2674,8 +2664,8 @@
         "type": "TEXT"
       },
       {
-        "key": "price",
-        "label": "价格",
+        "key": "purchase_price",
+        "label": "购入价格",
         "type": "DECIMAL"
       },
       {

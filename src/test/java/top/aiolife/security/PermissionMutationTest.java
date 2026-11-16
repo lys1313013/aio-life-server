@@ -72,7 +72,7 @@ class PermissionMutationTest {
         var existing = new UserDictDataEntity();
         existing.setId(7L); existing.setUserId(11L);
         var updates = new UserDictDataEntity();
-        updates.setUserId(0L); updates.setTemplateId(99L);
+        updates.setUserId(12L); updates.setTemplateId(99L);
         doReturn(existing).when(service).getById(7L);
         doReturn(true).when(service).update(any(UserDictDataEntity.class), anyWrapper());
         service.updateDictData(7L, updates, 11L);
