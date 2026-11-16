@@ -47,7 +47,7 @@ def inspect(data):
             if kind is None:
                 return 'bin', 'application/octet-stream', None, None
             # 新上传的像素预算不能用于丢弃历史附件；只校验编码并读取尺寸，不完整解码大图。
-            # 服务端预览仍执行当前内容策略，超预算图片保留原字节供下载。
+            # 预览使用此处确认的对象类型流式返回，不再套用新上传的像素预算。
             image.verify()
             return *kind, image.width, image.height
     except UnidentifiedImageError:
