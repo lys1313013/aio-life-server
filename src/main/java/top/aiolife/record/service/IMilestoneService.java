@@ -16,7 +16,7 @@ public interface IMilestoneService extends IService<MilestoneEntity> {
 
     MilestoneEntity createForUser(long userId, MilestoneEntity entity);
 
-    MilestoneEntity updateForUser(long userId, MilestoneEntity entity);
+    MilestoneEntity updateForUser(long userId, MilestoneEntity entity, boolean endDateProvided);
 
     void deleteForUser(long userId, List<String> ids);
 }

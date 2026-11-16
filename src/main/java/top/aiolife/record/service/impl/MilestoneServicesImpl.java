@@ -41,12 +41,14 @@ public class MilestoneServicesImpl extends ServiceImpl<IMilestoneMapper, Milesto
 
     @Override
     @Transactional
-    public MilestoneEntity updateForUser(long userId, MilestoneEntity entity) {
+    public MilestoneEntity updateForUser(long userId, MilestoneEntity entity, boolean endDateProvided) {
         entity.fillUpdateCommonField(userId);
         entity.setUserId(null);
         LambdaUpdateWrapper<MilestoneEntity> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(MilestoneEntity::getId, entity.getId());
         wrapper.eq(MilestoneEntity::getUserId, userId);
+        // 省略保留，显式 null 清空；有值时由实体更新，避免同一列重复赋值。
+        wrapper.set(endDateProvided && entity.getEndDate() == null, MilestoneEntity::getEndDate, null);
         update(entity, wrapper);
         return entity;
     }

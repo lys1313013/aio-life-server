@@ -52,7 +52,7 @@ public class MilestoneController {
     public ApiResponse<MilestoneVO> updateMilestone(@CurrentUserId String userId,
                                                     @Valid @RequestBody MilestoneUpdateReq request) {
         MilestoneEntity entity = RecordApiConvertor.INSTANCE.fromMilestoneUpdateReq(request);
-        entity = milestoneService.updateForUser(IdCodec.decode(userId), entity);
+        entity = milestoneService.updateForUser(IdCodec.decode(userId), entity, request.isEndDateProvided());
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toMilestoneVO(entity));
     }
 

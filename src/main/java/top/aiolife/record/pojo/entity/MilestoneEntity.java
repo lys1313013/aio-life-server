@@ -3,6 +3,9 @@ package top.aiolife.record.pojo.entity;
 import top.aiolife.core.pojo.entity.BaseEntity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.OptBoolean;
+import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -22,9 +25,13 @@ public class MilestoneEntity extends BaseEntity {
 
     private String description;
 
-    private String date;
+    /** 开始日期，精确到日。 */
+    @JsonFormat(shape = JsonFormat.Shape.STRING, lenient = OptBoolean.FALSE)
+    private LocalDate date;
 
-    private String end_date;
+    /** 结束日期，未记录时为空；映射 milestone.end_date。 */
+    @JsonFormat(shape = JsonFormat.Shape.STRING, lenient = OptBoolean.FALSE)
+    private LocalDate endDate;
 
     private String type;
 

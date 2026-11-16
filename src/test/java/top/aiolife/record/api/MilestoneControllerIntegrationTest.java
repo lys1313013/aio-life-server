@@ -39,7 +39,7 @@ class MilestoneControllerIntegrationTest extends BaseIntegrationTest {
         entity.setId(milestoneId);
         entity.setUserId(TEST_USER_ID);
         entity.setTitle("测试里程碑");
-        entity.setDate(LocalDate.now().toString());
+        entity.setDate(LocalDate.now());
         entity.setIsDeleted(0);
         entity.fillCreateCommonField(TEST_USER_ID);
         return entity;
