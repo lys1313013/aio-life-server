@@ -123,7 +123,8 @@ public class GoalCreateReq {
     private LocalDateTime endDate;
 
     /**
-     * 目标标签（JSON格式存储）
+     * 目标标签，JSON 数组文本
      */
+    @Size(max = 1000)
     private String tags;
 }

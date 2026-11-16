@@ -37,8 +37,11 @@ public class GoalServiceImpl extends ServiceImpl<IGoalMapper, GoalEntity> implem
             queryWrapper.eq(GoalEntity::getStatus, ProgressStatusEnum.fromCode(status));
         }
         if (keyword != null && !keyword.trim().isEmpty()) {
-            queryWrapper.and(wrapper -> IlikeQuery.anyOf(wrapper, keyword,
-                    GoalEntity::getTitle, GoalEntity::getDescription, GoalEntity::getTags));
+            queryWrapper.and(wrapper -> {
+                IlikeQuery.anyOf(wrapper, keyword, GoalEntity::getTitle, GoalEntity::getDescription);
+                wrapper.or();
+                IlikeQuery.anyOfAsText(wrapper, keyword, GoalEntity::getTags);
+            });
         }
         if (isPinned != null) {
             if (isPinned != 0 && isPinned != 1) {

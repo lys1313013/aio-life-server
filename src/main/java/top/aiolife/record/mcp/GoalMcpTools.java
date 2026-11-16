@@ -54,8 +54,11 @@ public class GoalMcpTools {
         }
         if (StringUtils.hasText(req.getKeyword())) {
             String keyword = req.getKeyword().trim();
-            queryWrapper.and(wrapper -> IlikeQuery.anyOf(wrapper, keyword,
-                    GoalEntity::getTitle, GoalEntity::getDescription, GoalEntity::getTags));
+            queryWrapper.and(wrapper -> {
+                IlikeQuery.anyOf(wrapper, keyword, GoalEntity::getTitle, GoalEntity::getDescription);
+                wrapper.or();
+                IlikeQuery.anyOfAsText(wrapper, keyword, GoalEntity::getTags);
+            });
         }
         if (req.getYear() != null) {
             queryWrapper.eq(GoalEntity::getYear, req.getYear());

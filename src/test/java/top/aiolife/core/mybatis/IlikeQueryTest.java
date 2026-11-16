@@ -32,6 +32,27 @@ class IlikeQueryTest {
     }
 
     @Test
+    void anyOfAsText_非文本列转text后比较() {
+        LambdaQueryWrapper<SampleEntity> wrapper = new LambdaQueryWrapper<>();
+        IlikeQuery.anyOfAsText(wrapper, "keyword", SampleEntity::getTags);
+        String sql = wrapper.getSqlSegment();
+        assertTrue(sql.contains("tags::text ILIKE"), sql);
+        assertTrue(wrapper.getParamNameValuePairs().containsValue("%keyword%"), sql);
+    }
+
+    @Test
+    void 文本列与jsonb列共用关键字时保持同一OR分组() {
+        LambdaQueryWrapper<SampleEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.and(w -> {
+            IlikeQuery.anyOf(w, "keyword", SampleEntity::getTitle);
+            w.or();
+            IlikeQuery.anyOfAsText(w, "keyword", SampleEntity::getTags);
+        });
+        String sql = wrapper.getSqlSegment();
+        assertTrue(sql.matches("(?s).*title ILIKE.* OR .*tags::text ILIKE.*"), sql);
+    }
+
+    @Test
     void anyOf_条件不成立时不追加() {
         LambdaQueryWrapper<SampleEntity> wrapper = new LambdaQueryWrapper<>();
         IlikeQuery.anyOf(wrapper, false, "keyword", SampleEntity::getTitle);

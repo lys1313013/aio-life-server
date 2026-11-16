@@ -34,6 +34,21 @@ public final class IlikeQuery {
     }
 
     /**
+     * 任一列按文本形式包含关键字即命中；jsonb 等没有 ILIKE 运算符的列需显式转 text 后比较。
+     */
+    @SafeVarargs
+    public static <T> void anyOfAsText(LambdaQueryWrapper<T> wrapper, String keyword, SFunction<T, ?>... columns) {
+        StringBuilder sql = new StringBuilder("(");
+        for (int i = 0; i < columns.length; i++) {
+            if (i > 0) {
+                sql.append(" OR ");
+            }
+            sql.append(columnName(columns[i])).append("::text ILIKE {0}");
+        }
+        wrapper.apply(sql.append(')').toString(), "%" + keyword + "%");
+    }
+
+    /**
      * 条件成立时才追加匹配条件。
      */
     @SafeVarargs
