@@ -7,6 +7,11 @@ import java.time.LocalDateTime;
 import java.util.*;
 import org.junit.jupiter.api.*;
 import top.aiolife.config.MinioConfig;
+import cn.dev33.satoken.stp.StpUtil;
+import org.springframework.test.util.ReflectionTestUtils;
+import top.aiolife.core.id.AttachmentKey;
+import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.service.impl.FileServiceImpl;
 import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.record.mapper.*;
@@ -60,7 +65,7 @@ class VideoCoverServiceTest extends AttachmentDatabaseFixture {
         verify(minio,times(1)).putObject(eq("fixture"),matches("objects/[0-9a-f]{2}/[0-9a-f]{64}\\.png"),any(InputStream.class),anyLong(),eq("image/png"));
         service.enqueue(1,11,url,false);run();verify(downloader,times(1)).download(url);
         var row=mapper(IBVideoMapper.class).selectById(1);service.fillCoverFiles(11,List.of(row));assertEquals("READY",row.getCoverState());
-        assertEquals(cover(1).getFileKey(),row.getCoverFileId());assertTrue(top.aiolife.core.id.AttachmentKey.isValid(row.getCoverFileId()));
+        assertEquals(cover(1).getFileKey(),row.getCoverFileId());assertTrue(AttachmentKey.isValid(row.getCoverFileId()));
         assertEquals(cover(1).getId(),tasks.latest("b_video_cover",1).getResultAttachmentId());
         service.fillCoverFiles(22,List.of(row));assertNull(row.getCoverFileId());
     }
@@ -100,16 +105,38 @@ class VideoCoverServiceTest extends AttachmentDatabaseFixture {
     }
     @Test void 豆瓣预览建立本人待绑定附件且成功来源长期复用() throws Exception {
         doReturn(image("png")).when(downloader).downloadDouban(anyString());
-        var uploader=new top.aiolife.record.service.impl.FileServiceImpl(minio,storage,mapper(StorageObjectMapper.class),resources);
-        org.springframework.test.util.ReflectionTestUtils.setField(uploader,"baseMapper",files);uploader=proxy(uploader);
-        try(var auth=mockStatic(cn.dev33.satoken.stp.StpUtil.class)) {
-            auth.when(cn.dev33.satoken.stp.StpUtil::getLoginIdAsLong).thenReturn(11L);
-            var first=uploader.uploadFromUrl("https://img1.doubanio.com/view/photo/l/public/p123.jpg",top.aiolife.record.enums.FileBizType.MOVIE);
-            auth.when(cn.dev33.satoken.stp.StpUtil::getLoginIdAsLong).thenReturn(22L);
-            var second=uploader.uploadFromUrl("https://img2.doubanio.com/view/photo/l/public/p123.jpg?sign=changed",top.aiolife.record.enums.FileBizType.MOVIE);
+        var uploader=new FileServiceImpl(minio,storage,mapper(StorageObjectMapper.class),resources);
+        ReflectionTestUtils.setField(uploader,"baseMapper",files);uploader=proxy(uploader);
+        try(var auth=mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
+            var first=uploader.uploadFromUrl("https://img1.doubanio.com/view/photo/l/public/p123.jpg",FileBizType.MOVIE);
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(22L);
+            var second=uploader.uploadFromUrl("https://img2.doubanio.com/view/photo/l/public/p123.jpg?sign=changed",FileBizType.MOVIE);
             assertNotEquals(first.getId(),second.getId());assertNull(files.selectOne(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getFileKey,first.getId())).getBizId());
             assertEquals(11L,files.selectOne(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getFileKey,first.getId())).getUserId());assertEquals(22L,files.selectOne(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getFileKey,second.getId())).getUserId());
             verify(downloader,times(1)).downloadDouban(anyString());assertEquals(1,sources.selectCount(null));
+        }
+    }
+
+    @Test void 图书封面下载入库后生成可预览附件并复用来源() throws Exception {
+        String bookUrl="https://img3.doubanio.com/view/subject/l/public/s29423902.jpg";
+        doReturn(image("png")).when(downloader).downloadDouban(bookUrl);
+        var uploader=new FileServiceImpl(minio,storage,mapper(StorageObjectMapper.class),resources);
+        ReflectionTestUtils.setField(uploader,"baseMapper",files);uploader=proxy(uploader);
+        try(var auth=mockStatic(StpUtil.class)) {
+            auth.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
+            var first=uploader.uploadFromUrl(bookUrl,FileBizType.READ_RECORD);
+            var second=uploader.uploadFromUrl(bookUrl,FileBizType.READ_RECORD);
+            assertTrue(AttachmentKey.isValid(first.getId()));
+            assertNotEquals(first.getId(),second.getId());
+            var attachment=files.selectOne(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getFileKey,first.getId()));
+            assertEquals(FileBizType.READ_RECORD.getBizType(),attachment.getBizType());
+            assertEquals(11L,attachment.getUserId());assertNull(attachment.getBizId());
+            var source=sources.selectById(attachment.getExternalResourceId());
+            assertEquals("READY",source.getState());assertEquals("s29423902",source.getExternalKey());
+            assertEquals(source.getStorageObjectId(),attachment.getStorageObjectId());
+            assertEquals(1,sources.selectCount(null));assertEquals(1,mapper(StorageObjectMapper.class).selectCount(null));
+            verify(downloader,times(1)).downloadDouban(bookUrl);
         }
     }
 }

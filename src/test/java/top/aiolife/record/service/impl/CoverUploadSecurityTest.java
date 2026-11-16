@@ -1,6 +1,12 @@
 package top.aiolife.record.service.impl;
 
 import top.aiolife.record.service.RecordImageService;
+import top.aiolife.record.service.VideoCoverDownloader;
+import top.aiolife.record.service.ExternalResourceService;
+import top.aiolife.record.mapper.ExternalResourceMapper;
+import top.aiolife.record.service.VideoCoverStorage;
+import org.springframework.transaction.PlatformTransactionManager;
+import java.util.List;
 
 import java.io.ByteArrayInputStream;
 import cn.dev33.satoken.stp.StpUtil;
@@ -42,15 +48,37 @@ class CoverUploadSecurityTest {
     @ParameterizedTest
     @EnumSource(value=FileBizType.class,names={"MOVIE","READ_RECORD"})
     void 非白名单或不稳定路径在下载之前拒绝(FileBizType type) {
-        var downloader=new top.aiolife.record.service.VideoCoverDownloader();
-        var sources=new top.aiolife.record.service.ExternalResourceService(
-            mock(top.aiolife.record.mapper.ExternalResourceMapper.class),downloader,new DoubanCoverUrlPolicy("doubanio.com"),
-            mock(top.aiolife.record.service.VideoCoverStorage.class),mock(org.springframework.transaction.PlatformTransactionManager.class));
-        for(String url:java.util.List.of("https://127.0.0.1/cover.jpg","https://img.doubanio.com/unknown.jpg","https://img.doubanio.com.evil.test/view/photo/l/public/p1.jpg"))
+        var downloader=new VideoCoverDownloader();
+        var sources=new ExternalResourceService(
+            mock(ExternalResourceMapper.class),downloader,new DoubanCoverUrlPolicy("doubanio.com"),
+            mock(VideoCoverStorage.class),mock(PlatformTransactionManager.class));
+        for(String url:List.of("https://127.0.0.1/cover.jpg","https://img.doubanio.com/unknown.jpg","https://img.doubanio.com.evil.test/view/photo/l/public/p1.jpg"))
             assertThrows(IllegalArgumentException.class,()->sources.identity(url,type));
         var identity=sources.identity("https://img1.doubanio.com/view/photo/l/public/p123.jpg?signature=x",type);
         assertEquals("p123",identity.getExternalKey());assertEquals("l",identity.getVariant());
         assertEquals(type==FileBizType.MOVIE?"movie_poster":"book_cover",identity.getResourceType());
+    }
+
+    @Test
+    void 图书封面识别真实路径并保留尺寸与图片标识() {
+        var sources = new ExternalResourceService(
+                mock(ExternalResourceMapper.class),
+                new VideoCoverDownloader(), new DoubanCoverUrlPolicy("doubanio.com"),
+                mock(VideoCoverStorage.class),
+                mock(PlatformTransactionManager.class));
+        String url = "https://img3.doubanio.com/view/subject/l/public/s29423902.jpg";
+        var identity = sources.identity(url, FileBizType.READ_RECORD);
+        assertEquals("book_cover", identity.getResourceType());
+        assertEquals("s29423902", identity.getExternalKey());
+        assertEquals("l", identity.getVariant());
+        assertEquals(url, identity.getSourceUrl());
+        assertThrows(IllegalArgumentException.class, () -> sources.identity(url, FileBizType.MOVIE));
+        for (String invalid : List.of(
+                "https://img3.doubanio.com/view/subject/l/public/p29423902.jpg",
+                "https://img3.doubanio.com/view/subject/l/public/s29423902.jpg/extra",
+                "https://img3.doubanio.com.evil.test/view/subject/l/public/s29423902.jpg")) {
+            assertThrows(IllegalArgumentException.class, () -> sources.identity(invalid, FileBizType.READ_RECORD));
+        }
     }
 
     @Test

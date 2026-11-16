@@ -30,6 +30,7 @@ public class ExternalResourceService {
     private final VideoCoverStorage storage;
     private final TransactionTemplate transactions;
     private static final Pattern DOUBAN_PATH = Pattern.compile("^/view/photo/([^/]+)/(?:public/)?(p[0-9]+)\\.[A-Za-z0-9]+$");
+    private static final Pattern DOUBAN_BOOK_PATH = Pattern.compile("^/view/subject/([^/]+)/public/(s[0-9]+)\\.[A-Za-z0-9]+$");
 
     public ExternalResourceService(ExternalResourceMapper sources, VideoCoverDownloader downloader,
             DoubanCoverUrlPolicy douban, VideoCoverStorage storage, PlatformTransactionManager manager) {
@@ -72,7 +73,10 @@ public class ExternalResourceService {
         } else {
             if (type!=FileBizType.MOVIE && type!=FileBizType.READ_RECORD) throw new IllegalArgumentException("不支持的远程图片业务");
             String url=douban.validate(raw);
-            var match=DOUBAN_PATH.matcher(URI.create(url).getRawPath());
+            String path=URI.create(url).getRawPath();
+            var match=DOUBAN_PATH.matcher(path);
+            // 图书使用 subject/s 标识，电影海报使用 photo/p 标识；都保留 CDN 的稳定图片身份。
+            if (!match.matches() && type==FileBizType.READ_RECORD) match=DOUBAN_BOOK_PATH.matcher(path);
             if (!match.matches()) throw new IllegalArgumentException("不支持的豆瓣封面路径");
             result.setPlatform("douban"); result.setResourceType(type==FileBizType.MOVIE?"movie_poster":"book_cover");
             result.setExternalKey(match.group(2)); result.setVariant(match.group(1)); result.setSourceUrl(url);
