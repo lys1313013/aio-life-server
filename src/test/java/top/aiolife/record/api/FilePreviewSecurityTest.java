@@ -13,6 +13,7 @@ import top.aiolife.record.service.FilePreviewGuard;
 import top.aiolife.record.service.IFileService;
 import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.system.mapper.StorageObjectMapper;
+import top.aiolife.system.pojo.entity.StorageObjectEntity;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +29,7 @@ class FilePreviewSecurityTest {
     private final IFileService files = mock(IFileService.class);
     private final FilePreviewGuard guard = mock(FilePreviewGuard.class);
     private final FileEntity file = new FileEntity();
+    private final StorageObjectEntity object = new StorageObjectEntity();
     private MockMvc mvc;
     private static final String ID = "1234567890123456789";
     private static final String OBJECT = "1/avatar/fake.png";
@@ -37,7 +39,8 @@ class FilePreviewSecurityTest {
         var config = new MinioConfig();
         config.setBucketName("aiolife");
         var objects=mock(StorageObjectMapper.class);
-        var object=new top.aiolife.system.pojo.entity.StorageObjectEntity();object.setId(11L);object.setBucket("aiolife");object.setObjectKey(OBJECT);
+        object.setId(11L);object.setBucket("aiolife");object.setObjectKey(OBJECT);
+        object.setFileSize(68L); object.setContentType("application/octet-stream");
         when(objects.selectById(11L)).thenReturn(object);file.setStorageObjectId(11L);
         mvc = MockMvcBuilders.standaloneSetup(new SysFileController(new top.aiolife.record.service.FileAccessService(
                 objects, files, minio, guard, mock(SecondaryLockGuard.class)))).build();
@@ -57,7 +60,7 @@ class FilePreviewSecurityTest {
     void 伪装图片按附件返回() throws Exception {
         byte[] html = "<!doctype html><script>alert(document.domain)</script>".getBytes(StandardCharsets.UTF_8);
         when(minio.getFile("aiolife", OBJECT)).thenAnswer(call -> new ByteArrayInputStream(html));
-        // 无论数据库 MIME 声称 HTML 还是图片，都不能绕过内容验证。
+        // 展示附件的声明类型和后缀不能覆盖物理对象在写入时确认的类型。
         for (String declared : new String[]{"text/html", "image/png", "image/svg+xml", null}) {
             file.setFileType(declared);
             mvc.perform(get(url())).andExpect(status().isOk())
@@ -70,8 +73,10 @@ class FilePreviewSecurityTest {
     }
 
     @Test
-    void 按真实内容正常预览图片() throws Exception {
+    void 使用写入时确认的对象类型预览且不受历史大图像素限制() throws Exception {
         byte[] png = image("png");
+        object.setContentType("image/png"); object.setImageWidth(6000); object.setImageHeight(10000);
+        object.setFileSize((long) png.length);
         when(minio.getFile("aiolife", OBJECT)).thenReturn(new ByteArrayInputStream(png));
         mvc.perform(get(url())).andExpect(status().isOk())
                 .andExpect(content().contentType("image/png"))
@@ -91,6 +96,7 @@ class FilePreviewSecurityTest {
     @ValueSource(strings = {"png", "jpeg"})
     void 显式下载图片仍然强制下载(String format) throws Exception {
         byte[] bytes = image(format);
+        object.setContentType("image/" + format); object.setFileSize((long) bytes.length);
         when(minio.getFile("aiolife", OBJECT)).thenReturn(new ByteArrayInputStream(bytes));
         mvc.perform(get("/file/download/" + ID)).andExpect(status().isOk())
                 .andExpect(content().contentType("application/octet-stream"))

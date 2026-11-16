@@ -30,7 +30,7 @@ class BankCardTemplateUploadTest {
         var objects=mock(top.aiolife.system.mapper.StorageObjectMapper.class);
         var object=new top.aiolife.system.pojo.entity.StorageObjectEntity();object.setId(11L);object.setContentType("image/png");object.setFileSize(68L);
         when(objects.selectById(11L)).thenReturn(object);
-        when(storage.store(any(),anyLong())).thenAnswer(call->{
+        when(storage.store(any(),anyLong(),any())).thenAnswer(call->{
             byte[] body=call.getArgument(0);assertEquals(0x89,body[0]&255);assertNotNull(ImageIO.read(new ByteArrayInputStream(body)));return object;
         });
         var service=new FileServiceImpl(minio,storage,objects,org.mockito.Mockito.mock(top.aiolife.record.service.ExternalResourceService.class)) {
@@ -46,7 +46,7 @@ class BankCardTemplateUploadTest {
         } finally { TransactionSynchronizationManager.clearSynchronization(); }
         assertNull(saved.get().getUserId());assertEquals(0,saved.get().getIsPublic());
         assertNull(saved.get().getBizId());assertEquals(1L,saved.get().getCreateUser());
-        verify(storage).store(any(),eq(1L));
+        verify(storage).store(any(),eq(1L),argThat(image -> image.contentType().equals("image/png") && image.width()==96 && image.height()==60));
     }
     @Test void 通用上传也必须检查管理员且不能绕过模板绑定事务() {
         var minio=mock(MinioUtil.class);var service=new FileServiceImpl(minio,org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class),org.mockito.Mockito.mock(top.aiolife.system.mapper.StorageObjectMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.ExternalResourceService.class));

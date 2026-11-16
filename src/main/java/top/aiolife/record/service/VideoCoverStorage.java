@@ -5,8 +5,6 @@ import java.io.ByteArrayInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
-import javax.imageio.ImageIO;
-import javax.imageio.stream.MemoryCacheImageInputStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -28,11 +26,11 @@ public class VideoCoverStorage {
     private final MinioUtil minio;
     private final MinioConfig config;
 
+    /** type 是上传或导入入口对同一字节的校验结果；普通非图片附件传 null。 */
     @Transactional(propagation = Propagation.MANDATORY)
-    public StorageObjectEntity store(byte[] bytes, Long owner) {
+    public StorageObjectEntity store(byte[] bytes, Long owner, FileContentPolicy.ImageType type) {
         if (bytes.length == 0 || bytes.length > FileContentPolicy.MAX_IMAGE_BYTES)
             throw new IllegalArgumentException("文件必须为1字节至10MB");
-        var type = FileContentPolicy.detectImage(bytes);
         String hash;
         try { hash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)); }
         catch (NoSuchAlgorithmException e) { throw new IllegalStateException(e); }
@@ -54,11 +52,9 @@ public class VideoCoverStorage {
             object.setBucket(bucket); object.setObjectKey(key); object.setContentHash(hash);
             object.setFileSize((long) bytes.length);
             object.setContentType(type == null ? "application/octet-stream" : type.contentType());
-            if (type != null) try (var input = new MemoryCacheImageInputStream(new ByteArrayInputStream(bytes))) {
-                var reader = ImageIO.getImageReaders(input).next();
-                try { reader.setInput(input, true, true); object.setImageWidth(reader.getWidth(0)); object.setImageHeight(reader.getHeight(0)); }
-                finally { reader.dispose(); }
-            } catch (Exception e) { throw new IllegalArgumentException("无法读取图片尺寸", e); }
+            if (type != null) {
+                object.setImageWidth(type.width()); object.setImageHeight(type.height());
+            }
             object.fillCreateCommonField(owner);
             objects.insert(object);
         }

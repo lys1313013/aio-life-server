@@ -34,7 +34,8 @@ public class FileAccessService {
         var object=storageObjects.selectById(attachment.getStorageObjectId());
         if(object==null) { response.setStatus(404); return; }
         try(var input=minio.getFile(object.getBucket(),object.getObjectKey())) {
-            FileContentPolicy.writeResponse(input,response,attachment.getFileName(),download);
+            response.setContentLengthLong(object.getFileSize());
+            FileContentPolicy.writeResponse(input,response,attachment.getFileName(),download,object.getContentType());
         } catch(Exception e) { response.setStatus(404); }
     }
 }

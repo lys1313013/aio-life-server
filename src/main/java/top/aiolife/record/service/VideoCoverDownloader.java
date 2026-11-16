@@ -106,7 +106,8 @@ public class VideoCoverDownloader {
             if (response.body().contentLength() > FileContentPolicy.MAX_IMAGE_BYTES)
                 throw new IllegalArgumentException("IMAGE_TOO_LARGE");
             byte[] bytes = response.body().byteStream().readNBytes(FileContentPolicy.MAX_IMAGE_BYTES + 1);
-            FileContentPolicy.requireImage(bytes);
+            if (bytes.length == 0 || bytes.length > FileContentPolicy.MAX_IMAGE_BYTES)
+                throw new IllegalArgumentException("IMAGE_TOO_LARGE");
             return bytes;
         } catch (IOException e) {
             throw new IllegalStateException("IMAGE_DOWNLOAD_FAILED", e);

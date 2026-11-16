@@ -17,6 +17,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import top.aiolife.record.enums.FileBizType;
+import top.aiolife.core.util.FileContentPolicy;
 import top.aiolife.record.mapper.ExternalResourceMapper;
 import top.aiolife.record.pojo.entity.ExternalResourceEntity;
 
@@ -92,11 +93,12 @@ public class ExternalResourceService {
         try {
             byte[] bytes="douban".equals(source.getPlatform())
                 ?downloader.downloadDouban(douban.validate(source.getSourceUrl())):downloader.download(source.getSourceUrl());
+            var image=FileContentPolicy.requireImage(bytes);
             phase="STORE";
             transactions.executeWithoutResult(status -> {
                 var claimed=sources.lockClaim(id,token);
                 if(claimed==null) return;
-                var object=storage.store(bytes,claimed.getCreateUser());
+                var object=storage.store(bytes,claimed.getCreateUser(),image);
                 sources.update(null,new LambdaUpdateWrapper<ExternalResourceEntity>().eq(ExternalResourceEntity::getId,id)
                     .set(ExternalResourceEntity::getStorageObjectId,object.getId()).set(ExternalResourceEntity::getState,"READY")
                     .set(ExternalResourceEntity::getAttempts,0).set(ExternalResourceEntity::getFetchedAt,LocalDateTime.now())

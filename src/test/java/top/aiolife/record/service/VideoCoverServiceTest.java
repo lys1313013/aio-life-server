@@ -2,6 +2,7 @@ package top.aiolife.record.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import org.junit.jupiter.api.*;
@@ -41,6 +42,16 @@ class VideoCoverServiceTest extends AttachmentDatabaseFixture {
     private void video(long id,long owner) { jdbc.update("INSERT INTO b_video(id,user_id,title,url,duration_seconds) VALUES(?,?,'fixture','https://example.test',60)",id,owner); }
     private FileEntity cover(long id) { return files.selectOne(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getBizType,"b_video_cover").eq(FileEntity::getBizId,id)); }
     private void run() { new VideoCoverWorker(sources,resources,tasks,service).runBatch(); }
+    @Test void 远程来源伪装图片在写入和发布前失败() {
+        video(1,11);
+        doReturn("<html><script>alert(1)</script></html>".getBytes(StandardCharsets.UTF_8))
+            .when(downloader).download(anyString());
+        service.enqueue(1,11,url,false);run();
+        assertEquals("FAILED",sources.selectList(null).getFirst().getState());
+        assertEquals("INVALID_IMAGE_SOURCE",sources.selectList(null).getFirst().getErrorCode());
+        assertNull(cover(1));assertEquals(0,mapper(StorageObjectMapper.class).selectCount(null));
+        verifyNoInteractions(minio);
+    }
     @Test void 同一来源跨用户只下载一次但各自持有附件() throws Exception {
         video(1,11);video(2,22);service.enqueue(1,11,url,false);service.enqueue(2,22,url,false);run();
         assertEquals(1,sources.selectCount(null));assertEquals(1,mapper(StorageObjectMapper.class).selectCount(null));assertEquals(2,files.selectCount(null));

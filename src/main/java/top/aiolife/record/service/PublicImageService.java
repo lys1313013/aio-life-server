@@ -30,7 +30,8 @@ public class PublicImageService {
         response.setContentType(object.getContentType());
         if(etag.equals(request.getHeader("If-None-Match"))) { response.setStatus(304); return; }
         try(var input=minio.getFile(object.getBucket(),object.getObjectKey())) {
-            FileContentPolicy.writeResponse(input,response,"image."+extension,false);
+            response.setContentLengthLong(object.getFileSize());
+            FileContentPolicy.writeResponse(input,response,"image."+extension,false,object.getContentType());
         } catch(Exception e) { response.setStatus(404); response.setHeader("Cache-Control","no-store"); }
     }
 }

@@ -58,9 +58,10 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper,FileEntity> impleme
             ImageIO.write(ImageIO.read(input),"png",output);
             bytes=output.toByteArray();
             if(bytes.length>5*1024*1024) throw new IllegalArgumentException("处理后的卡面不能超过5MB");
+            image=new FileContentPolicy.ImageType("image/png","png",image.width(),image.height());
         } catch(IOException e) { throw new IllegalArgumentException("卡面处理失败",e); }
         long owner=StpUtil.getLoginIdAsLong();
-        var object=storage.store(bytes,owner);
+        var object=storage.store(bytes,owner,image);
         var attachment=new FileEntity(); attachment.fillCreateCommonField(owner);
         attachment.setStorageObjectId(object.getId()); attachment.setFileName(file.getOriginalFilename());
         attachment.setBizType(bizType.getBizType());
