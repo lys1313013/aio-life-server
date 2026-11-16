@@ -152,7 +152,7 @@ docker run -d --name aio-life-server \
 
 两种 Docker 构建均先复制固定 SkyWalking Agent，再按 Spring Boot `dependencies`、`spring-boot-loader`、`snapshot-dependencies`、`application` 分层复制。最终 `/app/app.jar` 是引用外部依赖的精简启动 JAR，不再包含全部依赖；启动命令仍为 `java $JAVA_OPTS -jar app.jar`。解包文件的时间戳归一化，避免同一依赖因重新打包时间不同生成新层。普通业务代码更新只改变应用层；依赖、Agent 或基础镜像升级时，对应层仍需重新下载。首次切换分层布局需要下载新层，后续更新才能复用。
 
-发布前 CI 用同一业务 JAR 生成两个仅探针 class 字节码及 ZIP 时间不同的版本，强制重新解包并对比 OCI 压缩层摘要：只允许 `application` 层变化；同时通过镜像原始入口验证依赖类加载、非 root 用户、`JAVA_OPTS` 以及启用／未启用 Agent 的启动。不连接业务数据库或 OAP。本地复现需要 Docker Buildx 与 JDK 17+：
+发布前 CI 用同一业务 JAR 生成两个仅探针 class 字节码及 ZIP 时间不同的版本，强制重新解包并对比 OCI 压缩层摘要：只允许 `application` 层变化；同时通过镜像原始入口验证依赖类加载、非 root 用户、`JAVA_OPTS` 以及启用／未启用 Agent 的启动。不连接业务数据库或 OAP。本地复现需要 Docker Buildx、Python 3.11+ 与 JDK 17+：
 
 ```bash
 python3 scripts/verify-image-layers.py --jar target/aio-life-server-1.0.0.jar

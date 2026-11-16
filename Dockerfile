@@ -33,7 +33,7 @@ ENV TZ=Asia/Shanghai
 
 WORKDIR /app
 
-# 创建非 root 用户
+# 创建非 root 用户，并固定 Agent 父目录时间，避免目录元数据改变复制层摘要。
 RUN addgroup -g 1001 -S appgroup \
     && adduser -u 1001 -S appuser -G appgroup \
     && chown appuser:appgroup /app \

@@ -135,16 +135,27 @@ def main():
 
         # 使用镜像原始入口和真实依赖，验证精简 JAR、非 root、JAVA_OPTS 与 Agent 加载。
         for agent in (False, True):
-            command = ["docker", "run", "--rm", "--network", "none", "--platform", args.platform,
+            container = "aio-life-layer-probe-" + uuid.uuid4().hex
+            command = ["docker", "run", "--rm", "--name", container,
+                       "--network", "none", "--platform", args.platform,
                        "-e", "JAVA_OPTS=-Xms32m -Xmx128m -Dimage.layer.probe=true"]
             if agent:
                 command.extend(["-e", "JAVA_TOOL_OPTIONS=-javaagent:/opt/skywalking-agent/skywalking-agent.jar",
                                 "-e", "SW_LOGGING_OUTPUT=CONSOLE",
                                 "-e", "SW_AGENT_COLLECTOR_BACKEND_SERVICES=127.0.0.1:11800"])
-            result = run(command + [images[-1]], capture_output=True, text=True, timeout=60)
+            try:
+                result = run(command + [images[-1]], capture_output=True, text=True, timeout=60)
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+                print(error.stdout or "", flush=True)
+                print(error.stderr or "", flush=True)
+                raise
+            finally:
+                # docker run 客户端超时不保证容器退出，只清理本次命名的探针容器。
+                subprocess.run(["docker", "rm", "-f", container], check=False,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if "LAYER_PROBE_B" not in result.stdout:
                 raise AssertionError("Probe entry point did not execute")
-            if agent and "skywalking-agent.jar" not in result.stderr + result.stdout:
+            if agent and "SkyWalking agent version:" not in result.stderr + result.stdout:
                 raise AssertionError("Agent was not loaded")
             print(f"PASS entrypoint, dependencies, appuser, JAVA_OPTS; agent={agent}", flush=True)
         report["smoke"] = {"without_agent": "passed", "with_agent": "passed"}

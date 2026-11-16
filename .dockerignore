@@ -1,0 +1,5 @@
+# 源码构建只需要 pom 和 src；不发送 target、Git 历史或本机配置。
+**
+!pom.xml
+!src/
+!src/**
