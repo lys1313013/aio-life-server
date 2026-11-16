@@ -31,6 +31,8 @@
 
 - [V20261115_02__memo_favorite.sql](migrations/V20261115_02__memo_favorite.sql)：笔记增加收藏标记，已有笔记默认未收藏，不改正文及内容更新时间。
 
+- [V20261116_01__goal_sleep_query_minute_fields.sql](migrations/V20261116_01__goal_sleep_query_minute_fields.sql)：将已保存的旧标准休息天数查询改为 `startMinute/endMinute`，保留变量和进度快照，递增修订号以拒绝在途旧结果；不修改其他自定义查询。
+
 本次按明确要求同步修改历史初始脚本：新库不再创建上述四列；已有库仍保留可执行的迁移。历史校验和调整需先备份并完成实际数据、结构迁移，再执行 `flyway:repair`；`repair` 本身不迁移业务数据。
 
 新库先用独立 Flyway 入口迁移，再启动应用；应用启动不自动建表或导入种子。后续结构、菜单和数据变更新增更高版本 `V`，不改写已执行文件。
