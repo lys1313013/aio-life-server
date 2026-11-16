@@ -1,6 +1,7 @@
 package top.aiolife.record.api;
 
-import top.aiolife.support.CurrentSchema;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
@@ -73,8 +74,13 @@ class PaginationOrderingSqlTest {
         source.setUser("postgres");
         source.setPassword("isolated-pagination");
         jdbc = new JdbcTemplate(source);
-        for (String table : List.of("task", "task_column", "memo", "sys_dict_type", "sys_dict_data")) {
-            jdbc.execute(CurrentSchema.table(table));
+        try (var migrations = Files.list(Path.of("sql/migrations"))) {
+            for (var migration : migrations
+                    .filter(path -> path.getFileName().toString().matches("V\\d.*\\.sql"))
+                    .filter(path -> !path.getFileName().toString().startsWith("V20261110_02_"))
+                    .sorted().toList()) {
+                jdbc.execute(Files.readString(migration));
+            }
         }
         var configuration = new MybatisConfiguration();
         configuration.setEnvironment(new Environment("test", new JdbcTransactionFactory(), source));
@@ -179,7 +185,7 @@ class PaginationOrderingSqlTest {
             entry.setIsEnabled(1);
             entries.add(entry);
         }
-        when(cache.list(0L, null)).thenReturn(entries.subList(0, 3));
+        when(cache.list(null, null)).thenReturn(entries.subList(0, 3));
         when(cache.list(7L, null)).thenReturn(entries.subList(3, 5));
         var controller = new UserDictDataController(new UserDictDataServiceImpl(cache));
         assertPages(controller, "/userDictData/query", "id", List.of("1", "2", "3", "4", "5"));
@@ -190,7 +196,7 @@ class PaginationOrderingSqlTest {
         var cache = mock(UserDictDataCache.class);
         UserDictDataEntity item = new UserDictDataEntity();
         item.setId(1L);
-        when(cache.list(0L, null)).thenReturn(List.of());
+        when(cache.list(null, null)).thenReturn(List.of());
         when(cache.list(7L, null)).thenReturn(List.of(item));
         var controller = new UserDictDataController(new UserDictDataServiceImpl(cache));
         try (var login = mockStatic(StpUtil.class)) {

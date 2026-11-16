@@ -48,7 +48,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
     @BeforeEach
     void setup() {
         cache = mock(TimeTrackerCategoryCache.class);
-        when(cache.list(anyLong(), any())).thenAnswer(invocation ->
+        when(cache.list(nullable(Long.class), any())).thenAnswer(invocation ->
                 invocation.<Supplier<List<TimeTrackerCategoryEntity>>>getArgument(1).get());
         service = spy(new TimeTrackerCategoryServiceImpl(cache));
         doNothing().when(service).lockHierarchy();
@@ -60,7 +60,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
 
     @Test
     void testRead_公共和个人分别缓存并保留覆盖与隐藏语义() {
-        var publicCategory = category(5L, 0L);
+        var publicCategory = category(5L, null);
         var hiddenOverride = category(99L, USER_ID);
         hiddenOverride.setTemplateId(5L);
         hiddenOverride.setIsEnabled(0);
@@ -71,7 +71,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
         var result = service.listUserVisibleCategories(USER_ID);
 
         assertEquals(List.of(7L), result.stream().map(TimeTrackerCategoryEntity::getId).toList());
-        verify(cache).list(eq(0L), any());
+        verify(cache).list(isNull(), any());
         verify(cache).list(eq(USER_ID), any());
         verify(cache, never()).evictAfterCommit(anyLong());
     }
@@ -82,7 +82,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
         doAnswer(invocation -> {
             transactionStates.add(TransactionSynchronizationManager.isActualTransactionActive());
             return invocation.<Supplier<List<TimeTrackerCategoryEntity>>>getArgument(1).get();
-        }).when(cache).list(anyLong(), any());
+        }).when(cache).list(nullable(Long.class), any());
         doReturn(List.of()).when(service).list(anyWrapper());
         doReturn(true).when(service).save(any(TimeTrackerCategoryEntity.class));
         var interceptor = new TransactionInterceptor();
@@ -138,7 +138,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void testOverride_创建或更新公共覆盖仅清本人缓存(boolean alreadyOverridden) {
-        doReturn(category(5L, 0L)).when(service).getById(5L);
+        doReturn(category(5L, null)).when(service).getById(5L);
         doReturn(alreadyOverridden ? category(99L, USER_ID) : null).when(service).getOne(anyWrapper());
         doReturn(true).when(service).save(any(TimeTrackerCategoryEntity.class));
         doReturn(true).when(service).update(anyWrapper());
@@ -153,7 +153,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void testHide_新增或更新隐藏记录仅清本人缓存(boolean alreadyOverridden) {
-        doReturn(category(5L, 0L)).when(service).getById(5L);
+        doReturn(category(5L, null)).when(service).getById(5L);
         doReturn(alreadyOverridden ? category(99L, USER_ID) : null).when(service).getOne(anyWrapper());
         doReturn(true).when(service).save(any(TimeTrackerCategoryEntity.class));
         doReturn(true).when(service).updateById(any(TimeTrackerCategoryEntity.class));
@@ -166,7 +166,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
     @Test
     void testSort_接口排序个人和公共覆盖均清本人缓存() {
         doReturn(category(7L, USER_ID)).when(service).getById(7L);
-        doReturn(category(5L, 0L)).when(service).getById(5L);
+        doReturn(category(5L, null)).when(service).getById(5L);
         doReturn(null).when(service).getOne(anyWrapper());
         doReturn(true).when(service).save(any(TimeTrackerCategoryEntity.class));
         doReturn(true).when(service).update(any(TimeTrackerCategoryEntity.class), anyWrapper());
@@ -193,22 +193,22 @@ class TimeTrackerCategoryCacheInvalidationTest {
     void testAdmin_新增修改和删除均清共享缓存() {
         doReturn(List.of()).when(service).listAllCategories();
         doReturn(true).when(service).save(any(TimeTrackerCategoryEntity.class));
-        service.adminCreateCategory(category(null, 0L));
-        assertOnlyInvalidated(0L);
+        service.adminCreateCategory(category(null, null));
+        assertOnlyInvalidated(null);
 
         clearInvocations(cache);
-        doReturn(category(5L, 0L)).when(service).getById(5L);
+        doReturn(category(5L, null)).when(service).getById(5L);
         doReturn(true).when(service).updateById(any(TimeTrackerCategoryEntity.class));
         var updates = new TimeTrackerCategoryEntity();
         updates.setSortOrder(30);
         service.adminUpdateCategory(5L, updates);
-        assertOnlyInvalidated(0L);
+        assertOnlyInvalidated(null);
 
         clearInvocations(cache);
         doReturn(true).when(service).removeById(5L);
         doReturn(true).when(service).remove(anyWrapper());
         service.adminDeleteCategory(5L);
-        assertOnlyInvalidated(0L);
+        assertOnlyInvalidated(null);
     }
 
     @Test
@@ -236,7 +236,7 @@ class TimeTrackerCategoryCacheInvalidationTest {
         doReturn(false).when(service).remove(anyWrapper());
         doReturn(List.of()).when(service).listAllCategories();
         doReturn(category(7L, USER_ID)).when(service).getById(7L);
-        doReturn(category(5L, 0L)).when(service).getById(5L);
+        doReturn(category(5L, null)).when(service).getById(5L);
         doReturn(null).when(service).getOne(anyWrapper());
         service.createCategory(category(null, USER_ID), USER_ID);
         service.updateCategory(7L, new TimeTrackerCategoryEntity(), USER_ID);
@@ -246,18 +246,18 @@ class TimeTrackerCategoryCacheInvalidationTest {
         doReturn(category(99L, USER_ID)).when(service).getOne(anyWrapper());
         service.updateCategory(5L, new TimeTrackerCategoryEntity(), USER_ID);
         service.deleteCategory(5L, USER_ID);
-        service.adminCreateCategory(category(null, 0L));
+        service.adminCreateCategory(category(null, null));
         service.adminUpdateCategory(5L, new TimeTrackerCategoryEntity());
         service.adminDeleteCategory(5L);
         verifyNoInteractions(cache);
     }
 
-    private void assertOnlyInvalidated(long ownerId) {
+    private void assertOnlyInvalidated(Long ownerId) {
         verify(cache).evictAfterCommit(ownerId);
         verifyNoMoreInteractions(cache);
     }
 
-    private TimeTrackerCategoryEntity category(Long id, long ownerId) {
+    private TimeTrackerCategoryEntity category(Long id, Long ownerId) {
         var row = new TimeTrackerCategoryEntity();
         row.setId(id);
         row.setUserId(ownerId);

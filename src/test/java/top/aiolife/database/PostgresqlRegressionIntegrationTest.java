@@ -398,8 +398,8 @@ class PostgresqlRegressionIntegrationTest {
         assertEquals(0, mapper(BankCardDictionaryMapper.class).selectBanks().getFirst().isEnabled());
     }
 
-    @Test void 银行卡标签的原生查询与公共排序保持相同空值位置() {
-        jdbc.update("INSERT INTO user_dict_data(id,user_id,dict_type,dict_label,sort_order) VALUES (1,42,'bank_card_tag','empty',NULL),(2,42,'bank_card_tag','zero',0),(3,43,'bank_card_tag','foreign',NULL)");
+    @Test void 银行卡标签按非空排序值和ID排序且隔离用户() {
+        jdbc.update("INSERT INTO user_dict_data(id,user_id,dict_type,dict_label,sort_order) VALUES (1,42,'bank_card_tag','first',0),(2,42,'bank_card_tag','second',0),(3,43,'bank_card_tag','foreign',0)");
         assertEquals(List.of("1", "2"), mapper(BankCardTagMapper.class).selectTags(42).stream().map(tag -> tag.id()).toList());
     }
 
@@ -496,9 +496,9 @@ class PostgresqlRegressionIntegrationTest {
     }
 
     @Test void 正序可空排序值在前且查询保留筛选条件() {
-        jdbc.update("INSERT INTO task(id,user_id,content,sort_order) VALUES (1,42,'empty',NULL),(2,42,'zero',0),(3,43,'foreign',NULL)");
+        jdbc.update("INSERT INTO task(id,user_id,content,due_date) VALUES (1,42,'empty',NULL),(2,42,'dated','2026-11-16 00:00:00'),(3,43,'foreign',NULL)");
         var query = new LambdaQueryWrapper<TaskEntity>().eq(TaskEntity::getUserId, 42L);
-        QueryOrder.ascNullsFirst(query, TaskEntity::getSortOrder, TaskEntity::getId);
+        QueryOrder.ascNullsFirst(query, TaskEntity::getDueDate, TaskEntity::getId);
         assertEquals(List.of(1L, 2L), mapper(ITaskMapper.class).selectList(query).stream().map(TaskEntity::getId).toList());
     }
 
@@ -539,7 +539,7 @@ class PostgresqlRegressionIntegrationTest {
     }
 
     @Test void 文件绑定维护审计字段且不修改他人文件() {
-        jdbc.update("INSERT INTO honor_record(id,user_id,title) VALUES(2,42,'附件绑定目标')");
+        jdbc.update("INSERT INTO honor_record(id,user_id,title,honor_date) VALUES(2,42,'附件绑定目标','2026-11-16')");
         String own = "1".repeat(18), other = "2".repeat(18);
         file(own, "honor_record", 42, 1); file(other, "honor_record", 43, 1);
         var service = new FileServiceImpl(mock(MinioUtil.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class),mapper(top.aiolife.system.mapper.StorageObjectMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.ExternalResourceService.class));

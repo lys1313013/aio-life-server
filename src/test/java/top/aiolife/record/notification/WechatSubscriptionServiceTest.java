@@ -60,7 +60,8 @@ class WechatSubscriptionServiceTest {
             Page<NotificationDeliveryEntity> page = inv.getArgument(0);
             return page.setRecords(row == null ? List.of() : List.of(row));
         });
-        when(deliveries.insert(any(NotificationDeliveryEntity.class))).thenAnswer(inv -> {
+        when(deliveries.insertIfAbsent(any(NotificationDeliveryEntity.class))).thenAnswer(inv -> {
+            if (row != null) return 0;
             row = inv.getArgument(0);
             row.setId(9L);
             return 1;
@@ -84,7 +85,7 @@ class WechatSubscriptionServiceTest {
         assertTrue(config.bound());
         assertNull(config.templateId());
         service.sendIfEnabled(request);
-        verify(deliveries, never()).insert(any(NotificationDeliveryEntity.class));
+        verify(deliveries, never()).insertIfAbsent(any(NotificationDeliveryEntity.class));
     }
 
     @Test void 无业务偏好无绑定或非试点事件均不入队() {
@@ -93,7 +94,7 @@ class WechatSubscriptionServiceTest {
         user.setWechatOpenid(null);
         service.sendIfEnabled(request);
         service.sendIfEnabled(new NotificationRequest(7L, "LEETCODE_DAILY", "每日题目", "正文", null, "daily"));
-        verify(deliveries, never()).insert(any(NotificationDeliveryEntity.class));
+        verify(deliveries, never()).insertIfAbsent(any(NotificationDeliveryEntity.class));
     }
 
     @Test void 载荷加密且正确模板字段按Unicode字符截断() throws Exception {
@@ -110,10 +111,10 @@ class WechatSubscriptionServiceTest {
 
     @Test void 重复业务事件不再次入队且已成功记录不重发() {
         enqueueAndProcess();
-        when(deliveries.selectCount(any())).thenReturn(1L);
+        when(deliveries.insertIfAbsent(any(NotificationDeliveryEntity.class))).thenReturn(0);
         service.sendIfEnabled(request);
         service.deliverPending();
-        verify(deliveries, times(1)).insert(any(NotificationDeliveryEntity.class));
+        verify(deliveries, times(2)).insertIfAbsent(any(NotificationDeliveryEntity.class));
         verify(client, times(1)).sendSubscription(any(), any(), any(), any());
     }
 

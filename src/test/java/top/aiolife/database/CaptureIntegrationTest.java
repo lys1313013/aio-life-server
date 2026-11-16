@@ -48,6 +48,7 @@ import top.aiolife.record.service.RecordImageService;
 import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.service.UserDictDataService;
+import top.aiolife.record.service.VideoCoverStorage;
 import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.wardrobe.mapper.WardrobeItemMapper;
 
@@ -93,6 +94,7 @@ class CaptureIntegrationTest {
     @MockitoBean IReadRecordService readService;
     @MockitoBean IMovieService movieService;
     @MockitoBean IFileService fileService;
+    @MockitoBean VideoCoverStorage storage;
     private static final long USER = 922001L;
 
     @BeforeEach
@@ -115,10 +117,17 @@ class CaptureIntegrationTest {
     void cleanup() {
         for (String table : List.of("device", "wardrobe_item", "read_record", "movie", "expense"))
             jdbc.update("DELETE FROM " + table + " WHERE user_id=?", USER);
-        jdbc.update("DELETE FROM \"file\" WHERE create_user=?", USER);
+        jdbc.update("DELETE FROM attachment WHERE user_id=?", USER);
+        jdbc.update("DELETE FROM storage_object WHERE id=?", USER);
         jdbc.update("DELETE FROM sys_user WHERE id=?", USER);
         var keys = redis.keys("aio:capture:request:v2:" + USER + ":*");
         if (keys != null && !keys.isEmpty()) redis.delete(keys);
+    }
+
+    private long coverObject() {
+        jdbc.update("INSERT INTO storage_object(id,bucket,object_key,content_hash,file_size,content_type) VALUES(?, 'fixture', 'capture.png', ?, 68, 'image/png') ON CONFLICT(id) DO NOTHING",
+                USER, String.format("%064x", USER));
+        return USER;
     }
 
     private ObjectNode order() {
@@ -591,10 +600,11 @@ class CaptureIntegrationTest {
         movie.fillCreateCommonField(USER);
         movieMapper.insert(movie);
         var cover = new FileEntity();
-        cover.setId("personal-cover");
+        cover.setId("92200101");
         cover.setFileName("personal.png");
-        cover.setBizType("movie");
+        cover.setBizType("movie_cover");
         cover.setBizId(movie.getId());
+        cover.setStorageObjectId(coverObject());
         cover.fillCreateCommonField(USER);
         fileMapper.insert(cover);
         var completed = douban.sync(USER, nativeSync("completed"));
@@ -614,7 +624,7 @@ class CaptureIntegrationTest {
         assertEquals(14, row.getTotalProgress());
         assertEquals(4, row.getRating());
         assertEquals("私人观影笔记", row.getRemark());
-        assertEquals("personal-cover", images.find(USER, FileBizType.MOVIE, row.getId()));
+        assertEquals("92200101", images.find(USER, FileBizType.MOVIE, row.getId()));
         verifyNoInteractions(fileService, movieService);
     }
 
@@ -690,10 +700,11 @@ class CaptureIntegrationTest {
                 .thenAnswer(
                         inv -> {
                             var file = new FileEntity();
-                            file.setId("0123456789abcdef0123456789abcdef");
+                            file.setId("92200102");
                             file.setFileName("capture-sync.png");
                             file.setFileType("image/png");
-                            file.setBizType("movie");
+                            file.setBizType("movie_cover");
+                            file.setStorageObjectId(coverObject());
                             file.fillCreateCommonField(USER);
                             fileMapper.insert(file);
                             var uploaded = new FileVO();

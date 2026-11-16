@@ -181,7 +181,10 @@ class ApiBoundaryContractTest {
         var hidden = new TimeTrackerCategoryEntity(); hidden.setIsDeleted(1); hidden.setUserId(11L);
         JsonNode result = json.valueToTree(RecordApiConvertor.INSTANCE.toTimeTrackerCategoryVO(hidden));
         assertTrue(result.path("isHidden").asBoolean());
-        assertEquals("11", result.path("userId").asText());
+        assertFalse(result.path("preset").asBoolean());
+        assertFalse(result.has("userId"));
+        hidden.setUserId(null);
+        assertTrue(json.valueToTree(RecordApiConvertor.INSTANCE.toTimeTrackerCategoryVO(hidden)).path("preset").asBoolean());
         assertFalse(result.has("isDeleted"));
     }
 

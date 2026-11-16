@@ -29,6 +29,7 @@ import top.aiolife.record.pojo.req.ExpenseCreateReq;
 import top.aiolife.record.service.DeviceExpenseService;
 import top.aiolife.record.service.RecordImageService;
 import top.aiolife.record.service.UserDictDataService;
+import top.aiolife.record.service.VideoCoverStorage;
 import top.aiolife.record.service.impl.ExpenseServiceImpl;
 import top.aiolife.sso.service.SecondaryLockGuard;
 
@@ -50,6 +51,7 @@ class DeviceExpenseIntegrationTest {
     @Autowired private PlatformTransactionManager transactions;
     @MockitoBean private SecondaryLockGuard locks;
     @MockitoBean private UserDictDataService dictionaries;
+    @MockitoBean private VideoCoverStorage storage;
 
     @Test void 新增支出同时关联已有设备或新建设备并保留普通录入() {
         var device = device(1L);
