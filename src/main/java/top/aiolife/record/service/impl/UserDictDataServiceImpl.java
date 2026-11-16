@@ -36,8 +36,8 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
 
     @Override
     public List<UserDictDataEntity> listUserVisibleDictData(Long userId, String dictType, boolean includeDisabled) {
-        // 1. 查询所有公共分类（userId = 0L，未删除）
-        List<UserDictDataEntity> publicCategories = dictDataCache.list(0L, dictType);
+        // 1. 查询所有公共分类（user_id 为空，未删除）
+        List<UserDictDataEntity> publicCategories = dictDataCache.list(null, dictType);
 
         // 2. 缓存包含停用项的原始记录，两种展示模式使用同一份数据，避免状态互相污染。
         List<UserDictDataEntity> userRecords = dictDataCache.list(userId, dictType);
@@ -64,7 +64,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
                 merged.setUserId(userId);
                 merged.setTemplateId(publicCategory.getId());
                 merged.setDictType(publicCategory.getDictType());
-                boolean readonly = "Y".equals(publicCategory.getIsReadonly());
+                boolean readonly = Integer.valueOf(1).equals(publicCategory.getIsReadonly());
 
                 merged.setDictLabel((!readonly && overrideRecord.getDictLabel() != null) ? overrideRecord.getDictLabel() : publicCategory.getDictLabel());
                 merged.setDictValue((!readonly && overrideRecord.getDictValue() != null) ? overrideRecord.getDictValue() : publicCategory.getDictValue());
@@ -134,15 +134,16 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
     public UserDictDataEntity getAccessibleById(long userId, long id) {
         return this.getOne(new LambdaQueryWrapper<UserDictDataEntity>()
                 .eq(UserDictDataEntity::getId, id)
-                .in(UserDictDataEntity::getUserId, userId, 0L));
+                .and(w -> w.eq(UserDictDataEntity::getUserId, userId)
+                        .or().isNull(UserDictDataEntity::getUserId)));
     }
 
     @Override
     public PageResp<UserDictDataEntity> pageBaseDictData(String dictType, String dictLabel,
                                                          Integer isEnabled, int page, int pageSize) {
         LambdaQueryWrapper<UserDictDataEntity> wrapper = new LambdaQueryWrapper<>();
-        // 强制只能查询基础值 (userId = 0)
-        wrapper.eq(UserDictDataEntity::getUserId, 0L);
+        // 强制只能查询基础值（user_id 为空）
+        wrapper.isNull(UserDictDataEntity::getUserId);
         wrapper.eq(SysUtil.isNotEmpty(dictType), UserDictDataEntity::getDictType, dictType);
         IlikeQuery.anyOf(wrapper, SysUtil.isNotEmpty(dictLabel), dictLabel, UserDictDataEntity::getDictLabel);
         wrapper.eq(isEnabled != null, UserDictDataEntity::getIsEnabled, isEnabled);
@@ -165,10 +166,6 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
     @Override
     public void createDictData(UserDictDataEntity entity, Long userId) {
         rejectBankTag(entity.getDictType());
-        if (entity.getUserId() != null && entity.getUserId() == 0L) {
-            throw new RuntimeException("普通用户不能创建公共分类");
-        }
-        
         entity.setId(null);
         entity.setUserId(userId);
         entity.setTemplateId(null);
@@ -189,11 +186,11 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
         }
 
         rejectBankTag(target.getDictType());
-        if (target.getUserId() == 0L) {
+        if (target.getUserId() == null) {
             // 锁定公共项，避免并发首次覆盖各插入一条记录。
             this.getBaseMapper().lockTemplate(id);
             // 目标是公共字典，生成或更新覆盖记录
-            if ("Y".equals(target.getIsReadonly())) {
+            if (Integer.valueOf(1).equals(target.getIsReadonly())) {
                 // 如果是只读的，只允许用户修改状态，清空其他属性的修改
                 UserDictDataEntity onlyStatusUpdate = new UserDictDataEntity();
                 onlyStatusUpdate.setIsEnabled(updates.getIsEnabled());
@@ -248,7 +245,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
         }
 
         rejectBankTag(target.getDictType());
-        if (target.getUserId() == 0L) {
+        if (target.getUserId() == null) {
             // 锁定公共项，避免并发首次隐藏各插入一条记录。
             this.getBaseMapper().lockTemplate(id);
             // 目标是公共分类，生成隐藏记录
@@ -290,34 +287,34 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
 
     @Override
     public boolean createBaseDictData(UserDictDataEntity entity) {
-        entity.setUserId(0L);
-        entity.fillCreateCommonField(0L);
+        entity.setUserId(null);
+        entity.fillCreateCommonField(null);
         boolean saved = this.save(entity);
-        if (saved) dictDataCache.evictAfterCommit(0L, entity.getDictType());
+        if (saved) dictDataCache.evictAfterCommit(null, entity.getDictType());
         return saved;
     }
 
     @Override
     public boolean updateBaseDictData(Long id, UserDictDataEntity updates) {
         UserDictDataEntity target = this.getById(id);
-        if (target == null || target.getUserId() != 0L) {
+        if (target == null || target.getUserId() != null) {
             throw new RuntimeException("只能修改基础值");
         }
         updates.setId(id);
-        updates.fillUpdateCommonField(0L);
+        updates.fillUpdateCommonField(null);
         boolean updated = this.updateById(updates);
-        if (updated) dictDataCache.evictAfterCommit(0L, target.getDictType(), updates.getDictType());
+        if (updated) dictDataCache.evictAfterCommit(null, target.getDictType(), updates.getDictType());
         return updated;
     }
 
     @Override
     public boolean deleteBaseDictData(Long id) {
         UserDictDataEntity target = this.getById(id);
-        if (target == null || target.getUserId() != 0L) {
+        if (target == null || target.getUserId() != null) {
             throw new RuntimeException("只能删除基础值");
         }
         boolean deleted = this.removeById(id);
-        if (deleted) dictDataCache.evictAfterCommit(0L, target.getDictType());
+        if (deleted) dictDataCache.evictAfterCommit(null, target.getDictType());
         return deleted;
     }
 
@@ -339,7 +336,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
 
         List<UserDictDataEntity> dictDataList = this.list(
                 new LambdaQueryWrapper<UserDictDataEntity>()
-                        .eq(UserDictDataEntity::getUserId, 0L)
+                        .isNull(UserDictDataEntity::getUserId)
                         .eq(UserDictDataEntity::getDictType, dictType)
                         .orderByAsc(UserDictDataEntity::getSortOrder, UserDictDataEntity::getId)
                         .last("FOR UPDATE"));
@@ -366,7 +363,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
                 UserDictDataEntity update = new UserDictDataEntity();
                 update.setId(item.getId());
                 update.setSortOrder(nextSort);
-                update.fillUpdateCommonField(0L);
+                update.fillUpdateCommonField(null);
                 updates.add(update);
             }
             item.setSortOrder(nextSort);
@@ -376,7 +373,7 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
             throw new RuntimeException("字典排序更新失败");
         }
 
-        dictDataCache.evictAfterCommit(0L, dictType);
+        dictDataCache.evictAfterCommit(null, dictType);
         return dictDataList.stream()
                 .map(item -> new UserDictDataSortVO(item.getId(), item.getSortOrder()))
                 .toList();

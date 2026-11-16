@@ -55,9 +55,9 @@ public class UserDictDataUpdateReq {
     private String extData;
 
     /**
-     * 是否默认（Y是 N否）
+     * 是否默认值：1=是，0=否
      */
-    private String isDefault;
+    private Integer isDefault;
 
     /**
      * 是否启用：1=启用，0=停用
@@ -67,9 +67,9 @@ public class UserDictDataUpdateReq {
     private Integer isEnabled;
 
     /**
-     * 是否只读（Y是 N否），用于限制普通用户修改公共分类
+     * 是否只读：1=是，0=否；用于限制普通用户修改公共分类
      */
-    private String isReadonly;
+    private Integer isReadonly;
 
     /**
      * 备注

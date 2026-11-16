@@ -153,7 +153,7 @@ class TimeTrackerCategoryServiceImplTest {
     private TimeTrackerCategoryEntity createPublicCategory() {
         TimeTrackerCategoryEntity category = new TimeTrackerCategoryEntity();
         category.setId(5L);
-        category.setUserId(0L);
+        category.setUserId(null);
         category.setName("娱乐");
         category.setColor("#eb2f96");
         category.setIcon("tabler:pacman");

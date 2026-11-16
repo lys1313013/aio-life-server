@@ -1,6 +1,7 @@
 package top.aiolife.record.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -347,6 +348,7 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
         }
 
         NotificationDeliveryEntity delivery = new NotificationDeliveryEntity();
+        delivery.setId(IdWorker.getId());
         delivery.setDedupKey(request.dedupKey());
         delivery.setUserId(request.receiverUserId());
         delivery.setBizType(request.bizType());
@@ -355,7 +357,7 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
         delivery.setPayloadCiphertext(encryptPayload(request));
         delivery.setRetryCount(0);
         delivery.fillCreateCommonField(request.receiverUserId());
-        deliveryMapper.insert(delivery);
+        deliveryMapper.insertIfAbsent(delivery);
     }
 
     @Override

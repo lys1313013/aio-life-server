@@ -1,6 +1,7 @@
 package top.aiolife.record.notification;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -130,14 +131,10 @@ public class WechatSubscriptionService {
                     UserEntity user = users.selectById(request.receiverUserId());
                     if (!properties.configured() || !client.enabled() || !isBound(user)
                             || (!test && !enabled(request.receiverUserId()))) return;
-                    long existing = deliveries.selectCount(new LambdaQueryWrapper<NotificationDeliveryEntity>()
-                            .eq(NotificationDeliveryEntity::getUserId, request.receiverUserId())
-                            .eq(NotificationDeliveryEntity::getChannel, CHANNEL)
-                            .eq(NotificationDeliveryEntity::getDedupKey, request.dedupKey()));
-                    if (existing > 0) return;
                     Payload payload = new Payload(miniProperties.getAppId(), user.getWechatOpenid(),
                             properties.getTemplateId(), properties.getEnvironment(), data(request, properties), test);
                     NotificationDeliveryEntity delivery = new NotificationDeliveryEntity();
+                    delivery.setId(IdWorker.getId());
                     delivery.setUserId(request.receiverUserId());
                     delivery.setBizType(BIZ_TYPE);
                     delivery.setChannel(CHANNEL);
@@ -150,7 +147,8 @@ public class WechatSubscriptionService {
                         throw new IllegalStateException("微信通知载荷加密失败");
                     }
                     delivery.fillCreateCommonField(request.receiverUserId());
-                    deliveries.insert(delivery);
+                    // 锁过期或跨实例竞争时以数据库唯一约束为准，重复事件不重复入队。
+                    if (deliveries.insertIfAbsent(delivery) == 0) return;
                     result[0] = delivery;
                 }));
         return result[0];

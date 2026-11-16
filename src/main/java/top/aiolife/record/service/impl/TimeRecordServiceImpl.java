@@ -131,7 +131,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
             categoryNameMap = timeTrackerCategoryService.list(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
                             .in(TimeTrackerCategoryEntity::getId, categoryIds)
                             .and(w -> w.eq(TimeTrackerCategoryEntity::getUserId, userId)
-                                    .or().eq(TimeTrackerCategoryEntity::getUserId, 0L))).stream()
+                                    .or().isNull(TimeTrackerCategoryEntity::getUserId))).stream()
                     .collect(Collectors.toMap(
                             TimeTrackerCategoryEntity::getId,
                             TimeTrackerCategoryEntity::getName
@@ -278,7 +278,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         boolean allowed = timeTrackerCategoryService.count(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
                 .eq(TimeTrackerCategoryEntity::getId, categoryId)
                 .and(w -> w.eq(TimeTrackerCategoryEntity::getUserId, userId)
-                        .or().eq(TimeTrackerCategoryEntity::getUserId, 0L))) > 0;
+                        .or().isNull(TimeTrackerCategoryEntity::getUserId))) > 0;
         if (!allowed) throw new IllegalArgumentException("分类不存在或无权使用");
         if (!existingCategory && timeTrackerCategoryService.listUserVisibleCategories(userId).stream()
                 .noneMatch(c -> Objects.equals(c.getId(), categoryId))) {

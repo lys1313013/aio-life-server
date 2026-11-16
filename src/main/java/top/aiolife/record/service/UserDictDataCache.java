@@ -18,7 +18,12 @@ import top.aiolife.record.pojo.entity.UserDictDataEntity;
 @Service
 @Slf4j
 public class UserDictDataCache {
-    public static final String CACHE_NAME = "userDictData:v2";
+    public static final String CACHE_NAME = "userDictData:v3";
+
+    /** 缓存键不接受 null；公共预设单独使用固定键，数据库侧以 user_id IS NULL 表达。 */
+    public static String key(Long userId, String dictType) {
+        return (userId == null ? "preset" : userId.toString()) + ":" + dictType;
+    }
 
     private final UserDictDataMapper mapper;
     private final CacheManager cacheManager;
@@ -29,12 +34,14 @@ public class UserDictDataCache {
     }
 
     // 银行卡标签由独立业务维护，保持实时查询；事务中不读取或写入共享缓存。
-    @Cacheable(cacheNames = CACHE_NAME, cacheManager = "cacheManager", key = "#userId + ':' + #dictType",
+    @Cacheable(cacheNames = CACHE_NAME, cacheManager = "cacheManager",
+            key = "T(top.aiolife.record.service.UserDictDataCache).key(#userId, #dictType)",
             condition = "#dictType != null && !#dictType.isBlank() && #dictType != 'bank_card_tag'"
                     + " && !T(org.springframework.transaction.support.TransactionSynchronizationManager).isActualTransactionActive()")
     public List<UserDictDataEntity> list(Long userId, String dictType) {
         return mapper.selectList(new LambdaQueryWrapper<UserDictDataEntity>()
-                .eq(UserDictDataEntity::getUserId, userId)
+                .isNull(userId == null, UserDictDataEntity::getUserId)
+                .eq(userId != null, UserDictDataEntity::getUserId, userId)
                 .eq(UserDictDataEntity::getDictType, dictType)
                 .eq(UserDictDataEntity::getIsDeleted, 0));
     }
@@ -46,7 +53,7 @@ public class UserDictDataCache {
             for (String type : types) {
                 try {
                     var cache = cacheManager.getCache(CACHE_NAME);
-                    if (cache != null) cache.evict(userId + ":" + type);
+                    if (cache != null) cache.evict(key(userId, type));
                 } catch (RuntimeException exception) {
                     log.warn("User dictionary cache eviction failed: userId={}, dictType={}", userId, type, exception);
                 }

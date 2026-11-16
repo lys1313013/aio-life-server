@@ -17,24 +17,29 @@ import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 @RequiredArgsConstructor
 @CacheConfig(cacheNames = TimeTrackerCategoryCache.CACHE_NAME, cacheManager = "cacheManager")
 public class TimeTrackerCategoryCache {
-    public static final String CACHE_NAME = "timeTrackerCategory:v3";
+    public static final String CACHE_NAME = "timeTrackerCategory:v4";
     private final ApplicationEventPublisher events;
 
+    /** 缓存键不接受 null；公共预设单独使用固定键，数据库侧以 user_id IS NULL 表达。 */
+    public static String key(Long ownerId) {
+        return ownerId == null ? "preset" : ownerId.toString();
+    }
+
     // 独立 Bean 供业务服务通过代理调用；写事务内查询不读取或发布共享缓存。
-    @Cacheable(key = "#ownerId", condition =
+    @Cacheable(key = "T(top.aiolife.record.service.TimeTrackerCategoryCache).key(#ownerId)", condition =
             "!T(org.springframework.transaction.support.TransactionSynchronizationManager).isActualTransactionActive()")
     public List<TimeTrackerCategoryEntity> list(Long ownerId, Supplier<List<TimeTrackerCategoryEntity>> loader) {
         return loader.get();
     }
 
-    /** 个人变更传用户 ID，公共变更传 0；回滚保留原缓存，提交后同步失效。 */
+    /** 个人变更传用户 ID，公共预设变更传 null；回滚保留原缓存，提交后同步失效。 */
     public void evictAfterCommit(Long ownerId) {
         events.publishEvent(new CategoryChanged(ownerId));
     }
 
     // 事件由 Spring 经代理调用，避免同类自调用绕过 @CacheEvict；无事务时立即失效。
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
-    @CacheEvict(key = "#event.ownerId")
+    @CacheEvict(key = "T(top.aiolife.record.service.TimeTrackerCategoryCache).key(#event.ownerId)")
     public void onCategoryChanged(CategoryChanged event) { }
 
     public record CategoryChanged(Long ownerId) { }

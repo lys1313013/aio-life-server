@@ -88,7 +88,7 @@ class UserDictDataCacheTest {
         verify(mapper, times(3)).selectList(anyWrapper()); // 公共部分复用
         service.listUserVisibleDictData(1L, "income_type");
         verify(mapper, times(5)).selectList(anyWrapper());
-        assertCached(0L, TYPE, true);
+        assertCached(null, TYPE, true);
         assertCached(1L, TYPE, true);
         assertNull(context.getBean("caffeineCacheManager", CacheManager.class)
                 .getCache(UserDictDataCache.CACHE_NAME).get("1:" + TYPE));
@@ -96,7 +96,7 @@ class UserDictDataCacheTest {
 
     @Test
     void testVisibility_缓存停用覆盖记录但业务列表仍隐藏且管理页可见() {
-        var base = row(7L, 0L, TYPE);
+        var base = row(7L, null, TYPE);
         var override = row(8L, 1L, TYPE);
         override.setTemplateId(7L);
         override.setIsEnabled(0);
@@ -126,7 +126,7 @@ class UserDictDataCacheTest {
         doReturn(true).when(service).save(any(UserDictDataEntity.class));
         service.createDictData(row(null, 1L, TYPE), 1L);
         assertCached(1L, TYPE, false);
-        assertCached(0L, TYPE, true);
+        assertCached(null, TYPE, true);
         assertCached(2L, TYPE, true);
         assertCached(1L, "income_type", true);
     }
@@ -164,27 +164,27 @@ class UserDictDataCacheTest {
         doReturn(true).when(service).removeById(7L);
         service.deleteDictData(7L, 1L);
         assertCached(1L, TYPE, false);
-        assertCached(0L, TYPE, true);
+        assertCached(null, TYPE, true);
         assertCached(2L, TYPE, true);
     }
 
     @Test
     void testHide_隐藏公共分类只清本人缓存() {
         warm();
-        doReturn(row(7L, 0L, TYPE)).when(service).getById(7L);
+        doReturn(row(7L, null, TYPE)).when(service).getById(7L);
         doReturn(null).when(service).getOne(anyWrapper());
         doReturn(true).when(service).save(any(UserDictDataEntity.class));
         service.deleteDictData(7L, 1L);
         assertCached(1L, TYPE, false);
-        assertCached(0L, TYPE, true);
+        assertCached(null, TYPE, true);
         assertCached(2L, TYPE, true);
     }
 
     @Test
     void testOverride_修改只读公共分类状态清理本人缓存() {
         warm();
-        var base = row(7L, 0L, TYPE);
-        base.setIsReadonly("Y");
+        var base = row(7L, null, TYPE);
+        base.setIsReadonly(1);
         doReturn(base).when(service).getById(7L);
         doReturn(row(8L, 1L, TYPE)).when(service).getOne(anyWrapper());
         doReturn(true).when(service).updateById(any(UserDictDataEntity.class));
@@ -192,28 +192,28 @@ class UserDictDataCacheTest {
         updates.setIsEnabled(0);
         service.updateDictData(7L, updates, 1L);
         assertCached(1L, TYPE, false);
-        assertCached(0L, TYPE, true);
+        assertCached(null, TYPE, true);
     }
 
     @Test
     void testAdmin_新增修改删除清除共享缓存且所有用户读取新值() {
         warm();
         doReturn(true).when(service).save(any(UserDictDataEntity.class));
-        assertTrue(service.createBaseDictData(row(null, 0L, TYPE)));
-        assertCached(0L, TYPE, false);
-        when(mapper.selectList(anyWrapper())).thenReturn(List.of(row(7L, 0L, TYPE)));
+        assertTrue(service.createBaseDictData(row(null, null, TYPE)));
+        assertCached(null, TYPE, false);
+        when(mapper.selectList(anyWrapper())).thenReturn(List.of(row(7L, null, TYPE)));
         assertEquals(7L, service.listUserVisibleDictData(1L, TYPE).getFirst().getId());
         assertEquals(7L, service.listUserVisibleDictData(2L, TYPE).getFirst().getId());
-        doReturn(row(7L, 0L, TYPE)).when(service).getById(7L);
+        doReturn(row(7L, null, TYPE)).when(service).getById(7L);
         doReturn(true).when(service).updateById(any(UserDictDataEntity.class));
-        cache().put("0:income_type", List.of());
-        assertTrue(service.updateBaseDictData(7L, row(7L, 0L, "income_type")));
-        assertCached(0L, TYPE, false);
-        assertCached(0L, "income_type", false);
-        cache().put("0:" + TYPE, List.of());
+        cache().put(UserDictDataCache.key(null, "income_type"), List.of());
+        assertTrue(service.updateBaseDictData(7L, row(7L, null, "income_type")));
+        assertCached(null, TYPE, false);
+        assertCached(null, "income_type", false);
+        cache().put(UserDictDataCache.key(null, TYPE), List.of());
         doReturn(true).when(service).removeById(7L);
         assertTrue(service.deleteBaseDictData(7L));
-        assertCached(0L, TYPE, false);
+        assertCached(null, TYPE, false);
         assertCached(1L, TYPE, true);
         assertCached(2L, TYPE, true);
     }
@@ -222,27 +222,27 @@ class UserDictDataCacheTest {
     void testAdminFailure_越权与写入失败不清缓存() {
         warm();
         doReturn(row(7L, 2L, TYPE)).when(service).getById(7L);
-        assertThrows(RuntimeException.class, () -> service.updateBaseDictData(7L, row(7L, 0L, TYPE)));
+        assertThrows(RuntimeException.class, () -> service.updateBaseDictData(7L, row(7L, null, TYPE)));
         assertThrows(RuntimeException.class, () -> service.deleteBaseDictData(7L));
         doReturn(false).when(service).save(any(UserDictDataEntity.class));
-        assertFalse(service.createBaseDictData(row(null, 0L, TYPE)));
-        assertCached(0L, TYPE, true);
+        assertFalse(service.createBaseDictData(row(null, null, TYPE)));
+        assertCached(null, TYPE, true);
     }
 
     @Test
     void testSort_公共排序在提交后清缓存() {
         warm();
-        var first = row(7L, 0L, TYPE);
-        var second = row(8L, 0L, TYPE);
+        var first = row(7L, null, TYPE);
+        var second = row(8L, null, TYPE);
         second.setSortOrder(10);
         doReturn(new ArrayList<>(List.of(first, second))).when(service).list(anyWrapper());
         doReturn(true).when(service).updateBatchById(anyCollection());
         TransactionSynchronizationManager.initSynchronization();
         var sorted = service.reSortBaseDictData(TYPE, 8L, 7L, "before");
         assertEquals(8L, sorted.getFirst().getId());
-        assertCached(0L, TYPE, true);
+        assertCached(null, TYPE, true);
         TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
-        assertCached(0L, TYPE, false);
+        assertCached(null, TYPE, false);
         assertCached(1L, TYPE, true);
     }
 
@@ -254,10 +254,10 @@ class UserDictDataCacheTest {
         doThrow(new IllegalStateException("Redis unavailable")).when(failed).put(any(), any());
         doThrow(new IllegalStateException("Redis unavailable")).when(failed).evict(any());
         doReturn(failed).when(caches).getCache(UserDictDataCache.CACHE_NAME);
-        when(mapper.selectList(anyWrapper())).thenReturn(List.of(row(7L, 0L, TYPE)));
-        assertEquals(7L, dictionaries.list(0L, TYPE).getFirst().getId());
-        assertDoesNotThrow(() -> dictionaries.evictAfterCommit(0L, TYPE));
-        verify(failed).evict("0:" + TYPE);
+        when(mapper.selectList(anyWrapper())).thenReturn(List.of(row(7L, null, TYPE)));
+        assertEquals(7L, dictionaries.list(null, TYPE).getFirst().getId());
+        assertDoesNotThrow(() -> dictionaries.evictAfterCommit(null, TYPE));
+        verify(failed).evict(UserDictDataCache.key(null, TYPE));
     }
 
     @Test
@@ -285,11 +285,11 @@ class UserDictDataCacheTest {
 
     private Cache cache() { return caches.getCache(UserDictDataCache.CACHE_NAME); }
     private void warm() {
-        for (long userId : List.of(0L, 1L, 2L)) dictionaries.list(userId, TYPE);
+        for (Long userId : java.util.Arrays.asList(null, 1L, 2L)) dictionaries.list(userId, TYPE);
         dictionaries.list(1L, "income_type");
     }
-    private void assertCached(long userId, String type, boolean expected) {
-        assertEquals(expected, cache().get(userId + ":" + type) != null);
+    private void assertCached(Long userId, String type, boolean expected) {
+        assertEquals(expected, cache().get(UserDictDataCache.key(userId, type)) != null);
     }
     private UserDictDataEntity row(Long id, Long owner, String type) {
         var row = new UserDictDataEntity();

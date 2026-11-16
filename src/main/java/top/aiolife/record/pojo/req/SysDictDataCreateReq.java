@@ -45,9 +45,9 @@ public class SysDictDataCreateReq {
     private String listClass;
 
     /**
-     * 是否为默认值
+     * 是否默认值：1=是，0=否
      */
-    private String isDefault;
+    private Integer isDefault;
 
     /**
      * 状态

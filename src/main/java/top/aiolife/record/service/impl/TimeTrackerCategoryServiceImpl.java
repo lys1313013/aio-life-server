@@ -84,8 +84,8 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     public List<TimeTrackerCategoryEntity> listUserCategories(Long userId) {
         // 1. 包含停用分类，保留历史记录元数据
-        List<TimeTrackerCategoryEntity> publicCategories = categoryCache.list(0L, () -> this.list(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
-                .eq(TimeTrackerCategoryEntity::getUserId, 0L)
+        List<TimeTrackerCategoryEntity> publicCategories = categoryCache.list(null, () -> this.list(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
+                .isNull(TimeTrackerCategoryEntity::getUserId)
                 .eq(TimeTrackerCategoryEntity::getIsDeleted, 0)));
 
         // 2. 查询当前用户的所有记录（包含禁用的，因为需要知道哪些公共分类被隐藏了）
@@ -168,7 +168,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
 
         List<TimeTrackerCategoryEntity> publicCategories = this.list(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
                 .in(TimeTrackerCategoryEntity::getId, templateIds)
-                .eq(TimeTrackerCategoryEntity::getUserId, 0L)
+                .isNull(TimeTrackerCategoryEntity::getUserId)
                 .eq(TimeTrackerCategoryEntity::getIsDeleted, 0));
 
         Map<Long, TimeTrackerCategoryEntity> publicMap = publicCategories.stream()
@@ -200,10 +200,6 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
     @Override
     public void createCategory(TimeTrackerCategoryEntity category, Long userId) {
         if (parentId(category) != 0L) lockHierarchy();
-        if (category.getUserId() != null && category.getUserId() == 0L) {
-            throw new RuntimeException("普通用户不能创建公共分类");
-        }
-        
         category.setId(null);
         category.setUserId(userId);
         category.setTemplateId(null);
@@ -228,7 +224,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
             throw new RuntimeException("分类不存在");
         }
 
-        if (!Objects.equals(target.getUserId(), 0L) && !Objects.equals(target.getUserId(), userId)) {
+        if (target.getUserId() != null && !Objects.equals(target.getUserId(), userId)) {
             throw new IllegalArgumentException("无权修改此分类");
         }
         // 对外始终使用公共分类 ID，拒绝绕过合并语义直接修改覆盖记录。
@@ -236,14 +232,14 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
             throw new IllegalArgumentException("请使用公共分类ID修改覆盖设置");
         }
         if (updates.isParentIdSpecified()) {
-            Long desired = updates.getParentId() == null && target.getUserId() == 0L
+            Long desired = updates.getParentId() == null && target.getUserId() == null
                     ? parentId(target) : parentId(updates);
             validateParent(categoryId, desired, listUserCategories(userId));
-            if (target.getUserId() != 0L) updates.setParentId(desired);
+            if (target.getUserId() != null) updates.setParentId(desired);
         }
 
         boolean changed;
-        if (target.getUserId() == 0L) {
+        if (target.getUserId() == null) {
             // 目标是公共分类，生成覆盖记录
             // 先检查是否已经存在覆盖记录
             TimeTrackerCategoryEntity existingOverride = this.getOne(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
@@ -354,7 +350,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         }
 
         boolean changed;
-        if (target.getUserId() == 0L) {
+        if (target.getUserId() == null) {
             // 目标是公共分类，生成隐藏记录
             TimeTrackerCategoryEntity existingOverride = this.getOne(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
                     .eq(TimeTrackerCategoryEntity::getUserId, userId)
@@ -415,7 +411,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
     @Override
     public List<TimeTrackerCategoryEntity> listAllCategories() {
         return this.list(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
-                .eq(TimeTrackerCategoryEntity::getUserId, 0L)
+                .isNull(TimeTrackerCategoryEntity::getUserId)
                 .eq(TimeTrackerCategoryEntity::getIsDeleted, 0)
                 .orderByAsc(TimeTrackerCategoryEntity::getSortOrder));
     }
@@ -424,9 +420,9 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
     public void adminCreateCategory(TimeTrackerCategoryEntity category) {
         if (parentId(category) != 0L) lockHierarchy();
         category.setId(null);
-        category.setUserId(0L); // 强制为公共分类
+        category.setUserId(null); // 系统公共预设
         category.setTemplateId(null);
-        category.fillCreateCommonField(0L);
+        category.fillCreateCommonField(null);
         category.setParentId(parentId(category));
         validateParent(null, category.getParentId(), listAllCategories());
         if (category.getParentId() != 0L) validatePublicParentChange(null, category.getParentId());
@@ -434,7 +430,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
             category.setSortOrder(nextSort(listAllCategories(), category.getParentId()));
         }
         fillCategoryDefaults(category);
-        if (this.save(category)) categoryCache.evictAfterCommit(0L);
+        if (this.save(category)) categoryCache.evictAfterCommit(null);
     }
 
     private int nextSort(List<TimeTrackerCategoryEntity> categories, Long parentId) {
@@ -459,7 +455,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
     /** 公共分类新增子级或移动时，也不能破坏个人覆盖后的两级结构。 */
     private void validatePublicParentChange(Long categoryId, Long desiredParent) {
         var owners = this.list(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
-                .ne(TimeTrackerCategoryEntity::getUserId, 0L)).stream()
+                .isNotNull(TimeTrackerCategoryEntity::getUserId)).stream()
                 .map(TimeTrackerCategoryEntity::getUserId).collect(Collectors.toSet());
         for (Long owner : owners) {
             if (categoryId != null) {
@@ -476,7 +472,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
     public void adminUpdateCategory(Long categoryId, TimeTrackerCategoryEntity updates) {
         if (updates.isParentIdSpecified()) lockHierarchy();
         TimeTrackerCategoryEntity target = this.getById(categoryId);
-        if (target == null || target.getUserId() != 0L) {
+        if (target == null || target.getUserId() != null) {
             throw new RuntimeException("只能更新公共分类");
         }
         if (updates.isParentIdSpecified() && !Objects.equals(parentId(updates), parentId(target))) {
@@ -486,17 +482,17 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         }
         if (updates.isParentIdSpecified()) updates.setParentId(parentId(updates));
         updates.setId(categoryId);
-        updates.setUserId(0L);
+        updates.setUserId(null);
         updates.setTemplateId(null);
-        updates.fillUpdateCommonField(0L);
-        if (this.updateById(updates)) categoryCache.evictAfterCommit(0L);
+        updates.fillUpdateCommonField(null);
+        if (this.updateById(updates)) categoryCache.evictAfterCommit(null);
     }
 
     @Override
     public void adminDeleteCategory(Long categoryId) {
         lockHierarchy();
         TimeTrackerCategoryEntity target = this.getById(categoryId);
-        if (target == null || target.getUserId() != 0L) {
+        if (target == null || target.getUserId() != null) {
             throw new RuntimeException("只能删除公共分类");
         }
         
@@ -508,6 +504,6 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         // （可选）同时删除所有用户的相关覆盖记录
         this.remove(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
                 .eq(TimeTrackerCategoryEntity::getTemplateId, categoryId));
-        if (changed) categoryCache.evictAfterCommit(0L);
+        if (changed) categoryCache.evictAfterCommit(null);
     }
 }

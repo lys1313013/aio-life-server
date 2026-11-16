@@ -9,7 +9,8 @@ import lombok.Data;
 public class TimeTrackerCategoryVO {
     private Boolean isHidden;
 
-    private Long userId;
+    /** 是否为系统公共预设；预设不可直接删除，只能通过个人覆盖停用或改名。 */
+    private Boolean preset;
 
     private Long id;
 

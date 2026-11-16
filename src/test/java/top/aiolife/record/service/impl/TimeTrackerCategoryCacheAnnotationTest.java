@@ -86,10 +86,10 @@ class TimeTrackerCategoryCacheAnnotationTest {
         categories.list(3L, () -> { loads.incrementAndGet(); return List.of(); });
         assertTrue(categories.list(3L, () -> fail("空列表也应缓存")).isEmpty());
         assertEquals(2, loads.get());
-        assertNotNull(cache().get(1L));
-        assertNotNull(cache().get(2L));
+        assertNotNull(cache().get("1"));
+        assertNotNull(cache().get("2"));
         assertNull(context.getBean("caffeineCacheManager", CacheManager.class)
-                .getCache(TimeTrackerCategoryCache.CACHE_NAME).get(1L));
+                .getCache(TimeTrackerCategoryCache.CACHE_NAME).get("1"));
     }
 
     @Test
@@ -99,7 +99,7 @@ class TimeTrackerCategoryCacheAnnotationTest {
             assertTrue(TransactionSynchronizationManager.isActualTransactionActive());
             assertEquals(12L, categories.list(1L, () -> List.of(row(12L))).getFirst().getId());
             categories.list(2L, () -> List.of(row(22L)));
-            assertNull(cache().get(2L));
+            assertNull(cache().get("2"));
         });
         assertEquals(11L, categories.list(1L, () -> fail("事务读取不能覆盖已提交缓存")).getFirst().getId());
         assertEquals(23L, categories.list(2L, () -> List.of(row(23L))).getFirst().getId());
@@ -107,18 +107,18 @@ class TimeTrackerCategoryCacheAnnotationTest {
 
     @Test
     void testCommit_提交后仅清理受影响所有者() {
-        warm(0L, 1L, 2L);
+        warm(null, 1L, 2L);
         transaction.executeWithoutResult(status -> {
             categories.evictAfterCommit(1L);
-            assertNotNull(cache().get(1L));
+            assertNotNull(cache().get("1"));
         });
-        assertNull(cache().get(1L));
-        assertNotNull(cache().get(0L));
-        assertNotNull(cache().get(2L));
+        assertNull(cache().get("1"));
+        assertNotNull(cache().get("preset"));
+        assertNotNull(cache().get("2"));
 
-        transaction.executeWithoutResult(status -> categories.evictAfterCommit(0L));
-        assertNull(cache().get(0L));
-        assertNotNull(cache().get(2L));
+        transaction.executeWithoutResult(status -> categories.evictAfterCommit(null));
+        assertNull(cache().get("preset"));
+        assertNotNull(cache().get("2"));
     }
 
     @Test
@@ -128,7 +128,7 @@ class TimeTrackerCategoryCacheAnnotationTest {
             categories.evictAfterCommit(1L);
             status.setRollbackOnly();
         });
-        assertNotNull(cache().get(1L));
+        assertNotNull(cache().get("1"));
         assertEquals(1L, categories.list(1L, () -> fail("回滚不应清除缓存")).getFirst().getId());
     }
 
@@ -136,21 +136,21 @@ class TimeTrackerCategoryCacheAnnotationTest {
     void testFallback_无事务和SUPPORTS空同步上下文均立即清理() {
         warm(1L, 2L);
         categories.evictAfterCommit(1L);
-        assertNull(cache().get(1L));
+        assertNull(cache().get("1"));
         var supports = new TransactionTemplate(context.getBean(TestTransactionManager.class));
         supports.setPropagationBehavior(TransactionDefinition.PROPAGATION_SUPPORTS);
         supports.executeWithoutResult(status -> {
             assertTrue(TransactionSynchronizationManager.isSynchronizationActive());
             assertFalse(TransactionSynchronizationManager.isActualTransactionActive());
             categories.evictAfterCommit(2L);
-            assertNull(cache().get(2L));
+            assertNull(cache().get("2"));
         });
     }
 
     private Cache cache() { return redisCaches.getCache(TimeTrackerCategoryCache.CACHE_NAME); }
 
     private void warm(Long... owners) {
-        for (Long owner : owners) categories.list(owner, () -> List.of(row(owner)));
+        for (Long owner : owners) categories.list(owner, () -> List.of(row(owner == null ? 7L : owner)));
     }
 
     private TimeTrackerCategoryEntity row(Long id) {

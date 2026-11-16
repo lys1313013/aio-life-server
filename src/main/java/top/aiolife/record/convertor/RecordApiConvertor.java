@@ -148,6 +148,7 @@ public interface RecordApiConvertor {
         return page == null ? null : page.map(this::toDeviceVO);
     }
 
+    @Mapping(target = "preset", expression = "java(entity.getUserId() == null)")
     UserDictDataVO toUserDictDataVO(UserDictDataEntity entity);
     List<UserDictDataVO> toUserDictDataVOList(List<UserDictDataEntity> entities);
 
@@ -277,6 +278,7 @@ public interface RecordApiConvertor {
     }
 
     @Mapping(target = "isHidden", expression = "java(java.util.Objects.equals(entity.getIsDeleted(), 1))")
+    @Mapping(target = "preset", expression = "java(entity.getUserId() == null)")
     TimeTrackerCategoryVO toTimeTrackerCategoryVO(TimeTrackerCategoryEntity entity);
     List<TimeTrackerCategoryVO> toTimeTrackerCategoryVOList(List<TimeTrackerCategoryEntity> entities);
 
