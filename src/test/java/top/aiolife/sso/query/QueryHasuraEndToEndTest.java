@@ -119,7 +119,7 @@ class QueryHasuraEndToEndTest {
 
     private void row(long id, long user, int minutes, int deleted) {
         db.update("INSERT INTO time_record(id,user_id,category_id,date,start_minute,end_minute,duration_minutes,is_deleted,title) VALUES(?,?,?,'2026-09-15',0,?,?,?,?)",
-                id, user, 9007199254740993L, minutes, minutes, deleted, "不得暴露的标题");
+                id, user, 9007199254740993L, minutes - 1, minutes, deleted, "不得暴露的标题");
     }
     private HttpResponse<String> call(String method, String url, String token, Object body) throws Exception {
         var request = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(20)).header("Content-Type", "application/json").header("Accept", "application/json, text/event-stream");
@@ -173,7 +173,7 @@ class QueryHasuraEndToEndTest {
         assertEquals("aio-life-query", initialized.at("/result/serverInfo/name").asText());
         var listed = rpc(tokenA, "tools/list", Map.of()).at("/result/tools"); assertEquals(4, listed.size());
         var described = tool(tokenA, "aio_query_describe_dataset", Map.of("name", "time_record"));
-        assertEquals("time-record-v4", described.at("/data/releaseId").asText());
+        assertEquals("time-record-v5", described.at("/data/releaseId").asText());
         var args = Map.<String, Object>of("query", details);
         assertTrue(tool(tokenA, "aio_query_validate", args).at("/data/allowed").asBoolean());
         assertEquals(2, tool(tokenA, "aio_query_execute", args).at("/data/result/timeRecords").size());
@@ -196,11 +196,11 @@ class QueryHasuraEndToEndTest {
 
     @ParameterizedTest
     @CsvSource({
-        "exercise_record,exercise,exercise-record-v3,exerciseRecords,exerciseRecordStats,exerciseDate,exerciseCount,30",
-        "read_record,reading,read-record-v3,readRecords,readRecordStats,createdAt,,",
-        "movie,movie,movie-v3,movies,movieStats,createdAt,,",
+        "exercise_record,exercise,exercise-record-v4,exerciseRecords,exerciseRecordStats,exerciseDate,exerciseCount,30",
+        "read_record,reading,read-record-v4,readRecords,readRecordStats,createdAt,,",
+        "movie,movie,movie-v4,movies,movieStats,createdAt,,",
         "b_video,video,b-video-v3,bVideos,bVideoStats,createdAt,watchedDurationSeconds,120",
-        "event_record,event,event-record-v3,eventRecords,eventRecordStats,eventDate,ticketPrice,40.01"})
+        "event_record,event,event-record-v1,eventRecords,eventRecordStats,eventDate,ticketPrice,40.01"})
     void 新数据集真实REST及MCP明细统计分页和隔离(String dataset,String domain,String version,String root,String statsRoot,String date,String numeric,String expectedSum) throws Exception {
         var catalog=call("GET",gatewayUrl+"/api/v1/datasets/"+dataset,tokenA,null);
         assertEquals(200,catalog.statusCode(),catalog.body());
