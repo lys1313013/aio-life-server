@@ -113,7 +113,8 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
                 TimeRecordEntity::getDate,
                 TimeRecordEntity::getStartMinute,
                 TimeRecordEntity::getEndMinute,
-                TimeRecordEntity::getTitle);
+                TimeRecordEntity::getTitle,
+                TimeRecordEntity::getDescription);
         lambdaQueryWrapper.eq(TimeRecordEntity::getUserId, userId);
         lambdaQueryWrapper.between(TimeRecordEntity::getDate, startDate, endDate);
         lambdaQueryWrapper.orderByDesc(TimeRecordEntity::getUpdateTime);

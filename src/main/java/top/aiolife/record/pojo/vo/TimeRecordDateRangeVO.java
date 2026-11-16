@@ -36,6 +36,11 @@ public class TimeRecordDateRangeVO {
     private String title;
 
     /**
+     * 时迹描述（备注）。
+     */
+    private String description;
+
+    /**
      * 运动明细，仅包含运动名称和运动次数。
      */
     private List<TimeRecordExerciseVO> exercises;

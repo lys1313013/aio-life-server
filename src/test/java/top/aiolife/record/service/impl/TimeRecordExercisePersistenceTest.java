@@ -18,6 +18,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.aop.framework.ProxyFactory;
@@ -125,6 +127,25 @@ class TimeRecordExercisePersistenceTest {
     void cleanup() {
         if (login != null) login.close();
         if (jdbc != null) jdbc.execute("DROP ALL OBJECTS");
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "完成开发与回归验证\n备注：保留换行和原始内容"})
+    void queryForAI_读取描述并保留空值序列化语义(String description) {
+        jdbc.update("UPDATE time_record SET description = ? WHERE id = 1001", description);
+        jdbc.update("DELETE FROM exercise_record");
+
+        var records = service.queryByDateRangeForAI(1L, DATE, DATE);
+
+        assertEquals(1, records.size());
+        assertEquals(description, records.get(0).getDescription());
+        var result = json.valueToTree(records).get(0);
+        if (description == null) {
+            assertFalse(result.has("description"));
+        } else {
+            assertEquals(description, result.get("description").asText());
+        }
     }
 
     @ParameterizedTest

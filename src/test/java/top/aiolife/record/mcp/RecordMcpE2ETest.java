@@ -156,6 +156,7 @@ public class RecordMcpE2ETest {
                     .thenAnswer(call -> {
                         TimeRecordDateRangeVO vo = new TimeRecordDateRangeVO();
                         vo.setId("999");
+                        vo.setDescription("完成开发与回归验证");
                         return Collections.singletonList(vo);
                     });
             Mockito.when(service.findLatestEndMinute(Mockito.anyLong(), Mockito.any())).thenReturn(60);
@@ -354,5 +355,7 @@ public class RecordMcpE2ETest {
         assertFalse(result.isError());
         McpSchema.TextContent content = (McpSchema.TextContent) result.content().get(0);
         assertTrue(content.text().contains("999"), "响应中应该包含 mock 数据 ID");
+        assertTrue(content.text().contains("\"description\":\"完成开发与回归验证\""),
+                "MCP 响应中应该包含时迹描述");
     }
 }
