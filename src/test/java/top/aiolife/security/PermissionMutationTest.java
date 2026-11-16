@@ -29,6 +29,7 @@ import top.aiolife.record.service.*;
 import top.aiolife.record.service.impl.TimeTrackerCategoryServiceImpl;
 import top.aiolife.record.service.impl.UserDictDataServiceImpl;
 import top.aiolife.record.service.UserDictDataCache;
+import top.aiolife.support.AttachmentTestFixtures;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -36,6 +37,8 @@ import static org.mockito.Mockito.*;
 
 /** 使用两个虚构 owner，检查越权请求不会进入不受约束的写入/副作用。无 Spring 或外部服务。 */
 class PermissionMutationTest {
+    private static final String FILE_KEY = AttachmentTestFixtures.key("permission-mutation");
+
     @BeforeAll
     static void tables() {
         for (Class<?> type : List.of(TaskEntity.class, TaskColumnEntity.class, TaskDetailEntity.class,
@@ -184,7 +187,7 @@ class PermissionMutationTest {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
             var files = mock(IFileService.class);
             var eventRecord = new EventRecordEntity(); eventRecord.setId(99L);
-            eventRecord.setCreateUser(22L); eventRecord.setFileIds(List.of("dummy-file"));
+            eventRecord.setCreateUser(22L); eventRecord.setFileIds(List.of(FILE_KEY));
             var eventRecordMapper = mock(IEventRecordMapper.class);
             assertThrows(IllegalArgumentException.class, () ->
                     new EventRecordController(new EventRecordService(eventRecordMapper, files))
@@ -193,7 +196,7 @@ class PermissionMutationTest {
             verify(eventRecordMapper).update(eventRecordUpdate.capture(), anyWrapper());
             assertNull(eventRecordUpdate.getValue().getCreateUser());
             assertNull(eventRecordUpdate.getValue().getUserId());
-            var honor = new HonorRecordEntity(); honor.setId(99L); honor.setFileIds(List.of("dummy-file"));
+            var honor = new HonorRecordEntity(); honor.setId(99L); honor.setFileIds(List.of(FILE_KEY));
             var honorService = new top.aiolife.record.service.impl.HonorRecordServiceImpl(files);
             ReflectionTestUtils.setField(honorService, "baseMapper", mock(IHonorRecordMapper.class));
             assertThrows(IllegalArgumentException.class, () ->
@@ -210,18 +213,20 @@ class PermissionMutationTest {
             var files = mock(IFileService.class); var mapper = mock(IEventRecordMapper.class);
             when(mapper.update(any(EventRecordEntity.class), anyWrapper())).thenReturn(1);
             // 附件同步会先查询当前用户拥有的文件，再执行绑定。
-            var ownedFile = new FileEntity(); ownedFile.setId("31"); ownedFile.setUserId(11L);
+            var ownedFile = new FileEntity(); ownedFile.setId("31"); ownedFile.setFileKey(FILE_KEY); ownedFile.setUserId(11L);
             when(files.list(anyWrapper())).thenReturn(List.of(ownedFile));
-            var input = new EventRecordEntity(); input.setId(7L); input.setFileIds(List.of("31"));
+            var input = new EventRecordEntity(); input.setId(7L); input.setFileIds(List.of(FILE_KEY));
             new EventRecordController(new EventRecordService(mapper, files))
                     .updateEventRecord("11", ApiRequestFixtures.request(input, EventRecordUpdateReq.class));
             ArgumentCaptor<Wrapper<FileEntity>> query = ArgumentCaptor.captor();
             verify(files).list(query.capture());
-            assertTrue(query.getValue().getSqlSegment().contains("id IN"));
+            assertTrue(query.getValue().getSqlSegment().contains("file_key IN"));
             assertTrue(query.getValue().getSqlSegment().contains("user_id ="));
             assertTrue(((AbstractWrapper<?, ?, ?>) query.getValue()).getParamNameValuePairs()
-                    .values().containsAll(List.of("31", 11L)));
-            verify(files).bindBizId(List.of("31"), "event_record", 7L);
+                    .values().containsAll(List.of(FILE_KEY, 11L)));
+            assertFalse(((AbstractWrapper<?, ?, ?>) query.getValue()).getParamNameValuePairs()
+                    .values().contains(ownedFile.getId()));
+            verify(files).bindBizId(List.of(FILE_KEY), "event_record", 7L);
         }
     }
 
