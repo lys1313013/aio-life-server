@@ -29,7 +29,7 @@ public class WardrobeItemVO {
 
     private LocalDate purchaseDate;
 
-    private BigDecimal price;
+    private BigDecimal purchasePrice;
 
     private String fileId;
 

@@ -69,6 +69,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         LambdaQueryWrapper<WardrobeItemEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(WardrobeItemEntity::getId, id);
         queryWrapper.eq(WardrobeItemEntity::getUserId, userId);
+        images.delete(userId,FileBizType.WARDROBE_ITEM,id);
         this.remove(queryWrapper);
     }
 
@@ -128,7 +129,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
                 "秋", Math.toIntExact(aggregate.autumnCount()),
                 "冬", Math.toIntExact(aggregate.winterCount())));
         stats.setTotalValue(aggregate.totalValue());
-        stats.setAvgPrice(aggregate.totalCount() == 0 ? BigDecimal.ZERO
+        stats.setAvgPurchasePrice(aggregate.totalCount() == 0 ? BigDecimal.ZERO
                 : aggregate.totalValue().divide(BigDecimal.valueOf(aggregate.totalCount()), 2, RoundingMode.HALF_UP));
         return stats;
     }
@@ -140,7 +141,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         entity.setColor(req.getColor());
         entity.setBrand(req.getBrand());
         entity.setPurchaseDate(req.getPurchaseDate());
-        entity.setPrice(req.getPrice());
+        entity.setPurchasePrice(req.getPurchasePrice());
         entity.setFileId(req.getFileId());
         entity.setSize(req.getSize());
         entity.setRemark(req.getRemark());
@@ -157,7 +158,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         vo.setBrand(entity.getBrand());
         vo.setSeason(entity.getSeason());
         vo.setPurchaseDate(entity.getPurchaseDate());
-        vo.setPrice(entity.getPrice());
+        vo.setPurchasePrice(entity.getPurchasePrice());
         vo.setFileId(entity.getFileId());
         vo.setSize(entity.getSize());
         vo.setRemark(entity.getRemark());
@@ -167,9 +168,8 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
 
     private LambdaQueryWrapper<WardrobeCategoryEntity> visibleCategories(Long userId) {
         return new LambdaQueryWrapper<WardrobeCategoryEntity>()
-                .and(w -> w.eq(WardrobeCategoryEntity::getCategoryType, 0)
-                        .or(o -> o.eq(WardrobeCategoryEntity::getCategoryType, 1)
-                                .eq(WardrobeCategoryEntity::getUserId, userId)));
+                .and(w -> w.isNull(WardrobeCategoryEntity::getUserId)
+                        .or().eq(WardrobeCategoryEntity::getUserId, userId));
     }
 
     private void validateCategory(Long categoryId, Long userId) {

@@ -16,9 +16,9 @@ import top.aiolife.wardrobe.pojo.entity.WardrobeItemEntity;
 @Mapper
 public interface WardrobeItemMapper extends BaseMapper<WardrobeItemEntity> {
 
-    /** 保留多季节包含语义；空价格仍计入衣物总数，均价不能使用 AVG(price)。 */
+    /** 保留多季节包含语义；空购入价仍计入衣物总数，均价不能使用 AVG(purchase_price)。 */
     @Select("""
-            SELECT COUNT(*) AS totalCount, COALESCE(SUM(price), 0) AS totalValue,
+            SELECT COUNT(*) AS totalCount, COALESCE(SUM(purchase_price), 0) AS totalValue,
                    COALESCE(SUM(CASE WHEN season LIKE '%春%' THEN 1 ELSE 0 END), 0) AS springCount,
                    COALESCE(SUM(CASE WHEN season LIKE '%夏%' THEN 1 ELSE 0 END), 0) AS summerCount,
                    COALESCE(SUM(CASE WHEN season LIKE '%秋%' THEN 1 ELSE 0 END), 0) AS autumnCount,
@@ -39,8 +39,7 @@ public interface WardrobeItemMapper extends BaseMapper<WardrobeItemEntity> {
             ) totals
             LEFT JOIN wardrobe_category category ON category.id = totals.category_id
                 AND category.is_deleted = 0
-                AND (category.category_type = 0
-                     OR (category.category_type = 1 AND category.user_id = #{userId}))
+                AND (category.user_id IS NULL OR category.user_id = #{userId})
             """)
     List<WardrobeCategoryCount> aggregateCategoryCounts(@Param("userId") long userId);
 

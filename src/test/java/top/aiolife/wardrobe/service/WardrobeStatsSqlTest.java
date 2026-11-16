@@ -77,20 +77,20 @@ class WardrobeStatsSqlTest {
         assertTrue(stats.getCategoryCount().isEmpty());
         assertEquals(Map.of("春", 0, "夏", 0, "秋", 0, "冬", 0), stats.getSeasonCount());
         assertEquals(0, stats.getTotalValue().signum());
-        assertEquals(0, stats.getAvgPrice().signum());
+        assertEquals(0, stats.getAvgPurchasePrice().signum());
         verifyNoInteractions(categories);
     }
 
     @Test
     void getStats_同名分类合并且失效和越权分类归未分类() {
-        category(11, "上装", 0, null, 0);
-        category(12, "上装", 1, 7L, 0);
-        category(13, "他人分类", 1, 8L, 0);
-        category(14, "已删除分类", 0, null, 1);
-        category(15, "A", 0, null, 0);
-        category(16, "a", 0, null, 0);
-        category(17, "A ", 0, null, 0);
-        category(18, "未分类", 0, null, 0);
+        category(11, "上装", null, 0);
+        category(12, "上装", 7L, 0);
+        category(13, "他人分类", 8L, 0);
+        category(14, "已删除分类", null, 1);
+        category(15, "A", null, 0);
+        category(16, "a", null, 0);
+        category(17, "A ", null, 0);
+        category(18, "未分类", null, 0);
         for (long categoryId : List.of(11L, 12L, 13L, 14L, 15L, 16L, 17L, 18L, 99L)) {
             item(7L, categoryId, null, null, 0);
         }
@@ -115,7 +115,7 @@ class WardrobeStatsSqlTest {
         assertEquals(3, stats.getTotalCount());
         assertEquals(Map.of("春", 1, "夏", 1, "秋", 1, "冬", 1), stats.getSeasonCount());
         assertEquals(new BigDecimal("2.00"), stats.getTotalValue());
-        assertEquals(new BigDecimal("0.67"), stats.getAvgPrice());
+        assertEquals(new BigDecimal("0.67"), stats.getAvgPurchasePrice());
     }
 
     @Test
@@ -143,7 +143,7 @@ class WardrobeStatsSqlTest {
                     .andExpect(jsonPath("$.data.seasonCount['夏']").value(0))
                     .andExpect(jsonPath("$.data.seasonCount['冬']").value(0))
                     .andExpect(jsonPath("$.data.totalValue").value(10.00))
-                    .andExpect(jsonPath("$.data.avgPrice").value(10.00));
+                    .andExpect(jsonPath("$.data.avgPurchasePrice").value(10.00));
         }
     }
 
@@ -156,7 +156,7 @@ class WardrobeStatsSqlTest {
         var stats = service.getStats(7L);
 
         assertEquals(new BigDecimal("199999999.98"), stats.getTotalValue());
-        assertEquals(new BigDecimal("66666666.66"), stats.getAvgPrice());
+        assertEquals(new BigDecimal("66666666.66"), stats.getAvgPurchasePrice());
     }
 
     @Test
@@ -169,13 +169,13 @@ class WardrobeStatsSqlTest {
         assertThrows(ArithmeticException.class, () -> service.getStats(7L));
     }
 
-    private void category(long id, String name, int type, Long userId, int deleted) {
-        jdbc.update("INSERT INTO wardrobe_category(id,name,category_type,user_id,is_deleted) VALUES (?,?,?,?,?)",
-                id, name, type, userId, deleted);
+    private void category(long id, String name, Long userId, int deleted) {
+        jdbc.update("INSERT INTO wardrobe_category(id,name,user_id,is_deleted) VALUES (?,?,?,?)",
+                id, name, userId, deleted);
     }
 
     private void item(long userId, Long categoryId, String season, String price, int deleted) {
-        jdbc.update("INSERT INTO wardrobe_item(id,name,user_id,category_id,season,price,is_deleted) VALUES (?,'衣物',?,?,?,?,?)",
+        jdbc.update("INSERT INTO wardrobe_item(id,name,user_id,category_id,season,purchase_price,is_deleted) VALUES (?,'衣物',?,?,?,?,?)",
                 ++nextItemId, userId, categoryId, season, price == null ? null : new BigDecimal(price), deleted);
     }
 }

@@ -43,9 +43,9 @@ public class WardrobeItemSaveReq {
     private LocalDate purchaseDate;
 
     /**
-     * 价格
+     * 购入价格
      */
-    private BigDecimal price;
+    private BigDecimal purchasePrice;
 
     /**
      * 图片文件ID

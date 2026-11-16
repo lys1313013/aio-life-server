@@ -20,7 +20,8 @@ public class CategoryVO {
 
     private Integer sortOrder;
 
-    private Integer categoryType;
+    /** 是否为系统预设分类；预设不可修改或删除。 */
+    private Boolean preset;
 
     private List<CategoryVO> children;
 }

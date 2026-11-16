@@ -32,7 +32,7 @@ public class WardrobeStatsVO {
     private BigDecimal totalValue;
 
     /**
-     * 平均价格
+     * 平均购入价
      */
-    private BigDecimal avgPrice;
+    private BigDecimal avgPurchasePrice;
 }

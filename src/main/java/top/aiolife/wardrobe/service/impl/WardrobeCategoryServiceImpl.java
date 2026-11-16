@@ -30,7 +30,6 @@ public class WardrobeCategoryServiceImpl extends ServiceImpl<WardrobeCategoryMap
     public void saveCategory(Long userId, CategoryReq req) {
         WardrobeCategoryEntity entity = reqToEntity(req);
         entity.setUserId(userId);
-        entity.setCategoryType(1); // 用户自定义分类
         entity.fillCreateCommonField(userId);
         this.save(entity);
     }
@@ -42,7 +41,7 @@ public class WardrobeCategoryServiceImpl extends ServiceImpl<WardrobeCategoryMap
         if (existing == null) {
             throw new RuntimeException("分类不存在");
         }
-        if (existing.getCategoryType() != null && existing.getCategoryType() == 0) {
+        if (existing.getUserId() == null) {
             throw new RuntimeException("系统预设分类不可修改");
         }
         if (!userId.equals(existing.getUserId())) {
@@ -61,7 +60,6 @@ public class WardrobeCategoryServiceImpl extends ServiceImpl<WardrobeCategoryMap
         LambdaQueryWrapper<WardrobeCategoryEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(WardrobeCategoryEntity::getId, id);
         queryWrapper.eq(WardrobeCategoryEntity::getUserId, userId);
-        queryWrapper.eq(WardrobeCategoryEntity::getCategoryType, 1); // 仅用户自定义分类
         this.remove(queryWrapper);
     }
 
@@ -70,9 +68,8 @@ public class WardrobeCategoryServiceImpl extends ServiceImpl<WardrobeCategoryMap
         LambdaQueryWrapper<WardrobeCategoryEntity> queryWrapper = new LambdaQueryWrapper<>();
         // 获取系统预设分类和用户自定义分类
         queryWrapper.and(w -> w
-                .eq(WardrobeCategoryEntity::getCategoryType, 0)
+                .isNull(WardrobeCategoryEntity::getUserId)
                 .or()
-                .eq(WardrobeCategoryEntity::getCategoryType, 1)
                 .eq(WardrobeCategoryEntity::getUserId, userId)
         );
         QueryOrder.ascNullsFirst(queryWrapper, WardrobeCategoryEntity::getSortOrder);
@@ -115,7 +112,7 @@ public class WardrobeCategoryServiceImpl extends ServiceImpl<WardrobeCategoryMap
         vo.setIcon(entity.getIcon());
         vo.setParentId(entity.getParentId());
         vo.setSortOrder(entity.getSortOrder());
-        vo.setCategoryType(entity.getCategoryType());
+        vo.setPreset(entity.getUserId() == null);
         return vo;
     }
 }
