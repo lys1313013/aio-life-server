@@ -16,6 +16,8 @@ RUN mvn dependency:go-offline -B
 # 复制源码并构建
 COPY src ./src
 RUN mvn clean package -DskipTests
+RUN java -Djarmode=tools -jar target/*.jar extract --layers --destination extracted \
+    && find extracted -exec touch -h -t 198001010000.00 {} +
 
 # ================================
 # Stage 2: Runtime
@@ -33,12 +35,17 @@ WORKDIR /app
 
 # 创建非 root 用户
 RUN addgroup -g 1001 -S appgroup \
-    && adduser -u 1001 -S appuser -G appgroup
+    && adduser -u 1001 -S appuser -G appgroup \
+    && chown appuser:appgroup /app \
+    && mkdir -p /opt/skywalking-agent \
+    && touch -t 198001010000.00 /opt /opt/skywalking-agent
 
-COPY --from=builder /app/target/*.jar app.jar
+# 固定 Agent 必须先于任何应用层，避免代码更新使其复制层失效。
 COPY --from=skywalking-agent --chown=appuser:appgroup /skywalking/agent/ /opt/skywalking-agent/
-
-RUN chown -R appuser:appgroup /app
+COPY --from=builder --chown=appuser:appgroup /app/extracted/dependencies/ ./
+COPY --from=builder --chown=appuser:appgroup /app/extracted/spring-boot-loader/ ./
+COPY --from=builder --chown=appuser:appgroup /app/extracted/snapshot-dependencies/ ./
+COPY --from=builder --chown=appuser:appgroup /app/extracted/application/ ./
 
 USER appuser
 

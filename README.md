@@ -150,6 +150,16 @@ docker run -d --name aio-life-server \
 
 [Dockerfile](Dockerfile)分阶段构建并以非 root 用户运行，构建阶段跳过测试。`JAVA_OPTS` 可覆盖 JVM 参数。示例只发布业务端口；管理端口 45679 按监控网络需要单独开放。
 
+两种 Docker 构建均先复制固定 SkyWalking Agent，再按 Spring Boot `dependencies`、`spring-boot-loader`、`snapshot-dependencies`、`application` 分层复制。最终 `/app/app.jar` 是引用外部依赖的精简启动 JAR，不再包含全部依赖；启动命令仍为 `java $JAVA_OPTS -jar app.jar`。解包文件的时间戳归一化，避免同一依赖因重新打包时间不同生成新层。普通业务代码更新只改变应用层；依赖、Agent 或基础镜像升级时，对应层仍需重新下载。首次切换分层布局需要下载新层，后续更新才能复用。
+
+发布前 CI 用同一业务 JAR 生成两个仅探针 class 字节码及 ZIP 时间不同的版本，强制重新解包并对比 OCI 压缩层摘要：只允许 `application` 层变化；同时通过镜像原始入口验证依赖类加载、非 root 用户、`JAVA_OPTS` 以及启用／未启用 Agent 的启动。不连接业务数据库或 OAP。本地复现需要 Docker Buildx 与 JDK 17+：
+
+```bash
+python3 scripts/verify-image-layers.py --jar target/aio-life-server-1.0.0.jar
+```
+
+结果及 OCI 镜像位于 `target/image-layer-check/`，CI 上传其中的 `report.json`；探针镜像运行后自动删除。此检查验证镜像分层和启动入口，不代替业务集成或部署验收。
+
 ### SkyWalking Java Agent
 
 [Dockerfile](Dockerfile)（源码构建）和 [Dockerfile.runtime](Dockerfile.runtime)（CI 已测试 JAR）均从固定版本及镜像摘要的 `apache/skywalking-java-agent:9.8.0-alpine` 复制完整 Agent 到 `/opt/skywalking-agent`，包含 `plugins`、`activations` 和配置。升级时同步修改两份文件中的版本及摘要。最终镜像继续使用原 Java 21 基础镜像、非 root 用户和 JVM 内存参数；Agent 默认不加载。

@@ -2,6 +2,13 @@
 # 与 Dockerfile 同步固定 Agent 版本和多架构镜像摘要。
 FROM apache/skywalking-java-agent:9.8.0-alpine@sha256:805086f04157b5e9046854fe385f73928e802a16be7606e67eb6d6e602941d2a AS skywalking-agent
 
+# 解包只执行 Java 工具，使用构建机平台；不把完整 JAR 留在最终镜像。
+FROM --platform=$BUILDPLATFORM amazoncorretto:21.0.13-alpine3.24@sha256:d942d2e3e0f480c076ec10d03deac7444dc717bc25bb3e2bc5373676b7b6c406 AS extractor
+WORKDIR /builder
+COPY app.jar app.jar
+RUN java -Djarmode=tools -jar app.jar extract --layers --destination extracted \
+    && find extracted -exec touch -h -t 198001010000.00 {} +
+
 FROM amazoncorretto:21.0.13-alpine3.24@sha256:d942d2e3e0f480c076ec10d03deac7444dc717bc25bb3e2bc5373676b7b6c406
 
 RUN apk add --no-cache tzdata fontconfig ttf-dejavu \
@@ -13,10 +20,18 @@ ENV TZ=Asia/Shanghai
 WORKDIR /app
 
 RUN addgroup -g 1001 -S appgroup \
-    && adduser -u 1001 -S appuser -G appgroup
+    && adduser -u 1001 -S appuser -G appgroup \
+    && chown appuser:appgroup /app \
+    && mkdir -p /opt/skywalking-agent \
+    && touch -t 198001010000.00 /opt /opt/skywalking-agent
 
-COPY --chown=appuser:appgroup app.jar app.jar
+# 固定 Agent 必须先于任何应用层，避免代码更新使其复制层失效。
 COPY --from=skywalking-agent --chown=appuser:appgroup /skywalking/agent/ /opt/skywalking-agent/
+# 解包时间归一化，避免重新打包时依赖目录时间戳改变层摘要。
+COPY --from=extractor --chown=appuser:appgroup /builder/extracted/dependencies/ ./
+COPY --from=extractor --chown=appuser:appgroup /builder/extracted/spring-boot-loader/ ./
+COPY --from=extractor --chown=appuser:appgroup /builder/extracted/snapshot-dependencies/ ./
+COPY --from=extractor --chown=appuser:appgroup /builder/extracted/application/ ./
 
 USER appuser
 
