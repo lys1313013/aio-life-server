@@ -115,7 +115,10 @@ jobs:
           FLYWAY_USER: aio_life
           FLYWAY_PASSWORD: test_password
         run: |
-          mvn -B -ntp -f tools/flyway/pom.xml compile flyway:migrate flyway:validate
+          # 直接定位插件，版本沿用 POM，避免前缀发现额外查询仓库元数据。
+          mvn -B -ntp -f tools/flyway/pom.xml compile \
+            org.flywaydb:flyway-maven-plugin:migrate \
+            org.flywaydb:flyway-maven-plugin:validate
 
       - name: Test and package
         if: matrix.package == 'true'
