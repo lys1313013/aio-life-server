@@ -71,6 +71,7 @@
 - [V20261118_04__parent_root_null.sql](migrations/V20261118_04__parent_root_null.sql)：把 `sys_menu`、`wardrobe_category`、`sys_region` 的根节点统一为 NULL，时迹分类新增 `inherit_parent` 区分继承与根，并补充自引用和层级一致性约束。
 - [V20261118_05__drop_scheduled_job_zone_id.sql](migrations/V20261118_05__drop_scheduled_job_zone_id.sql)：删除 `sys_scheduled_job.zone_id`，调度时区固定为 `Asia/Shanghai` 并只由代码常量维护；保留任务配置、cron、启用状态和执行日志。
 - [V20261118_06__time_tracker_category_inherit_smallint.sql](migrations/V20261118_06__time_tracker_category_inherit_smallint.sql)：把 `time_tracker_category.inherit_parent` 由 `boolean` 改为 `smallint` 的 0/1，与全局 `NumericBooleanTypeHandler` 和其他布尔状态列一致；按新类型重建继承约束，数据语义与行数不变。
+- [V20261118_07__drop_cbti_personality_image_object.sql](migrations/V20261118_07__drop_cbti_personality_image_object.sql)：删除 `cbti_personality.image_object`，人格图片统一由 `attachment` 的 `cbti_personality_image` 关联表达；只删除已无读写方的历史对象路径，不改行数、其他列和索引。
 
 本次按明确要求同步修改历史初始脚本：新库不再创建上述四列；已有库仍保留可执行的迁移。另按明确要求不为 B 站视频封面新增增量脚本：`b_video.cover_file_id` 已直接在目标库迁移并从初始脚本移除，新库改由 `uk_file_b_video_cover` 约束 `file.biz_type='b_video_cover'` 的单封面关联；执行与校验记录见[数据库初始化与验证](../docs/数据库初始化与验证.md)。历史校验和调整需先备份并完成实际数据、结构迁移，再执行 `flyway:repair`；`repair` 本身不迁移业务数据。
 
