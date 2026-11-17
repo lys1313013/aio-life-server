@@ -1,6 +1,6 @@
 package top.aiolife.bankcard.service;
 
-import top.aiolife.record.mapper.IFileMapper;
+import top.aiolife.record.mapper.IAttachmentMapper;
 import top.aiolife.record.service.VideoCoverStorage;
 
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
@@ -30,7 +30,7 @@ public class BankCardCoverTemplateService {
     private final BankCardFileMapper fileMapper;
 
     private final MinioUtil minio;
-    private final IFileMapper attachments;
+    private final IAttachmentMapper attachments;
     private final VideoCoverStorage storage;
 
     public String publicUrl(String fileId) {

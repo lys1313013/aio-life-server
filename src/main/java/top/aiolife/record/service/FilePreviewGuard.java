@@ -9,7 +9,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import org.springframework.stereotype.Component;
 import top.aiolife.bankcard.mapper.BankCardFileMapper;
 import top.aiolife.record.mapper.IBVideoMapper;
-import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.sso.service.AccountStatusGuard;
 import top.aiolife.sso.service.SecondaryLockGuard;
 
@@ -93,7 +93,7 @@ public class FilePreviewGuard {
      * @param userId     当前登录用户 ID（未登录为 null）
      * @return 访问判定结果
      */
-    public AccessDecision check(FileEntity fileEntity, Long userId) {
+    public AccessDecision check(AttachmentEntity fileEntity, Long userId) {
         if ("b_video_cover".equals(fileEntity.getBizType())) {
             if (userId == null) return AccessDecision.UNAUTHORIZED;
             if (!userId.equals(fileEntity.getUserId()) || fileEntity.getBizId() == null)

@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import top.aiolife.config.CbtiConfig;
 import top.aiolife.config.MinioConfig;
 import top.aiolife.export.config.ExportProperties;
 import top.aiolife.export.service.ExportException;
@@ -31,9 +30,7 @@ class MinioExportArtifactStoreTest {
     void setup() {
         var common = new MinioConfig();
         common.setBucketName("public-business");
-        var cbti = new CbtiConfig();
-        cbti.setBucketName("public-cbti");
-        store = new MinioExportArtifactStore(minio, common, cbti, properties);
+        store = new MinioExportArtifactStore(minio, common, properties);
     }
 
     @Test
@@ -55,10 +52,9 @@ class MinioExportArtifactStoreTest {
         verify(minio, never()).makeBucket(any(MakeBucketArgs.class));
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"public-business", "public-cbti"})
-    void 禁止复用业务桶且不操作存储(String bucket) {
-        properties.setBucket(bucket);
+    @Test
+    void 禁止复用业务桶且不操作存储() {
+        properties.setBucket("public-business");
         assertThrows(ExportException.class, store::verifyPrivateStorage);
         verifyNoInteractions(minio);
     }

@@ -72,14 +72,6 @@ public interface ICbtiService {
     void deleteHistoryForUser(long id, long userId);
 
     /**
-     * 判断对象名是否为已绑定的人格图片。
-     *
-     * @param objectName 对象名
-     * @return 是否已绑定
-     */
-    boolean isBoundImageObject(String objectName);
-
-    /**
      * 管理端查询人格列表。
      *
      * @return 人格列表
@@ -119,7 +111,7 @@ public interface ICbtiService {
      * @param userId 操作用户ID
      * @param code 人格代码
      * @param file 图片文件
-     * @return 图片对象名与预览地址
+     * @return 图片公开地址
      */
     Map<String, Object> uploadPersonalityImage(long userId, String code, MultipartFile file);
 

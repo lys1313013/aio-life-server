@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.capture.service.PurchaseSourceGuard.Asset;
 import top.aiolife.capture.service.PurchaseSourceGuard.SourceUnit;
 import top.aiolife.record.mapper.IDeviceMapper;
-import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.enums.AttachmentBizType;
 import top.aiolife.record.service.RecordImageService;
 import top.aiolife.record.pojo.entity.DeviceEntity;
 import top.aiolife.wardrobe.mapper.WardrobeItemMapper;
@@ -223,7 +223,7 @@ public class PurchaseCaptureService {
             d.setPurchasePlace(text(order, "shopName", false, 255));
             d.fillCreateCommonField(user);
             devices.insert(d);
-            images.replace(user, FileBizType.DEVICE, d.getId(), file);
+            images.replace(user, AttachmentBizType.DEVICE, d.getId(), file);
             return d.getId();
         }
         if (name.length() > 100) throw bad("衣物名称最多100字，请编辑名称");
@@ -247,7 +247,7 @@ public class PurchaseCaptureService {
         w.setPurchasePrice(price);
         w.fillCreateCommonField(user);
         wardrobe.insert(w);
-        images.replace(user, FileBizType.WARDROBE_ITEM, w.getId(), file);
+        images.replace(user, AttachmentBizType.WARDROBE_ITEM, w.getId(), file);
         return w.getId();
     }
 

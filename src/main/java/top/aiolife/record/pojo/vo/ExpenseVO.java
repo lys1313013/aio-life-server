@@ -17,12 +17,12 @@ public class ExpenseVO {
 
     private String deviceName;
 
-    private BigDecimal transactionAmt;
+    private BigDecimal transactionAmount;
 
     /**
      * 记账金额
      */
-    private BigDecimal amt;
+    private BigDecimal bookkeepingAmount;
 
     private Long expTypeId;
 

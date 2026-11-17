@@ -37,8 +37,6 @@ public class CbtiPersonalityAdminVO {
 
     private String spirit;
 
-    private String imageObject;
-
     private String imageUrl;
 
     private Boolean isSpecial;

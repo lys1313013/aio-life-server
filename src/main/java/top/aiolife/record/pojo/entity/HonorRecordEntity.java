@@ -10,7 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import top.aiolife.core.pojo.entity.BaseEntity;
-import top.aiolife.record.pojo.vo.FileVO;
+import top.aiolife.record.pojo.vo.AttachmentVO;
 
 /**
  * 荣誉记录实体
@@ -47,7 +47,7 @@ public class HonorRecordEntity extends BaseEntity {
     private List<String> fileIds;
 
     @TableField(exist = false)
-    private List<FileVO> files;
+    private List<AttachmentVO> files;
 
     private Integer isTop;
 

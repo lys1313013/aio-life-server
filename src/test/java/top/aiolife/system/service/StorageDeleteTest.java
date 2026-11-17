@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import org.mockito.ArgumentCaptor;
 import org.mybatis.spring.SqlSessionTemplate;
-import top.aiolife.config.CbtiConfig;
 import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.system.mapper.StorageFileReferenceMapper;
 import io.minio.MinioClient;
@@ -36,7 +35,6 @@ class StorageDeleteTest {
         ds.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(ds);
         top.aiolife.support.AttachmentTestFixtures.create(jdbc);
-        jdbc.execute("CREATE TABLE cbti_personality(id BIGINT, image_object VARCHAR(1024), is_deleted INT)");
         var config = new MinioConfig();
         config.setBucketName("business");
         minio = mock(MinioClient.class);
@@ -47,7 +45,7 @@ class StorageDeleteTest {
         factory.setConfiguration(mybatis);
         var session = new SqlSessionTemplate(factory.getObject());
         service = new StorageAdminService(config, mock(StorageListClient.class), minio,
-                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class), new CbtiConfig(), mock(StorageObjectMapper.class)), mock(StorageObjectLock.class));
+                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class), mock(StorageObjectMapper.class)), mock(StorageObjectLock.class));
     }
 
     void record(String name, Long owner, String type, Long bizId, int deleted) {
@@ -124,12 +122,4 @@ class StorageDeleteTest {
         record("orphan.jpg", 7L, "avatar", null, 0);
         assertThrows(ResponseStatusException.class, () -> service.delete("orphan.jpg"));
         verifyNoInteractions(minio);
-    }
-    @Test
-    void CBTI图片含软删除引用均不可清理() {
-        jdbc.update("INSERT INTO cbti_personality VALUES(7, 'images/cbti/test.png', 1)");
-        assertEquals(409, assertThrows(ResponseStatusException.class,
-                () -> service.delete("images/cbti/test.png")).getStatusCode().value());
-        verifyNoInteractions(minio);
-    }
-}
+    }}

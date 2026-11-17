@@ -129,7 +129,7 @@ class PaginationHttpContractTest {
     void testEventRecord_非法分页不调用业务且直接CommonQuery也拒绝越界() throws Exception {
         var mapper = mock(top.aiolife.record.mapper.IEventRecordMapper.class);
         EventRecordService service = new EventRecordService(mapper,
-                mock(top.aiolife.record.service.IFileService.class));
+                mock(top.aiolife.record.service.IAttachmentService.class));
         MockMvc mvc = mvc(new EventRecordController(service));
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsString).thenReturn("1");

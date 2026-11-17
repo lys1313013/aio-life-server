@@ -1,6 +1,6 @@
 package top.aiolife.bankcard.service;
 
-import top.aiolife.record.mapper.IFileMapper;
+import top.aiolife.record.mapper.IAttachmentMapper;
 import top.aiolife.record.service.VideoCoverStorage;
 
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
@@ -32,7 +32,7 @@ public class BankCardService {
     private final BankCardTagMapper tagMapper;
     private final BankCardTagRelMapper tagRelMapper;
     private final BankCardFileMapper fileMapper;
-    private final IFileMapper attachments;
+    private final IAttachmentMapper attachments;
     private final VideoCoverStorage storage;
     private final BankCardCoverTemplateMapper templateMapper;
     private final BankCardCoverTemplateService templates;

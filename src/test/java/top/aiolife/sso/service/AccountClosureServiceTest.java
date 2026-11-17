@@ -35,8 +35,8 @@ class AccountClosureServiceTest {
         stp = mockStatic(StpUtil.class);
         holder = mockStatic(SaHolder.class);
         holder.when(SaHolder::getStorage).thenReturn(storage);
-        user.setId(7L); user.setPasswordSalt("fixture-salt");
-        user.setPassword(PasswordUtil.encryptPassword("fixture-password", "fixture-salt"));
+        user.setId(7L);
+        user.setPassword(PasswordUtil.hashPassword("fixture-password"));
         user.setWechatOpenid("fixture-owner");
         when(users.selectForAuthUpdate(7L)).thenReturn(user);
         when(erasure.request(eq(7L), any(), any())).thenReturn(1);

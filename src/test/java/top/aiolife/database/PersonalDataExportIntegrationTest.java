@@ -100,13 +100,12 @@ class PersonalDataExportIntegrationTest {
     void setup() {
         cleanup();
         sql.update(
-                "INSERT INTO sys_user (id,username,nickname,password,password_salt) VALUES"
-                        + " (?,?,?,?,?)",
+                "INSERT INTO sys_user (id,username,nickname,password) VALUES"
+                        + " (?,?,?,?)",
                 USER,
                 "export-fixture",
                 "模拟用户",
-                "never-export-this",
-                "test-salt");
+                "never-export-this");
         var user = new UserEntity();
         user.setId(USER);
         user.setPassword("never-export-this");

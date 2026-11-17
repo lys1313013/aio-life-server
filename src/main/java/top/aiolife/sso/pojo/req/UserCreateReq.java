@@ -1,6 +1,7 @@
 package top.aiolife.sso.pojo.req;
 
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import top.aiolife.core.id.AttachmentKey;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -36,6 +37,7 @@ public class UserCreateReq {
     /**
      * 邮箱
      */
+    @Size(max = 254)
     private String email;
 
     /**

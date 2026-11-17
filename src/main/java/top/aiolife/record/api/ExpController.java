@@ -54,7 +54,7 @@ public class ExpController {
     @PostMapping
     public ApiResponse<Boolean> insert(@CurrentUserId String userId,
                                        @Valid @RequestBody ExpenseCreateReq entityReq) {
-        return ApiResponse.success(deviceExpenseService.createExpenses(
+        return ApiResponse.success(deviceExpenseService.createExpensesWithTransactionCheck(
                 IdCodec.decode(userId), List.of(entityReq)));
     }
 

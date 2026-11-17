@@ -1,41 +1,46 @@
 package top.aiolife.record.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.InputStream;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import top.aiolife.config.CbtiConfig;
-import top.aiolife.config.MinioConfig;
 import top.aiolife.core.constant.ResponseCodeConst;
 import top.aiolife.core.exception.ApiException;
-import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.core.query.QueryOrder;
-import top.aiolife.core.util.MinioUtil;
 import top.aiolife.core.util.FileContentPolicy;
-import top.aiolife.record.config.CbtiImageInitUtil;
+import top.aiolife.core.util.MinioUtil;
+import top.aiolife.record.enums.AttachmentBizType;
+import top.aiolife.record.mapper.IAttachmentMapper;
 import top.aiolife.record.mapper.ICbtiPersonalityMapper;
 import top.aiolife.record.mapper.ICbtiResultMapper;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.record.pojo.entity.CbtiPersonalityEntity;
 import top.aiolife.record.pojo.entity.CbtiResultEntity;
 import top.aiolife.record.pojo.req.CbtiPersonalitySaveReq;
 import top.aiolife.record.pojo.vo.CbtiPersonalityAdminVO;
 import top.aiolife.record.service.ICbtiService;
+import top.aiolife.record.service.VideoCoverStorage;
 
 /**
  * CBTI 服务实现类
@@ -51,24 +56,23 @@ public class CbtiServiceImpl implements ICbtiService {
 
     private static final String DIMENSIONS_RESOURCE = "cbti/dimensions.json";
 
+    private static final String PERSONALITIES_RESOURCE = "cbti/personalities.json";
+
+    private static final String IMAGE_BIZ_TYPE = AttachmentBizType.CBTI_PERSONALITY.getBizType();
+
     private final ICbtiPersonalityMapper cbtiPersonalityMapper;
 
     private final ICbtiResultMapper cbtiResultMapper;
+
+    private final IAttachmentMapper attachmentMapper;
+
+    private final VideoCoverStorage imageStorage;
 
     private final ObjectMapper objectMapper;
 
     private final MinioUtil minioUtil;
 
-    private final MinioConfig minioConfig;
-
     private final CbtiConfig cbtiConfig;
-
-    private final CbtiImageInitUtil cbtiImageInitUtil;
-
-    private final StorageObjectLock objectLock;
-
-    @Value("${aio.life.server.base-url}")
-    private String serveBaseUrl;
 
     private volatile JsonNode cachedQuestions;
 
@@ -89,7 +93,9 @@ public class CbtiServiceImpl implements ICbtiService {
 
     @Override
     public List<Map<String, Object>> listPersonalityViews() {
-        return listActivePersonalities().stream().map(this::toPersonalityView).toList();
+        List<CbtiPersonalityEntity> list = listActivePersonalities();
+        Map<Long, String> imageUrls = loadImageUrls(list);
+        return list.stream().map(p -> toPersonalityView(p, imageUrls.get(p.getId()))).toList();
     }
 
     @Override
@@ -98,7 +104,7 @@ public class CbtiServiceImpl implements ICbtiService {
         if (entity == null) {
             throw new ApiException(ResponseCodeConst.COMMON_FAIL, "人格不存在");
         }
-        return toPersonalityView(entity);
+        return toPersonalityView(entity, loadImageUrls(List.of(entity)).get(entity.getId()));
     }
 
     @Override
@@ -117,7 +123,7 @@ public class CbtiServiceImpl implements ICbtiService {
                 if (special == null) {
                     throw new IllegalStateException("未找到隐藏人格数据");
                 }
-                result.put("personality", toPersonalityView(special));
+                result.put("personality", personalityView(special));
                 result.put("similarity", 100);
                 result.put("dimensions", dimensions);
                 result.put("isSpecial", true);
@@ -191,7 +197,7 @@ public class CbtiServiceImpl implements ICbtiService {
                     })
                     .toList();
 
-            result.put("personality", toPersonalityView(bestPersonality));
+            result.put("personality", personalityView(bestPersonality));
             result.put("similarity", bestSimilarity);
             result.put("dimensions", dimensions);
             result.put("isSpecial", false);
@@ -215,9 +221,14 @@ public class CbtiServiceImpl implements ICbtiService {
         List<CbtiResultEntity> list = cbtiResultMapper.selectList(wrapper);
 
         Map<String, CbtiPersonalityEntity> personalityMap = new HashMap<>();
+        for (CbtiResultEntity r : list) {
+            personalityMap.computeIfAbsent(r.getPersonalityCode(), this::getPersonalityByCode);
+        }
+        Map<Long, String> imageUrls = loadImageUrls(personalityMap.values().stream().filter(Objects::nonNull).toList());
+
         List<Map<String, Object>> result = new ArrayList<>();
         for (CbtiResultEntity r : list) {
-            CbtiPersonalityEntity p = personalityMap.computeIfAbsent(r.getPersonalityCode(), this::getPersonalityByCode);
+            CbtiPersonalityEntity p = personalityMap.get(r.getPersonalityCode());
             Map<String, Object> item = new HashMap<>();
             item.put("id", r.getId());
             item.put("personalityCode", r.getPersonalityCode());
@@ -228,8 +239,9 @@ public class CbtiServiceImpl implements ICbtiService {
                 item.put("motto", p.getMotto());
                 item.put("color", p.getColor());
                 item.put("isSpecial", Objects.equals(p.getIsSpecial(), 1));
-                if (StringUtils.hasText(p.getImageObject())) {
-                    item.put("imageUrl", buildPreviewUrl(p.getImageObject()));
+                String imageUrl = imageUrls.get(p.getId());
+                if (StringUtils.hasText(imageUrl)) {
+                    item.put("imageUrl", imageUrl);
                 }
             }
             result.add(item);
@@ -252,7 +264,7 @@ public class CbtiServiceImpl implements ICbtiService {
         result.put("answers", safeReadJson(entity.getAnswers()));
         result.put("hiddenAnswers", safeReadJson(entity.getHiddenAnswers()));
         CbtiPersonalityEntity p = getPersonalityByCode(entity.getPersonalityCode());
-        result.put("personality", p == null ? null : toPersonalityView(p));
+        result.put("personality", p == null ? null : personalityView(p));
         return result;
     }
 
@@ -267,19 +279,10 @@ public class CbtiServiceImpl implements ICbtiService {
     }
 
     @Override
-    public boolean isBoundImageObject(String objectName) {
-        String key = normalizeObjectName(objectName);
-        if (!StringUtils.hasText(key) || key.contains("..") || key.contains("\\")) {
-            return false;
-        }
-        LambdaQueryWrapper<CbtiPersonalityEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(CbtiPersonalityEntity::getImageObject, key);
-        return cbtiPersonalityMapper.selectCount(wrapper) > 0;
-    }
-
-    @Override
     public List<CbtiPersonalityAdminVO> listPersonalitiesForAdmin() {
-        return listActivePersonalities().stream().map(this::toAdminVO).toList();
+        List<CbtiPersonalityEntity> list = listActivePersonalities();
+        Map<Long, String> imageUrls = loadImageUrls(list);
+        return list.stream().map(p -> toAdminVO(p, imageUrls.get(p.getId()))).toList();
     }
 
     @Override
@@ -295,7 +298,7 @@ public class CbtiServiceImpl implements ICbtiService {
         fillEntity(entity, req, code, "新增失败: ");
         entity.fillCreateCommonField(userId);
         cbtiPersonalityMapper.insert(entity);
-        return toAdminVO(entity);
+        return toAdminVO(entity, null);
     }
 
     @Override
@@ -315,10 +318,11 @@ public class CbtiServiceImpl implements ICbtiService {
         fillEntity(exist, req, StringUtils.hasText(code) ? code : exist.getCode(), "更新失败: ");
         exist.fillUpdateCommonField(userId);
         cbtiPersonalityMapper.updateById(exist);
-        return toAdminVO(exist);
+        return toAdminVO(exist, loadImageUrls(List.of(exist)).get(exist.getId()));
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deletePersonality(long userId, long id) {
         CbtiPersonalityEntity exist = cbtiPersonalityMapper.selectById(id);
         if (exist == null || !Objects.equals(exist.getIsDeleted(), 0)) {
@@ -327,9 +331,18 @@ public class CbtiServiceImpl implements ICbtiService {
         exist.setIsDeleted(1);
         exist.fillUpdateCommonField(userId);
         cbtiPersonalityMapper.updateById(exist);
+        attachmentMapper.update(null, new LambdaUpdateWrapper<AttachmentEntity>()
+                .eq(AttachmentEntity::getBizType, IMAGE_BIZ_TYPE)
+                .eq(AttachmentEntity::getBizId, id)
+                .eq(AttachmentEntity::getIsDeleted, 0)
+                .set(AttachmentEntity::getIsDeleted, 1)
+                .set(AttachmentEntity::getIsPublic, 0)
+                .set(AttachmentEntity::getUpdateUser, userId)
+                .set(AttachmentEntity::getUpdateTime, LocalDateTime.now()));
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> uploadPersonalityImage(long userId, String code, MultipartFile file) {
         if (!StringUtils.hasText(code)) {
             throw new ApiException(ResponseCodeConst.PARAM_FAIL, "code 不能为空");
@@ -340,8 +353,7 @@ public class CbtiServiceImpl implements ICbtiService {
         if (file.getSize() > FileContentPolicy.MAX_IMAGE_BYTES)
             throw new ApiException(ResponseCodeConst.PARAM_FAIL, "图片不能超过10MB");
 
-        String normalizedCode = normalizeCode(code);
-        CbtiPersonalityEntity exist = getPersonalityByCode(normalizedCode);
+        CbtiPersonalityEntity exist = getPersonalityByCode(normalizeCode(code));
         if (exist == null) {
             throw new ApiException(ResponseCodeConst.PARAM_FAIL, "人格不存在");
         }
@@ -353,35 +365,94 @@ public class CbtiServiceImpl implements ICbtiService {
             throw new ApiException(ResponseCodeConst.PARAM_FAIL, "图片无法读取");
         }
         var image = FileContentPolicy.requireImage(bytes);
-        String objectPrefix = normalizePrefix(cbtiConfig.getObjectPrefix());
-        String objectName = objectPrefix + normalizedCode + "." + image.extension();
-        String bucketName = resolveBucketName();
-
-        // 本方法无外层事务，Mapper 更新返回前已提交；锁覆盖对象写入与引用更新。
-        try (var lease = objectLock.acquire(bucketName, objectName)) {
-            minioUtil.putObject(bucketName, objectName, new ByteArrayInputStream(bytes), bytes.length, image.contentType());
-            exist.setImageObject(objectName);
-            exist.fillUpdateCommonField(userId);
-            cbtiPersonalityMapper.updateById(exist);
-
-            Map<String, Object> data = new HashMap<>();
-            data.put("imageObject", objectName);
-            data.put("imageUrl", buildPreviewUrl(objectName));
-            return data;
-        } catch (ApiException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ApiException(ResponseCodeConst.COMMON_FAIL, "上传失败: " + e.getMessage());
-        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("imageUrl", replaceImage(exist.getId(), userId, bytes, image));
+        return data;
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void initImages() {
-        try {
-            cbtiImageInitUtil.initImages();
-        } catch (Exception e) {
-            throw new ApiException(ResponseCodeConst.COMMON_FAIL, "初始化图片失败: " + e.getMessage());
+        if (!cbtiConfig.isEnabled()) {
+            throw new ApiException(ResponseCodeConst.COMMON_FAIL, "CBTI 未启用");
         }
+        Map<String, String> files = readPersonalityImages();
+        List<CbtiPersonalityEntity> list = listActivePersonalities();
+        if (list.isEmpty()) {
+            return;
+        }
+        List<Long> ids = list.stream().map(CbtiPersonalityEntity::getId).toList();
+        // 已有人工上传的图片不覆盖，初始化只补齐没有图片的人格。
+        var bound = attachmentMapper.selectWithObjectByBiz(IMAGE_BIZ_TYPE, ids).stream()
+                .map(AttachmentEntity::getBizId).collect(java.util.stream.Collectors.toSet());
+
+        for (CbtiPersonalityEntity entity : list) {
+            if (bound.contains(entity.getId())) {
+                continue;
+            }
+            String fileName = files.get(entity.getCode());
+            if (!StringUtils.hasText(fileName)) {
+                continue;
+            }
+            byte[] bytes = readCharacterImage(fileName);
+            if (bytes == null) {
+                continue;
+            }
+            replaceImage(entity.getId(), null, bytes, FileContentPolicy.requireImage(bytes));
+        }
+    }
+
+    /** 优先读取配置目录，未配置或缺失时回退到打包在 classpath 的内置图片。 */
+    private byte[] readCharacterImage(String fileName) {
+        String configured = cbtiConfig.getCharactersDir();
+        try {
+            if (StringUtils.hasText(configured)) {
+                Path path = Path.of(configured).resolve(fileName);
+                if (Files.isRegularFile(path)) {
+                    return Files.readAllBytes(path);
+                }
+            }
+            ClassPathResource resource = new ClassPathResource("cbti/characters/" + fileName);
+            if (!resource.exists()) {
+                return null;
+            }
+            try (InputStream input = resource.getInputStream()) {
+                return input.readNBytes(FileContentPolicy.MAX_IMAGE_BYTES + 1);
+            }
+        } catch (IOException e) {
+            throw new ApiException(ResponseCodeConst.COMMON_FAIL, "读取人格图片失败: " + fileName);
+        }
+    }
+
+    /** 内容寻址存储字节后替换人格图片附件；同一人格只保留一条有效附件。 */
+    private String replaceImage(long personalityId, Long operator, byte[] bytes, FileContentPolicy.ImageType image) {
+        if (cbtiPersonalityMapper.lockById(personalityId) == null) {
+            throw new ApiException(ResponseCodeConst.PARAM_FAIL, "人格不存在");
+        }
+        var object = imageStorage.store(bytes, operator, image);
+        List<AttachmentEntity> current = attachmentMapper.selectWithObjectByBiz(IMAGE_BIZ_TYPE, List.of(personalityId));
+        String imageUrl = minioUtil.getPublicImageUrl(object.getContentHash(), object.getContentType());
+        if (current.size() == 1 && Objects.equals(current.getFirst().getStorageObjectId(), object.getId())) {
+            return imageUrl;
+        }
+        attachmentMapper.update(null, new LambdaUpdateWrapper<AttachmentEntity>()
+                .eq(AttachmentEntity::getBizType, IMAGE_BIZ_TYPE)
+                .eq(AttachmentEntity::getBizId, personalityId)
+                .eq(AttachmentEntity::getIsDeleted, 0)
+                .set(AttachmentEntity::getIsDeleted, 1)
+                .set(AttachmentEntity::getIsPublic, 0)
+                .set(AttachmentEntity::getUpdateUser, operator)
+                .set(AttachmentEntity::getUpdateTime, LocalDateTime.now()));
+        AttachmentEntity attachment = new AttachmentEntity();
+        attachment.fillCreateCommonField(operator);
+        // 人格图片是系统公共资源，不归属具体用户，注销账号也不会删除共享图片。
+        attachment.setUserId(null);
+        attachment.setStorageObjectId(object.getId());
+        attachment.setBizType(IMAGE_BIZ_TYPE);
+        attachment.setBizId(personalityId);
+        attachment.setIsPublic(1);
+        attachmentMapper.insert(attachment);
+        return imageUrl;
     }
 
     private void validateSaveReqForCreate(CbtiPersonalitySaveReq req) {
@@ -426,9 +497,6 @@ public class CbtiServiceImpl implements ICbtiService {
         entity.setDescription(req.getDescription());
         entity.setTechStack(req.getTechStack());
         entity.setSpirit(req.getSpirit());
-        if (StringUtils.hasText(req.getImageObject())) {
-            entity.setImageObject(req.getImageObject());
-        }
         entity.setIsSpecial(Boolean.TRUE.equals(req.getIsSpecial()) ? 1 : 0);
 
         try {
@@ -471,7 +539,11 @@ public class CbtiServiceImpl implements ICbtiService {
         return cbtiPersonalityMapper.selectList(wrapper);
     }
 
-    private Map<String, Object> toPersonalityView(CbtiPersonalityEntity entity) {
+    private Map<String, Object> personalityView(CbtiPersonalityEntity entity) {
+        return toPersonalityView(entity, loadImageUrls(List.of(entity)).get(entity.getId()));
+    }
+
+    private Map<String, Object> toPersonalityView(CbtiPersonalityEntity entity, String imageUrl) {
         Map<String, Object> p = new HashMap<>();
         p.put("code", entity.getCode());
         p.put("name", entity.getName());
@@ -481,8 +553,8 @@ public class CbtiServiceImpl implements ICbtiService {
         p.put("techStack", entity.getTechStack());
         p.put("spirit", entity.getSpirit());
         p.put("isSpecial", Objects.equals(entity.getIsSpecial(), 1));
-        if (StringUtils.hasText(entity.getImageObject())) {
-            p.put("imageUrl", buildPreviewUrl(entity.getImageObject()));
+        if (StringUtils.hasText(imageUrl)) {
+            p.put("imageUrl", imageUrl);
         }
         p.put("vector", readJsonValue(entity.getVector()));
         p.put("strengths", readJsonValue(entity.getStrengths()));
@@ -490,7 +562,23 @@ public class CbtiServiceImpl implements ICbtiService {
         return p;
     }
 
-    private CbtiPersonalityAdminVO toAdminVO(CbtiPersonalityEntity entity) {
+    /** 批量读取人格图片的公开内容地址，避免列表逐个查询附件。 */
+    private Map<Long, String> loadImageUrls(Collection<CbtiPersonalityEntity> personalities) {
+        List<Long> ids = personalities.stream().map(CbtiPersonalityEntity::getId).filter(Objects::nonNull).toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, String> urls = new HashMap<>();
+        for (AttachmentEntity attachment : attachmentMapper.selectWithObjectByBiz(IMAGE_BIZ_TYPE, ids)) {
+            String url = minioUtil.getPublicImageUrl(attachment.getHashValue(), attachment.getFileType());
+            if (attachment.getBizId() != null && StringUtils.hasText(url)) {
+                urls.put(attachment.getBizId(), url);
+            }
+        }
+        return urls;
+    }
+
+    private CbtiPersonalityAdminVO toAdminVO(CbtiPersonalityEntity entity, String imageUrl) {
         CbtiPersonalityAdminVO vo = new CbtiPersonalityAdminVO();
         vo.setId(entity.getId());
         vo.setCode(entity.getCode());
@@ -500,7 +588,6 @@ public class CbtiServiceImpl implements ICbtiService {
         vo.setDescription(entity.getDescription());
         vo.setTechStack(entity.getTechStack());
         vo.setSpirit(entity.getSpirit());
-        vo.setImageObject(entity.getImageObject());
         vo.setIsSpecial(Objects.equals(entity.getIsSpecial(), 1));
         vo.setUpdateTime(entity.getUpdateTime());
         vo.setCreateTime(entity.getCreateTime());
@@ -512,8 +599,8 @@ public class CbtiServiceImpl implements ICbtiService {
         vo.setWeaknesses(readJsonSafely(entity.getWeaknesses(), new TypeReference<List<String>>() {
         }));
 
-        if (StringUtils.hasText(entity.getImageObject())) {
-            vo.setImageUrl(buildPreviewUrl(entity.getImageObject()));
+        if (StringUtils.hasText(imageUrl)) {
+            vo.setImageUrl(imageUrl);
         }
         return vo;
     }
@@ -540,35 +627,26 @@ public class CbtiServiceImpl implements ICbtiService {
         }
     }
 
-    private String resolveBucketName() {
-        if (StringUtils.hasText(cbtiConfig.getBucketName())) {
-            return cbtiConfig.getBucketName();
-        }
-        if (minioConfig != null && StringUtils.hasText(minioConfig.getBucketName())) {
-            return minioConfig.getBucketName();
-        }
-        return "aiolife";
-    }
-
-    private String normalizePrefix(String prefix) {
-        String p = StringUtils.hasText(prefix) ? prefix : "images/cbti/characters/";
-        p = p.startsWith("/") ? p.substring(1) : p;
-        return p.endsWith("/") ? p : p + "/";
-    }
-
     private String normalizeCode(String code) {
         return StringUtils.hasText(code) ? code.trim() : null;
     }
 
-    private String normalizeObjectName(String objectName) {
-        if (!StringUtils.hasText(objectName)) {
-            return null;
+    /** 内置人格图片清单，源文件按人格代码映射，初始化只补缺不覆盖人工上传。 */
+    private Map<String, String> readPersonalityImages() {
+        try {
+            Map<String, String> files = new HashMap<>();
+            for (JsonNode item : readJsonResource(PERSONALITIES_RESOURCE)) {
+                JsonNode code = item.get("code");
+                JsonNode image = item.get("image");
+                if (code != null && image != null
+                        && StringUtils.hasText(code.asText()) && StringUtils.hasText(image.asText())) {
+                    files.put(code.asText(), image.asText());
+                }
+            }
+            return files;
+        } catch (Exception e) {
+            throw new ApiException(ResponseCodeConst.COMMON_FAIL, "读取 CBTI 人格图片清单失败: " + e.getMessage());
         }
-        return objectName.startsWith("/") ? objectName.substring(1) : objectName;
-    }
-
-    private String buildPreviewUrl(String objectName) {
-        return serveBaseUrl + "/cbti/images/" + normalizeObjectName(objectName);
     }
 
     private boolean isCoffeeAddict(Map<String, Object> hiddenAnswers) {

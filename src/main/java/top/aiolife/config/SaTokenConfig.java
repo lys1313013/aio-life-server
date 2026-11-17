@@ -9,7 +9,6 @@ import cn.dev33.satoken.context.second.SaTokenSecondContext;
 import cn.dev33.satoken.interceptor.SaInterceptor;
 import cn.dev33.satoken.SaManager;
 import top.aiolife.record.api.PublicImageController;
-import top.aiolife.record.api.CbtiImageController;
 import top.aiolife.sso.api.QrLoginController;
 import top.aiolife.sso.query.QueryAccessController;
 import top.aiolife.sso.api.WechatAuthController;
@@ -83,7 +82,6 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 .addPathPatterns("/**")
                 .excludePathPatterns(PUBLIC_OPENAPI_PATHS)
                 .excludePathPatterns(PublicImageController.PATH)
-                .excludePathPatterns(CbtiImageController.PATH)
                 .excludePathPatterns(PUBLIC_MEMBERSHIP_ICON_PATH)
                 .excludePathPatterns(WechatAuthController.PUBLIC_PATHS)
                 .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
@@ -108,7 +106,6 @@ public class SaTokenConfig implements WebMvcConfigurer {
         })).addPathPatterns("/**")
                 .excludePathPatterns(PUBLIC_OPENAPI_PATHS)
                 .excludePathPatterns(PublicImageController.PATH)
-                .excludePathPatterns(CbtiImageController.PATH)
                 .excludePathPatterns(PUBLIC_MEMBERSHIP_ICON_PATH)
                 .excludePathPatterns(WechatAuthController.PUBLIC_PATHS)
                 .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
@@ -125,7 +122,6 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 .addPathPatterns("/**")
                 .excludePathPatterns(PUBLIC_OPENAPI_PATHS)
                 .excludePathPatterns(PublicImageController.PATH)
-                .excludePathPatterns(CbtiImageController.PATH)
                 .excludePathPatterns(PUBLIC_MEMBERSHIP_ICON_PATH)
                 .excludePathPatterns(WechatAuthController.PUBLIC_PATHS)
                 .excludePathPatterns(QrLoginController.PUBLIC_PATHS)
@@ -145,7 +141,6 @@ public class SaTokenConfig implements WebMvcConfigurer {
                 .addPathPatterns("/**")
                 .excludePathPatterns(PUBLIC_OPENAPI_PATHS)
                 .excludePathPatterns(PublicImageController.PATH)
-                .excludePathPatterns(CbtiImageController.PATH)
                 .excludePathPatterns(PUBLIC_MEMBERSHIP_ICON_PATH)
                 .excludePathPatterns(WechatAuthController.PUBLIC_PATHS)
                 .excludePathPatterns(QrLoginController.PUBLIC_PATHS)

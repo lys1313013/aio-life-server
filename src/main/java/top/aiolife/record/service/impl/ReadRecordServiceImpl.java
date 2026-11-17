@@ -14,7 +14,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.enums.AttachmentBizType;
 import top.aiolife.record.mapper.ReadRecordMapper;
 import top.aiolife.record.pojo.entity.ReadRecordEntity;
 import top.aiolife.record.pojo.query.ReadRecordQuery;
@@ -22,9 +22,9 @@ import top.aiolife.record.pojo.req.ReadRecordReq;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.vo.ReadRecordVO;
 import top.aiolife.record.service.IReadRecordService;
-import top.aiolife.record.service.IFileService;
+import top.aiolife.record.service.IAttachmentService;
 import top.aiolife.record.service.RecordImageService;
-import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.record.util.DoubanSubjectUrl;
 
 import java.time.LocalDateTime;
@@ -41,7 +41,7 @@ import org.jsoup.nodes.Element;
 @RequiredArgsConstructor
 public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRecordEntity> implements IReadRecordService {
 
-    private final IFileService fileService;
+    private final IAttachmentService fileService;
     private final RecordImageService images;
 
     @Autowired
@@ -69,7 +69,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         Page<ReadRecordEntity> page = new Page<>(query.getPage(), query.getPageSize());
         Page<ReadRecordEntity> entityPage = this.page(page, wrapper);
 
-        images.fill(userId, FileBizType.READ_RECORD, entityPage.getRecords(), ReadRecordEntity::getId, ReadRecordEntity::setFileId);
+        images.fill(userId, AttachmentBizType.READ_RECORD, entityPage.getRecords(), ReadRecordEntity::getId, ReadRecordEntity::setFileId);
 
         Page<ReadRecordVO> voPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
 
@@ -108,7 +108,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         }
         
         this.save(entity);
-        images.replace(userId, FileBizType.READ_RECORD, entity.getId(), req.getFileId());
+        images.replace(userId, AttachmentBizType.READ_RECORD, entity.getId(), req.getFileId());
         return entity.getId();
     }
 
@@ -141,7 +141,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         }
         
         this.updateById(entity);
-        images.replace(userId, FileBizType.READ_RECORD, entity.getId(), req.getFileId());
+        images.replace(userId, AttachmentBizType.READ_RECORD, entity.getId(), req.getFileId());
     }
 
     @Override
@@ -150,7 +150,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         Long userId = StpUtil.getLoginIdAsLong();
         ReadRecordEntity entity = this.getById(id);
         if (entity != null && entity.getUserId().equals(userId)) {
-            images.delete(userId,FileBizType.READ_RECORD,id);
+            images.delete(userId,AttachmentBizType.READ_RECORD,id);
             this.removeById(id);
         }
     }
@@ -267,7 +267,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         Long userId = StpUtil.getLoginIdAsLong();
         ReadRecordEntity entity = (ReadRecordEntity) doubanSources.find(userId,
                 DoubanSubjectUrl.parse("https://book.douban.com/subject/" + subjectId + "/"), false);
-        if (entity != null) entity.setFileId(images.find(userId, FileBizType.READ_RECORD, entity.getId()));
+        if (entity != null) entity.setFileId(images.find(userId, AttachmentBizType.READ_RECORD, entity.getId()));
         return entity;
     }
 
@@ -287,7 +287,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         if (!updated) {
             throw new IllegalArgumentException("阅读记录不存在或无权限");
         }
-        images.replace(userId, FileBizType.READ_RECORD, id, fileId);
+        images.replace(userId, AttachmentBizType.READ_RECORD, id, fileId);
     }
 
     private void ensureCoverUploaded(ReadRecordReq res, boolean required) {
@@ -295,7 +295,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
             return;
         }
         try {
-            var fileVO = fileService.uploadFromUrl(res.getCoverImgUrl(), FileBizType.READ_RECORD);
+            var fileVO = fileService.uploadFromUrl(res.getCoverImgUrl(), AttachmentBizType.READ_RECORD);
             res.setFileId(fileVO.getId());
             log.info("封面图已上传至 MinIO: fileId={}", fileVO.getId());
         } catch (IllegalArgumentException e) {
@@ -323,7 +323,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         wrapper.orderByDesc(ReadRecordEntity::getUpdateTime);
         
         List<ReadRecordEntity> entities = this.list(wrapper);
-        images.fill(userId, FileBizType.READ_RECORD, entities, ReadRecordEntity::getId, ReadRecordEntity::setFileId);
+        images.fill(userId, AttachmentBizType.READ_RECORD, entities, ReadRecordEntity::getId, ReadRecordEntity::setFileId);
         return entities.stream().map(entity -> {
             ReadRecordVO vo = new ReadRecordVO();
             BeanUtil.copyProperties(entity, vo);
@@ -340,7 +340,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
                 .eq(ReadRecordEntity::getUserId, userId)
                 .one();
         if (entity == null) return null;
-        entity.setFileId(images.find(userId, FileBizType.READ_RECORD, id));
+        entity.setFileId(images.find(userId, AttachmentBizType.READ_RECORD, id));
         ReadRecordVO vo = new ReadRecordVO();
         BeanUtil.copyProperties(entity, vo);
         vo.setId(String.valueOf(entity.getId()));

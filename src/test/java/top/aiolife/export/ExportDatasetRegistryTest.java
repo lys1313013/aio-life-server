@@ -50,9 +50,7 @@ class ExportDatasetRegistryTest {
                 assertFalse(
                         Set.of(
                                         "password",
-                                        "password_salt",
                                         "secondary_password",
-                                        "secondary_password_salt",
                                         "access_token",
                                         "api_key",
                                         "salt",

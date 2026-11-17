@@ -18,9 +18,9 @@ import top.aiolife.core.query.QueryParams;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.bankcard.pojo.query.BankCardCoverQuery;
-import top.aiolife.record.enums.FileBizType;
-import top.aiolife.record.pojo.vo.FileVO;
-import top.aiolife.record.service.IFileService;
+import top.aiolife.record.enums.AttachmentBizType;
+import top.aiolife.record.pojo.vo.AttachmentVO;
+import top.aiolife.record.service.IAttachmentService;
 
 /**
  * 公共卡面管理控制器，维护仅限管理员，用户选用走银行卡接口。
@@ -37,7 +37,7 @@ public class BankCardCoverTemplateAdminController {
     private final BankCardOrderService orderService;
     private final BankCardCoverTemplateService service;
     private final BankCardService cards;
-    private final IFileService files;
+    private final IAttachmentService files;
 
     @Operation(summary = "管理员调整银行卡卡面排序")
     @PutMapping("/order")
@@ -94,7 +94,7 @@ public class BankCardCoverTemplateAdminController {
 
     @Operation(summary = "管理员上传银行卡卡面图片")
     @PostMapping("/upload")
-    public ApiResponse<FileVO> upload(@RequestParam("file") MultipartFile file) {
-        return ApiResponse.success(files.upload(file, FileBizType.BANK_CARD_TEMPLATE_COVER));
+    public ApiResponse<AttachmentVO> upload(@RequestParam("file") MultipartFile file) {
+        return ApiResponse.success(files.upload(file, AttachmentBizType.BANK_CARD_TEMPLATE_COVER));
     }
 }

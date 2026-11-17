@@ -32,8 +32,6 @@ public class CbtiPersonalitySaveReq {
 
     private String spirit;
 
-    private String imageObject;
-
     private Boolean isSpecial;
 }
 

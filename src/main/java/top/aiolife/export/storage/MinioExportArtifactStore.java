@@ -15,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Component;
 
-import top.aiolife.config.CbtiConfig;
 import top.aiolife.config.MinioConfig;
 import top.aiolife.export.config.ExportProperties;
 import top.aiolife.export.service.ExportException;
@@ -32,12 +31,11 @@ import java.util.List;
 public class MinioExportArtifactStore implements ExportArtifactStore {
     private final MinioClient minio;
     private final MinioConfig common;
-    private final CbtiConfig cbti;
     private final ExportProperties properties;
 
     public void verifyPrivateStorage() throws Exception {
         String bucket = properties.getBucket();
-        if (bucket.equals(common.getBucketName()) || bucket.equals(cbti.getBucketName()))
+        if (bucket.equals(common.getBucketName()))
             throw ExportException.unavailable();
         if (!minio.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
             try {

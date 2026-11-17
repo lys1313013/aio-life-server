@@ -17,7 +17,7 @@ import top.aiolife.core.pojo.entity.BaseEntity;
 import top.aiolife.record.mapper.IMovieMapper;
 import top.aiolife.record.mapper.ReadRecordMapper;
 import top.aiolife.record.pojo.entity.MovieEntity;
-import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.enums.AttachmentBizType;
 import top.aiolife.record.service.RecordImageService;
 import top.aiolife.record.pojo.entity.ReadRecordEntity;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
@@ -180,7 +180,7 @@ public class DoubanCaptureService {
                                 .set(entity.getAuthor() == null, ReadRecordEntity::getAuthor, null);
                 readMapper.update(entity, w);
             }
-            images.replace(user, FileBizType.READ_RECORD, entity.getId(), file);
+            images.replace(user, AttachmentBizType.READ_RECORD, entity.getId(), file);
             return requests.finish(
                     key, result(subject, entity, found == null ? "created" : "updated"));
         }
@@ -215,7 +215,7 @@ public class DoubanCaptureService {
                             .set(entity.getDirector() == null, MovieEntity::getDirector, null);
             movieMapper.update(entity, w);
         }
-        images.replace(user, FileBizType.MOVIE, entity.getId(), file);
+        images.replace(user, AttachmentBizType.MOVIE, entity.getId(), file);
         return requests.finish(key, result(subject, entity, found == null ? "created" : "updated"));
     }
 
@@ -327,7 +327,7 @@ public class DoubanCaptureService {
             }
             movie.fillCreateCommonField(user);
             movieMapper.insert(movie);
-            images.replace(user, FileBizType.MOVIE, movie.getId(), movie.getFileId());
+            images.replace(user, AttachmentBizType.MOVIE, movie.getId(), movie.getFileId());
             operation = "created";
         }
         ObjectNode result = json.createObjectNode();
@@ -369,9 +369,9 @@ public class DoubanCaptureService {
 
     private void fillImage(BaseEntity entity) {
         if (entity instanceof MovieEntity movie) {
-            movie.setFileId(images.find(movie.getUserId(), FileBizType.MOVIE, movie.getId()));
+            movie.setFileId(images.find(movie.getUserId(), AttachmentBizType.MOVIE, movie.getId()));
         } else if (entity instanceof ReadRecordEntity read) {
-            read.setFileId(images.find(read.getUserId(), FileBizType.READ_RECORD, read.getId()));
+            read.setFileId(images.find(read.getUserId(), AttachmentBizType.READ_RECORD, read.getId()));
         }
     }
 

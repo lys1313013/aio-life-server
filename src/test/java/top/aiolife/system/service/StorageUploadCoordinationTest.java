@@ -5,7 +5,6 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.MinioClient;
 import java.io.ByteArrayInputStream;
 import java.util.Map;
@@ -28,19 +27,14 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.web.server.ResponseStatusException;
-import top.aiolife.config.CbtiConfig;
 import top.aiolife.config.MinioConfig;
 import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.core.util.MinioUtil;
-import top.aiolife.record.api.CbtiAdminController;
-import top.aiolife.record.config.CbtiImageInitUtil;
-import top.aiolife.record.enums.FileBizType;
-import top.aiolife.record.mapper.ICbtiPersonalityMapper;
-import top.aiolife.record.mapper.IFileMapper;
-import top.aiolife.record.pojo.entity.CbtiPersonalityEntity;
-import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.enums.AttachmentBizType;
+import top.aiolife.record.mapper.IAttachmentMapper;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.record.service.DoubanCoverUrlPolicy;
-import top.aiolife.record.service.impl.FileServiceImpl;
+import top.aiolife.record.service.impl.AttachmentServiceImpl;
 import top.aiolife.support.ImageFixtures;
 import top.aiolife.system.mapper.StorageFileReferenceMapper;
 import top.aiolife.system.mapper.StorageObjectMapper;
@@ -54,7 +48,7 @@ class StorageUploadCoordinationTest extends top.aiolife.support.AttachmentDataba
     MinioClient deletes;
     StorageObjectLock locks;
     StorageAdminService admin;
-    FileServiceImpl files;
+    AttachmentServiceImpl files;
     ExecutorService executor;
     CountDownLatch written, finish;
     AtomicReference<String> key;
@@ -79,8 +73,8 @@ class StorageUploadCoordinationTest extends top.aiolife.support.AttachmentDataba
         doAnswer(call -> { key.set(call.getArgument(1)); return null; }).when(uploads).putObject(anyString(), anyString(), any(), anyLong(), anyString());
         var config = new MinioConfig(); config.setBucketName("business");
         var objectStorage=proxy(new top.aiolife.record.service.VideoCoverStorage(session.getMapper(StorageObjectMapper.class),locks,uploads,config));
-        var target = new FileServiceImpl(uploads,objectStorage,session.getMapper(StorageObjectMapper.class),mock(top.aiolife.record.service.ExternalResourceService.class)) {
-            @Override public boolean save(FileEntity entity) {
+        var target = new AttachmentServiceImpl(uploads,objectStorage,session.getMapper(StorageObjectMapper.class),mock(top.aiolife.record.service.ExternalResourceService.class)) {
+            @Override public boolean save(AttachmentEntity entity) {
                 boolean saved = super.save(entity);
                 written.countDown();
                 try { if (!finish.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("test timeout"); }
@@ -89,15 +83,15 @@ class StorageUploadCoordinationTest extends top.aiolife.support.AttachmentDataba
                 return saved;
             }
         };
-        ReflectionTestUtils.setField(target, "baseMapper", session.getMapper(IFileMapper.class));
+        ReflectionTestUtils.setField(target, "baseMapper", session.getMapper(IAttachmentMapper.class));
         var proxy = new ProxyFactory(target); proxy.setProxyTargetClass(true);
         var interceptor = new TransactionInterceptor();
         interceptor.setTransactionManager(manager);
         interceptor.setTransactionAttributeSource(new AnnotationTransactionAttributeSource());
         proxy.addAdvice(interceptor);
-        files = (FileServiceImpl) proxy.getProxy();
+        files = (AttachmentServiceImpl) proxy.getProxy();
         admin = new StorageAdminService(config, mock(StorageListClient.class), deletes,
-                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class), new CbtiConfig(), session.getMapper(StorageObjectMapper.class)), locks);
+                new StorageFileReferenceGuard(session.getMapper(StorageFileReferenceMapper.class), session.getMapper(StorageObjectMapper.class)), locks);
     }
 
     @AfterEach void close() throws Exception {
@@ -109,7 +103,7 @@ class StorageUploadCoordinationTest extends top.aiolife.support.AttachmentDataba
         return executor.submit(() -> {
             try (var login = mockStatic(StpUtil.class)) {
                 login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
-                files.upload(new MockMultipartFile("file", "image.png", "image/png", ImageFixtures.image("png")), FileBizType.AVATAR);
+                files.upload(new MockMultipartFile("file", "image.png", "image/png", ImageFixtures.image("png")), AttachmentBizType.AVATAR);
             }
         });
     }
@@ -144,7 +138,7 @@ class StorageUploadCoordinationTest extends top.aiolife.support.AttachmentDataba
     @Test void 复用现有对象也持锁直到业务事务提交() throws Exception {
         var result=upload();assertTrue(written.await(10,TimeUnit.SECONDS));finish.countDown();result.get(10,TimeUnit.SECONDS);
         String objectKey=key.get();
-        var file=session.getMapper(IFileMapper.class).selectList(null).getFirst();
+        var file=session.getMapper(IAttachmentMapper.class).selectList(null).getFirst();
         var storage=proxy(new top.aiolife.record.service.VideoCoverStorage(session.getMapper(StorageObjectMapper.class),locks,uploads,new MinioConfig()));
         transaction.executeWithoutResult(t->{storage.hold(file.getStorageObjectId());
             assertTrue(mutexes.values().stream().anyMatch(ReentrantLock::isHeldByCurrentThread));
@@ -153,36 +147,4 @@ class StorageUploadCoordinationTest extends top.aiolife.support.AttachmentDataba
         assertTrue(mutexes.values().stream().noneMatch(ReentrantLock::isLocked));
     }
 
-    @Test void CBTI直接上传的对象与人格引用更新也在共享锁内() throws Exception {
-        var cbti = new CbtiConfig();
-        var config = new MinioConfig(); config.setBucketName("business");
-        var mapper = mock(ICbtiPersonalityMapper.class);
-        var entity = new CbtiPersonalityEntity(); entity.setId(7L); entity.setCode("TEST");
-        when(mapper.selectOne(any())).thenReturn(entity);
-        jdbc.update("INSERT INTO cbti_personality(id,code,name,image_object) VALUES(7,'TEST','fixture','old.png')");
-        when(mapper.updateById(any(CbtiPersonalityEntity.class))).thenAnswer(call ->
-                jdbc.update("UPDATE cbti_personality SET image_object=? WHERE id=7", call.getArgument(0, CbtiPersonalityEntity.class).getImageObject()));
-        doAnswer(call -> {
-            key.set(call.getArgument(1)); written.countDown();
-            if (!finish.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("test timeout");
-            return key.get();
-        }).when(uploads).putObject(anyString(), anyString(), any(), anyLong(), eq("image/png"));
-        var cbtiService = new top.aiolife.record.service.impl.CbtiServiceImpl(mapper,
-                mock(top.aiolife.record.mapper.ICbtiResultMapper.class), new ObjectMapper(),
-                uploads, config, cbti, mock(CbtiImageInitUtil.class), locks);
-        var controller = new CbtiAdminController(cbtiService);
-        var result = executor.submit(() -> {
-            try (var login = mockStatic(StpUtil.class)) {
-                login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
-                return controller.uploadImage("7", "TEST", new MockMultipartFile("file", "fake.html", "text/html", ImageFixtures.image("png")));
-            }
-        });
-        assertTrue(written.await(10, TimeUnit.SECONDS));
-        var busy = assertThrows(ResponseStatusException.class, () -> admin.delete(key.get()));
-        assertTrue(busy.getReason().contains("处理中"));
-        finish.countDown(); assertEquals(0, result.get(10, TimeUnit.SECONDS).getCode());
-        var referenced = assertThrows(ResponseStatusException.class, () -> admin.delete(key.get()));
-        assertTrue(referenced.getReason().contains("CBTI"));
-        verifyNoInteractions(deletes);
-    }
 }

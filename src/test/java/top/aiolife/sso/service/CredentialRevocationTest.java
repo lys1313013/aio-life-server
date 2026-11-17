@@ -73,8 +73,8 @@ class CredentialRevocationTest {
         jdbc = new JdbcTemplate(source);
         jdbc.execute("""
                 CREATE TABLE sys_user (policy_version VARCHAR(32), policy_accepted_at TIMESTAMP, erasure_requested_at TIMESTAMP, erasure_retry_at TIMESTAMP,
-                    id BIGINT PRIMARY KEY, username VARCHAR(255), password VARCHAR(255), password_salt VARCHAR(255),
-                    secondary_password VARCHAR(255), secondary_password_salt VARCHAR(255), nickname VARCHAR(255),
+                    id BIGINT PRIMARY KEY, username VARCHAR(255), password VARCHAR(255),
+                    secondary_password VARCHAR(255), nickname VARCHAR(255),
                     email VARCHAR(255), phone_country_code VARCHAR(32), phone VARCHAR(64),
                     phone_verified_at TIMESTAMP, wechat_openid VARCHAR(255), wechat_unionid VARCHAR(255),
                     role VARCHAR(255), introduction VARCHAR(255), is_deleted INT DEFAULT 0, last_active_at TIMESTAMP,
@@ -86,8 +86,8 @@ class CredentialRevocationTest {
                     expired_at TIMESTAMP, create_user BIGINT, update_user BIGINT, create_time TIMESTAMP,
                     update_time TIMESTAMP, is_deleted INT DEFAULT 0)
                 """);
-        jdbc.update("INSERT INTO sys_user (id, email, password, password_salt) VALUES (1, 'one@example.com', ?, 'salt'), (2, 'two@example.com', ?, 'salt')",
-                PasswordUtil.encryptPassword("old-password", "salt"), PasswordUtil.encryptPassword("old-password", "salt"));
+        jdbc.update("INSERT INTO sys_user (id, email, password) VALUES (1, 'one@example.com', ?), (2, 'two@example.com', ?)",
+                PasswordUtil.hashPassword("old-password"), PasswordUtil.hashPassword("old-password"));
         jdbc.update("INSERT INTO api_key (id, user_id, api_key) VALUES (11, 1, 'ak-one'), (12, 1, 'ak-one-extra'), (21, 2, 'ak-two')");
         var configuration = new MybatisConfiguration();
         configuration.setMapUnderscoreToCamelCase(true);
@@ -172,7 +172,7 @@ class CredentialRevocationTest {
         assertNull(StpUtil.getLoginIdByToken(mobile));
         assertFileRejected(web);
         var user = userMapper.selectById(1L);
-        assertEquals(PasswordUtil.encryptPassword("new-password", user.getPasswordSalt()), user.getPassword());
+        assertTrue(PasswordUtil.matches("new-password", user.getPassword()));
         assertAccess(token(1, "web"), 1);
         assertAccess(other, 2);
         verify(redis).delete("reset:code:one@example.com");

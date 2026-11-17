@@ -203,8 +203,6 @@ aio:
         image-prefix: ${AIO_LIFE_MINIO_IMAGE_PREFIX:images/}
       cbti:
         enabled: ${AIO_LIFE_CBTI_ENABLED:true}
-        bucket-name: ${AIO_LIFE_CBTI_BUCKET_NAME:}
-        object-prefix: ${AIO_LIFE_CBTI_OBJECT_PREFIX:images/cbti/characters/}
         characters-dir: ${AIO_LIFE_CBTI_CHARACTERS_DIR:src/main/resources/cbti/characters}
       notification:
         # 与微信登录一起在管理员系统配置中维护；此处仅提供首次保存前的初始值。

@@ -32,8 +32,8 @@ import top.aiolife.feedback.pojo.vo.FeedbackVO;
 import top.aiolife.feedback.service.IFeedbackService;
 import top.aiolife.record.notification.SystemNotificationSender;
 import top.aiolife.record.notification.NotificationRequest;
-import top.aiolife.record.pojo.vo.FileVO;
-import top.aiolife.record.service.IFileService;
+import top.aiolife.record.pojo.vo.AttachmentVO;
+import top.aiolife.record.service.IAttachmentService;
 import top.aiolife.record.service.FeishuNotificationService;
 import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
@@ -66,7 +66,7 @@ public class FeedbackServiceImpl implements IFeedbackService {
 
     private final FeedbackMapper feedbackMapper;
     private final FeedbackCommentMapper commentMapper;
-    private final IFileService fileService;
+    private final IAttachmentService fileService;
     private final ISystemConfigService systemConfigService;
     private final SystemNotificationSender notificationSender;
     private final FeishuNotificationService feishuNotificationService;

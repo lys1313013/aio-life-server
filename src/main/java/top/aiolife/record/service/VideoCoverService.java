@@ -17,11 +17,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import top.aiolife.record.mapper.IBVideoMapper;
-import top.aiolife.record.mapper.IFileMapper;
+import top.aiolife.record.mapper.IAttachmentMapper;
 import top.aiolife.record.mapper.ImageImportTaskMapper;
 import top.aiolife.record.mapper.ExternalResourceMapper;
 import top.aiolife.record.pojo.entity.BVideoEntity;
-import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.record.pojo.entity.ImageImportTaskEntity;
 
 /** 按业务记录行锁串行化更换、清空、重试和发布；下载状态只保存在来源。 */
@@ -31,7 +31,7 @@ public class VideoCoverService {
     private static final String TYPE="b_video_cover";
     private final IBVideoMapper videos;
     private final ImageImportTaskMapper tasks;
-    private final IFileMapper files;
+    private final IAttachmentMapper files;
     private final ExternalResourceMapper sources;
     private final ExternalResourceService resources;
     private final VideoCoverStorage storage;
@@ -44,7 +44,7 @@ public class VideoCoverService {
         if(!StringUtils.hasText(requestedSource)) { cancel(videoId,owner); detach(videoId,owner); return; }
         var source=resources.video(requestedSource,owner);
         var previous=tasks.latest(TYPE,videoId);
-        var current=files.selectOne(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getBizType,TYPE).eq(FileEntity::getBizId,videoId));
+        var current=files.selectOne(new LambdaQueryWrapper<AttachmentEntity>().eq(AttachmentEntity::getBizType,TYPE).eq(AttachmentEntity::getBizId,videoId));
         if(!retry && previous!=null && Objects.equals(previous.getExternalResourceId(),source.getId()) && Set.of("PENDING","RUNNING","FAILED").contains(previous.getState())) return;
         if(current!=null && Objects.equals(current.getExternalResourceId(),source.getId()) && source.getStorageObjectId()!=null) {
             cancel(videoId,owner); return;
@@ -101,29 +101,29 @@ public class VideoCoverService {
     }
     private String attach(long videoId,long owner,long sourceId,long objectId) {
         storage.hold(objectId); detach(videoId,owner);
-        var file=new FileEntity(); file.fillCreateCommonField(owner);
+        var file=new AttachmentEntity(); file.fillCreateCommonField(owner);
         file.setStorageObjectId(objectId); file.setExternalResourceId(sourceId);
         file.setBizType(TYPE); file.setBizId(videoId); file.setIsPublic(0); files.insert(file);
         return file.getId();
     }
     private void detach(long videoId,long owner) {
-        files.update(null,new LambdaUpdateWrapper<FileEntity>().eq(FileEntity::getBizType,TYPE)
-            .eq(FileEntity::getBizId,videoId).eq(FileEntity::getUserId,owner)
-            .set(FileEntity::getIsDeleted,1).set(FileEntity::getIsPublic,0)
-            .set(FileEntity::getUpdateUser,owner).set(FileEntity::getUpdateTime,LocalDateTime.now()));
+        files.update(null,new LambdaUpdateWrapper<AttachmentEntity>().eq(AttachmentEntity::getBizType,TYPE)
+            .eq(AttachmentEntity::getBizId,videoId).eq(AttachmentEntity::getUserId,owner)
+            .set(AttachmentEntity::getIsDeleted,1).set(AttachmentEntity::getIsPublic,0)
+            .set(AttachmentEntity::getUpdateUser,owner).set(AttachmentEntity::getUpdateTime,LocalDateTime.now()));
     }
     public Map<Long,String> coverFiles(long owner,Collection<Long> ids) {
         var result=new HashMap<Long,String>();
-        if(!ids.isEmpty()) files.selectList(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getUserId,owner)
-            .eq(FileEntity::getBizType,TYPE).in(FileEntity::getBizId,ids)).forEach(f->result.put(f.getBizId(),f.getFileKey()));
+        if(!ids.isEmpty()) files.selectList(new LambdaQueryWrapper<AttachmentEntity>().eq(AttachmentEntity::getUserId,owner)
+            .eq(AttachmentEntity::getBizType,TYPE).in(AttachmentEntity::getBizId,ids)).forEach(f->result.put(f.getBizId(),f.getFileKey()));
         return result;
     }
     public void fillCoverFiles(long owner,List<BVideoEntity> rows) {
         if(rows.isEmpty()) return;
         var ids=rows.stream().map(BVideoEntity::getId).toList();
-        var attachments=files.selectList(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getUserId,owner)
-            .eq(FileEntity::getBizType,TYPE).in(FileEntity::getBizId,ids));
-        var fileByVideo=new HashMap<Long,FileEntity>(); attachments.forEach(f->fileByVideo.put(f.getBizId(),f));
+        var attachments=files.selectList(new LambdaQueryWrapper<AttachmentEntity>().eq(AttachmentEntity::getUserId,owner)
+            .eq(AttachmentEntity::getBizType,TYPE).in(AttachmentEntity::getBizId,ids));
+        var fileByVideo=new HashMap<Long,AttachmentEntity>(); attachments.forEach(f->fileByVideo.put(f.getBizId(),f));
         var jobs=new HashMap<Long,ImageImportTaskEntity>(); tasks.latestFor(ids).forEach(j->jobs.put(j.getBizId(),j));
         var sourceIds=new HashSet<Long>();
         attachments.forEach(f->{if(f.getExternalResourceId()!=null) sourceIds.add(f.getExternalResourceId());});

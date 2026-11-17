@@ -1576,8 +1576,8 @@
         "type": "TEXT"
       },
       {
-        "key": "amt",
-        "label": "收入",
+        "key": "gross_amount",
+        "label": "收入金额（未减税额）",
         "type": "DECIMAL"
       },
       {
@@ -1611,7 +1611,7 @@
         "type": "TEXT"
       },
       {
-        "key": "tax",
+        "key": "tax_amount",
         "label": "税额",
         "type": "DECIMAL"
       }
@@ -1633,13 +1633,13 @@
         "type": "TEXT"
       },
       {
-        "key": "amt",
-        "label": "花费金额",
+        "key": "bookkeeping_amount",
+        "label": "记账金额",
         "type": "DECIMAL"
       },
       {
-        "key": "transaction_amt",
-        "label": "交易金额",
+        "key": "transaction_amount",
+        "label": "原始交易金额",
         "type": "DECIMAL"
       },
       {

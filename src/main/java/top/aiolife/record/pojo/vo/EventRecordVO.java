@@ -80,5 +80,5 @@ public class EventRecordVO {
     /**
      * 关联文件列表（查询时回填）
      */
-    private List<FileVO> files;
+    private List<AttachmentVO> files;
 }

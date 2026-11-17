@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.enums.AttachmentBizType;
 import top.aiolife.record.service.RecordImageService;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.wardrobe.mapper.WardrobeCategoryMapper;
@@ -44,7 +44,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         entity.fillCreateCommonField(userId);
         entity.setSeason(joinSeason(req.getSeason()));
         this.save(entity);
-        images.replace(userId, FileBizType.WARDROBE_ITEM, entity.getId(), req.getFileId());
+        images.replace(userId, AttachmentBizType.WARDROBE_ITEM, entity.getId(), req.getFileId());
     }
 
     @Override
@@ -60,7 +60,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         entity.fillUpdateCommonField(userId);
         entity.setSeason(joinSeason(req.getSeason()));
         this.updateById(entity);
-        images.replace(userId, FileBizType.WARDROBE_ITEM, entity.getId(), req.getFileId());
+        images.replace(userId, AttachmentBizType.WARDROBE_ITEM, entity.getId(), req.getFileId());
     }
 
     @Override
@@ -69,7 +69,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         LambdaQueryWrapper<WardrobeItemEntity> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(WardrobeItemEntity::getId, id);
         queryWrapper.eq(WardrobeItemEntity::getUserId, userId);
-        images.delete(userId,FileBizType.WARDROBE_ITEM,id);
+        images.delete(userId,AttachmentBizType.WARDROBE_ITEM,id);
         this.remove(queryWrapper);
     }
 
@@ -82,7 +82,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         if (entity == null) {
             return null;
         }
-        entity.setFileId(images.find(userId, FileBizType.WARDROBE_ITEM, id));
+        entity.setFileId(images.find(userId, AttachmentBizType.WARDROBE_ITEM, id));
         return toVO(entity, getCategoryNameMap(userId));
     }
 
@@ -104,7 +104,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
 
         QueryOrder.descNullsLast(queryWrapper, WardrobeItemEntity::getCreateTime, WardrobeItemEntity::getId);
         List<WardrobeItemEntity> list = this.list(queryWrapper);
-        images.fill(userId, FileBizType.WARDROBE_ITEM, list, WardrobeItemEntity::getId, WardrobeItemEntity::setFileId);
+        images.fill(userId, AttachmentBizType.WARDROBE_ITEM, list, WardrobeItemEntity::getId, WardrobeItemEntity::setFileId);
         Map<Long, String> categoryNameMap = list.isEmpty() ? Collections.emptyMap() : getCategoryNameMap(userId);
         return list.stream().map(item -> toVO(item, categoryNameMap)).collect(Collectors.toList());
     }

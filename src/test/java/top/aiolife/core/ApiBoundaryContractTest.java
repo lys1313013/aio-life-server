@@ -226,22 +226,22 @@ class ApiBoundaryContractTest {
         var personalityMapper = mock(top.aiolife.record.mapper.ICbtiPersonalityMapper.class);
         var resultMapper = mock(top.aiolife.record.mapper.ICbtiResultMapper.class);
         var personality = new CbtiPersonalityEntity();
-        personality.setCode("fixture"); personality.setImageObject("fixture/image.png");
+        personality.setId(1L); personality.setCode("fixture");
         personality.setCreateTime(LocalDateTime.now()); personality.setIsDeleted(0);
         when(personalityMapper.selectOne(any())).thenReturn(personality);
         var stored = new CbtiResultEntity();
         stored.setId(1L); stored.setUserId(11L); stored.setIsDeleted(0); stored.setPersonalityCode("fixture");
         when(resultMapper.selectList(any())).thenReturn(List.of(stored));
         when(resultMapper.selectById(1L)).thenReturn(stored);
-        var service = new top.aiolife.record.service.impl.CbtiServiceImpl(personalityMapper, resultMapper, json,
-                mock(top.aiolife.core.util.MinioUtil.class), mock(top.aiolife.config.MinioConfig.class),
-                new top.aiolife.config.CbtiConfig(), mock(top.aiolife.record.config.CbtiImageInitUtil.class),
-                mock(top.aiolife.core.lock.StorageObjectLock.class));
+        var service = new top.aiolife.record.service.impl.CbtiServiceImpl(personalityMapper, resultMapper,
+                mock(top.aiolife.record.mapper.IAttachmentMapper.class),
+                mock(top.aiolife.record.service.VideoCoverStorage.class), json,
+                mock(top.aiolife.core.util.MinioUtil.class), new top.aiolife.config.CbtiConfig());
         var controller = new CbtiController(service);
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsString).thenReturn("11");
             JsonNode list = json.valueToTree(controller.results("11").getData());
-            assertFalse(list.get(0).has("imageObject")); assertTrue(list.get(0).has("imageUrl"));
+            assertFalse(list.get(0).has("imageObject")); assertFalse(list.get(0).has("imageUrl"));
             JsonNode result = json.valueToTree(controller.resultDetail("11", "1").getData());
             assertFalse(result.has("userId"));
             assertEquals("fixture", result.path("personality").path("code").asText());

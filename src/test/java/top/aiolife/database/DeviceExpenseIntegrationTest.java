@@ -67,7 +67,7 @@ class DeviceExpenseIntegrationTest {
         assertEquals(device.getId(), service.context(1L, rows.get(0).getId()).getDevice().getId());
         assertEquals("随支出新建的设备", service.context(1L, rows.get(1).getId()).getDevice().getName());
         assertNull(service.context(1L, rows.get(2).getId()).getDevice());
-        assertEquals(new BigDecimal("42.50"), rows.getFirst().getTransactionAmt());
+        assertEquals(new BigDecimal("42.50"), rows.getFirst().getTransactionAmount());
         assertEquals(new BigDecimal("100.00"), devices.selectById(device.getId()).getPurchasePrice());
     }
 
@@ -106,7 +106,7 @@ class DeviceExpenseIntegrationTest {
 
     private ExpenseCreateReq draftExpense() {
         var request = new ExpenseCreateReq();
-        request.setAmt(new BigDecimal("42.50")); request.setExpTypeId(81L); request.setPayTypeId(82L);
+        request.setBookkeepingAmount(new BigDecimal("42.50")); request.setExpTypeId(81L); request.setPayTypeId(82L);
         request.setExpTime(LocalDateTime.of(2026, 11, 12, 12, 0)); request.setRemark("新增关联测试");
         return request;
     }
@@ -128,7 +128,7 @@ class DeviceExpenseIntegrationTest {
                 .eq(DeviceExpenseEntity::getExpenseId, first.getId())).getId());
         assertEquals(replacement.getId(), service.context(1L, first.getId()).getDevice().getId());
         assertEquals(new BigDecimal("100.00"), devices.selectById(replacement.getId()).getPurchasePrice());
-        assertEquals(new BigDecimal("42.50"), expenses.selectById(first.getId()).getAmt());
+        assertEquals(new BigDecimal("42.50"), expenses.selectById(first.getId()).getBookkeepingAmount());
     }
 
     @Test void 预填使用记账金额和业务日期并保留用户确认的修改() {
@@ -218,7 +218,7 @@ class DeviceExpenseIntegrationTest {
 
     private ExpenseEntity expense(long userId) {
         var row = new ExpenseEntity();
-        row.setUserId(userId); row.setExpTypeId(81L); row.setPayTypeId(82L); row.setAmt(new BigDecimal("42.50")); row.setTransactionAmt(new BigDecimal("60.00"));
+        row.setUserId(userId); row.setExpTypeId(81L); row.setPayTypeId(82L); row.setBookkeepingAmount(new BigDecimal("42.50")); row.setTransactionAmount(new BigDecimal("60.00"));
         row.setExpTime(LocalDateTime.of(2026, 10, 22, 23, 30)); row.setExpDesc("模拟耳机");
         row.setCounterparty("模拟商家"); row.setRemark("模拟备注"); row.setIsDeleted(0);
         expenses.insert(row); return row;

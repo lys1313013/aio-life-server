@@ -3,7 +3,7 @@ import top.aiolife.core.web.CurrentUserIdArgumentResolver;
 import top.aiolife.bankcard.api.BankCardCoverTemplateAdminController;
 import top.aiolife.bankcard.service.BankCardService;
 import top.aiolife.bankcard.service.BankCardCoverTemplateService;
-import top.aiolife.record.service.IFileService;
+import top.aiolife.record.service.IAttachmentService;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 import cn.dev33.satoken.SaManager;
@@ -40,7 +40,7 @@ class BankCardCoverAuthorizationTest {
     private BankCardOrderService orderService;
     private BankCardCoverTemplateService service;
     private StpInterface roles;
-    private IFileService files;
+    private IAttachmentService files;
     private final StpLogic previousLogic = StpUtil.getStpLogic();
     private final PreviousState previous = new PreviousState();
 
@@ -63,7 +63,7 @@ class BankCardCoverAuthorizationTest {
         orderService = mock(BankCardOrderService.class);
         service = mock(BankCardCoverTemplateService.class);
         when(service.list()).thenReturn(List.of());
-        files=mock(IFileService.class);
+        files=mock(IAttachmentService.class);
         mvc = MockMvcBuilders.standaloneSetup(new BankCardCoverTemplateAdminController(orderService,service,mock(BankCardService.class),files))
                 .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver())
                 .setControllerAdvice(new ExceptionHandle())

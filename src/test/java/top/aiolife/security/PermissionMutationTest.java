@@ -42,7 +42,7 @@ class PermissionMutationTest {
     @BeforeAll
     static void tables() {
         for (Class<?> type : List.of(TaskEntity.class, TaskColumnEntity.class, TaskDetailEntity.class,
-                ThoughtEntity.class, ThoughtRelaEventEntity.class, EventRecordEntity.class, FileEntity.class,
+                ThoughtEntity.class, ThoughtRelaEventEntity.class, EventRecordEntity.class, AttachmentEntity.class,
                 HonorRecordEntity.class, TimeTrackerCategoryEntity.class, UserDictDataEntity.class)) {
             TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), type.getName()), type);
         }
@@ -185,7 +185,7 @@ class PermissionMutationTest {
     void missingBusinessUpdate_neverBindsAttachments() {
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
-            var files = mock(IFileService.class);
+            var files = mock(IAttachmentService.class);
             var eventRecord = new EventRecordEntity(); eventRecord.setId(99L);
             eventRecord.setCreateUser(22L); eventRecord.setFileIds(List.of(FILE_KEY));
             var eventRecordMapper = mock(IEventRecordMapper.class);
@@ -210,15 +210,15 @@ class PermissionMutationTest {
     void successfulBusinessUpdate_stillBindsOwnAttachments() {
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(11L);
-            var files = mock(IFileService.class); var mapper = mock(IEventRecordMapper.class);
+            var files = mock(IAttachmentService.class); var mapper = mock(IEventRecordMapper.class);
             when(mapper.update(any(EventRecordEntity.class), anyWrapper())).thenReturn(1);
             // 附件同步会先查询当前用户拥有的文件，再执行绑定。
-            var ownedFile = new FileEntity(); ownedFile.setId("31"); ownedFile.setFileKey(FILE_KEY); ownedFile.setUserId(11L);
+            var ownedFile = new AttachmentEntity(); ownedFile.setId("31"); ownedFile.setFileKey(FILE_KEY); ownedFile.setUserId(11L);
             when(files.list(anyWrapper())).thenReturn(List.of(ownedFile));
             var input = new EventRecordEntity(); input.setId(7L); input.setFileIds(List.of(FILE_KEY));
             new EventRecordController(new EventRecordService(mapper, files))
                     .updateEventRecord("11", ApiRequestFixtures.request(input, EventRecordUpdateReq.class));
-            ArgumentCaptor<Wrapper<FileEntity>> query = ArgumentCaptor.captor();
+            ArgumentCaptor<Wrapper<AttachmentEntity>> query = ArgumentCaptor.captor();
             verify(files).list(query.capture());
             assertTrue(query.getValue().getSqlSegment().contains("file_key IN"));
             assertTrue(query.getValue().getSqlSegment().contains("user_id ="));

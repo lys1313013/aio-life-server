@@ -11,7 +11,7 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionTemplate;
 import top.aiolife.core.util.MinioUtil;
-import top.aiolife.record.mapper.IFileMapper;
+import top.aiolife.record.mapper.IAttachmentMapper;
 import top.aiolife.record.service.IMailService;
 import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.mapper.*;
@@ -33,8 +33,8 @@ class UserAvatarPersistenceTest {
         jdbc = new JdbcTemplate(source);
         top.aiolife.support.AttachmentTestFixtures.create(jdbc);
         jdbc.execute("""
-            CREATE TABLE sys_user(policy_version VARCHAR(32), policy_accepted_at TIMESTAMP, erasure_requested_at TIMESTAMP, erasure_retry_at TIMESTAMP, id BIGINT PRIMARY KEY, username VARCHAR(255), password VARCHAR(255), password_salt VARCHAR(255),
-              secondary_password VARCHAR(255), secondary_password_salt VARCHAR(255), nickname VARCHAR(255),
+            CREATE TABLE sys_user(policy_version VARCHAR(32), policy_accepted_at TIMESTAMP, erasure_requested_at TIMESTAMP, erasure_retry_at TIMESTAMP, id BIGINT PRIMARY KEY, username VARCHAR(255), password VARCHAR(255),
+              secondary_password VARCHAR(255), nickname VARCHAR(255),
               email VARCHAR(255), phone_country_code VARCHAR(32), phone VARCHAR(64),
               phone_verified_at TIMESTAMP, wechat_openid VARCHAR(255), wechat_unionid VARCHAR(255), role VARCHAR(255),
               introduction VARCHAR(255), is_deleted INT DEFAULT 0, last_active_at TIMESTAMP,
@@ -43,13 +43,13 @@ class UserAvatarPersistenceTest {
         jdbc.update("INSERT INTO sys_user(id,nickname) VALUES(42,'fixture')");
         jdbc.update("INSERT INTO attachment(id,file_key,user_id,create_user,biz_type,is_public) VALUES(1234567890123456789,?,42,42,'avatar',0)", ID);
         var config = new MybatisConfiguration(); config.setMapUnderscoreToCamelCase(true);
-        config.addMapper(UserMapper.class); config.addMapper(IFileMapper.class);
+        config.addMapper(UserMapper.class); config.addMapper(IAttachmentMapper.class);
         var factory = new MybatisSqlSessionFactoryBean(); factory.setDataSource(source); factory.setConfiguration(config);
         var session = new SqlSessionTemplate(factory.getObject());
         var minio = new MinioUtil(); ReflectionTestUtils.setField(minio,"serveBaseUrl","https://example.test/api");
         users = new UserServiceImpl(session.getMapper(UserMapper.class), mock(ApiKeyMapper.class), mock(LoginSessionService.class),
             mock(LoginLogMapper.class), mock(IMailService.class), mock(RedisUtil.class), mock(UserSecondaryLockMenuMapper.class),
-            mock(SecondaryLockMenuResolver.class), new UserAvatarFileService(session.getMapper(IFileMapper.class), minio,org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class)));
+            mock(SecondaryLockMenuResolver.class), new UserAvatarFileService(session.getMapper(IAttachmentMapper.class), minio,org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class)));
         tx = new TransactionTemplate(new DataSourceTransactionManager(source));
     }
     private UserEntity update() { var e = new UserEntity(); e.setId(42L); return e; }

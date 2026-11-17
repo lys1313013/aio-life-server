@@ -14,7 +14,7 @@ import top.aiolife.core.query.PaginationRequest;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.record.mapper.IEventRecordMapper;
 import top.aiolife.record.pojo.entity.EventRecordEntity;
-import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 
 /** 活动记录的持久化、所有权校验和附件事务。 */
 @Service
@@ -24,7 +24,7 @@ public class EventRecordService {
     private static final String BIZ_TYPE = "event_record";
 
     private final IEventRecordMapper eventRecordMapper;
-    private final IFileService fileService;
+    private final IAttachmentService fileService;
 
     public PageResp<EventRecordEntity> list(long userId, long page, long pageSize) {
         try {
@@ -75,10 +75,10 @@ public class EventRecordService {
         boolean deleted=eventRecordMapper.delete(new LambdaQueryWrapper<EventRecordEntity>()
                 .eq(EventRecordEntity::getId, id)
                 .eq(EventRecordEntity::getUserId, userId)) > 0;
-        if(deleted) fileService.update(new LambdaUpdateWrapper<FileEntity>().eq(FileEntity::getUserId,userId)
-            .eq(FileEntity::getBizType,BIZ_TYPE).eq(FileEntity::getBizId,id)
-            .set(FileEntity::getIsDeleted,1).set(FileEntity::getIsPublic,0)
-            .set(FileEntity::getUpdateUser,userId).set(FileEntity::getUpdateTime,LocalDateTime.now()));
+        if(deleted) fileService.update(new LambdaUpdateWrapper<AttachmentEntity>().eq(AttachmentEntity::getUserId,userId)
+            .eq(AttachmentEntity::getBizType,BIZ_TYPE).eq(AttachmentEntity::getBizId,id)
+            .set(AttachmentEntity::getIsDeleted,1).set(AttachmentEntity::getIsPublic,0)
+            .set(AttachmentEntity::getUpdateUser,userId).set(AttachmentEntity::getUpdateTime,LocalDateTime.now()));
         return deleted;
     }
 
@@ -87,21 +87,21 @@ public class EventRecordService {
         if (entity.getFileIds() == null) return;
         List<String> fileIds = entity.getFileIds().stream().distinct().toList();
         if (!fileIds.isEmpty()) {
-            List<FileEntity> ownedFiles = fileService.list(new LambdaQueryWrapper<FileEntity>()
-                    .in(FileEntity::getFileKey, fileIds)
-                    .eq(FileEntity::getUserId, userId));
+            List<AttachmentEntity> ownedFiles = fileService.list(new LambdaQueryWrapper<AttachmentEntity>()
+                    .in(AttachmentEntity::getFileKey, fileIds)
+                    .eq(AttachmentEntity::getUserId, userId));
             if (ownedFiles.size() != fileIds.size()) {
                 throw new IllegalArgumentException("附件不存在或无权操作");
             }
         }
-        var removedFiles = new LambdaUpdateWrapper<FileEntity>()
-                .eq(FileEntity::getBizType, BIZ_TYPE)
-                .eq(FileEntity::getBizId, entity.getId())
-                .eq(FileEntity::getUserId, userId)
-                .notIn(!fileIds.isEmpty(), FileEntity::getFileKey, fileIds)
-                .set(FileEntity::getBizId, null)
-                .set(FileEntity::getUpdateUser, userId)
-                .set(FileEntity::getUpdateTime, LocalDateTime.now());
+        var removedFiles = new LambdaUpdateWrapper<AttachmentEntity>()
+                .eq(AttachmentEntity::getBizType, BIZ_TYPE)
+                .eq(AttachmentEntity::getBizId, entity.getId())
+                .eq(AttachmentEntity::getUserId, userId)
+                .notIn(!fileIds.isEmpty(), AttachmentEntity::getFileKey, fileIds)
+                .set(AttachmentEntity::getBizId, null)
+                .set(AttachmentEntity::getUpdateUser, userId)
+                .set(AttachmentEntity::getUpdateTime, LocalDateTime.now());
         fileService.update(removedFiles);
         fileService.bindBizId(fileIds, BIZ_TYPE, entity.getId());
     }

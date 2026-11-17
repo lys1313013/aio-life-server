@@ -58,10 +58,10 @@ import top.aiolife.record.api.MilestoneController;
 import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.mapper.IDeviceMapper;
 import top.aiolife.record.mapper.IExpenseMapper;
-import top.aiolife.record.mapper.IFileMapper;
+import top.aiolife.record.mapper.IAttachmentMapper;
 import top.aiolife.record.mapper.RecordImageMapper;
 import top.aiolife.record.service.RecordImageService;
-import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.enums.AttachmentBizType;
 import top.aiolife.record.mapper.IIncomeMapper;
 import top.aiolife.record.mapper.IMemoMapper;
 import top.aiolife.record.mapper.IMilestoneMapper;
@@ -91,7 +91,7 @@ import top.aiolife.record.service.UserDictDataService;
 import top.aiolife.record.service.VideoCoverDownloader;
 import top.aiolife.record.service.VideoCoverService;
 import top.aiolife.record.service.VideoCoverStorage;
-import top.aiolife.record.service.impl.FileServiceImpl;
+import top.aiolife.record.service.impl.AttachmentServiceImpl;
 import top.aiolife.record.service.impl.MilestoneServicesImpl;
 import top.aiolife.record.service.impl.TimeTrackerCategoryServiceImpl;
 import top.aiolife.record.service.impl.WereadServiceImpl;
@@ -150,7 +150,7 @@ class PostgresqlRegressionIntegrationTest {
                 BankCardTagMapper.class, BankCardTagRelMapper.class, BankCardCoverTemplateMapper.class,
                 UserBindMapper.class, UserMapper.class, IDeviceMapper.class, IIncomeMapper.class, IExpenseMapper.class,
                 IMemoMapper.class, IMilestoneMapper.class, ITaskMapper.class,
-                top.aiolife.system.mapper.StorageObjectMapper.class, IBVideoMapper.class, IFileMapper.class, RecordImageMapper.class, ImageImportTaskMapper.class, ITimeTrackerCategoryMapper.class,
+                top.aiolife.system.mapper.StorageObjectMapper.class, IBVideoMapper.class, IAttachmentMapper.class, RecordImageMapper.class, ImageImportTaskMapper.class, ITimeTrackerCategoryMapper.class,
                 ScheduledJobMapper.class)) configuration.addMapper(mapper);
         var factory = new MybatisSqlSessionFactoryBean();
         factory.setDataSource(source); factory.setConfiguration(configuration);
@@ -201,13 +201,13 @@ class PostgresqlRegressionIntegrationTest {
     }
 
     private RecordImageService images() {
-        return new RecordImageService(mapper(IFileMapper.class), mapper(RecordImageMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class));
+        return new RecordImageService(mapper(IAttachmentMapper.class), mapper(RecordImageMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class));
     }
 
     @Test void 四类业务图片从文件关联读取替换和清除() {
-        for (var type : List.of(FileBizType.DEVICE, FileBizType.MOVIE, FileBizType.READ_RECORD, FileBizType.WARDROBE_ITEM)) {
+        for (var type : List.of(AttachmentBizType.DEVICE, AttachmentBizType.MOVIE, AttachmentBizType.READ_RECORD, AttachmentBizType.WARDROBE_ITEM)) {
             String table = switch(type) { case DEVICE -> "device"; case MOVIE -> "movie"; case READ_RECORD -> "read_record"; case WARDROBE_ITEM -> "wardrobe_item"; default -> throw new IllegalStateException(); };
-            String columns = type == FileBizType.MOVIE || type == FileBizType.READ_RECORD
+            String columns = type == AttachmentBizType.MOVIE || type == AttachmentBizType.READ_RECORD
                     ? "title,type" : "name";
             String values = columns.equals("name") ? "'测试图片'" : "'测试图片',1";
             jdbc.update("INSERT INTO " + table + "(id,user_id," + columns + ") VALUES(811,42," + values + ")");
@@ -218,11 +218,11 @@ class PostgresqlRegressionIntegrationTest {
             assertEquals(testId("first-" + table), images.find(42, type, 811));
             images.replace(42, type, 811, testId("second-" + table));
             assertEquals(testId("second-" + table), images.find(42, type, 811));
-            assertNull(mapper(IFileMapper.class).selectWithObjectByKey(testId("first-" + table)).getBizId());
+            assertNull(mapper(IAttachmentMapper.class).selectWithObjectByKey(testId("first-" + table)).getBizId());
             assertNull(images.find(43, type, 811));
             images.replace(42, type, 811, "");
             assertNull(images.find(42, type, 811));
-            assertNotNull(mapper(IFileMapper.class).selectWithObjectByKey(testId("second-" + table)));
+            assertNotNull(mapper(IAttachmentMapper.class).selectWithObjectByKey(testId("second-" + table)));
         }
     }
 
@@ -235,22 +235,22 @@ class PostgresqlRegressionIntegrationTest {
         jdbc.update("UPDATE attachment SET is_deleted=1 WHERE file_key=?",testId("100004"));
         var images = images();
         for (String id : List.of(testId("100006"), testId("100002"), testId("100003"), testId("100004"))) {
-            assertThrows(IllegalArgumentException.class, () -> images.replace(42, FileBizType.DEVICE, 811, id));
-            assertEquals(testId("100001"), images.find(42, FileBizType.DEVICE, 811));
+            assertThrows(IllegalArgumentException.class, () -> images.replace(42, AttachmentBizType.DEVICE, 811, id));
+            assertEquals(testId("100001"), images.find(42, AttachmentBizType.DEVICE, 811));
         }
-        assertThrows(IllegalArgumentException.class, () -> images.replace(42, FileBizType.DEVICE, 812, testId("100001")));
+        assertThrows(IllegalArgumentException.class, () -> images.replace(42, AttachmentBizType.DEVICE, 812, testId("100001")));
     }
 
     @Test void 同图用于多件物品时复制附件归属而不迁走原图() {
         jdbc.update("INSERT INTO device(id,user_id,name) VALUES(811,42,'物品一'),(812,42,'物品二')");
         file(testId("100005"), "device_cover", 42, 811);
         var images = images();
-        String copied = images.replace(42, FileBizType.DEVICE, 812, testId("100005"));
+        String copied = images.replace(42, AttachmentBizType.DEVICE, 812, testId("100005"));
         assertNotEquals(testId("100005"), copied);
-        assertEquals(testId("100005"), images.find(42, FileBizType.DEVICE, 811));
-        assertEquals(copied, images.find(42, FileBizType.DEVICE, 812));
-        assertEquals(mapper(IFileMapper.class).selectWithObjectByKey(testId("100005")).getFileName(),
-                mapper(IFileMapper.class).selectWithObjectByKey(copied).getFileName());
+        assertEquals(testId("100005"), images.find(42, AttachmentBizType.DEVICE, 811));
+        assertEquals(copied, images.find(42, AttachmentBizType.DEVICE, 812));
+        assertEquals(mapper(IAttachmentMapper.class).selectWithObjectByKey(testId("100005")).getFileName(),
+                mapper(IAttachmentMapper.class).selectWithObjectByKey(copied).getFileName());
     }
 
     private LocalDateTime updated(String table, long id) {
@@ -278,7 +278,7 @@ class PostgresqlRegressionIntegrationTest {
 
     @Test void 收入按年份筛选包含年初年末并保留其他筛选条件() {
         jdbc.update("""
-                INSERT INTO income(id,user_id,amt,inc_date,inc_type_id,is_deleted) VALUES
+                INSERT INTO income(id,user_id,gross_amount,inc_date,inc_type_id,is_deleted) VALUES
                 (1,42,100,'2025-12-31',1,0),(2,42,100,'2026-01-01',1,0),
                 (3,42,100,'2026-12-31',1,0),(4,42,100,'2027-01-01',1,0),
                 (5,43,100,'2026-06-01',1,0),(6,42,100,'2026-06-01',1,1),
@@ -302,7 +302,7 @@ class PostgresqlRegressionIntegrationTest {
 
     @Test void 支出按年份筛选包含年末最后一秒且排除次年零点() {
         jdbc.update("""
-                INSERT INTO expense(id,user_id,amt,exp_time,exp_type_id,is_deleted) VALUES
+                INSERT INTO expense(id,user_id,bookkeeping_amount,exp_time,exp_type_id,is_deleted) VALUES
                 (1,42,100,'2025-12-31 23:59:59',1,0),(2,42,100,'2026-01-01 00:00:00',1,0),
                 (3,42,100,'2026-12-31 23:59:59',1,0),(4,42,100,'2027-01-01 00:00:00',1,0),
                 (5,43,100,'2026-06-01 00:00:00',1,0),(6,42,100,'2026-06-01 00:00:00',1,1),
@@ -326,43 +326,44 @@ class PostgresqlRegressionIntegrationTest {
 
     @Test void 修改收入维护审计字段且不修改创建信息和其他用户记录() {
         jdbc.update("""
-                INSERT INTO income(id,user_id,amt,inc_date,inc_type_id,create_user,create_time,update_user,update_time)
+                INSERT INTO income(id,user_id,gross_amount,inc_date,inc_type_id,create_user,create_time,update_user,update_time)
                 VALUES (1,42,100,'2026-01-01',1,99,?,7,?),(2,43,100,'2026-01-01',1,99,?,7,?)
                 """, OLD_TIME, OLD_TIME, OLD_TIME, OLD_TIME);
         var controller = incomeController();
-        var change = new IncomeUpdateReq(); change.setAmt(new BigDecimal("200"));
+        var change = new IncomeUpdateReq(); change.setGrossAmount(new BigDecimal("200"));
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             assertTrue(controller.update("42", "1", change).getData());
             assertFalse(controller.update("42", "2", change).getData());
         }
         var saved = mapper(IIncomeMapper.class).selectById(1);
-        assertEquals(new BigDecimal("200.00"), saved.getAmt());
+        assertEquals(new BigDecimal("200.00"), saved.getGrossAmount());
         assertTrue(saved.getUpdateTime().isAfter(OLD_TIME)); assertEquals(42L, saved.getUpdateUser());
         assertEquals(OLD_TIME, saved.getCreateTime()); assertEquals(99L, saved.getCreateUser());
         var foreign = mapper(IIncomeMapper.class).selectById(2);
-        assertEquals(new BigDecimal("100.00"), foreign.getAmt());
+        assertEquals(new BigDecimal("100.00"), foreign.getGrossAmount());
         assertEquals(OLD_TIME, foreign.getUpdateTime()); assertEquals(7L, foreign.getUpdateUser());
     }
 
     @Test void 修改支出维护审计字段且不修改创建信息和其他用户记录() {
         jdbc.update("""
-                INSERT INTO expense(id,user_id,amt,exp_time,exp_type_id,create_user,create_time,update_user,update_time)
+                INSERT INTO expense(id,user_id,bookkeeping_amount,exp_time,exp_type_id,create_user,create_time,update_user,update_time)
                 VALUES (1,42,100,'2026-01-01 00:00:00',1,99,?,7,?),(2,43,100,'2026-01-01 00:00:00',1,99,?,7,?)
                 """, OLD_TIME, OLD_TIME, OLD_TIME, OLD_TIME);
         var controller = expenseController();
-        var change = new ExpenseUpdateReq(); change.setId(1L); change.setAmt(new BigDecimal("200"));
+        var change = new ExpenseUpdateReq(); change.setId(1L); change.setBookkeepingAmount(new BigDecimal("200"));
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             assertEquals(0, controller.update("42", change).getCode());
             change.setId(2L); controller.update("42", change);
         }
         var saved = mapper(IExpenseMapper.class).selectById(1);
-        assertEquals(new BigDecimal("200.00"), saved.getAmt()); assertEquals(saved.getAmt(), saved.getTransactionAmt());
+        assertEquals(new BigDecimal("200.00"), saved.getBookkeepingAmount());
+        assertNull(saved.getTransactionAmount());
         assertTrue(saved.getUpdateTime().isAfter(OLD_TIME)); assertEquals(42L, saved.getUpdateUser());
         assertEquals(OLD_TIME, saved.getCreateTime()); assertEquals(99L, saved.getCreateUser());
         var foreign = mapper(IExpenseMapper.class).selectById(2);
-        assertEquals(new BigDecimal("100.00"), foreign.getAmt());
+        assertEquals(new BigDecimal("100.00"), foreign.getBookkeepingAmount());
         assertEquals(OLD_TIME, foreign.getUpdateTime()); assertEquals(7L, foreign.getUpdateUser());
     }
 
@@ -370,7 +371,7 @@ class PostgresqlRegressionIntegrationTest {
         var files = mapper(BankCardFileMapper.class);
         var service = new BankCardService(mapper(BankCardMapper.class), mock(BankCardCrypto.class),
                 mock(BankCardDictionaryGuard.class), mapper(BankCardDictionaryMapper.class),
-                mapper(BankCardTagMapper.class), mapper(BankCardTagRelMapper.class), files,mapper(IFileMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class),
+                mapper(BankCardTagMapper.class), mapper(BankCardTagRelMapper.class), files,mapper(IAttachmentMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class),
                 mapper(BankCardCoverTemplateMapper.class), mock(BankCardCoverTemplateService.class));
         var request = new BankCardReq();
         request.setCustomBankName("Fixture Bank"); request.setCardType("debit"); request.setStatus("normal");
@@ -542,18 +543,18 @@ class PostgresqlRegressionIntegrationTest {
         jdbc.update("INSERT INTO honor_record(id,user_id,title,honor_date) VALUES(2,42,'附件绑定目标','2026-11-16')");
         String own = testId("1"), other = testId("2");
         file(own, "honor_record", 42, 1); file(other, "honor_record", 43, 1);
-        var service = new FileServiceImpl(mock(MinioUtil.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class),mapper(top.aiolife.system.mapper.StorageObjectMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.ExternalResourceService.class));
-        ReflectionTestUtils.setField(service, "baseMapper", mapper(IFileMapper.class));
+        var service = new AttachmentServiceImpl(mock(MinioUtil.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class),mapper(top.aiolife.system.mapper.StorageObjectMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.ExternalResourceService.class));
+        ReflectionTestUtils.setField(service, "baseMapper", mapper(IAttachmentMapper.class));
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             jdbc.update("UPDATE attachment SET biz_id=NULL WHERE file_key=?",own);
             service.bindBizId(List.of(own), "honor_record", 2L);
             assertThrows(IllegalArgumentException.class,()->service.bindBizId(List.of(other),"honor_record",2L));
         }
-        assertEquals(42L, mapper(IFileMapper.class).selectWithObjectByKey(own).getUpdateUser());
-        assertTrue(mapper(IFileMapper.class).selectWithObjectByKey(own).getUpdateTime().isAfter(OLD_TIME));
-        assertEquals(1L, mapper(IFileMapper.class).selectWithObjectByKey(other).getBizId());
-        assertEquals(OLD_TIME, mapper(IFileMapper.class).selectWithObjectByKey(other).getUpdateTime());
+        assertEquals(42L, mapper(IAttachmentMapper.class).selectWithObjectByKey(own).getUpdateUser());
+        assertTrue(mapper(IAttachmentMapper.class).selectWithObjectByKey(own).getUpdateTime().isAfter(OLD_TIME));
+        assertEquals(1L, mapper(IAttachmentMapper.class).selectWithObjectByKey(other).getBizId());
+        assertEquals(OLD_TIME, mapper(IAttachmentMapper.class).selectWithObjectByKey(other).getUpdateTime());
     }
 
     @Test void 视频封面任务字段保持审计归属且无业务版本字段() {
@@ -599,7 +600,7 @@ class PostgresqlRegressionIntegrationTest {
                  AND t.table_name = c.table_name
                  AND t.table_type = 'BASE TABLE'
                 WHERE c.table_schema = current_schema()
-                  AND c.table_name NOT IN ('flyway_schema_history', 'migration_archive')
+                  AND c.table_name NOT IN ('flyway_schema_history')
                   AND c.column_name IN ('create_time', 'update_time')
                   AND (c.is_nullable = 'YES' OR c.column_default IS NULL)
                 """);

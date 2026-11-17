@@ -1,5 +1,6 @@
 package top.aiolife.sso.pojo.req;
 
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
@@ -14,6 +15,7 @@ public class ResetPasswordReq {
     /**
      * 邮箱
      */
+    @Size(max = 254)
     private String email;
 
     /**

@@ -99,7 +99,7 @@ class WechatAccountIntegrationTest {
         assertThrows(ResponseStatusException.class, () -> service.initializePassword(user.getId(), "other", "new-password"));
         service.initializePassword(user.getId(), identity.openid(), "new-password");
         UserEntity saved = users.selectById(user.getId());
-        assertEquals(PasswordUtil.encryptPassword("new-password", saved.getPasswordSalt()), saved.getPassword());
+        assertTrue(PasswordUtil.matches("new-password", saved.getPassword()));
         assertThrows(ResponseStatusException.class, () -> service.initializePassword(user.getId(), identity.openid(), "replacement"));
     }
 
@@ -112,8 +112,7 @@ class WechatAccountIntegrationTest {
         user.setUsername("test_" + UUID.randomUUID());
         user.setNickname("原账号昵称");
         user.setEmail("test@example.com");
-        user.setPasswordSalt("salt");
-        user.setPassword(PasswordUtil.encryptPassword("old-password", "salt"));
+        user.setPassword(PasswordUtil.hashPassword("old-password"));
         users.insert(user);
         return user;
     }

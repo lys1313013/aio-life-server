@@ -6,8 +6,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.test.util.ReflectionTestUtils;
 import top.aiolife.core.util.MinioUtil;
-import top.aiolife.record.mapper.IFileMapper;
-import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.mapper.IAttachmentMapper;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.sso.pojo.req.UpdateUserReq;
 import top.aiolife.sso.pojo.req.UserUpdateReq;
 
@@ -18,12 +18,12 @@ import static org.mockito.Mockito.*;
 
 class UserAvatarFileServiceTest {
     static final String ID = "a1b2c3d4-1234-4abc-8def-1234567890ab";
-    private final IFileMapper files = mock(IFileMapper.class);
+    private final IAttachmentMapper files = mock(IAttachmentMapper.class);
     private final MinioUtil minio = new MinioUtil();
     private final UserAvatarFileService avatars = new UserAvatarFileService(files, minio,org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class));
 
-    private FileEntity image() {
-        var f = new FileEntity(); f.setId("1234567890123456789"); f.setFileKey(ID); f.setUserId(42L); f.setCreateUser(42L); f.setStorageObjectId(11L); f.setHashValue("a".repeat(64));
+    private AttachmentEntity image() {
+        var f = new AttachmentEntity(); f.setId("1234567890123456789"); f.setFileKey(ID); f.setUserId(42L); f.setCreateUser(42L); f.setStorageObjectId(11L); f.setHashValue("a".repeat(64));
         f.setIsDeleted(0); f.setIsPublic(1); f.setBizType("avatar"); f.setFileType("image/png");
         return f;
     }

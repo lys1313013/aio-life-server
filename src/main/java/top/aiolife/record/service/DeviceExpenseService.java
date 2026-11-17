@@ -22,7 +22,7 @@ import top.aiolife.record.mapper.IDeviceMapper;
 import top.aiolife.record.mapper.IExpenseMapper;
 import top.aiolife.record.pojo.entity.DeviceExpenseEntity;
 import top.aiolife.record.pojo.entity.DeviceEntity;
-import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.enums.AttachmentBizType;
 import top.aiolife.record.pojo.entity.ExpenseEntity;
 import top.aiolife.record.pojo.req.DeviceCreateReq;
 import top.aiolife.record.pojo.req.ExpenseCreateReq;
@@ -61,8 +61,8 @@ public class DeviceExpenseService {
             row.setUpdateUser(userId);
             row.setCreateTime(LocalDateTime.now());
             row.setUpdateTime(row.getCreateTime());
-            if (row.getTransactionAmt() == null) row.setTransactionAmt(row.getAmt());
-            if (row.getAmt() == null) row.setAmt(row.getTransactionAmt());
+            if (row.getTransactionAmount() == null) row.setTransactionAmount(row.getBookkeepingAmount());
+            if (row.getBookkeepingAmount() == null) row.setBookkeepingAmount(row.getTransactionAmount());
             return row;
         }).toList();
         if (!expenseService.saveBatch(rows)) {
@@ -108,7 +108,7 @@ public class DeviceExpenseService {
         var defaults = new DeviceCreateReq();
         defaults.setName(shortText(expense.getExpDesc()));
         if (defaults.getName() == null) defaults.setName(shortText(expense.getRemark()));
-        defaults.setPurchasePrice(expense.getAmt());
+        defaults.setPurchasePrice(expense.getBookkeepingAmount());
         defaults.setPurchaseDate(expense.getExpTime() == null ? null : expense.getExpTime().toLocalDate());
         defaults.setPurchasePlace(shortText(expense.getCounterparty()));
         defaults.setRemark(shortText(expense.getRemark()));
@@ -117,7 +117,7 @@ public class DeviceExpenseService {
         DeviceVO device = found.isEmpty() ? null : RecordApiConvertor.INSTANCE.toDeviceVO(
                 devices.selectOne(new LambdaQueryWrapper<DeviceEntity>()
                         .eq(DeviceEntity::getId, found.getFirst().getDeviceId()).eq(DeviceEntity::getUserId, userId)));
-        if (device != null) device.setFileId(images.find(userId, FileBizType.DEVICE, device.getId()));
+        if (device != null) device.setFileId(images.find(userId, AttachmentBizType.DEVICE, device.getId()));
         return new ExpenseDeviceContextVO(device, defaults);
     }
 
@@ -140,7 +140,7 @@ public class DeviceExpenseService {
         var device = devices.lockOwned(userId, deviceId);
         if (device == null) throw missing("设备");
         saveLink(userId, expenseId, deviceId);
-        device.setFileId(images.find(userId, FileBizType.DEVICE, deviceId));
+        device.setFileId(images.find(userId, AttachmentBizType.DEVICE, deviceId));
         return RecordApiConvertor.INSTANCE.toDeviceVO(device);
     }
 
@@ -163,7 +163,7 @@ public class DeviceExpenseService {
         device.setUserId(userId);
         device.fillCreateCommonField(userId);
         devices.insert(device);
-        device.setFileId(images.replace(userId, FileBizType.DEVICE, device.getId(), request.getFileId()));
+        device.setFileId(images.replace(userId, AttachmentBizType.DEVICE, device.getId(), request.getFileId()));
         saveLink(userId, expenseId, device.getId());
         return RecordApiConvertor.INSTANCE.toDeviceVO(device);
     }
@@ -189,7 +189,7 @@ public class DeviceExpenseService {
     public boolean deleteDevice(long userId, long deviceId) {
         if (devices.lockOwned(userId, deviceId) == null) return false;
         clearLinks(userId, null, deviceId);
-        images.delete(userId,FileBizType.DEVICE,deviceId);
+        images.delete(userId,AttachmentBizType.DEVICE,deviceId);
         return devices.delete(new LambdaQueryWrapper<DeviceEntity>()
                 .eq(DeviceEntity::getUserId, userId).eq(DeviceEntity::getId, deviceId)) > 0;
     }

@@ -43,7 +43,7 @@ class SecondaryPasswordTest {
 
     @Test
     void 设置和重置拒绝少于四位非数字和空值且不消耗验证码() {
-        for (String invalid : new String[]{null, "", "123", "1234a", " 1234", "１２３４", "1234\n"}) {
+        for (String invalid : new String[]{null, "", "123", "1234a", " 1234", "１２３４", "1234\n", "0".repeat(73)}) {
             assertThrows(IllegalArgumentException.class, () -> service.setSecondaryPassword(1L, invalid, null));
             assertThrows(IllegalArgumentException.class, () -> service.resetSecondaryPassword(1L, "123456", invalid));
         }
@@ -52,19 +52,18 @@ class SecondaryPasswordTest {
     }
 
     @Test
-    void 数字密码保留前导零且不限制固定长度() {
-        for (String value : new String[]{"0012", "0".repeat(300)}) {
+    void 数字密码保留前导零且支持到72位() {
+        for (String value : new String[]{"0012", "0".repeat(72)}) {
             user.setSecondaryPassword(null);
             service.setSecondaryPassword(1L, value, null);
-            assertEquals(PasswordUtil.encryptPassword(value, user.getSecondaryPasswordSalt()), user.getSecondaryPassword());
+            assertTrue(PasswordUtil.matches(value, user.getSecondaryPassword()));
             assertDoesNotThrow(() -> service.verifySecondaryPassword(1L, value, "/finance"));
         }
     }
 
     @Test
     void 字母旧密码不能解锁修改或保存菜单锁() {
-        user.setSecondaryPasswordSalt("fixture-salt");
-        user.setSecondaryPassword(PasswordUtil.encryptPassword("legacy-password", "fixture-salt"));
+        user.setSecondaryPassword(PasswordUtil.hashPassword("legacy-password"));
         for (String invalid : new String[]{"legacy-password", "123", "１２３４", "1234a"}) {
             assertThrows(IllegalArgumentException.class, () -> service.verifySecondaryPassword(1L, invalid, "/finance"));
             assertThrows(IllegalArgumentException.class, () -> service.setSecondaryPassword(1L, "0012", invalid));
@@ -76,15 +75,14 @@ class SecondaryPasswordTest {
 
     @Test
     void 修改数字密码仍受失败次数限制() {
-        user.setSecondaryPasswordSalt("fixture-salt");
-        user.setSecondaryPassword(PasswordUtil.encryptPassword("0011", "fixture-salt"));
+        user.setSecondaryPassword(PasswordUtil.hashPassword("0011"));
         assertThrows(RuntimeException.class, () -> service.setSecondaryPassword(1L, "0012", "9999"));
         verify(mapper, never()).updateById(any(UserEntity.class));
         when(redis.get(SecondaryLockInterceptor.failCountKey(1L))).thenReturn("5");
         assertThrows(RuntimeException.class, () -> service.setSecondaryPassword(1L, "0012", "0011"));
         when(redis.get(SecondaryLockInterceptor.failCountKey(1L))).thenReturn(null);
         service.setSecondaryPassword(1L, "0012", "0011");
-        assertEquals(PasswordUtil.encryptPassword("0012", user.getSecondaryPasswordSalt()), user.getSecondaryPassword());
+        assertTrue(PasswordUtil.matches("0012", user.getSecondaryPassword()));
     }
 
     @Test
@@ -93,7 +91,7 @@ class SecondaryPasswordTest {
         assertThrows(RuntimeException.class, () -> service.resetSecondaryPassword(1L, "bad", "0012"));
         verify(mapper, never()).updateById(any(UserEntity.class));
         service.resetSecondaryPassword(1L, "123456", "0012");
-        assertEquals(PasswordUtil.encryptPassword("0012", user.getSecondaryPasswordSalt()), user.getSecondaryPassword());
+        assertTrue(PasswordUtil.matches("0012", user.getSecondaryPassword()));
         verify(redis).delete("secondary:reset:code:fixture@example.com");
     }
 }

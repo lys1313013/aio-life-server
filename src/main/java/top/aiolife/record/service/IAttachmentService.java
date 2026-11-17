@@ -2,16 +2,16 @@ package top.aiolife.record.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.springframework.web.multipart.MultipartFile;
-import top.aiolife.record.enums.FileBizType;
-import top.aiolife.record.pojo.entity.FileEntity;
-import top.aiolife.record.pojo.vo.FileVO;
+import top.aiolife.record.enums.AttachmentBizType;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
+import top.aiolife.record.pojo.vo.AttachmentVO;
 
 import java.util.List;
 
-public interface IFileService extends IService<FileEntity> {
+public interface IAttachmentService extends IService<AttachmentEntity> {
 
     /** 仅按对外 UUIDv4 标识定位附件；内部主键不作为业务接口参数。 */
-    FileEntity getByKey(String fileKey);
+    AttachmentEntity getByKey(String fileKey);
 
     /**
      * 上传并保存文件记录
@@ -20,7 +20,7 @@ public interface IFileService extends IService<FileEntity> {
      * @param bizType    业务类型
      * @return 文件信息
      */
-    FileVO upload(MultipartFile file, FileBizType bizType);
+    AttachmentVO upload(MultipartFile file, AttachmentBizType bizType);
 
     /**
      * 绑定业务记录 ID
@@ -38,7 +38,7 @@ public interface IFileService extends IService<FileEntity> {
      * @param bizId   业务ID
      * @return 文件列表VO
      */
-    List<FileVO> getByBiz(String bizType, Long bizId);
+    List<AttachmentVO> getByBiz(String bizType, Long bizId);
     
     /**
      * 从白名单豆瓣 CDN 的 HTTPS URL 下载阅读/观影封面，不跟随重定向。
@@ -48,10 +48,10 @@ public interface IFileService extends IService<FileEntity> {
      * @param bizType  业务类型
      * @return 文件信息
      */
-    FileVO uploadFromUrl(String imageUrl, FileBizType bizType);
+    AttachmentVO uploadFromUrl(String imageUrl, AttachmentBizType bizType);
 
     /**
      * 将 Entity 转换为 VO
      */
-    FileVO toVO(FileEntity entity);
+    AttachmentVO toVO(AttachmentEntity entity);
 }

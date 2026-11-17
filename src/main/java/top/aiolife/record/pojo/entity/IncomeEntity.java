@@ -26,7 +26,10 @@ import top.aiolife.core.pojo.entity.IdentityEntity;
 public class IncomeEntity extends IdentityEntity {
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
-    private BigDecimal amt;
+    /**
+     * 收入金额，未减税额
+     */
+    private BigDecimal grossAmount;
     /**
      * 收入时间
      */
@@ -46,7 +49,10 @@ public class IncomeEntity extends IdentityEntity {
      * 收入类型ID
      */
     private Long incTypeId;
-    private BigDecimal tax;
+    /**
+     * 收入税额；NULL表示未记录，0表示零税额
+     */
+    private BigDecimal taxAmount;
 
     @Override
     protected Object identityKey() {

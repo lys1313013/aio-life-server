@@ -26,7 +26,7 @@ import top.aiolife.bankcard.service.*;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.support.CurrentSchema;
 import top.aiolife.record.mapper.IBVideoMapper;
-import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.record.service.FilePreviewGuard;
 import top.aiolife.sso.service.AccountStatusGuard;
 import top.aiolife.sso.service.SecondaryLockGuard;
@@ -65,7 +65,7 @@ class BankCardServiceTest {
         crypto = new BankCardCrypto(Base64.getEncoder().encodeToString(new byte[32]));
         var config = new MybatisConfiguration();
         config.addMappers("top.aiolife.bankcard.mapper");
-        config.addMapper(top.aiolife.record.mapper.IFileMapper.class);
+        config.addMapper(top.aiolife.record.mapper.IAttachmentMapper.class);
         var factory = new MybatisSqlSessionFactoryBean();
         factory.setDataSource(ds);
         factory.setConfiguration(config);
@@ -80,10 +80,10 @@ class BankCardServiceTest {
         guard = new BankCardDictionaryGuard(dictionaries, cards, covers);
         var minio = new MinioUtil();
         ReflectionTestUtils.setField(minio, "serveBaseUrl", "https://example.test/api");
-        templateService = new BankCardCoverTemplateService(covers, guard, dictionaries, cards, files, minio,session.getMapper(top.aiolife.record.mapper.IFileMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class));
+        templateService = new BankCardCoverTemplateService(covers, guard, dictionaries, cards, files, minio,session.getMapper(top.aiolife.record.mapper.IAttachmentMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class));
         service = new BankCardService(cards, crypto, guard, dictionaries,
                 session.getMapper(BankCardTagMapper.class), session.getMapper(BankCardTagRelMapper.class),
-                files,session.getMapper(top.aiolife.record.mapper.IFileMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class), covers, templateService);
+                files,session.getMapper(top.aiolife.record.mapper.IAttachmentMapper.class),org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class), covers, templateService);
     }
     BankCardReq request() {
         var req=new BankCardReq(); req.setBankId(20L);req.setCardType("debit");req.setStatus("normal");req.setCardNo(NUMBER);return req;
@@ -304,7 +304,7 @@ class BankCardServiceTest {
         var lock=Mockito.mock(SecondaryLockGuard.class);
         var preview=new FilePreviewGuard(lock,fileMapper,
                 Mockito.mock(AccountStatusGuard.class), Mockito.mock(IBVideoMapper.class), org.mockito.Mockito.mock(top.aiolife.record.mapper.AttachmentBusinessMapper.class));
-        var file=new FileEntity();
+        var file=new AttachmentEntity();
         file.setBizType("bank_card_face");file.setUserId(1L);file.setCreateUser(1L);file.setIsPublic(1);
         assertEquals(FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));
         assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,2L));
@@ -401,7 +401,7 @@ class BankCardServiceTest {
         var preview=Mockito.spy(new FilePreviewGuard(menu,fileMapper,
                 Mockito.mock(AccountStatusGuard.class), Mockito.mock(IBVideoMapper.class), org.mockito.Mockito.mock(top.aiolife.record.mapper.AttachmentBusinessMapper.class)));
         Mockito.doReturn(false).when(preview).isAdmin(ArgumentMatchers.anyLong());
-        var file=new FileEntity();file.setBizType(BankCardCoverTemplateService.FILE_TYPE);file.setIsPublic(1);
+        var file=new AttachmentEntity();file.setBizType(BankCardCoverTemplateService.FILE_TYPE);file.setIsPublic(1);
         assertEquals(FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));
         assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,2L));
         file.setBizId(id);

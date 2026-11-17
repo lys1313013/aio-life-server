@@ -45,7 +45,7 @@ public class AccountClosureService {
         var user = users.selectForAuthUpdate(userId);
         if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "账号不存在或已注销");
         boolean passwordMatches = StringUtils.hasText(request.getPassword()) && StringUtils.hasText(user.getPassword())
-                && user.getPassword().equals(PasswordUtil.encryptPassword(request.getPassword(), user.getPasswordSalt()));
+                && PasswordUtil.matches(request.getPassword(), user.getPassword());
         boolean wechatMatches = StringUtils.hasText(openid) && openid.equals(user.getWechatOpenid());
         boolean scanMatches = scannedUser != null && scannedUser.longValue() == userId;
         if (!passwordMatches && !wechatMatches && !scanMatches)

@@ -14,7 +14,10 @@ public class IncomeVO {
 
     private Long id;
 
-    private BigDecimal amt;
+    /**
+     * 收入金额，未减税额
+     */
+    private BigDecimal grossAmount;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate incDate;
@@ -26,7 +29,10 @@ public class IncomeVO {
      */
     private Long incTypeId;
 
-    private BigDecimal tax;
+    /**
+     * 收入税额
+     */
+    private BigDecimal taxAmount;
 
     /** 页面显示的记录时间。 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

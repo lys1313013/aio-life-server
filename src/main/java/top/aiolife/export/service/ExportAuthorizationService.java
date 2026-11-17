@@ -20,8 +20,6 @@ import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.util.PasswordUtil;
 import top.aiolife.sso.util.SecondaryPasswordPolicy;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -45,14 +43,11 @@ public class ExportAuthorizationService {
         if (user == null) throw ExportException.denied();
         boolean secondary = StringUtils.hasText(user.getSecondaryPassword());
         String stored = secondary ? user.getSecondaryPassword() : user.getPassword();
-        String salt = secondary ? user.getSecondaryPasswordSalt() : user.getPasswordSalt();
         if (!StringUtils.hasText(stored))
             throw new ExportException(
                     HttpStatus.CONFLICT, "EXPORT_PASSWORD_REQUIRED", "请先在账户安全中设置登录密码或二级密码");
         if (secondary) SecondaryPasswordPolicy.validate(req.getPassword());
-        String actual = PasswordUtil.encryptPassword(req.getPassword(), salt);
-        if (!MessageDigest.isEqual(
-                stored.getBytes(StandardCharsets.UTF_8), actual.getBytes(StandardCharsets.UTF_8)))
+        if (!PasswordUtil.matches(req.getPassword(), stored))
             throw new ExportException(
                     HttpStatus.FORBIDDEN,
                     "EXPORT_VERIFICATION_FAILED",

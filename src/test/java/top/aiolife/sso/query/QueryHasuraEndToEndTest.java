@@ -106,7 +106,7 @@ class QueryHasuraEndToEndTest {
             db.update("INSERT INTO read_record(id,user_id,title,type,status,current_progress,total_progress,start_time,finish_time,create_time,is_deleted,remark) VALUES(?,?,?,1,?,20,100,'2026-09-10','2026-09-20','2026-09-01',?,?)",id,user,"book-"+index,status,deleted,"私有备注");
             db.update("INSERT INTO movie(id,user_id,title,type,status,current_progress,total_progress,rating,start_time,finish_time,create_time,is_deleted,remark) VALUES(?,?,?,1,?,1,2,5,'2026-09-10','2026-09-20','2026-09-01',?,?)",id,user,"movie-"+index,status,deleted,"私有短评");
             db.update("INSERT INTO b_video(id,user_id,title,url,duration_seconds,watched_duration_seconds,status,last_watched,create_time,is_deleted,notes) VALUES(?,?,?,'https://example.invalid/video',120,60,?,'2026-09-20','2026-09-01',?,?)",id,user,"video-"+index,status,deleted,"私有笔记");
-            db.update("INSERT INTO event_record(id,user_id,create_user,title,event_type,event_date,city,venue,ticket_price,duration_minutes,rating,is_deleted,order_number) VALUES(?,?,?,?,'concert','2026-09-15 19:30:00','city','venue',?,60,5,?,?)",id,user,userIds.get(1),"show-"+index,index==0 ? "19.99" : "20.02",deleted,"私有订单号");
+            db.update("INSERT INTO event_record(id,user_id,create_user,title,event_type,event_date,city,venue,ticket_price,duration_minutes,rating,is_deleted,order_number) VALUES(?,?,?,?,'concert','2026-09-15','city','venue',?,60,5,?,?)",id,user,userIds.get(1),"show-"+index,index==0 ? "19.99" : "20.02",deleted,"私有订单号");
         }
     }
 

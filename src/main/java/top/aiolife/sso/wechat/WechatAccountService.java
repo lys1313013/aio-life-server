@@ -54,7 +54,7 @@ public class WechatAccountService {
     public UserEntity bind(long userId, String password, WechatTicketStore.Ticket ticket) {
         UserEntity user = users.selectForAuthUpdate(userId);
         if (user == null || !StringUtils.hasText(user.getPassword()) || !StringUtils.hasText(password)
-                || !user.getPassword().equals(PasswordUtil.encryptPassword(password, user.getPasswordSalt()))) {
+                || !PasswordUtil.matches(password, user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "原账号密码验证失败");
         }
         UserEntity owner = findByOpenid(ticket.openid());
@@ -78,12 +78,10 @@ public class WechatAccountService {
         if (StringUtils.hasText(user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "已设置密码，请使用修改密码功能");
         }
-        String salt = PasswordUtil.getSalt();
         users.update(null, new LambdaUpdateWrapper<UserEntity>().eq(UserEntity::getId, userId)
                 .set(UserEntity::getUpdateTime, LocalDateTime.now())
                 .set(UserEntity::getUpdateUser, userId)
-                .set(UserEntity::getPasswordSalt, salt)
-                .set(UserEntity::getPassword, PasswordUtil.encryptPassword(password, salt)));
+                .set(UserEntity::getPassword, PasswordUtil.hashPassword(password)));
     }
 
     private ResponseStatusException conflict() {

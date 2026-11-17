@@ -4,6 +4,7 @@ import lombok.Data;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 /**
  * 注册请求参数
@@ -33,6 +34,7 @@ public class RegisterReq {
     /**
      * 邮箱
      */
+    @Size(max = 254)
     private String email;
 
     /**

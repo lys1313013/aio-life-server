@@ -30,7 +30,7 @@ public class HonorRecordVO {
 
     private String tags;
 
-    private List<FileVO> files;
+    private List<AttachmentVO> files;
 
     private Integer isTop;
 

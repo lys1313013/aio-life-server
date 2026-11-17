@@ -47,6 +47,14 @@
 
 - [V20261116_12__attachment_file_key.sql](migrations/V20261116_12__attachment_file_key.sql)：为全部附件新增并回填原生 UUIDv4 `file_key`，设为非空且全局唯一；内部附件主键及导入结果引用仍为 BIGINT，配套应用不接受数字附件标识。
 
+- [V20261117_01__event_record_event_date.sql](migrations/V20261117_01__event_record_event_date.sql)：把 `event_record.event_date` 由 `timestamp(0)` 改为 `date`，与实体 `LocalDate`、接口 `yyyy-MM-dd` 及其他日期列一致；已有行带时分秒时先拒绝执行，确认可丢弃后手工截断再迁移。
+
+- [V20261117_02__integrity_hardening.sql](migrations/V20261117_02__integrity_hardening.sql)：为全部 0/1 状态列补齐 CHECK，新增 `expense` 交易号唯一约束，清理附件表 3 个冗余或失效唯一索引并统一两个索引名；`sys_user.email`、`mail_log.send_to` 放宽到 254，`mbti_result.raw_result` 改为 `jsonb`，五个整数状态列收窄为 `smallint`。存在非 0/1 状态或重复交易号时整体拒绝执行。`user_dict_data` 唯一约束因空 `dict_value` 和现存重复值暂缓。
+
+- [V20261117_03__bcrypt_password_hash.sql](migrations/V20261117_03__bcrypt_password_hash.sql)：登录密码和二级密码统一使用 bcrypt，删除两个独立盐列并更新哈希列注释；不转换旧 MD5 密码，已有账号需重新设密。
+
+- [V20261117_04__rename_finance_amount_columns.sql](migrations/V20261117_04__rename_finance_amount_columns.sql)：把 `expense.amt`、`expense.transaction_amt`、`income.amt`、`income.tax` 分别更名为 `bookkeeping_amount`、`transaction_amount`、`gross_amount`、`tax_amount`，只改列名和注释，区分记账金额、原始交易金额、税前收入与税额。
+
 本次按明确要求同步修改历史初始脚本：新库不再创建上述四列；已有库仍保留可执行的迁移。另按明确要求不为 B 站视频封面新增增量脚本：`b_video.cover_file_id` 已直接在目标库迁移并从初始脚本移除，新库改由 `uk_file_b_video_cover` 约束 `file.biz_type='b_video_cover'` 的单封面关联；执行与校验记录见[数据库初始化与验证](../docs/数据库初始化与验证.md)。历史校验和调整需先备份并完成实际数据、结构迁移，再执行 `flyway:repair`；`repair` 本身不迁移业务数据。
 
 新库先用独立 Flyway 入口迁移，再启动应用；应用启动不自动建表或导入种子。后续结构、菜单和数据变更新增更高版本 `V`，不改写已执行文件。

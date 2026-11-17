@@ -11,7 +11,7 @@ import top.aiolife.record.pojo.vo.FinanceCalendarVO;
 public interface FinanceCalendarMapper {
     @Select("""
         <script>
-        SELECT MIN(CAST(exp_time AS DATE)) AS date, COALESCE(SUM(amt), 0) AS amount
+        SELECT MIN(CAST(exp_time AS DATE)) AS date, COALESCE(SUM(bookkeeping_amount), 0) AS amount
         FROM expense
         WHERE user_id = #{userId} AND is_deleted = 0
         <if test="start != null">AND exp_time &gt;= #{start}</if>
@@ -32,7 +32,7 @@ public interface FinanceCalendarMapper {
 
     @Select("""
         <script>
-        SELECT MIN(CAST(inc_date AS DATE)) AS date, COALESCE(SUM(amt), 0) AS amount
+        SELECT MIN(CAST(inc_date AS DATE)) AS date, COALESCE(SUM(gross_amount), 0) AS amount
         FROM income
         WHERE user_id = #{userId} AND is_deleted = 0
         <if test="start != null">AND inc_date &gt;= #{start}</if>

@@ -6,8 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import top.aiolife.core.util.FileContentPolicy;
 import top.aiolife.core.util.MinioUtil;
-import top.aiolife.record.enums.FileBizType;
-import top.aiolife.record.pojo.vo.FileVO;
+import top.aiolife.record.enums.AttachmentBizType;
+import top.aiolife.record.pojo.vo.AttachmentVO;
 import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.system.mapper.StorageObjectMapper;
 
@@ -15,13 +15,13 @@ import top.aiolife.system.mapper.StorageObjectMapper;
 @RequiredArgsConstructor
 public class FileAccessService {
     private final StorageObjectMapper storageObjects;
-    private final IFileService fileService;
+    private final IAttachmentService fileService;
     private final MinioUtil minio;
     private final FilePreviewGuard guard;
     private final SecondaryLockGuard locks;
-    public FileVO upload(MultipartFile file,String bizType,long userId) {
+    public AttachmentVO upload(MultipartFile file,String bizType,long userId) {
         if("bank_card_face".equals(bizType)) locks.checkMenus(userId,"/finance/bank-cards");
-        return fileService.upload(file,FileBizType.fromBizType(bizType));
+        return fileService.upload(file,AttachmentBizType.fromBizType(bizType));
     }
     public void write(String id,boolean download,HttpServletResponse response) {
         response.setHeader("Cache-Control","private, no-store");

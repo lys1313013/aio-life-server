@@ -28,13 +28,13 @@ public class ExpenseEntity extends IdentityEntity {
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     /**
-     * 交易金额（支付软件上的支付金额）
+     * 支付平台原始交易金额；与记账金额可以不同
      */
-    private BigDecimal transactionAmt;
+    private BigDecimal transactionAmount;
     /**
-     * 记账金额
+     * 记账金额，计入支出统计；退款或手工调整后可与原始交易金额不同
      */
-    private BigDecimal amt;
+    private BigDecimal bookkeepingAmount;
     private Long expTypeId;
 
     private Long userId;

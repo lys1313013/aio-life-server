@@ -115,8 +115,7 @@ public class UserServiceImpl implements IUserService {
         }
 
         // 校验密码
-        String encryptedPassword = PasswordUtil.encryptPassword(loginReq.getPassword(), userEntity.getPasswordSalt());
-        if (!userEntity.getPassword().equals(encryptedPassword)) {
+        if (!PasswordUtil.matches(loginReq.getPassword(), userEntity.getPassword())) {
             loginLogMapper.insert(loginLogEntity);
             throw new RuntimeException("用户名或密码错误");
         }
@@ -231,7 +230,6 @@ public class UserServiceImpl implements IUserService {
     public void updateUser(UserEntity userEntity, String avatarFileId, boolean avatarFileIdSpecified) {
         // 禁止通过此接口修改密码
         userEntity.setPassword(null);
-        userEntity.setPasswordSalt(null);
         clearExternalCredentials(userEntity);
         userEntity.setUpdateTime(LocalDateTime.now());
         try {
@@ -254,13 +252,10 @@ public class UserServiceImpl implements IUserService {
         if (!StringUtils.hasText(userEntity.getPassword())) {
             throw new RuntimeException("尚未设置密码，请通过微信验证后设置登录密码");
         }
-        String encryptedPassword = PasswordUtil.encryptPassword(changePasswordReq.getOldPassword(), userEntity.getPasswordSalt());
-        if (!userEntity.getPassword().equals(encryptedPassword)) {
+        if (!PasswordUtil.matches(changePasswordReq.getOldPassword(), userEntity.getPassword())) {
             throw new RuntimeException("旧密码错误");
         }
-        String salt = PasswordUtil.getSalt();
-        userEntity.setPasswordSalt(salt);
-        userEntity.setPassword(PasswordUtil.encryptPassword(changePasswordReq.getNewPassword(), salt));
+        userEntity.setPassword(PasswordUtil.hashPassword(changePasswordReq.getNewPassword()));
         userEntity.setUpdateTime(LocalDateTime.now());
         userEntity.setUpdateUser(userId);
         userMapper.updateById(userEntity);
@@ -355,9 +350,7 @@ public class UserServiceImpl implements IUserService {
         if (!StringUtils.hasText(userEntity.getPassword())) {
             userEntity.setPassword("123456");
         }
-        String salt = PasswordUtil.getSalt();
-        userEntity.setPasswordSalt(salt);
-        userEntity.setPassword(PasswordUtil.encryptPassword(userEntity.getPassword(), salt));
+        userEntity.setPassword(PasswordUtil.hashPassword(userEntity.getPassword()));
         try {
             userMapper.insert(userEntity);
         } catch (DuplicateKeyException e) {
@@ -539,6 +532,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void resetPassword(ResetPasswordReq resetPasswordReq) {
+        PasswordUtil.validatePassword(resetPasswordReq.getPassword());
         // 校验验证码（含尝试次数限制，成功即作废）
         verifyEmailCode("reset:code:" + resetPasswordReq.getEmail(), resetPasswordReq.getCode());
 
@@ -549,9 +543,7 @@ public class UserServiceImpl implements IUserService {
             throw new RuntimeException("用户不存在");
         }
 
-        String salt = PasswordUtil.getSalt();
-        userEntity.setPasswordSalt(salt);
-        userEntity.setPassword(PasswordUtil.encryptPassword(resetPasswordReq.getPassword(), salt));
+        userEntity.setPassword(PasswordUtil.hashPassword(resetPasswordReq.getPassword()));
         userEntity.setUpdateTime(LocalDateTime.now());
         userEntity.setUpdateUser(userEntity.getId());
         if (userMapper.updateById(userEntity) != 1) {
@@ -563,6 +555,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public void register(RegisterReq registerReq) {
+        PasswordUtil.validatePassword(registerReq.getPassword());
         LegalPolicyService.requireAcceptance(registerReq.getAgreedPolicy(), registerReq.getPolicyVersion());
         // 校验验证码（含尝试次数限制，成功即作废）
         verifyEmailCode("register:code:" + registerReq.getEmail(), registerReq.getCode());
@@ -587,9 +580,7 @@ public class UserServiceImpl implements IUserService {
         userEntity.setPassword(registerReq.getPassword());
         userEntity.setRole("user"); // 默认普通用户
 
-        String salt = PasswordUtil.getSalt();
-        userEntity.setPasswordSalt(salt);
-        userEntity.setPassword(PasswordUtil.encryptPassword(userEntity.getPassword(), salt));
+        userEntity.setPassword(PasswordUtil.hashPassword(userEntity.getPassword()));
 
         LegalPolicyService.recordAcceptance(userEntity);
         try {
@@ -622,9 +613,7 @@ public class UserServiceImpl implements IUserService {
             verifySecondaryPasswordOrThrow(user, oldPassword);
         }
 
-        String salt = PasswordUtil.getSalt();
-        user.setSecondaryPasswordSalt(salt);
-        user.setSecondaryPassword(PasswordUtil.encryptPassword(password, salt));
+        user.setSecondaryPassword(PasswordUtil.hashPassword(password));
         user.setUpdateTime(LocalDateTime.now());
         user.setUpdateUser(user.getId());
         userMapper.updateById(user);
@@ -670,8 +659,7 @@ public class UserServiceImpl implements IUserService {
             throw new RuntimeException("尝试次数过多，请" + SecondaryLockInterceptor.failLockMinutes() + "分钟后再试");
         }
 
-        String encrypted = PasswordUtil.encryptPassword(password, user.getSecondaryPasswordSalt());
-        if (!user.getSecondaryPassword().equals(encrypted)) {
+        if (!PasswordUtil.matches(password, user.getSecondaryPassword())) {
             failCount++;
             long ttl = TimeUnit.MINUTES.toSeconds(SecondaryLockInterceptor.failLockMinutes());
             redisUtil.set(failKey, String.valueOf(failCount), ttl, TimeUnit.SECONDS);
@@ -755,9 +743,7 @@ public class UserServiceImpl implements IUserService {
 
         verifyEmailCode("secondary:reset:code:" + email, code);
 
-        String salt = PasswordUtil.getSalt();
-        user.setSecondaryPasswordSalt(salt);
-        user.setSecondaryPassword(PasswordUtil.encryptPassword(password, salt));
+        user.setSecondaryPassword(PasswordUtil.hashPassword(password));
         user.setUpdateTime(LocalDateTime.now());
         user.setUpdateUser(user.getId());
         userMapper.updateById(user);

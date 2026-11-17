@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 import lombok.Setter;
-import top.aiolife.record.pojo.vo.FileVO;
+import top.aiolife.record.pojo.vo.AttachmentVO;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -103,5 +103,5 @@ public class EventRecordEntity extends BaseEntity {
      * 关联文件列表（查询时回填）
      */
     @TableField(exist = false)
-    private List<FileVO> files;
+    private List<AttachmentVO> files;
 }

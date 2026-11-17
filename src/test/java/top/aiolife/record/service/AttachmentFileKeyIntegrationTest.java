@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import top.aiolife.export.dataset.AttachmentDatasets;
 import top.aiolife.export.mapper.ExportDatasetMapper;
 import top.aiolife.record.mapper.HomeSectionMapper;
-import top.aiolife.record.mapper.IFileMapper;
-import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.mapper.IAttachmentMapper;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.support.AttachmentDatabaseFixture;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,10 +19,10 @@ class AttachmentFileKeyIntegrationTest extends AttachmentDatabaseFixture {
         session.getConfiguration().addMapper(ExportDatasetMapper.class);
         jdbc.execute("TRUNCATE device");
         jdbc.update("INSERT INTO storage_object(id,bucket,object_key,content_hash,file_size,content_type) VALUES(11,'fixture','objects/aa/" + "a".repeat(64) + ".png','" + "a".repeat(64) + "',68,'image/png')");
-        var attachments = mapper(IFileMapper.class);
+        var attachments = mapper(IAttachmentMapper.class);
         for (long business : List.of(101L, 102L)) {
             jdbc.update("INSERT INTO device(id,user_id,name,status) VALUES(?,42,'fixture','1')", business);
-            var file = new FileEntity();
+            var file = new AttachmentEntity();
             file.fillCreateCommonField(42L);
             file.setBizType("device_cover"); file.setBizId(business); file.setStorageObjectId(11L);
             file.setIsPublic(0);

@@ -13,7 +13,7 @@ import top.aiolife.core.id.AttachmentKey;
 @Setter
 @ToString
 @TableName("attachment")
-public class FileEntity extends AuditEntity {
+public class AttachmentEntity extends AuditEntity {
     @TableId(type = IdType.ASSIGN_ID)
     private String id;
     private String fileKey;

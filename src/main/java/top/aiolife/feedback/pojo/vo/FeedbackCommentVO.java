@@ -2,7 +2,7 @@ package top.aiolife.feedback.pojo.vo;
 
 import lombok.Getter;
 import lombok.Setter;
-import top.aiolife.record.pojo.vo.FileVO;
+import top.aiolife.record.pojo.vo.AttachmentVO;
 
 import java.util.List;
 
@@ -29,7 +29,7 @@ public class FeedbackCommentVO {
 
     private String content;
 
-    private List<FileVO> files;
+    private List<AttachmentVO> files;
 
     private String createTime;
 }

@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
-import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.enums.AttachmentBizType;
 import top.aiolife.core.util.FileContentPolicy;
 import top.aiolife.record.mapper.ExternalResourceMapper;
 import top.aiolife.record.pojo.entity.ExternalResourceEntity;
@@ -41,7 +41,7 @@ public class ExternalResourceService {
 
     public ExternalResourceEntity video(String url, long owner) { return register(identity(url, null), owner); }
 
-    public ExternalResourceEntity image(String url, FileBizType type, long owner) {
+    public ExternalResourceEntity image(String url, AttachmentBizType type, long owner) {
         var source=register(identity(url, type), owner);
         if (source.getStorageObjectId()!=null) return source;
         // 同步入口再次请求即可重试失败来源；不重新抓取成功来源。
@@ -61,7 +61,7 @@ public class ExternalResourceService {
         });
     }
 
-    public ExternalResourceEntity identity(String raw,FileBizType type) {
+    public ExternalResourceEntity identity(String raw,AttachmentBizType type) {
         var result=new ExternalResourceEntity();
         if (type==null) {
             String url=downloader.normalize(raw);
@@ -71,14 +71,14 @@ public class ExternalResourceService {
             result.setExternalKey(parts[0].replaceFirst("\\.[A-Za-z0-9]+$", ""));
             result.setVariant(parts.length==2?parts[1]:""); result.setSourceUrl(url);
         } else {
-            if (type!=FileBizType.MOVIE && type!=FileBizType.READ_RECORD) throw new IllegalArgumentException("不支持的远程图片业务");
+            if (type!=AttachmentBizType.MOVIE && type!=AttachmentBizType.READ_RECORD) throw new IllegalArgumentException("不支持的远程图片业务");
             String url=douban.validate(raw);
             String path=URI.create(url).getRawPath();
             var match=DOUBAN_PATH.matcher(path);
             // 图书使用 subject/s 标识，电影海报使用 photo/p 标识；都保留 CDN 的稳定图片身份。
-            if (!match.matches() && type==FileBizType.READ_RECORD) match=DOUBAN_BOOK_PATH.matcher(path);
+            if (!match.matches() && type==AttachmentBizType.READ_RECORD) match=DOUBAN_BOOK_PATH.matcher(path);
             if (!match.matches()) throw new IllegalArgumentException("不支持的豆瓣封面路径");
-            result.setPlatform("douban"); result.setResourceType(type==FileBizType.MOVIE?"movie_poster":"book_cover");
+            result.setPlatform("douban"); result.setResourceType(type==AttachmentBizType.MOVIE?"movie_poster":"book_cover");
             result.setExternalKey(match.group(2)); result.setVariant(match.group(1)); result.setSourceUrl(url);
         }
         if(result.getExternalKey().length()>255 || result.getVariant().length()>128)

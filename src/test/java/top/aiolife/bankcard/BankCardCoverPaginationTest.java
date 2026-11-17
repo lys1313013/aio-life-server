@@ -15,7 +15,7 @@ import top.aiolife.bankcard.pojo.query.BankCardCoverQuery;
 import top.aiolife.bankcard.pojo.vo.BankCardCoverTemplateVO;
 import top.aiolife.bankcard.service.BankCardCoverTemplateService;
 import top.aiolife.core.util.MinioUtil;
-import top.aiolife.record.mapper.IFileMapper;
+import top.aiolife.record.mapper.IAttachmentMapper;
 import top.aiolife.record.service.VideoCoverStorage;
 import top.aiolife.support.AttachmentTestFixtures;
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,7 +37,7 @@ class BankCardCoverPaginationTest {
         var config=new MybatisConfiguration();config.addMapper(BankCardCoverTemplateMapper.class);
         var factory=new MybatisSqlSessionFactoryBean();factory.setDataSource(ds);factory.setConfiguration(config);
         var mapper=new SqlSessionTemplate(factory.getObject()).getMapper(BankCardCoverTemplateMapper.class);
-        service=new BankCardCoverTemplateService(mapper,null,null,null,mock(BankCardFileMapper.class),new MinioUtil(),mock(IFileMapper.class),mock(VideoCoverStorage.class));
+        service=new BankCardCoverTemplateService(mapper,null,null,null,mock(BankCardFileMapper.class),new MinioUtil(),mock(IAttachmentMapper.class),mock(VideoCoverStorage.class));
     }
     @Test void 公共卡面按页查询并在数据库筛选和排序() {
         for (int i=1; i<=28; i++) {

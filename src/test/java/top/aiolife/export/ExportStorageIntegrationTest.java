@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.TempDir;
 
-import top.aiolife.config.CbtiConfig;
 import top.aiolife.config.MinioConfig;
 import top.aiolife.export.config.ExportProperties;
 import top.aiolife.export.service.ExportException;
@@ -42,9 +41,7 @@ class ExportStorageIntegrationTest {
         properties.setBucket(bucket);
         var common = new MinioConfig();
         common.setBucketName("public-business");
-        var cbti = new CbtiConfig();
-        cbti.setBucketName("public-cbti");
-        var store = new MinioExportArtifactStore(minio, common, cbti, properties);
+        var store = new MinioExportArtifactStore(minio, common, properties);
         Path file = temporary.resolve("data.xlsx");
         byte[] expected = "synthetic-private-fixture".getBytes();
         Files.write(file, expected);

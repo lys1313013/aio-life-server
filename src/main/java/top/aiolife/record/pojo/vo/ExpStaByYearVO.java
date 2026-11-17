@@ -17,7 +17,7 @@ public class ExpStaByYearVO {
 
     private Integer month;
 
-    private BigDecimal amt;
+    private BigDecimal bookkeepingAmount;
 
     private Long typeId;
 

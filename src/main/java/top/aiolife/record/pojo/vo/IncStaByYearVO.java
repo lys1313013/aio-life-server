@@ -11,7 +11,7 @@ public class IncStaByYearVO {
 
     private Integer month;
 
-    private BigDecimal amt;
+    private BigDecimal grossAmount;
 
     private Long typeId;
 

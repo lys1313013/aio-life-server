@@ -29,21 +29,21 @@ import top.aiolife.capture.service.PurchaseCaptureService;
 import top.aiolife.capture.service.PurchaseSourceGuard;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.core.exception.SecondaryLockRequiredException;
-import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.enums.AttachmentBizType;
 import top.aiolife.record.mapper.IDeviceMapper;
 import top.aiolife.record.mapper.IExpenseMapper;
-import top.aiolife.record.mapper.IFileMapper;
+import top.aiolife.record.mapper.IAttachmentMapper;
 import top.aiolife.record.mapper.IMovieMapper;
 import top.aiolife.record.mapper.ReadRecordMapper;
 import top.aiolife.record.pojo.entity.DeviceEntity;
 import top.aiolife.record.pojo.entity.ExpenseEntity;
-import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.record.pojo.entity.MovieEntity;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.req.MovieReq;
-import top.aiolife.record.pojo.vo.FileVO;
-import top.aiolife.record.service.IFileService;
+import top.aiolife.record.pojo.vo.AttachmentVO;
+import top.aiolife.record.service.IAttachmentService;
 import top.aiolife.record.service.RecordImageService;
 import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IReadRecordService;
@@ -83,7 +83,7 @@ class CaptureIntegrationTest {
     @Autowired IExpenseMapper expenses;
     @Autowired ReadRecordMapper reads;
     @Autowired IMovieMapper movieMapper;
-    @Autowired IFileMapper fileMapper;
+    @Autowired IAttachmentMapper fileMapper;
     @Autowired RecordImageService images;
     @Autowired WardrobeItemMapper wardrobe;
     @Autowired ObjectMapper json;
@@ -93,7 +93,7 @@ class CaptureIntegrationTest {
     @MockitoBean UserDictDataService dictionaries;
     @MockitoBean IReadRecordService readService;
     @MockitoBean IMovieService movieService;
-    @MockitoBean IFileService fileService;
+    @MockitoBean IAttachmentService fileService;
     @MockitoBean VideoCoverStorage storage;
     private static final long USER = 922001L;
 
@@ -599,7 +599,7 @@ class CaptureIntegrationTest {
         movie.setStartTime(LocalDateTime.of(2019, 2, 3, 4, 5));
         movie.fillCreateCommonField(USER);
         movieMapper.insert(movie);
-        var cover = new FileEntity();
+        var cover = new AttachmentEntity();
         cover.setId("92200101");
         cover.setFileKey("11111111-1111-4111-8111-111111111111");
         cover.setFileName("personal.png");
@@ -625,7 +625,7 @@ class CaptureIntegrationTest {
         assertEquals(14, row.getTotalProgress());
         assertEquals(4, row.getRating());
         assertEquals("私人观影笔记", row.getRemark());
-        assertEquals("11111111-1111-4111-8111-111111111111", images.find(USER, FileBizType.MOVIE, row.getId()));
+        assertEquals("11111111-1111-4111-8111-111111111111", images.find(USER, AttachmentBizType.MOVIE, row.getId()));
         verifyNoInteractions(fileService, movieService);
     }
 
@@ -678,14 +678,14 @@ class CaptureIntegrationTest {
         var request = nativeSync("completed");
         ((ObjectNode) request.get("metadata"))
                 .put("coverImgUrl", "https://img.doubanio.com/view/photo/example.jpg");
-        when(fileService.uploadFromUrl(anyString(), eq(FileBizType.MOVIE)))
+        when(fileService.uploadFromUrl(anyString(), eq(AttachmentBizType.MOVIE)))
                 .thenThrow(new IllegalStateException("模拟封面不可用"));
         var result = douban.sync(USER, request);
         assertEquals("created", result.path("operation").asText());
         assertFalse(result.path("warnings").isEmpty());
         var row = movieMapper.selectById(Long.parseLong(result.path("id").asText()));
         assertEquals(ProgressStatusEnum.COMPLETED, row.getStatus());
-        assertNull(images.find(USER, FileBizType.MOVIE, row.getId()));
+        assertNull(images.find(USER, AttachmentBizType.MOVIE, row.getId()));
         assertEquals(result, douban.sync(USER, request));
     }
 
@@ -697,10 +697,10 @@ class CaptureIntegrationTest {
         parsed.setTotalProgress(8);
         parsed.setCoverImgUrl("https://img.doubanio.com/view/photo/example.jpg");
         when(movieService.parseDoubanMetadata(anyString())).thenReturn(parsed);
-        when(fileService.uploadFromUrl(anyString(), eq(FileBizType.MOVIE)))
+        when(fileService.uploadFromUrl(anyString(), eq(AttachmentBizType.MOVIE)))
                 .thenAnswer(
                         inv -> {
-                            var file = new FileEntity();
+                            var file = new AttachmentEntity();
                             file.setId("92200102");
                             file.setFileName("capture-sync.png");
                             file.setFileType("image/png");
@@ -708,7 +708,7 @@ class CaptureIntegrationTest {
                             file.setStorageObjectId(coverObject());
                             file.fillCreateCommonField(USER);
                             fileMapper.insert(file);
-                            var uploaded = new FileVO();
+                            var uploaded = new AttachmentVO();
                             uploaded.setId(file.getFileKey());
                             return uploaded;
                         });
@@ -719,7 +719,7 @@ class CaptureIntegrationTest {
         assertEquals("解析取得的名称", row.getTitle());
         assertEquals(8, row.getTotalProgress());
         assertEquals(0, row.getCurrentProgress());
-        assertNotNull(images.find(USER, FileBizType.MOVIE, row.getId()));
+        assertNotNull(images.find(USER, AttachmentBizType.MOVIE, row.getId()));
         assertNull(row.getFinishTime());
         verify(movieService).parseDoubanMetadata("https://movie.douban.com/subject/999992/");
     }

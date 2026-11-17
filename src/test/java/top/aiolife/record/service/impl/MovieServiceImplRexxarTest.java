@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import top.aiolife.record.pojo.req.MovieReq;
-import top.aiolife.record.pojo.vo.FileVO;
-import top.aiolife.record.service.IFileService;
+import top.aiolife.record.pojo.vo.AttachmentVO;
+import top.aiolife.record.service.IAttachmentService;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 class MovieServiceImplRexxarTest {
 
-    private final IFileService fileService = mock(IFileService.class);
+    private final IAttachmentService fileService = mock(IAttachmentService.class);
     private final MovieServiceImpl movieService = new MovieServiceImpl(fileService, mock(RecordImageService.class));
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -73,7 +73,7 @@ class MovieServiceImplRexxarTest {
     void ensureCoverUploaded_上传成功后回填FileId() {
         MovieReq result = new MovieReq();
         result.setCoverImgUrl("https://img1.doubanio.com/cover.jpg");
-        FileVO file = new FileVO();
+        AttachmentVO file = new AttachmentVO();
         file.setId("cover-file-id");
         when(fileService.uploadFromUrl(anyString(), any())).thenReturn(file);
 

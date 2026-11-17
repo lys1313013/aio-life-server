@@ -17,7 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.web.CurrentUserId;
-import top.aiolife.record.pojo.vo.FileVO;
+import top.aiolife.record.pojo.vo.AttachmentVO;
 import top.aiolife.record.service.FileAccessService;
 
 /**
@@ -38,7 +38,7 @@ public class SysFileController {
      */
     @Operation(summary = "上传文件")
     @PostMapping("/upload")
-    public ApiResponse<FileVO> upload(@CurrentUserId String userId,
+    public ApiResponse<AttachmentVO> upload(@CurrentUserId String userId,
                                       @RequestParam("file") MultipartFile file,
                                       @RequestParam("bizType") String bizType) {
         return ApiResponse.success(fileAccessService.upload(file, bizType, IdCodec.decode(userId)));

@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
-import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.enums.AttachmentBizType;
 import top.aiolife.record.service.RecordImageService;
 import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.QueryOrder;
@@ -40,7 +40,7 @@ public class DeviceServiceImpl extends ServiceImpl<IDeviceMapper, DeviceEntity> 
         }
         QueryOrder.descNullsLast(wrapper, DeviceEntity::getPurchaseDate).orderByDesc(DeviceEntity::getId);
         Page<DeviceEntity> result = baseMapper.selectPage(new Page<>(page, pageSize), wrapper);
-        images.fill(userId, FileBizType.DEVICE, result.getRecords(), DeviceEntity::getId, DeviceEntity::setFileId);
+        images.fill(userId, AttachmentBizType.DEVICE, result.getRecords(), DeviceEntity::getId, DeviceEntity::setFileId);
         return PageResp.of(result.getRecords(), result.getTotal());
     }
 
@@ -51,7 +51,7 @@ public class DeviceServiceImpl extends ServiceImpl<IDeviceMapper, DeviceEntity> 
         entity.setUserId(userId);
         entity.fillCreateCommonField(userId);
         if (baseMapper.insert(entity) == 0) return false;
-        images.replace(userId, FileBizType.DEVICE, entity.getId(), entity.getFileId());
+        images.replace(userId, AttachmentBizType.DEVICE, entity.getId(), entity.getFileId());
         return true;
     }
 
@@ -65,7 +65,7 @@ public class DeviceServiceImpl extends ServiceImpl<IDeviceMapper, DeviceEntity> 
         wrapper.eq(DeviceEntity::getId, id);
         wrapper.eq(DeviceEntity::getUserId, userId);
         if (baseMapper.update(entity, wrapper) == 0) return false;
-        images.replace(userId, FileBizType.DEVICE, id, entity.getFileId());
+        images.replace(userId, AttachmentBizType.DEVICE, id, entity.getFileId());
         return true;
     }
 
@@ -74,7 +74,7 @@ public class DeviceServiceImpl extends ServiceImpl<IDeviceMapper, DeviceEntity> 
         DeviceEntity entity = baseMapper.selectOne(new LambdaQueryWrapper<DeviceEntity>()
                 .eq(DeviceEntity::getId, id)
                 .eq(DeviceEntity::getUserId, userId));
-        if (entity != null) entity.setFileId(images.find(userId, FileBizType.DEVICE, id));
+        if (entity != null) entity.setFileId(images.find(userId, AttachmentBizType.DEVICE, id));
         return entity;
     }
 }

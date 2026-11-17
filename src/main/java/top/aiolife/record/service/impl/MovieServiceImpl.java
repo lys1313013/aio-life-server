@@ -24,7 +24,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Service;
-import top.aiolife.record.enums.FileBizType;
+import top.aiolife.record.enums.AttachmentBizType;
 import top.aiolife.record.mapper.IMovieMapper;
 import top.aiolife.record.pojo.entity.MovieEntity;
 import top.aiolife.record.pojo.query.MovieQuery;
@@ -32,9 +32,9 @@ import top.aiolife.record.pojo.req.MovieReq;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.vo.MovieVO;
 import top.aiolife.record.service.IMovieService;
-import top.aiolife.record.service.IFileService;
+import top.aiolife.record.service.IAttachmentService;
 import top.aiolife.record.service.RecordImageService;
-import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.record.util.DoubanSubjectUrl;
 
 import java.time.LocalDateTime;
@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> implements IMovieService {
 
-    private final IFileService fileService;
+    private final IAttachmentService fileService;
     private final RecordImageService images;
 
     @Autowired
@@ -80,7 +80,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         Page<MovieEntity> page = new Page<>(query.getPage(), query.getPageSize());
         Page<MovieEntity> entityPage = this.page(page, wrapper);
 
-        images.fill(userId, FileBizType.MOVIE, entityPage.getRecords(), MovieEntity::getId, MovieEntity::setFileId);
+        images.fill(userId, AttachmentBizType.MOVIE, entityPage.getRecords(), MovieEntity::getId, MovieEntity::setFileId);
 
         Page<MovieVO> voPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
 
@@ -120,7 +120,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         }
 
         this.save(entity);
-        images.replace(userId, FileBizType.MOVIE, entity.getId(), req.getFileId());
+        images.replace(userId, AttachmentBizType.MOVIE, entity.getId(), req.getFileId());
         return entity.getId();
     }
 
@@ -161,7 +161,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         }
         entity.setRating(null); // 避免实体列与 wrapper 的评分 SET 重复。
         if (!this.update(entity, wrapper)) throw new IllegalArgumentException("记录不存在或无权限");
-        images.replace(userId, FileBizType.MOVIE, entity.getId(), req.getFileId());
+        images.replace(userId, AttachmentBizType.MOVIE, entity.getId(), req.getFileId());
     }
 
     private void validateRating(Integer rating) {
@@ -176,7 +176,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         Long userId = StpUtil.getLoginIdAsLong();
         MovieEntity entity = this.getById(id);
         if (entity != null && entity.getUserId().equals(userId)) {
-            images.delete(userId,FileBizType.MOVIE,id);
+            images.delete(userId,AttachmentBizType.MOVIE,id);
             this.removeById(id);
         }
     }
@@ -265,7 +265,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         Long userId = StpUtil.getLoginIdAsLong();
         MovieEntity entity = (MovieEntity) doubanSources.find(userId,
                 DoubanSubjectUrl.parse("https://movie.douban.com/subject/" + subjectId + "/"), false);
-        if (entity != null) entity.setFileId(images.find(userId, FileBizType.MOVIE, entity.getId()));
+        if (entity != null) entity.setFileId(images.find(userId, AttachmentBizType.MOVIE, entity.getId()));
         return entity;
     }
 
@@ -285,7 +285,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         if (!updated) {
             throw new IllegalArgumentException("观影记录不存在或无权限");
         }
-        images.replace(userId, FileBizType.MOVIE, id, fileId);
+        images.replace(userId, AttachmentBizType.MOVIE, id, fileId);
     }
 
     /**
@@ -368,7 +368,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             return;
         }
         try {
-            var fileVO = fileService.uploadFromUrl(res.getCoverImgUrl(), FileBizType.MOVIE);
+            var fileVO = fileService.uploadFromUrl(res.getCoverImgUrl(), AttachmentBizType.MOVIE);
             res.setFileId(fileVO.getId());
             log.info("封面图已上传至 MinIO: fileId={}", fileVO.getId());
         } catch (IllegalArgumentException e) {
@@ -511,7 +511,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         wrapper.orderByDesc(MovieEntity::getUpdateTime);
         
         List<MovieEntity> entities = this.list(wrapper);
-        images.fill(userId, FileBizType.MOVIE, entities, MovieEntity::getId, MovieEntity::setFileId);
+        images.fill(userId, AttachmentBizType.MOVIE, entities, MovieEntity::getId, MovieEntity::setFileId);
         return entities.stream().map(entity -> {
             MovieVO vo = new MovieVO();
             BeanUtil.copyProperties(entity, vo);
@@ -528,7 +528,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
                 .eq(MovieEntity::getUserId, userId)
                 .one();
         if (entity == null) return null;
-        entity.setFileId(images.find(userId, FileBizType.MOVIE, id));
+        entity.setFileId(images.find(userId, AttachmentBizType.MOVIE, id));
         MovieVO vo = new MovieVO();
         BeanUtil.copyProperties(entity, vo);
         vo.setId(String.valueOf(entity.getId()));

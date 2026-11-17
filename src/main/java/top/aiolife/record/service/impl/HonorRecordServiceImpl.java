@@ -10,9 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.core.query.QueryOrder;
 import top.aiolife.record.mapper.IHonorRecordMapper;
-import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.record.pojo.entity.HonorRecordEntity;
-import top.aiolife.record.service.IFileService;
+import top.aiolife.record.service.IAttachmentService;
 import top.aiolife.record.service.IHonorRecordService;
 
 /**
@@ -28,7 +28,7 @@ public class HonorRecordServiceImpl extends ServiceImpl<IHonorRecordMapper, Hono
 
     private static final String BIZ_TYPE = "honor_record";
 
-    private final IFileService fileService;
+    private final IAttachmentService fileService;
 
     @Override
     public List<HonorRecordEntity> listForUser(long userId) {
@@ -79,14 +79,14 @@ public class HonorRecordServiceImpl extends ServiceImpl<IHonorRecordMapper, Hono
         }
         if (entity.getFileIds() != null) {
             List<String> fileIds = entity.getFileIds();
-            LambdaUpdateWrapper<FileEntity> removedFiles = new LambdaUpdateWrapper<>();
-            removedFiles.eq(FileEntity::getBizType, BIZ_TYPE)
-                    .eq(FileEntity::getBizId, entity.getId())
-                    .eq(FileEntity::getUserId, userId)
-                    .notIn(!fileIds.isEmpty(), FileEntity::getFileKey, fileIds)
-                    .set(FileEntity::getBizId, null)
-                    .set(FileEntity::getUpdateUser, userId)
-                    .set(FileEntity::getUpdateTime, LocalDateTime.now());
+            LambdaUpdateWrapper<AttachmentEntity> removedFiles = new LambdaUpdateWrapper<>();
+            removedFiles.eq(AttachmentEntity::getBizType, BIZ_TYPE)
+                    .eq(AttachmentEntity::getBizId, entity.getId())
+                    .eq(AttachmentEntity::getUserId, userId)
+                    .notIn(!fileIds.isEmpty(), AttachmentEntity::getFileKey, fileIds)
+                    .set(AttachmentEntity::getBizId, null)
+                    .set(AttachmentEntity::getUpdateUser, userId)
+                    .set(AttachmentEntity::getUpdateTime, LocalDateTime.now());
             fileService.update(removedFiles);
             fileService.bindBizId(fileIds, BIZ_TYPE, entity.getId());
         }
@@ -103,10 +103,10 @@ public class HonorRecordServiceImpl extends ServiceImpl<IHonorRecordMapper, Hono
         wrapper.set(HonorRecordEntity::getUpdateTime, LocalDateTime.now());
         wrapper.set(HonorRecordEntity::getUpdateUser, userId);
         update(null, wrapper);
-        fileService.update(new LambdaUpdateWrapper<FileEntity>().eq(FileEntity::getUserId,userId)
-            .eq(FileEntity::getBizType,BIZ_TYPE).in(FileEntity::getBizId,ids)
-            .set(FileEntity::getIsDeleted,1).set(FileEntity::getIsPublic,0)
-            .set(FileEntity::getUpdateUser,userId).set(FileEntity::getUpdateTime,LocalDateTime.now()));
+        fileService.update(new LambdaUpdateWrapper<AttachmentEntity>().eq(AttachmentEntity::getUserId,userId)
+            .eq(AttachmentEntity::getBizType,BIZ_TYPE).in(AttachmentEntity::getBizId,ids)
+            .set(AttachmentEntity::getIsDeleted,1).set(AttachmentEntity::getIsPublic,0)
+            .set(AttachmentEntity::getUpdateUser,userId).set(AttachmentEntity::getUpdateTime,LocalDateTime.now()));
     }
 
     @Override

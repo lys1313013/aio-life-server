@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.core.util.MinioUtil;
 import top.aiolife.core.id.AttachmentKey;
-import top.aiolife.record.mapper.IFileMapper;
-import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.mapper.IAttachmentMapper;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 
 /** 用户头像保存为 file.biz_type='avatar' 且 biz_id=用户ID 的单条关联，不在用户表保存文件引用。 */
 @Service
@@ -21,16 +21,16 @@ import top.aiolife.record.pojo.entity.FileEntity;
 public class UserAvatarFileService {
     private static final String BIZ_TYPE = "avatar";
     private static final Set<String> IMAGE_TYPES = Set.of("image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp");
-    private final IFileMapper files;
+    private final IAttachmentMapper files;
     private final MinioUtil minio;
     private final VideoCoverStorage storage;
 
     /** 当前头像；URL 由当前服务配置生成，不读取历史头像列。 */
     public Avatar current(long userId) {
-        FileEntity file = files.selectOne(new LambdaQueryWrapper<FileEntity>()
-                .eq(FileEntity::getBizType, BIZ_TYPE)
-                .eq(FileEntity::getBizId, userId)
-                .eq(FileEntity::getUserId, userId));
+        AttachmentEntity file = files.selectOne(new LambdaQueryWrapper<AttachmentEntity>()
+                .eq(AttachmentEntity::getBizType, BIZ_TYPE)
+                .eq(AttachmentEntity::getBizId, userId)
+                .eq(AttachmentEntity::getUserId, userId));
         if(file!=null) file=files.selectWithObject(file.getId());
         if (!isAvatar(file, userId)) return new Avatar(null, null);
         return new Avatar(file.getFileKey(), minio.getPublicImageUrl(file.getHashValue(), file.getFileType()));
@@ -41,18 +41,18 @@ public class UserAvatarFileService {
     public void replace(long userId, String fileId) {
         String selected = fileId == null ? null : fileId;
         if (selected != null) validateForBinding(userId, selected);
-        files.update(null, new LambdaUpdateWrapper<FileEntity>()
-                .eq(FileEntity::getBizType, BIZ_TYPE)
-                .eq(FileEntity::getBizId, userId)
-                .eq(FileEntity::getUserId, userId)
-                .ne(selected != null, FileEntity::getFileKey, selected)
-                .set(FileEntity::getBizId, null).set(FileEntity::getIsPublic, 0)
-                .set(FileEntity::getUpdateUser, userId).set(FileEntity::getUpdateTime, LocalDateTime.now()));
+        files.update(null, new LambdaUpdateWrapper<AttachmentEntity>()
+                .eq(AttachmentEntity::getBizType, BIZ_TYPE)
+                .eq(AttachmentEntity::getBizId, userId)
+                .eq(AttachmentEntity::getUserId, userId)
+                .ne(selected != null, AttachmentEntity::getFileKey, selected)
+                .set(AttachmentEntity::getBizId, null).set(AttachmentEntity::getIsPublic, 0)
+                .set(AttachmentEntity::getUpdateUser, userId).set(AttachmentEntity::getUpdateTime, LocalDateTime.now()));
         if (selected != null) {
-            files.update(null, new LambdaUpdateWrapper<FileEntity>()
-                    .eq(FileEntity::getFileKey, selected).eq(FileEntity::getUserId, userId)
-                    .set(FileEntity::getBizId, userId).set(FileEntity::getIsPublic, 1)
-                    .set(FileEntity::getUpdateUser, userId).set(FileEntity::getUpdateTime, LocalDateTime.now()));
+            files.update(null, new LambdaUpdateWrapper<AttachmentEntity>()
+                    .eq(AttachmentEntity::getFileKey, selected).eq(AttachmentEntity::getUserId, userId)
+                    .set(AttachmentEntity::getBizId, userId).set(AttachmentEntity::getIsPublic, 1)
+                    .set(AttachmentEntity::getUpdateUser, userId).set(AttachmentEntity::getUpdateTime, LocalDateTime.now()));
         }
     }
 
@@ -61,14 +61,14 @@ public class UserAvatarFileService {
         if (fileId == null) return;
         if (userId == null || !AttachmentKey.isValid(fileId))
             throw new IllegalArgumentException("头像文件 ID 无效");
-        FileEntity file = files.selectForBindingByKey(fileId);
+        AttachmentEntity file = files.selectForBindingByKey(fileId);
         if (!isAvatar(file, userId)) throw new IllegalArgumentException("头像文件不存在、不可用或不属于该用户");
         storage.hold(file.getStorageObjectId());
         if (file.getBizId() != null && !Objects.equals(file.getBizId(), userId))
             throw new IllegalArgumentException("头像文件已绑定其他用户");
     }
 
-    private boolean isAvatar(FileEntity file, Long userId) {
+    private boolean isAvatar(AttachmentEntity file, Long userId) {
         return file != null && Objects.equals(file.getIsDeleted(), 0)
                 && userId != null && userId.equals(file.getUserId())
                 && BIZ_TYPE.equals(file.getBizType())

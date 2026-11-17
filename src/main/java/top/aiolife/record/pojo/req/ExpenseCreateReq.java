@@ -19,12 +19,15 @@ public class ExpenseCreateReq {
     @Valid
     private DeviceCreateReq newDevice;
 
-    private BigDecimal transactionAmt;
+    /**
+     * 支付平台原始交易金额
+     */
+    private BigDecimal transactionAmount;
 
     /**
-     * 记账金额
+     * 记账金额，计入支出统计
      */
-    private BigDecimal amt;
+    private BigDecimal bookkeepingAmount;
 
     private Long expTypeId;
 

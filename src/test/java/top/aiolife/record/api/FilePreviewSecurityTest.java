@@ -8,9 +8,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import top.aiolife.config.MinioConfig;
 import top.aiolife.core.util.MinioUtil;
-import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.record.service.FilePreviewGuard;
-import top.aiolife.record.service.IFileService;
+import top.aiolife.record.service.IAttachmentService;
 import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.system.mapper.StorageObjectMapper;
 import top.aiolife.system.pojo.entity.StorageObjectEntity;
@@ -26,9 +26,9 @@ import static top.aiolife.support.ImageFixtures.image;
 
 class FilePreviewSecurityTest {
     private final MinioUtil minio = mock(MinioUtil.class);
-    private final IFileService files = mock(IFileService.class);
+    private final IAttachmentService files = mock(IAttachmentService.class);
     private final FilePreviewGuard guard = mock(FilePreviewGuard.class);
-    private final FileEntity file = new FileEntity();
+    private final AttachmentEntity file = new AttachmentEntity();
     private final StorageObjectEntity object = new StorageObjectEntity();
     private MockMvc mvc;
     private static final String ID = "a1b2c3d4-1234-4abc-8def-1234567890ab";

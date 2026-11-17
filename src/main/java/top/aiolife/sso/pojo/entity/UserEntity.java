@@ -43,28 +43,16 @@ public class UserEntity extends AuditEntity {
     private String username;
 
     /**
-     * 密码
+     * 登录密码 bcrypt 哈希，包含随机盐与计算成本
      */
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     /**
-     * 密码盐
-     */
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private String passwordSalt;
-
-    /**
-     * 二级密码
+     * 二级密码 bcrypt 哈希，包含随机盐与计算成本
      */
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String secondaryPassword;
-
-    /**
-     * 二级密码盐
-     */
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private String secondaryPasswordSalt;
 
     /**
      * 昵称

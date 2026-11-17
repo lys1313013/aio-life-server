@@ -121,7 +121,7 @@ public class OpenApiConfig {
                 // 根据 HTTP 方法和路径生成，避免多个 Controller 的 query/save 方法相互冲突。
                 operation.setOperationId(method.name().toLowerCase(Locale.ROOT)
                         + path.replaceAll("[^a-zA-Z0-9]+", "_").replaceAll("_$", ""));
-                if (PUBLIC_AUTH_PATHS.contains(path) || path.startsWith("/cbti/images/")
+                if (PUBLIC_AUTH_PATHS.contains(path)
                         || path.startsWith("/f/") || path.startsWith("/membership/provider-icons/")
                         || Arrays.asList(WechatAuthController.PUBLIC_PATHS).contains(path)
                         || Arrays.asList(top.aiolife.sso.api.QrLoginController.PUBLIC_PATHS).contains(path)

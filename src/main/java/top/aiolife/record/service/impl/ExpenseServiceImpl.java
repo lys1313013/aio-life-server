@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import top.aiolife.core.constant.ResponseCodeConst;
+import top.aiolife.core.exception.ApiException;
 import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.resq.PageResp;
@@ -72,13 +74,14 @@ public class ExpenseServiceImpl extends ServiceImpl<IExpenseMapper, ExpenseEntit
         entity.setUserId(userId);
         entity.setUpdateUser(userId);
         entity.setUpdateTime(LocalDateTime.now());
-        // 更新时，交易金额为空时，默认设置为记账金额
-        if (entity.getTransactionAmt() == null) {
-            entity.setTransactionAmt(entity.getAmt());
-        }
-        // amt 为空的时候，默认 transactionAmt
-        if (entity.getAmt() == null) {
-            entity.setAmt(entity.getTransactionAmt());
+        if (entity.getTransactionId() != null && !entity.getTransactionId().isBlank()) {
+            var duplicate = new LambdaQueryWrapper<ExpenseEntity>()
+                    .eq(ExpenseEntity::getUserId, userId)
+                    .eq(ExpenseEntity::getTransactionId, entity.getTransactionId())
+                    .ne(ExpenseEntity::getId, entity.getId());
+            if (baseMapper.selectCount(duplicate) > 0) {
+                throw new ApiException(ResponseCodeConst.COMMON_FAIL, "交易号已存在: " + entity.getTransactionId());
+            }
         }
         LambdaQueryWrapper<ExpenseEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ExpenseEntity::getId, entity.getId());

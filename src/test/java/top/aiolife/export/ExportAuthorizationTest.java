@@ -39,8 +39,7 @@ class ExportAuthorizationTest {
                 mock(ExportRateLimiter.class), registry, mock(ExportScope.class), grants,
                 mock(ExportJobMapper.class), users, mock(ExportAuditRecorder.class));
         var user = new UserEntity();
-        user.setSecondaryPasswordSalt("fixture-salt");
-        user.setSecondaryPassword(PasswordUtil.encryptPassword("letters-password", "fixture-salt"));
+        user.setSecondaryPassword(PasswordUtil.hashPassword("letters-password"));
         when(users.selectForAuthUpdate(7L)).thenReturn(user);
         var req = new ExportAuthorizeReq();
         req.setPassword("letters-password");
@@ -50,8 +49,7 @@ class ExportAuthorizationTest {
         verifyNoInteractions(grants);
         // 登录密码仍可含字母；只对二级密码增加数字规则。
         user.setSecondaryPassword(null);
-        user.setPasswordSalt("fixture-salt");
-        user.setPassword(PasswordUtil.encryptPassword("letters-password", "fixture-salt"));
+        user.setPassword(PasswordUtil.hashPassword("letters-password"));
         when(registry.resolve(anyList())).thenReturn(List.of());
         assertDoesNotThrow(() -> service.authorize(7L, req));
         verify(grants).insert(any(ExportGrantEntity.class));

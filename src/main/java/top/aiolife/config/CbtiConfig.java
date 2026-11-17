@@ -17,10 +17,6 @@ public class CbtiConfig {
 
     private boolean enabled = true;
 
-    private String bucketName;
-
-    private String objectPrefix = "images/cbti/characters/";
-
     private String charactersDir;
 }
 

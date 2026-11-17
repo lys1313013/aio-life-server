@@ -37,8 +37,6 @@ public class CbtiPersonalityEntity extends BaseEntity {
 
     private String spirit;
 
-    private String imageObject;
-
     private Integer isSpecial;
 }
 

@@ -11,7 +11,10 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class IncomeUpdateReq {
 
-    private BigDecimal amt;
+    /**
+     * 收入金额，未减税额
+     */
+    private BigDecimal grossAmount;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate incDate;
@@ -23,5 +26,8 @@ public class IncomeUpdateReq {
      */
     private Long incTypeId;
 
-    private BigDecimal tax;
+    /**
+     * 收入税额；NULL表示未记录，0表示零税额
+     */
+    private BigDecimal taxAmount;
 }

@@ -22,12 +22,12 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import top.aiolife.config.MinioConfig;
 import top.aiolife.core.lock.StorageObjectLock;
 import top.aiolife.core.util.MinioUtil;
-import top.aiolife.record.enums.FileBizType;
-import top.aiolife.record.pojo.entity.FileEntity;
+import top.aiolife.record.enums.AttachmentBizType;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.record.pojo.req.MovieReq;
 import top.aiolife.record.pojo.req.ReadRecordReq;
 import top.aiolife.record.service.DoubanCoverUrlPolicy;
-import top.aiolife.record.service.IFileService;
+import top.aiolife.record.service.IAttachmentService;
 import top.aiolife.support.ImageFixtures;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,8 +46,8 @@ class CoverUploadSecurityTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value=FileBizType.class,names={"MOVIE","READ_RECORD"})
-    void 非白名单或不稳定路径在下载之前拒绝(FileBizType type) {
+    @EnumSource(value=AttachmentBizType.class,names={"MOVIE","READ_RECORD"})
+    void 非白名单或不稳定路径在下载之前拒绝(AttachmentBizType type) {
         var downloader=new VideoCoverDownloader();
         var sources=new ExternalResourceService(
             mock(ExternalResourceMapper.class),downloader,new DoubanCoverUrlPolicy("doubanio.com"),
@@ -56,7 +56,7 @@ class CoverUploadSecurityTest {
             assertThrows(IllegalArgumentException.class,()->sources.identity(url,type));
         var identity=sources.identity("https://img1.doubanio.com/view/photo/l/public/p123.jpg?signature=x",type);
         assertEquals("p123",identity.getExternalKey());assertEquals("l",identity.getVariant());
-        assertEquals(type==FileBizType.MOVIE?"movie_poster":"book_cover",identity.getResourceType());
+        assertEquals(type==AttachmentBizType.MOVIE?"movie_poster":"book_cover",identity.getResourceType());
     }
 
     @Test
@@ -67,23 +67,23 @@ class CoverUploadSecurityTest {
                 mock(VideoCoverStorage.class),
                 mock(PlatformTransactionManager.class));
         String url = "https://img3.doubanio.com/view/subject/l/public/s29423902.jpg";
-        var identity = sources.identity(url, FileBizType.READ_RECORD);
+        var identity = sources.identity(url, AttachmentBizType.READ_RECORD);
         assertEquals("book_cover", identity.getResourceType());
         assertEquals("s29423902", identity.getExternalKey());
         assertEquals("l", identity.getVariant());
         assertEquals(url, identity.getSourceUrl());
-        assertThrows(IllegalArgumentException.class, () -> sources.identity(url, FileBizType.MOVIE));
+        assertThrows(IllegalArgumentException.class, () -> sources.identity(url, AttachmentBizType.MOVIE));
         for (String invalid : List.of(
                 "https://img3.doubanio.com/view/subject/l/public/p29423902.jpg",
                 "https://img3.doubanio.com/view/subject/l/public/s29423902.jpg/extra",
                 "https://img3.doubanio.com.evil.test/view/subject/l/public/s29423902.jpg")) {
-            assertThrows(IllegalArgumentException.class, () -> sources.identity(invalid, FileBizType.READ_RECORD));
+            assertThrows(IllegalArgumentException.class, () -> sources.identity(invalid, AttachmentBizType.READ_RECORD));
         }
     }
 
     @Test
     void ensureCoverUploaded_自定义FileId不触发远程抓取() {
-        var uploader = mock(IFileService.class);
+        var uploader = mock(IAttachmentService.class);
         var movie = new MovieReq();
         movie.setFileId("uploaded-movie-id");
         movie.setCoverImgUrl("https://example.com/legacy-cover.jpg");
@@ -99,7 +99,7 @@ class CoverUploadSecurityTest {
 
     @Test
     void ensureCoverUploaded_安全拒绝不会被包装成Minio故障且解析不回填危险URL() {
-        var uploader = mock(IFileService.class);
+        var uploader = mock(IAttachmentService.class);
         var error = new IllegalArgumentException("自定义封面请上传图片");
         when(uploader.uploadFromUrl(anyString(), any())).thenThrow(error);
         var movieService = new MovieServiceImpl(uploader, org.mockito.Mockito.mock(RecordImageService.class));

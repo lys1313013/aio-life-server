@@ -19,44 +19,46 @@ import org.springframework.web.multipart.MultipartFile;
 import top.aiolife.core.util.FileContentPolicy;
 import top.aiolife.core.id.AttachmentKey;
 import top.aiolife.core.util.MinioUtil;
-import top.aiolife.record.enums.FileBizType;
-import top.aiolife.record.mapper.IFileMapper;
-import top.aiolife.record.pojo.entity.FileEntity;
-import top.aiolife.record.pojo.vo.FileVO;
+import top.aiolife.record.enums.AttachmentBizType;
+import top.aiolife.record.mapper.IAttachmentMapper;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
+import top.aiolife.record.pojo.vo.AttachmentVO;
 import top.aiolife.record.service.ExternalResourceService;
-import top.aiolife.record.service.IFileService;
+import top.aiolife.record.service.IAttachmentService;
 import top.aiolife.record.service.VideoCoverStorage;
 import top.aiolife.system.mapper.StorageObjectMapper;
 
 @Service
 @RequiredArgsConstructor
-public class FileServiceImpl extends ServiceImpl<IFileMapper,FileEntity> implements IFileService {
+public class AttachmentServiceImpl extends ServiceImpl<IAttachmentMapper,AttachmentEntity> implements IAttachmentService {
     private final MinioUtil minio;
     private final VideoCoverStorage storage;
     private final StorageObjectMapper objects;
     private final ExternalResourceService sources;
 
     @Override
-    public FileEntity getByKey(String fileKey) {
+    public AttachmentEntity getByKey(String fileKey) {
         AttachmentKey.require(fileKey);
-        return getOne(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getFileKey, fileKey));
+        return getOne(new LambdaQueryWrapper<AttachmentEntity>().eq(AttachmentEntity::getFileKey, fileKey));
     }
 
     @Override
     @Transactional(rollbackFor=Exception.class)
-    public FileVO upload(MultipartFile file,FileBizType bizType) {
+    public AttachmentVO upload(MultipartFile file,AttachmentBizType bizType) {
         if(file==null || file.isEmpty() || file.getSize()>FileContentPolicy.MAX_IMAGE_BYTES)
             throw new IllegalArgumentException("文件必须为1字节至10MB");
         byte[] bytes;
         try(var input=file.getInputStream()) { bytes=input.readNBytes(FileContentPolicy.MAX_IMAGE_BYTES+1); }
         catch(IOException e) { throw new IllegalArgumentException("文件无法读取",e); }
-        boolean template=bizType==FileBizType.BANK_CARD_TEMPLATE_COVER;
+        boolean template=bizType==AttachmentBizType.BANK_CARD_TEMPLATE_COVER;
+        if(bizType==AttachmentBizType.CBTI_PERSONALITY)
+            throw new IllegalArgumentException("CBTI 人格图片只能通过 CBTI 管理上传接口提交");
         if(template) StpUtil.checkRole("admin");
         var image=switch(bizType) {
             case AVATAR,WARDROBE_ITEM,MOVIE,READ_RECORD,DEVICE,BANK_CARD_COVER,BANK_CARD_TEMPLATE_COVER -> FileContentPolicy.requireImage(bytes);
             default -> FileContentPolicy.detectImage(bytes);
         };
-        if(template || bizType==FileBizType.BANK_CARD_COVER) {
+        if(template || bizType==AttachmentBizType.BANK_CARD_COVER) {
             if(bytes.length>5*1024*1024 || image==null || !Set.of("image/png","image/jpeg").contains(image.contentType()))
                 throw new IllegalArgumentException("卡面仅支持5MB以内的PNG或JPEG图片");
         }
@@ -69,7 +71,7 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper,FileEntity> impleme
         } catch(IOException e) { throw new IllegalArgumentException("卡面处理失败",e); }
         long owner=StpUtil.getLoginIdAsLong();
         var object=storage.store(bytes,owner,image);
-        var attachment=new FileEntity(); attachment.fillCreateCommonField(owner);
+        var attachment=new AttachmentEntity(); attachment.fillCreateCommonField(owner);
         attachment.setStorageObjectId(object.getId()); attachment.setFileName(file.getOriginalFilename());
         attachment.setBizType(bizType.getBizType());
         // 头像保存绑定之前也不公开；模板归属为系统，但创建审计仍记录管理员。
@@ -81,12 +83,12 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper,FileEntity> impleme
 
     @Override
     @Transactional(rollbackFor=Exception.class)
-    public FileVO uploadFromUrl(String url,FileBizType type) {
-        if(type!=FileBizType.MOVIE && type!=FileBizType.READ_RECORD) throw new IllegalArgumentException("该业务请使用图片上传");
+    public AttachmentVO uploadFromUrl(String url,AttachmentBizType type) {
+        if(type!=AttachmentBizType.MOVIE && type!=AttachmentBizType.READ_RECORD) throw new IllegalArgumentException("该业务请使用图片上传");
         long owner=StpUtil.getLoginIdAsLong();
         var source=sources.image(url,type,owner);
         var object=storage.hold(source.getStorageObjectId());
-        var attachment=new FileEntity(); attachment.fillCreateCommonField(owner);
+        var attachment=new AttachmentEntity(); attachment.fillCreateCommonField(owner);
         attachment.setStorageObjectId(source.getStorageObjectId()); attachment.setExternalResourceId(source.getId());
         attachment.setBizType(type.getBizType()); attachment.setIsPublic(0);
         attachment.setFileName("cover."+object.getObjectKey().substring(object.getObjectKey().lastIndexOf('.')+1));
@@ -110,22 +112,22 @@ public class FileServiceImpl extends ServiceImpl<IFileMapper,FileEntity> impleme
                     || (attachment.getBizId()!=null && !attachment.getBizId().equals(bizId)))
                 throw new IllegalArgumentException("附件不存在、已绑定其他业务或无权限");
             storage.hold(attachment.getStorageObjectId());
-            update(null,new LambdaUpdateWrapper<FileEntity>().eq(FileEntity::getId,attachment.getId())
-                .set(FileEntity::getBizId,bizId).set(FileEntity::getSortOrder,i)
-                .set(FileEntity::getUpdateUser,owner).set(FileEntity::getUpdateTime,LocalDateTime.now()));
+            update(null,new LambdaUpdateWrapper<AttachmentEntity>().eq(AttachmentEntity::getId,attachment.getId())
+                .set(AttachmentEntity::getBizId,bizId).set(AttachmentEntity::getSortOrder,i)
+                .set(AttachmentEntity::getUpdateUser,owner).set(AttachmentEntity::getUpdateTime,LocalDateTime.now()));
         }
     }
 
     @Override
-    public List<FileVO> getByBiz(String type,Long id) {
-        return list(new LambdaQueryWrapper<FileEntity>().eq(FileEntity::getBizType,type).eq(FileEntity::getBizId,id)
-            .orderByAsc(FileEntity::getSortOrder,FileEntity::getId)).stream().map(this::toVO).toList();
+    public List<AttachmentVO> getByBiz(String type,Long id) {
+        return list(new LambdaQueryWrapper<AttachmentEntity>().eq(AttachmentEntity::getBizType,type).eq(AttachmentEntity::getBizId,id)
+            .orderByAsc(AttachmentEntity::getSortOrder,AttachmentEntity::getId)).stream().map(this::toVO).toList();
     }
 
     @Override
-    public FileVO toVO(FileEntity attachment) {
+    public AttachmentVO toVO(AttachmentEntity attachment) {
         if(attachment==null) return null;
-        var vo=new FileVO(); BeanUtils.copyProperties(attachment,vo);
+        var vo=new AttachmentVO(); BeanUtils.copyProperties(attachment,vo);
         vo.setId(attachment.getFileKey());
         var object=objects.selectById(attachment.getStorageObjectId());
         if(object==null) throw new IllegalStateException("附件对象不存在");
