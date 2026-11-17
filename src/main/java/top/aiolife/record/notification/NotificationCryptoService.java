@@ -1,5 +1,9 @@
 package top.aiolife.record.notification;
 
+import org.bouncycastle.crypto.digests.SM3Digest;
+import org.bouncycastle.crypto.generators.HKDFBytesGenerator;
+import org.bouncycastle.crypto.params.HKDFParameters;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -7,76 +11,101 @@ import org.springframework.util.StringUtils;
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.Provider;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Base64;
 
+/** 服务端第三方凭据统一使用 SM4-GCM，主密钥由同一环境变量派生。 */
 @Component
 public class NotificationCryptoService {
 
-    private static final int IV_LENGTH = 12;
+    private static final Provider PROVIDER = new BouncyCastleProvider();
+    private static final SecureRandom RANDOM = new SecureRandom();
+    private static final int NONCE_LENGTH = 12;
     private static final int TAG_LENGTH = 128;
-    private static final String PREFIX = "v1:";
+    private static final String PREFIX = "sm4:v1:";
+    private static final String DEFAULT_PURPOSE = "credential";
 
-    private final SecureRandom secureRandom = new SecureRandom();
     private final String encryptionKey;
 
     public NotificationCryptoService(
-            @Value("${aio.life.server.notification.credential-encryption-key:}") String encryptionKey) {
+            @Value("${AIO_LIFE_NOTIFICATION_ENCRYPTION_KEY:}") String encryptionKey) {
         this.encryptionKey = encryptionKey;
     }
 
     public String encrypt(String plaintext) {
+        return encrypt(DEFAULT_PURPOSE, plaintext, "");
+    }
+
+    public String decrypt(String ciphertext) {
+        return decrypt(DEFAULT_PURPOSE, ciphertext, "");
+    }
+
+    public String encrypt(String purpose, String plaintext, String aad) {
         if (plaintext == null) {
             return null;
         }
         ensureConfigured();
         try {
-            byte[] iv = new byte[IV_LENGTH];
-            secureRandom.nextBytes(iv);
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-            cipher.init(Cipher.ENCRYPT_MODE, keySpec(), new GCMParameterSpec(TAG_LENGTH, iv));
+            byte[] nonce = new byte[NONCE_LENGTH];
+            RANDOM.nextBytes(nonce);
+            Cipher cipher = Cipher.getInstance("SM4/GCM/NoPadding", PROVIDER);
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec(purpose), new GCMParameterSpec(TAG_LENGTH, nonce));
+            if (StringUtils.hasText(aad)) {
+                cipher.updateAAD(aad.getBytes(StandardCharsets.UTF_8));
+            }
             byte[] encrypted = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
-            byte[] result = ByteBuffer.allocate(iv.length + encrypted.length)
-                    .put(iv)
-                    .put(encrypted)
-                    .array();
-            return PREFIX + Base64.getEncoder().encodeToString(result);
+            return PREFIX + Base64.getEncoder().encodeToString(nonce) + ":"
+                    + Base64.getEncoder().encodeToString(encrypted);
         } catch (Exception e) {
-            throw new IllegalStateException("通知密钥加密失败", e);
+            throw new IllegalStateException("凭据加密失败", e);
         }
     }
 
-    public String decrypt(String ciphertext) {
+    public String decrypt(String purpose, String ciphertext, String aad) {
         if (!StringUtils.hasText(ciphertext) || !ciphertext.startsWith(PREFIX)) {
-            throw new IllegalArgumentException("通知密文格式无效");
+            throw new IllegalArgumentException("凭据密文格式无效");
         }
         ensureConfigured();
         try {
-            byte[] bytes = Base64.getDecoder().decode(ciphertext.substring(PREFIX.length()));
-            if (bytes.length <= IV_LENGTH) {
-                throw new IllegalArgumentException("通知密文格式无效");
+            String[] parts = ciphertext.substring(PREFIX.length()).split(":", -1);
+            if (parts.length != 2) {
+                throw new IllegalArgumentException("凭据密文格式无效");
             }
-            byte[] iv = new byte[IV_LENGTH];
-            byte[] encrypted = new byte[bytes.length - IV_LENGTH];
-            System.arraycopy(bytes, 0, iv, 0, IV_LENGTH);
-            System.arraycopy(bytes, IV_LENGTH, encrypted, 0, encrypted.length);
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-            cipher.init(Cipher.DECRYPT_MODE, keySpec(), new GCMParameterSpec(TAG_LENGTH, iv));
+            byte[] nonce = Base64.getDecoder().decode(parts[0]);
+            byte[] encrypted = Base64.getDecoder().decode(parts[1]);
+            if (nonce.length != NONCE_LENGTH || encrypted.length <= TAG_LENGTH / 8) {
+                throw new IllegalArgumentException("凭据密文格式无效");
+            }
+            Cipher cipher = Cipher.getInstance("SM4/GCM/NoPadding", PROVIDER);
+            cipher.init(Cipher.DECRYPT_MODE, keySpec(purpose), new GCMParameterSpec(TAG_LENGTH, nonce));
+            if (StringUtils.hasText(aad)) {
+                cipher.updateAAD(aad.getBytes(StandardCharsets.UTF_8));
+            }
             return new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
-            throw new IllegalStateException("通知密钥解密失败，请检查环境变量", e);
+            throw new IllegalStateException("凭据解密失败，请检查环境变量", e);
         }
     }
 
-    private SecretKeySpec keySpec() throws Exception {
-        byte[] key = MessageDigest.getInstance("SHA-256")
+    private SecretKeySpec keySpec(String purpose) throws Exception {
+        byte[] root = MessageDigest.getInstance("SHA-256")
                 .digest(encryptionKey.getBytes(StandardCharsets.UTF_8));
-        return new SecretKeySpec(key, "AES");
+        try {
+            var hkdf = new HKDFBytesGenerator(new SM3Digest());
+            hkdf.init(new HKDFParameters(root, null,
+                    ("aio-life/" + purpose + "/v1/sm4-gcm").getBytes(StandardCharsets.UTF_8)));
+            byte[] key = new byte[16];
+            hkdf.generateBytes(key, 0, key.length);
+            return new SecretKeySpec(key, "SM4");
+        } finally {
+            Arrays.fill(root, (byte) 0);
+        }
     }
 
     private void ensureConfigured() {

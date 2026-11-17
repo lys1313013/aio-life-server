@@ -1,6 +1,7 @@
 package top.aiolife.sso.api;
 
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.crypto.digest.DigestUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import java.util.UUID;
@@ -37,14 +38,14 @@ class ApiKeyHttpTest {
         source.setURL("jdbc:h2:mem:key_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(source);
         jdbc.execute("""
-                CREATE TABLE api_key(id BIGINT PRIMARY KEY, user_id BIGINT, api_key VARCHAR(128), remark VARCHAR(255),
+                CREATE TABLE api_key(id BIGINT PRIMARY KEY, user_id BIGINT, api_key_hash VARCHAR(64), key_prefix VARCHAR(16), remark VARCHAR(255),
                 expired_at TIMESTAMP, create_user BIGINT, update_user BIGINT, create_time TIMESTAMP,
                 update_time TIMESTAMP, is_deleted INT DEFAULT 0)
                 """);
         jdbc.update("""
-                INSERT INTO api_key(id,user_id,api_key,remark,expired_at,create_time)
-                VALUES(9007199254740993,11,'ak-synthetic-test-secret-123456789','原备注','2030-01-01 00:00:00','2026-01-01 00:00:00')
-                """);
+                INSERT INTO api_key(id,user_id,api_key_hash,key_prefix,remark,expired_at,create_time)
+                VALUES(9007199254740993,11,?,'ak-synthetic','原备注','2030-01-01 00:00:00','2026-01-01 00:00:00')
+                """, DigestUtil.sha256Hex("api-key:v1:ak-synthetic-test-secret-123456789"));
         var config = new MybatisConfiguration();
         config.setMapUnderscoreToCamelCase(true);
         config.addMapper(ApiKeyMapper.class);
@@ -70,11 +71,12 @@ class ApiKeyHttpTest {
                     .andExpect(jsonPath("$.code").value(0))
                     .andExpect(jsonPath("$.data.id").value("9007199254740993"))
                     .andExpect(jsonPath("$.data.remark").value("新备注"))
-                    .andExpect(jsonPath("$.data.apiKey").value("ak-synth***6789"))
+                    .andExpect(jsonPath("$.data.apiKey").value("ak-synthetic***"))
                     .andExpect(jsonPath("$.data.expiredAt").value("2030-01-01 00:00:00"));
         }
         var row = jdbc.queryForMap("SELECT * FROM api_key");
-        assertEquals("ak-synthetic-test-secret-123456789", row.get("api_key"));
+        assertEquals(DigestUtil.sha256Hex("api-key:v1:ak-synthetic-test-secret-123456789"), row.get("api_key_hash"));
+        assertEquals("ak-synthetic", row.get("key_prefix"));
         assertEquals(11L, row.get("user_id"));
         assertEquals(11L, row.get("update_user"));
         assertNotNull(row.get("update_time"));

@@ -8,6 +8,7 @@ import cn.dev33.satoken.spring.SaTokenContextForSpringInJakartaServlet;
 import cn.dev33.satoken.stp.SaLoginModel;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.crypto.digest.DigestUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -82,13 +83,15 @@ class CredentialRevocationTest {
                 """);
         jdbc.execute("""
                 CREATE TABLE api_key (
-                    id BIGINT PRIMARY KEY, user_id BIGINT, api_key VARCHAR(255), remark VARCHAR(255),
+                    id BIGINT PRIMARY KEY, user_id BIGINT, api_key_hash VARCHAR(64), key_prefix VARCHAR(16), remark VARCHAR(255),
                     expired_at TIMESTAMP, create_user BIGINT, update_user BIGINT, create_time TIMESTAMP,
                     update_time TIMESTAMP, is_deleted INT DEFAULT 0)
                 """);
         jdbc.update("INSERT INTO sys_user (id, email, password) VALUES (1, 'one@example.com', ?), (2, 'two@example.com', ?)",
                 PasswordUtil.hashPassword("old-password"), PasswordUtil.hashPassword("old-password"));
-        jdbc.update("INSERT INTO api_key (id, user_id, api_key) VALUES (11, 1, 'ak-one'), (12, 1, 'ak-one-extra'), (21, 2, 'ak-two')");
+        jdbc.update("INSERT INTO api_key (id, user_id, api_key_hash, key_prefix) VALUES (11, 1, ?, 'ak-one'), (12, 1, ?, 'ak-one-extra'), (21, 2, ?, 'ak-two')",
+                DigestUtil.sha256Hex("api-key:v1:ak-one"), DigestUtil.sha256Hex("api-key:v1:ak-one-extra"),
+                DigestUtil.sha256Hex("api-key:v1:ak-two"));
         var configuration = new MybatisConfiguration();
         configuration.setMapUnderscoreToCamelCase(true);
         configuration.addMapper(UserMapper.class);

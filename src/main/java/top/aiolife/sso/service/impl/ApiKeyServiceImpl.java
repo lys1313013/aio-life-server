@@ -1,6 +1,7 @@
 package top.aiolife.sso.service.impl;
 
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.crypto.digest.DigestUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -28,6 +29,8 @@ import java.util.List;
 public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyEntity> implements IApiKeyService {
 
     private static final int MAX_GENERATE_ATTEMPTS = 5;
+    private static final String HASH_DOMAIN = "api-key:v1:";
+    private static final int KEY_PREFIX_LENGTH = 12;
 
     @Override
     @Transactional
@@ -58,7 +61,10 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyEntity> i
             ApiKeyEntity entity = new ApiKeyEntity();
             entity.setUserId(userId);
             entity.setRemark(remark);
-            entity.setApiKey("ak-" + IdUtil.fastSimpleUUID());
+            String apiKey = "ak-" + IdUtil.fastSimpleUUID();
+            entity.setApiKey(apiKey);
+            entity.setKeyPrefix(apiKey.substring(0, KEY_PREFIX_LENGTH));
+            entity.setApiKeyHash(hash(apiKey));
             if (expireDays != null && expireDays > 0) {
                 entity.setExpiredAt(LocalDateTime.now().plusDays(expireDays));
             }
@@ -83,7 +89,14 @@ public class ApiKeyServiceImpl extends ServiceImpl<ApiKeyMapper, ApiKeyEntity> i
 
     @Override
     public ApiKeyEntity getByApiKey(String apiKey) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return null;
+        }
         return this.getOne(new LambdaQueryWrapper<ApiKeyEntity>()
-                .eq(ApiKeyEntity::getApiKey, apiKey));
+                .eq(ApiKeyEntity::getApiKeyHash, hash(apiKey)));
+    }
+
+    private static String hash(String apiKey) {
+        return DigestUtil.sha256Hex(HASH_DOMAIN + apiKey);
     }
 }

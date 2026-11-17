@@ -16,6 +16,7 @@ import org.mockito.MockedStatic;
 import top.aiolife.record.mapper.UserBindMapper;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.req.WereadConnectionReq;
+import top.aiolife.record.notification.NotificationCryptoService;
 import top.aiolife.record.service.impl.WereadServiceImpl;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,6 +32,7 @@ class WereadServiceTest {
     private WereadClient client;
     private WereadServiceImpl service;
     private AtomicLong nanos;
+    private final NotificationCryptoService crypto = new NotificationCryptoService("synthetic-test-master-key");
 
     @BeforeEach
     void setup() {
@@ -38,7 +40,7 @@ class WereadServiceTest {
         mapper = mock(UserBindMapper.class);
         client = mock(WereadClient.class);
         nanos = new AtomicLong();
-        service = new WereadServiceImpl(mapper, client, new WereadReadCache(nanos::get));
+        service = new WereadServiceImpl(mapper, client, new WereadReadCache(nanos::get), crypto);
     }
 
     private UserBindEntity connection() {
@@ -46,7 +48,7 @@ class WereadServiceTest {
         entity.setId(1L);
         entity.setUserId(42L);
         entity.setPlatform("weread");
-        entity.setAccessToken("wrk-test");
+        entity.setAccessTokenCiphertext(crypto.encrypt("user-bind", "wrk-test", "user_bind:42"));
         entity.setMetaFields("{\"connectionVersion\":\"test-version\"}");
         return entity;
     }
@@ -393,7 +395,10 @@ class WereadServiceTest {
             var next = connection(); next.setMetaFields("{\"connectionVersion\":\"new-version\"}");
             when(mapper.selectOne(any())).thenReturn(next);
             service.recent(42L, null, 6);
-            next.setUserId(43L);
+            var other = connection();
+            other.setUserId(43L);
+            other.setAccessTokenCiphertext(crypto.encrypt("user-bind", "wrk-test", "user_bind:43"));
+            when(mapper.selectOne(any())).thenReturn(other);
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(43L);
             service.recent(42L, null, 6);
             verify(client, times(3)).call(anyString(), eq("/shelf/sync"), anyMap());

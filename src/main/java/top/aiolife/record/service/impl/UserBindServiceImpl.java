@@ -5,9 +5,11 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.record.client.DoubanAccountClient;
 import top.aiolife.record.mapper.UserBindMapper;
+import top.aiolife.record.notification.NotificationCryptoService;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.vo.DoubanAccountVO;
 import top.aiolife.record.service.IUserBindService;
@@ -22,23 +24,29 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserBindServiceImpl extends ServiceImpl<UserBindMapper, UserBindEntity> implements IUserBindService {
 
+    private static final String TOKEN_PURPOSE = "user-bind";
+
     private final IWereadService wereadService;
 
     private final RedisUtil redisUtil;
 
     private final DoubanAccountClient doubanAccountClient;
 
+    private final NotificationCryptoService crypto;
+
     @Override
     public List<UserBindEntity> getBindsByUserId(Long userId) {
-        return this.list(new LambdaQueryWrapper<UserBindEntity>()
+        List<UserBindEntity> list = this.list(new LambdaQueryWrapper<UserBindEntity>()
                 .eq(UserBindEntity::getUserId, userId));
+        list.forEach(this::decryptToken);
+        return list;
     }
 
     @Override
     public UserBindEntity getBindByUserIdAndPlatform(Long userId, String platform) {
-        return this.getOne(new LambdaQueryWrapper<UserBindEntity>()
+        return decryptToken(this.getOne(new LambdaQueryWrapper<UserBindEntity>()
                 .eq(UserBindEntity::getUserId, userId)
-                .eq(UserBindEntity::getPlatform, platform));
+                .eq(UserBindEntity::getPlatform, platform)));
     }
 
     @Override
@@ -79,6 +87,9 @@ public class UserBindServiceImpl extends ServiceImpl<UserBindMapper, UserBindEnt
         }
 
         entity.fillCreateCommonField(userId);
+        if (StringUtils.hasText(entity.getAccessToken())) {
+            entity.setAccessTokenCiphertext(encryptToken(userId, entity.getAccessToken()));
+        }
         boolean success;
         try {
             success = save(entity);
@@ -115,9 +126,11 @@ public class UserBindServiceImpl extends ServiceImpl<UserBindMapper, UserBindEnt
 
         entity.fillUpdateCommonField(userId);
 
-        // 如果Access Token为空，则保留原值（不更新）
-        if (entity.getAccessToken() == null || entity.getAccessToken().isEmpty()) {
-            entity.setAccessToken(exist.getAccessToken());
+        // 留空表示保留原令牌；只加密本次提交的新值。
+        if (StringUtils.hasText(entity.getAccessToken())) {
+            entity.setAccessTokenCiphertext(encryptToken(userId, entity.getAccessToken()));
+        } else {
+            entity.setAccessTokenCiphertext(null);
         }
 
         boolean success;
@@ -152,5 +165,22 @@ public class UserBindServiceImpl extends ServiceImpl<UserBindMapper, UserBindEnt
         if ("github".equals(platform)) {
             redisUtil.delete("github:visible:" + userId);
         }
+    }
+
+    private UserBindEntity decryptToken(UserBindEntity entity) {
+        if (entity != null) {
+            String ciphertext = entity.getAccessTokenCiphertext();
+            entity.setAccessToken(StringUtils.hasText(ciphertext)
+                    ? crypto.decrypt(TOKEN_PURPOSE, ciphertext, aad(entity.getUserId())) : null);
+        }
+        return entity;
+    }
+
+    private String encryptToken(long userId, String token) {
+        return crypto.encrypt(TOKEN_PURPOSE, token.trim(), aad(userId));
+    }
+
+    private static String aad(Long userId) {
+        return "user_bind:" + userId;
     }
 }

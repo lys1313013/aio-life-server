@@ -1,6 +1,7 @@
 package top.aiolife.record.pojo.entity;
 
 import com.alibaba.fastjson2.annotation.JSONField;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,11 +39,18 @@ public class UserBindEntity extends BaseEntity {
     private String platformUsername;
 
     /**
-     * 访问令牌
+     * 访问令牌，仅运行时使用，不持久化
      */
     @JSONField(serialize = false)
     @ToString.Exclude
+    @TableField(exist = false)
     private String accessToken;
+
+    /**
+     * SM4-GCM 加密的访问令牌
+     */
+    @ToString.Exclude
+    private String accessTokenCiphertext;
 
     /**
      * 额外配置(JSON)

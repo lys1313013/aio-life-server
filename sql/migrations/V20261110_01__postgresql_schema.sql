@@ -1385,7 +1385,7 @@ COMMENT ON COLUMN "notification_channel_config"."user_id" IS 'AIO Life 用户 ID
 COMMENT ON COLUMN "notification_channel_config"."channel" IS '通知渠道：FEISHU';
 COMMENT ON COLUMN "notification_channel_config"."is_enabled" IS '是否启用：1=启用，0=停用';
 COMMENT ON COLUMN "notification_channel_config"."app_id" IS '用户自己的飞书应用 App ID';
-COMMENT ON COLUMN "notification_channel_config"."app_secret_ciphertext" IS '加密的飞书应用 App Secret';
+COMMENT ON COLUMN "notification_channel_config"."app_secret_ciphertext" IS 'SM4-GCM加密的飞书应用 App Secret';
 COMMENT ON COLUMN "notification_channel_config"."receiver_open_id" IS '接收用户在该应用下的 open_id';
 COMMENT ON COLUMN "notification_channel_config"."receiver_name" IS '接收用户名称';
 COMMENT ON COLUMN "notification_channel_config"."create_user" IS '创建人用户ID';
@@ -1420,7 +1420,7 @@ COMMENT ON COLUMN "notification_delivery"."user_id" IS '所属用户ID，用于�
 COMMENT ON COLUMN "notification_delivery"."biz_type" IS '通知业务类型：LEETCODE_REMINDER=未打卡提醒，LEETCODE_DAILY=每日一题，FEEDBACK_ADMIN=新反馈，FEEDBACK_REPLY=反馈回复';
 COMMENT ON COLUMN "notification_delivery"."channel" IS '投递渠道，当前持久化重试由FEISHU飞书渠道使用';
 COMMENT ON COLUMN "notification_delivery"."status" IS 'PENDING/SUCCESS/RETRY/FAILED';
-COMMENT ON COLUMN "notification_delivery"."payload_ciphertext" IS '重试所需的加密消息载荷';
+COMMENT ON COLUMN "notification_delivery"."payload_ciphertext" IS '重试所需的SM4-GCM加密消息载荷';
 COMMENT ON COLUMN "notification_delivery"."retry_count" IS '累计发送失败次数，初始0，每次失败递增';
 COMMENT ON COLUMN "notification_delivery"."next_retry_time" IS '下次重试时间，未安排重试时为空';
 COMMENT ON COLUMN "notification_delivery"."provider_code" IS '最近渠道返回码或内部失败码，尚未返回时为空';
@@ -1884,7 +1884,7 @@ CREATE TABLE "sys_config" (
 COMMENT ON TABLE "sys_config" IS '系统配置表';
 COMMENT ON COLUMN "sys_config"."id" IS '主键ID（雪花）';
 COMMENT ON COLUMN "sys_config"."config_key" IS '配置键（唯一）';
-COMMENT ON COLUMN "sys_config"."config_value" IS '配置值（JSON 或纯文本）';
+COMMENT ON COLUMN "sys_config"."config_value" IS '配置值（JSON 或纯文本），敏感字段以SM4-GCM密文保存';
 COMMENT ON COLUMN "sys_config"."config_type" IS '类型：STRING/JSON/BOOLEAN/NUMBER（前端渲染用）';
 COMMENT ON COLUMN "sys_config"."description" IS '配置说明';
 COMMENT ON COLUMN "sys_config"."is_deleted" IS '逻辑删除标记：0=未删除，1=已删除';
@@ -2222,7 +2222,7 @@ CREATE TABLE "user_bind" (
     "user_id" bigint NOT NULL,
     "platform" varchar(32) NOT NULL,
     "platform_username" varchar(128),
-    "access_token" text,
+    "access_token_ciphertext" text,
     "meta_fields" jsonb,
     "create_time" timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "create_user" bigint,
@@ -2236,7 +2236,7 @@ COMMENT ON COLUMN "user_bind"."id" IS '主键';
 COMMENT ON COLUMN "user_bind"."user_id" IS '本系统用户ID';
 COMMENT ON COLUMN "user_bind"."platform" IS '平台类型：github, leetcode, csdn, shanbay, douban, weread';
 COMMENT ON COLUMN "user_bind"."platform_username" IS '第三方平台的用户名/账号';
-COMMENT ON COLUMN "user_bind"."access_token" IS '访问令牌';
+COMMENT ON COLUMN "user_bind"."access_token_ciphertext" IS 'SM4-GCM加密的第三方访问令牌';
 COMMENT ON COLUMN "user_bind"."meta_fields" IS '额外配置(JSON)';
 COMMENT ON COLUMN "user_bind"."create_time" IS '绑定时间';
 COMMENT ON COLUMN "user_bind"."create_user" IS '创建人';

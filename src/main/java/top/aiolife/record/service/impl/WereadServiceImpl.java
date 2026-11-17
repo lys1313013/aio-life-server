@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import top.aiolife.record.mapper.UserBindMapper;
+import top.aiolife.record.notification.NotificationCryptoService;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.pojo.vo.WereadConnectionVO;
 import top.aiolife.record.pojo.vo.WereadBookLinkVO;
@@ -39,9 +40,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WereadServiceImpl implements IWereadService {
     private static final Set<String> MODES = Set.of("weekly", "monthly", "annually", "overall");
+    private static final String TOKEN_PURPOSE = "user-bind";
     private final UserBindMapper mapper;
     private final WereadClient client;
     private final WereadReadCache readCache;
+    private final NotificationCryptoService crypto;
 
     private String cacheScope(UserBindEntity connection) {
         return connection.getUserId() + ":" + DigestUtil.sha256Hex(
@@ -113,9 +116,9 @@ public class WereadServiceImpl implements IWereadService {
     }
 
     private UserBindEntity find(long userId) {
-        return mapper.selectOne(new LambdaQueryWrapper<UserBindEntity>()
+        return decryptToken(mapper.selectOne(new LambdaQueryWrapper<UserBindEntity>()
                 .eq(UserBindEntity::getUserId, userId)
-                .eq(UserBindEntity::getPlatform, "weread"));
+                .eq(UserBindEntity::getPlatform, "weread")));
     }
 
     private UserBindEntity requireConnection(long userId) {
@@ -175,6 +178,7 @@ public class WereadServiceImpl implements IWereadService {
             JSONObject meta = new JSONObject();
             meta.put("connectionVersion", UUID.randomUUID().toString());
             connection.setMetaFields(meta.toJSONString());
+            connection.setAccessTokenCiphertext(encryptToken(userId, apiKey));
             connection.setAccessToken(apiKey);
             mapper.insert(connection);
         } else {
@@ -184,7 +188,7 @@ public class WereadServiceImpl implements IWereadService {
             mapper.update(null, new LambdaUpdateWrapper<UserBindEntity>()
                     .eq(UserBindEntity::getUserId, userId)
                     .eq(UserBindEntity::getPlatform, "weread")
-                    .set(UserBindEntity::getAccessToken, apiKey)
+                    .set(UserBindEntity::getAccessTokenCiphertext, encryptToken(userId, apiKey))
                     .set(UserBindEntity::getMetaFields, meta.toJSONString())
                     .set(UserBindEntity::getUpdateTime, LocalDateTime.now())
                     .set(UserBindEntity::getUpdateUser, userId));
@@ -339,5 +343,22 @@ public class WereadServiceImpl implements IWereadService {
         validateBookId(bookId);
         var connection = requireConnection(userId);
         return cachedCall(connection, "/book/getprogress", Map.of("bookId", bookId));
+    }
+
+    private UserBindEntity decryptToken(UserBindEntity entity) {
+        if (entity != null) {
+            String ciphertext = entity.getAccessTokenCiphertext();
+            entity.setAccessToken(StringUtils.hasText(ciphertext)
+                    ? crypto.decrypt(TOKEN_PURPOSE, ciphertext, aad(entity.getUserId())) : null);
+        }
+        return entity;
+    }
+
+    private String encryptToken(long userId, String token) {
+        return crypto.encrypt(TOKEN_PURPOSE, token, aad(userId));
+    }
+
+    private static String aad(Long userId) {
+        return "user_bind:" + userId;
     }
 }

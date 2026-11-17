@@ -18,7 +18,7 @@ public interface UserBindMapper extends BaseMapper<UserBindEntity> {
 
     /** 原子清除同步时间和凭证，保留其他元数据；随后由服务逻辑删除绑定。 */
     @Update("""
-        UPDATE user_bind SET access_token=NULL,
+        UPDATE user_bind SET access_token_ciphertext=NULL,
           meta_fields=COALESCE(meta_fields, '{}'::jsonb) - 'lastSyncTime',
           update_time=#{now}, update_user=#{userId}
         WHERE user_id=#{userId} AND platform='weread' AND is_deleted=0

@@ -33,9 +33,21 @@ public class ApiKeyEntity extends IdentityEntity {
     private Long userId;
 
     /**
-     * API Key
+     * 生成时返回的明文 API Key，仅用于本次响应，不持久化
      */
+    @TableField(exist = false)
+    @ToString.Exclude
     private String apiKey;
+
+    /**
+     * API Key 的 SHA-256 摘要
+     */
+    private String apiKeyHash;
+
+    /**
+     * API Key 前 12 位，用于列表识别
+     */
+    private String keyPrefix;
 
     /**
      * 备注

@@ -20,7 +20,7 @@ public class ApiKeyVO {
     private Long id;
 
     /**
-     * API Key (脱敏后的，如：ak-1234***5678)
+     * API Key 前缀脱敏值，如：ak-1a2b3c4d5e***
      */
     private String apiKey;
 

@@ -99,7 +99,7 @@ class WechatSubscriptionServiceTest {
 
     @Test void 载荷加密且正确模板字段按Unicode字符截断() throws Exception {
         enqueueAndProcess();
-        assertTrue(row.getPayloadCiphertext().startsWith("v1:"));
+        assertTrue(row.getPayloadCiphertext().startsWith("sm4:v1:"));
         assertFalse(row.getPayloadCiphertext().contains("fixture-openid"));
         var payload = new ObjectMapper().readValue(crypto.decrypt(row.getPayloadCiphertext()), WechatSubscriptionService.Payload.class);
         String title = payload.data().get("thing1").get("value");

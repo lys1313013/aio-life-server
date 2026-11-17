@@ -8,6 +8,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.record.client.DoubanAccountClient;
 import top.aiolife.record.mapper.UserBindMapper;
+import top.aiolife.record.notification.NotificationCryptoService;
 import top.aiolife.record.pojo.entity.UserBindEntity;
 import top.aiolife.record.service.IWereadService;
 import top.aiolife.record.service.impl.UserBindServiceImpl;
@@ -26,7 +27,8 @@ class WereadUserBindTest {
     void setup() {
         mapper = mock(UserBindMapper.class);
         weread = mock(IWereadService.class);
-        service = new UserBindServiceImpl(weread, mock(RedisUtil.class), mock(DoubanAccountClient.class));
+        service = new UserBindServiceImpl(weread, mock(RedisUtil.class), mock(DoubanAccountClient.class),
+                new NotificationCryptoService("synthetic-test-master-key"));
         ReflectionTestUtils.setField(service, "baseMapper", mapper);
     }
 

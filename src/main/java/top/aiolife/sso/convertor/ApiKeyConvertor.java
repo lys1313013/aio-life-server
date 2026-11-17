@@ -22,7 +22,7 @@ public interface ApiKeyConvertor {
 
     ApiKeyConvertor INSTANCE = Mappers.getMapper(ApiKeyConvertor.class);
 
-    @Mapping(target = "apiKey", source = "apiKey", qualifiedByName = "maskApiKey")
+    @Mapping(target = "apiKey", source = "keyPrefix", qualifiedByName = "maskApiKey")
     @Mapping(target = "isExpired", source = "expiredAt", qualifiedByName = "checkExpired")
     ApiKeyVO entity2VO(ApiKeyEntity entity);
 
@@ -32,11 +32,11 @@ public interface ApiKeyConvertor {
      * 脱敏 API Key
      */
     @Named("maskApiKey")
-    default String maskApiKey(String apiKey) {
-        if (apiKey == null || apiKey.length() < 12) {
-            return apiKey;
+    default String maskApiKey(String keyPrefix) {
+        if (keyPrefix == null || keyPrefix.isBlank()) {
+            return keyPrefix;
         }
-        return apiKey.substring(0, 8) + "***" + apiKey.substring(apiKey.length() - 4);
+        return keyPrefix + "***";
     }
 
     /**

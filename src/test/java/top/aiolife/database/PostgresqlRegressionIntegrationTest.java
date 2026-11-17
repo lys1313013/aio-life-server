@@ -417,11 +417,15 @@ class PostgresqlRegressionIntegrationTest {
     }
 
     private WereadServiceImpl weread(WereadClient client) {
-        return new WereadServiceImpl(mapper(UserBindMapper.class), client, new WereadReadCache());
+        return new WereadServiceImpl(mapper(UserBindMapper.class), client, new WereadReadCache(),
+                new top.aiolife.record.notification.NotificationCryptoService("synthetic-test-master-key"));
     }
     private void connection(long id, long owner, String platform, String meta) {
-        jdbc.update("INSERT INTO user_bind(id,user_id,platform,access_token,meta_fields,update_time) VALUES (?,?,?,'wrk-fixture',CAST(? AS jsonb),?)",
-                id, owner, platform, meta, OLD_TIME);
+        jdbc.update("INSERT INTO user_bind(id,user_id,platform,access_token_ciphertext,meta_fields,update_time) VALUES (?,?,?,?,CAST(? AS jsonb),?)",
+                id, owner, platform,
+                new top.aiolife.record.notification.NotificationCryptoService("synthetic-test-master-key")
+                        .encrypt("user-bind", "wrk-fixture", "user_bind:" + owner),
+                meta, OLD_TIME);
     }
 
     @Test void 微信读书同步和解绑保留扩展元数据并隔离用户和平台() throws Exception {
@@ -442,11 +446,14 @@ class PostgresqlRegressionIntegrationTest {
             service.disconnect(42L);
         }
         assertNull(mapper(UserBindMapper.class).selectById(1));
-        assertNull(jdbc.queryForObject("SELECT access_token FROM user_bind WHERE id=1", String.class));
+        assertNull(jdbc.queryForObject("SELECT access_token_ciphertext FROM user_bind WHERE id=1", String.class));
         var after = JSON.parseObject(jdbc.queryForObject("SELECT meta_fields::text FROM user_bind WHERE id=1", String.class));
         assertFalse(after.containsKey("lastSyncTime")); assertTrue(after.containsKey("extra"));
-        assertEquals("wrk-fixture", mapper(UserBindMapper.class).selectById(2).getAccessToken());
-        assertEquals("wrk-fixture", mapper(UserBindMapper.class).selectById(3).getAccessToken());
+        var crypto = new top.aiolife.record.notification.NotificationCryptoService("synthetic-test-master-key");
+        assertEquals("wrk-fixture", crypto.decrypt("user-bind",
+                mapper(UserBindMapper.class).selectById(2).getAccessTokenCiphertext(), "user_bind:43"));
+        assertEquals("wrk-fixture", crypto.decrypt("user-bind",
+                mapper(UserBindMapper.class).selectById(3).getAccessTokenCiphertext(), "user_bind:42"));
     }
 
     @Test void 旧连接版本其他用户及已删除记录不能写入同步时间且空元数据可解绑() {
