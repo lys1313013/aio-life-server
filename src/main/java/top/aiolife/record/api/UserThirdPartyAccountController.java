@@ -11,12 +11,12 @@ import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.convertor.RecordApiConvertor;
-import top.aiolife.record.pojo.entity.UserBindEntity;
-import top.aiolife.record.pojo.req.UserBindCreateReq;
-import top.aiolife.record.pojo.req.UserBindUpdateReq;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
+import top.aiolife.record.pojo.req.UserThirdPartyAccountCreateReq;
+import top.aiolife.record.pojo.req.UserThirdPartyAccountUpdateReq;
 import top.aiolife.record.pojo.vo.DoubanAccountVO;
-import top.aiolife.record.pojo.vo.UserBindVO;
-import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.pojo.vo.UserThirdPartyAccountVO;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
 
 /**
  * 用户第三方账号绑定接口
@@ -25,19 +25,19 @@ import top.aiolife.record.service.IUserBindService;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/userbinds")
-public class UserBindController {
+public class UserThirdPartyAccountController {
 
-    private final IUserBindService userBindService;
+    private final IUserThirdPartyAccountService userThirdPartyAccountService;
 
     /**
      * 获取当前用户的绑定列表
      */
     @Operation(summary = "查询第三方账号绑定")
     @GetMapping("/list")
-    public ApiResponse<List<UserBindVO>> list(@CurrentUserId String userId,
+    public ApiResponse<List<UserThirdPartyAccountVO>> list(@CurrentUserId String userId,
                                               @RequestParam(required = false) Boolean includeToken) {
-        List<UserBindEntity> list = userBindService.listForUser(IdCodec.decode(userId), includeToken);
-        return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserBindVOList(list));
+        List<UserThirdPartyAccountEntity> list = userThirdPartyAccountService.listForUser(IdCodec.decode(userId), includeToken);
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserThirdPartyAccountVOList(list));
     }
 
     /**
@@ -46,7 +46,7 @@ public class UserBindController {
     @Operation(summary = "查询豆瓣账号公开昵称")
     @GetMapping("/douban/verify")
     public ApiResponse<DoubanAccountVO> verifyDoubanAccount(@RequestParam String accountId) {
-        return ApiResponse.success(userBindService.verifyDoubanAccount(accountId));
+        return ApiResponse.success(userThirdPartyAccountService.verifyDoubanAccount(accountId));
     }
 
     /**
@@ -55,9 +55,9 @@ public class UserBindController {
     @Operation(summary = "新增第三方账号绑定")
     @PostMapping
     public ApiResponse<Boolean> add(@CurrentUserId String userId,
-                                    @Valid @RequestBody UserBindCreateReq userBindEntityReq) {
-        UserBindEntity userBindEntity = RecordApiConvertor.INSTANCE.fromUserBindCreateReq(userBindEntityReq);
-        return ApiResponse.success(userBindService.createForUser(IdCodec.decode(userId), userBindEntity));
+                                    @Valid @RequestBody UserThirdPartyAccountCreateReq userThirdPartyAccountEntityReq) {
+        UserThirdPartyAccountEntity userThirdPartyAccountEntity = RecordApiConvertor.INSTANCE.fromUserThirdPartyAccountCreateReq(userThirdPartyAccountEntityReq);
+        return ApiResponse.success(userThirdPartyAccountService.createForUser(IdCodec.decode(userId), userThirdPartyAccountEntity));
     }
 
     /**
@@ -66,9 +66,9 @@ public class UserBindController {
     @Operation(summary = "更新第三方账号绑定")
     @PutMapping
     public ApiResponse<Boolean> update(@CurrentUserId String userId,
-                                       @Valid @RequestBody UserBindUpdateReq userBindEntityReq) {
-        UserBindEntity userBindEntity = RecordApiConvertor.INSTANCE.fromUserBindUpdateReq(userBindEntityReq);
-        return ApiResponse.success(userBindService.updateForUser(IdCodec.decode(userId), userBindEntity));
+                                       @Valid @RequestBody UserThirdPartyAccountUpdateReq userThirdPartyAccountEntityReq) {
+        UserThirdPartyAccountEntity userThirdPartyAccountEntity = RecordApiConvertor.INSTANCE.fromUserThirdPartyAccountUpdateReq(userThirdPartyAccountEntityReq);
+        return ApiResponse.success(userThirdPartyAccountService.updateForUser(IdCodec.decode(userId), userThirdPartyAccountEntity));
     }
 
     /**
@@ -77,7 +77,7 @@ public class UserBindController {
     @Operation(summary = "删除第三方账号绑定")
     @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@CurrentUserId String userId, @PathVariable String id) {
-        return ApiResponse.success(userBindService.deleteForUser(
+        return ApiResponse.success(userThirdPartyAccountService.deleteForUser(
                 IdCodec.decode(userId), IdCodec.decode(id)));
     }
 }

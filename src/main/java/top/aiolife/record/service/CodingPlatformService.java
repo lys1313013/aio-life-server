@@ -9,7 +9,7 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 
 import java.util.Map;
 import java.util.function.Supplier;
@@ -17,15 +17,15 @@ import java.util.function.Supplier;
 /** 小程序编程页面的数据入口：仅代理固定只读操作，账号和凭证取自当前用户绑定。 */
 @Service
 public class CodingPlatformService {
-    private final IUserBindService bindings;
+    private final IUserThirdPartyAccountService bindings;
     private final RestClient client;
 
     @Autowired
-    public CodingPlatformService(IUserBindService bindings) {
+    public CodingPlatformService(IUserThirdPartyAccountService bindings) {
         this(bindings, builder());
     }
 
-    CodingPlatformService(IUserBindService bindings, RestClient.Builder builder) {
+    CodingPlatformService(IUserThirdPartyAccountService bindings, RestClient.Builder builder) {
         this.bindings = bindings;
         this.client = builder.build();
     }
@@ -96,7 +96,7 @@ public class CodingPlatformService {
                 .retrieve().body(JsonNode.class), false).get("data");
     }
 
-    private UserBindEntity binding(long userId, String platform) {
+    private UserThirdPartyAccountEntity binding(long userId, String platform) {
         var bind = bindings.getBindByUserIdAndPlatform(userId, platform);
         if (bind == null || bind.getPlatformUsername() == null || bind.getPlatformUsername().isBlank()) {
             throw new IllegalArgumentException("请先绑定 " + (platform.equals("github") ? "GitHub" : "LeetCode") + " 账号");
@@ -104,7 +104,7 @@ public class CodingPlatformService {
         return bind;
     }
 
-    private void githubHeaders(HttpHeaders headers, UserBindEntity bind) {
+    private void githubHeaders(HttpHeaders headers, UserThirdPartyAccountEntity bind) {
         headers.set(HttpHeaders.ACCEPT, "application/vnd.github+json");
         headers.set(HttpHeaders.USER_AGENT, "aio-life-server");
         headers.set("X-GitHub-Api-Version", "2022-11-28");

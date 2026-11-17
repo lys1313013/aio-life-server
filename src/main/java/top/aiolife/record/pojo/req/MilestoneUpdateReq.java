@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.OptBoolean;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
@@ -51,5 +52,5 @@ public class MilestoneUpdateReq {
 
     private String type;
 
-    private String tags;
+    private List<String> tags;
 }

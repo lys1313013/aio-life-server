@@ -457,9 +457,9 @@
     ]
   },
   {
-    "key": "user_bind",
+    "key": "user_third_party_account",
     "title": "第三方账号",
-    "table": "user_bind",
+    "table": "user_third_party_account",
     "ownerColumn": "user_id",
     "menus": [],
     "parents": [],
@@ -2655,7 +2655,7 @@
       },
       {
         "key": "season",
-        "label": "适用季节:春,夏,秋,冬",
+        "label": "适用季节（JSON 数组：春/夏/秋/冬）",
         "type": "TEXT"
       },
       {

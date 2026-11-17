@@ -19,7 +19,7 @@ public interface IMovieMapper extends BaseMapper<MovieEntity> {
                 : "WHEN 'not_started' THEN 1 WHEN 'in_progress' THEN 2";
         wrapper.last("ORDER BY CASE status " + statusOrder
                 + " WHEN 'completed' THEN 3 WHEN 'on_hold' THEN 4 ELSE 0 END,"
-                + " finish_time DESC NULLS LAST, create_time DESC NULLS LAST, id DESC");
+                + " finish_date DESC NULLS LAST, create_time DESC NULLS LAST, id DESC");
     }
     @Select("SELECT * FROM movie WHERE user_id=#{userId} AND id=#{id} AND is_deleted=0 FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)

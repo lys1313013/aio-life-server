@@ -8,10 +8,10 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.vo.DashboardCardVO;
 import top.aiolife.record.provider.DashboardCardProvider;
-import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
 import top.aiolife.core.redis.RedisUtil;
 
 import java.time.Instant;
@@ -32,12 +32,12 @@ import java.util.concurrent.TimeUnit;
 @AllArgsConstructor
 public class GithubCardProvider implements DashboardCardProvider {
 
-    private final IUserBindService userBindService;
+    private final IUserThirdPartyAccountService userThirdPartyAccountService;
 
     private final RedisUtil redisUtil;
 
     /**
-     * 「是否展示 GitHub 卡片」决策的 Redis 键前缀（按用户隔离），绑定变更时由 UserBindController 失效
+     * 「是否展示 GitHub 卡片」决策的 Redis 键前缀（按用户隔离），绑定变更时由 UserThirdPartyAccountController 失效
      */
     private static final String VISIBLE_KEY_PREFIX = "github:visible:";
 
@@ -84,7 +84,7 @@ public class GithubCardProvider implements DashboardCardProvider {
         if (cached != null) {
             return Boolean.parseBoolean(cached);
         }
-        UserBindEntity bind = userBindService.getBindByUserIdAndPlatform(userId, "github");
+        UserThirdPartyAccountEntity bind = userThirdPartyAccountService.getBindByUserIdAndPlatform(userId, "github");
         boolean visible = bind != null
                 && bind.getPlatformUsername() != null && !bind.getPlatformUsername().isEmpty()
                 && bind.getAccessToken() != null && !bind.getAccessToken().isEmpty();
@@ -98,7 +98,7 @@ public class GithubCardProvider implements DashboardCardProvider {
             // 未绑定：直接短路，不发起慢的 GitHub 请求
             return null;
         }
-        UserBindEntity bind = userBindService.getBindByUserIdAndPlatform(userId, "github");
+        UserThirdPartyAccountEntity bind = userThirdPartyAccountService.getBindByUserIdAndPlatform(userId, "github");
         if (bind == null || bind.getPlatformUsername() == null || bind.getAccessToken() == null) {
             return null;
         }

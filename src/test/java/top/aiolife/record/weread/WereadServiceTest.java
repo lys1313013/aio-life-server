@@ -13,8 +13,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
-import top.aiolife.record.mapper.UserBindMapper;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.mapper.UserThirdPartyAccountMapper;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.req.WereadConnectionReq;
 import top.aiolife.record.notification.NotificationCryptoService;
 import top.aiolife.record.service.impl.WereadServiceImpl;
@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 
 class WereadServiceTest {
     private final ObjectMapper json = new ObjectMapper();
-    private UserBindMapper mapper;
+    private UserThirdPartyAccountMapper mapper;
     private WereadClient client;
     private WereadServiceImpl service;
     private AtomicLong nanos;
@@ -36,15 +36,15 @@ class WereadServiceTest {
 
     @BeforeEach
     void setup() {
-        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "test"), UserBindEntity.class);
-        mapper = mock(UserBindMapper.class);
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), "test"), UserThirdPartyAccountEntity.class);
+        mapper = mock(UserThirdPartyAccountMapper.class);
         client = mock(WereadClient.class);
         nanos = new AtomicLong();
         service = new WereadServiceImpl(mapper, client, new WereadReadCache(nanos::get), crypto);
     }
 
-    private UserBindEntity connection() {
-        var entity = new UserBindEntity();
+    private UserThirdPartyAccountEntity connection() {
+        var entity = new UserThirdPartyAccountEntity();
         entity.setId(1L);
         entity.setUserId(42L);
         entity.setPlatform("weread");
@@ -112,7 +112,7 @@ class WereadServiceTest {
             var result = service.connection(42L);
             assertTrue(result.connected());
             assertFalse(json.writeValueAsString(result).contains("key"));
-            ArgumentCaptor<Wrapper<UserBindEntity>> captor = ArgumentCaptor.captor();
+            ArgumentCaptor<Wrapper<UserThirdPartyAccountEntity>> captor = ArgumentCaptor.captor();
             verify(mapper).selectOne(captor.capture());
             String sql = captor.getValue().getSqlSegment();
             assertTrue(sql.contains("user_id"));
@@ -183,7 +183,7 @@ class WereadServiceTest {
         try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             assertTrue(service.connect(42L,"wrk-test").connected());
-            ArgumentCaptor<UserBindEntity> captor = ArgumentCaptor.forClass(UserBindEntity.class);
+            ArgumentCaptor<UserThirdPartyAccountEntity> captor = ArgumentCaptor.forClass(UserThirdPartyAccountEntity.class);
             verify(mapper).insert(captor.capture());
             assertEquals(42L, captor.getValue().getUserId());
             assertEquals("wrk-test", captor.getValue().getAccessToken());
@@ -229,7 +229,7 @@ class WereadServiceTest {
             assertTrue(JSON.parseObject(row.getMetaFields()).getBooleanValue("other"));
             assertFalse(JSON.parseObject(row.getMetaFields()).containsKey("lastSyncTime"));
             verify(mapper).lockWereadUser(42L);
-            verify(mapper, never()).insert(any(UserBindEntity.class));
+            verify(mapper, never()).insert(any(UserThirdPartyAccountEntity.class));
         }
     }
 
@@ -241,7 +241,7 @@ class WereadServiceTest {
             var order = inOrder(mapper);
             order.verify(mapper).lockWereadUser(42L);
             order.verify(mapper).clearWereadCredentials(eq(42L), any());
-            ArgumentCaptor<Wrapper<UserBindEntity>> captor = ArgumentCaptor.captor();
+            ArgumentCaptor<Wrapper<UserThirdPartyAccountEntity>> captor = ArgumentCaptor.captor();
             order.verify(mapper).delete(captor.capture());
             assertTrue(captor.getValue().getSqlSegment().contains("platform"));
             var params = ((AbstractWrapper<?,?,?>)captor.getValue()).getParamNameValuePairs();
@@ -260,7 +260,7 @@ class WereadServiceTest {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             assertEquals("https://weread.qq.com/web/reader/test-book", service.bookLink(42L,bookId).deepLink());
             verify(client).call("wrk-test", "/book/info", Map.of("bookId", bookId));
-            ArgumentCaptor<Wrapper<UserBindEntity>> captor = ArgumentCaptor.captor();
+            ArgumentCaptor<Wrapper<UserThirdPartyAccountEntity>> captor = ArgumentCaptor.captor();
             verify(mapper).selectOne(captor.capture());
             captor.getValue().getSqlSegment();
             assertTrue(((AbstractWrapper<?,?,?>)captor.getValue()).getParamNameValuePairs().containsValue(42L));

@@ -25,6 +25,7 @@ import top.aiolife.record.service.IMovieService;
 import top.aiolife.record.service.IReadRecordService;
 import top.aiolife.record.util.DoubanSubjectUrl;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -163,9 +164,9 @@ public class DoubanCaptureService {
             entity.setFileId(file);
             entity.setUserId(user);
             if (entity.getStatus() == ProgressStatusEnum.IN_PROGRESS
-                    && entity.getStartTime() == null) entity.setStartTime(LocalDateTime.now());
+                    && entity.getStartDate() == null) entity.setStartDate(LocalDate.now());
             if (entity.getStatus() == ProgressStatusEnum.COMPLETED
-                    && entity.getFinishTime() == null) entity.setFinishTime(LocalDateTime.now());
+                    && entity.getFinishDate() == null) entity.setFinishDate(LocalDate.now());
             if (found == null) {
                 entity.fillCreateCommonField(user);
                 readMapper.insert(entity);
@@ -196,10 +197,10 @@ public class DoubanCaptureService {
         entity.setFileId(file);
         entity.setRating(merged.hasNonNull("rating") ? merged.get("rating").intValue() : null);
         entity.setUserId(user);
-        if (entity.getStatus() == ProgressStatusEnum.IN_PROGRESS && entity.getStartTime() == null)
-            entity.setStartTime(LocalDateTime.now());
-        if (entity.getStatus() == ProgressStatusEnum.COMPLETED && entity.getFinishTime() == null)
-            entity.setFinishTime(LocalDateTime.now());
+        if (entity.getStatus() == ProgressStatusEnum.IN_PROGRESS && entity.getStartDate() == null)
+            entity.setStartDate(LocalDate.now());
+        if (entity.getStatus() == ProgressStatusEnum.COMPLETED && entity.getFinishDate() == null)
+            entity.setFinishDate(LocalDate.now());
         if (found == null) {
             entity.fillCreateCommonField(user);
             movieMapper.insert(entity);
@@ -267,19 +268,19 @@ public class DoubanCaptureService {
             if (target == ProgressStatusEnum.COMPLETED
                     && movie.getTotalProgress() != null
                     && movie.getTotalProgress() > 0) progress = movie.getTotalProgress();
-            LocalDateTime finished =
-                    target == ProgressStatusEnum.COMPLETED ? LocalDateTime.now() : null;
+            LocalDate finished =
+                    target == ProgressStatusEnum.COMPLETED ? LocalDate.now() : null;
             var update =
                     new LambdaUpdateWrapper<MovieEntity>()
                             .eq(MovieEntity::getId, movie.getId())
                             .eq(MovieEntity::getUserId, user)
                             .set(MovieEntity::getStatus, target)
                             .set(MovieEntity::getCurrentProgress, progress)
-                            .set(MovieEntity::getFinishTime, finished)
+                            .set(MovieEntity::getFinishDate, finished)
                             .set(MovieEntity::getUpdateUser, user)
                             .set(MovieEntity::getUpdateTime, LocalDateTime.now());
             if (movieMapper.update(null, update) != 1) throw conflict("观影记录已变化，请重新同步");
-            // startTime保留历史开始时间；标题、类型、总进度、封面、评分及备注不参与更新。
+            // startDate保留历史开始日期；标题、类型、总进度、封面、评分及备注不参与更新。
             operation = "updated";
         } else {
             ObjectNode draft = metadata.deepCopy();
@@ -314,7 +315,7 @@ public class DoubanCaptureService {
             movie.setStatus(target);
             movie.setCurrentProgress(
                     target == ProgressStatusEnum.COMPLETED && total > 0 ? total : 0);
-            if (target == ProgressStatusEnum.COMPLETED) movie.setFinishTime(LocalDateTime.now());
+            if (target == ProgressStatusEnum.COMPLETED) movie.setFinishDate(LocalDate.now());
             String cover = text(draft, "coverImgUrl", false, 2048);
             if (cover != null && !cover.isBlank()) {
                 try {

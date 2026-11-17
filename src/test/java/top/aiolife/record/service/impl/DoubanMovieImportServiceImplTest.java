@@ -11,13 +11,13 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import top.aiolife.record.mapper.IMovieMapper;
 import top.aiolife.record.pojo.entity.MovieEntity;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.req.DoubanMovieImportItemReq;
 import top.aiolife.record.pojo.req.DoubanMovieImportReq;
 import top.aiolife.record.pojo.vo.DoubanMovieImportPreviewVO;
 import top.aiolife.record.pojo.vo.DoubanMovieImportResultVO;
-import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,12 +34,12 @@ class DoubanMovieImportServiceImplTest {
     private IMovieMapper movieMapper;
 
     @Mock
-    private IUserBindService userBindService;
+    private IUserThirdPartyAccountService userThirdPartyAccountService;
 
     @Test
     void newRecordMapsMarkedDateAndLeavesBlankDateNull() {
         DoubanMovieImportServiceImpl service = service();
-        when(userBindService.getBindByUserIdAndPlatform(7L, "douban"))
+        when(userThirdPartyAccountService.getBindByUserIdAndPlatform(7L, "douban"))
                 .thenReturn(binding("doubanfilm"));
         when(movieMapper.selectList(any())).thenReturn(List.of());
         DoubanMovieImportReq request = request(item("1292052", LocalDate.of(2026, 9, 7), 5));
@@ -53,7 +53,7 @@ class DoubanMovieImportServiceImplTest {
         ArgumentCaptor<MovieEntity> captor = ArgumentCaptor.forClass(MovieEntity.class);
         verify(movieMapper).insert(captor.capture());
         MovieEntity inserted = captor.getValue();
-        assertEquals(LocalDateTime.of(2026, 9, 7, 0, 0), inserted.getFinishTime());
+        assertEquals(LocalDate.of(2026, 9, 7), inserted.getFinishDate());
         assertEquals(5, inserted.getRating());
         assertEquals("https://movie.douban.com/subject/1292052/", inserted.getUrl());
 
@@ -65,13 +65,13 @@ class DoubanMovieImportServiceImplTest {
             service.importRecords(request);
         }
         verify(movieMapper).insert(captor.capture());
-        assertNull(captor.getValue().getFinishTime(), "空 marked_date 不应自动填充当前时间");
+        assertNull(captor.getValue().getFinishDate(), "空 marked_date 不应自动填充当前日期");
     }
 
     @Test
     void duplicateAppearsInPreviewAndDefaultsToSkip() {
         DoubanMovieImportServiceImpl service = service();
-        when(userBindService.getBindByUserIdAndPlatform(7L, "douban"))
+        when(userThirdPartyAccountService.getBindByUserIdAndPlatform(7L, "douban"))
                 .thenReturn(binding("doubanfilm"));
         MovieEntity existing = existingMovie();
         when(movieMapper.selectList(any())).thenReturn(List.of(existing));
@@ -93,13 +93,13 @@ class DoubanMovieImportServiceImplTest {
     @Test
     void overwritePreservesBlankOptionalFieldsAndNonImportFields() {
         DoubanMovieImportServiceImpl service = service();
-        when(userBindService.getBindByUserIdAndPlatform(7L, "douban"))
+        when(userThirdPartyAccountService.getBindByUserIdAndPlatform(7L, "douban"))
                 .thenReturn(binding("doubanfilm"));
         MovieEntity existing = existingMovie();
         existing.setDirector("原导演");
         existing.setRemark("原备注");
         existing.setFileId("cover-id");
-        existing.setStartTime(LocalDateTime.of(2020, 1, 1, 0, 0));
+        existing.setStartDate(LocalDate.of(2020, 1, 1));
         when(movieMapper.selectList(any())).thenReturn(List.of(existing));
         DoubanMovieImportReq request = request(item("1292052", null, null));
         request.setDuplicatePolicy("overwrite");
@@ -112,12 +112,12 @@ class DoubanMovieImportServiceImplTest {
         assertEquals("原导演", existing.getDirector());
         assertEquals("原备注", existing.getRemark());
         assertEquals("cover-id", existing.getFileId());
-        assertEquals(LocalDateTime.of(2020, 1, 1, 0, 0), existing.getStartTime());
+        assertEquals(LocalDate.of(2020, 1, 1), existing.getStartDate());
         verify(movieMapper).updateById(existing);
     }
 
     private DoubanMovieImportServiceImpl service() {
-        var service = new DoubanMovieImportServiceImpl(movieMapper, userBindService);
+        var service = new DoubanMovieImportServiceImpl(movieMapper, userThirdPartyAccountService);
         var guard = mock(DoubanSourceGuard.class);
         lenient().when(guard.lockExisting(anyLong(), any())).thenAnswer(inv -> {
             var subject = (top.aiolife.record.util.DoubanSubjectUrl.Subject) inv.getArgument(1);
@@ -152,8 +152,8 @@ class DoubanMovieImportServiceImplTest {
         return item;
     }
 
-    private static UserBindEntity binding(String username) {
-        UserBindEntity binding = new UserBindEntity();
+    private static UserThirdPartyAccountEntity binding(String username) {
+        UserThirdPartyAccountEntity binding = new UserThirdPartyAccountEntity();
         binding.setPlatformUsername(username);
         return binding;
     }

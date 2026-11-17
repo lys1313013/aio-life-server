@@ -3,7 +3,7 @@ package top.aiolife.record.pojo.req;
 import jakarta.validation.constraints.Pattern;
 import top.aiolife.core.id.AttachmentKey;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -37,13 +37,13 @@ public class ReadRecordCreateReq {
     @Schema(description = "当前页数或进度；与 totalProgress 使用同一单位")
     private Integer currentProgress;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Schema(description = "开始阅读的本地时间；状态为在读且未提供时由服务端补当前时间")
-    private LocalDateTime startTime;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Schema(description = "开始阅读日期；状态为在读且未提供时由服务端补当天")
+    private LocalDate startDate;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Schema(description = "读完的本地时间；状态为读完且未提供时由服务端补当前时间")
-    private LocalDateTime finishTime;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Schema(description = "读完日期；状态为读完且未提供时由服务端补当天")
+    private LocalDate finishDate;
 
     @Schema(description = "阅读备注")
     private String remark;

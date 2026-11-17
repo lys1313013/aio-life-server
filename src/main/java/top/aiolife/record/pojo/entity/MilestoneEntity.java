@@ -2,12 +2,15 @@ package top.aiolife.record.pojo.entity;
 
 import top.aiolife.core.pojo.entity.BaseEntity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.OptBoolean;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import top.aiolife.core.mybatis.StringListJsonTypeHandler;
 
 /**
  * 类功能描述
@@ -17,7 +20,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-@TableName("milestone")
+@TableName(value = "milestone", autoResultMap = true)
 public class MilestoneEntity extends BaseEntity {
     private Long userId;
 
@@ -35,5 +38,6 @@ public class MilestoneEntity extends BaseEntity {
 
     private String type;
 
-    private String tags;
+    @TableField(typeHandler = StringListJsonTypeHandler.class)
+    private List<String> tags;
 }

@@ -7,9 +7,11 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import top.aiolife.core.mybatis.StringListJsonTypeHandler;
 import top.aiolife.core.pojo.entity.IdentityEntity;
 import top.aiolife.record.pojo.enums.GoalTypeEnum;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
@@ -27,7 +29,7 @@ import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 @Getter
 @Setter
 @ToString
-@TableName("goal")
+@TableName(value = "goal", autoResultMap = true)
 public class GoalEntity extends IdentityEntity {
 
     /** 进度来源：manual 手动，graphql 自定义只读查询。 */
@@ -140,9 +142,10 @@ public class GoalEntity extends IdentityEntity {
     private LocalDateTime completedAt;
 
     /**
-     * 目标标签（JSON格式存储）
+     * 目标标签数组，对应 jsonb 列
      */
-    private String tags;
+    @TableField(typeHandler = StringListJsonTypeHandler.class)
+    private List<String> tags;
 
     /**
      * 是否删除：0=未删除，1=已删除

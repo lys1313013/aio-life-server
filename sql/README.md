@@ -55,6 +55,10 @@
 
 - [V20261117_04__rename_finance_amount_columns.sql](migrations/V20261117_04__rename_finance_amount_columns.sql)：把 `expense.amt`、`expense.transaction_amt`、`income.amt`、`income.tax` 分别更名为 `bookkeeping_amount`、`transaction_amount`、`gross_amount`、`tax_amount`，只改列名和注释，区分记账金额、原始交易金额、税前收入与税额。
 
+- [V20261117_09__unify_client_ip_columns.sql](migrations/V20261117_09__unify_client_ip_columns.sql)：把 `login_log`、`mail_log`、`sys_activity_log` 的 `ip_address` 更名为 `client_ip`，并把客户端与服务器 IP 列统一为 `varchar(45)`（IPv6 文本最大长度）；已有值超长时整体拒绝执行。
+
+- [V20261117_10__rename_user_bind_table.sql](migrations/V20261117_10__rename_user_bind_table.sql)：把动词短语表名 `user_bind` 改为名词短语 `user_third_party_account`，同步重命名主键、检查约束和唯一索引，只改名称与注释，不改列、数据与接口行为。
+
 本次按明确要求同步修改历史初始脚本：新库不再创建上述四列；已有库仍保留可执行的迁移。另按明确要求不为 B 站视频封面新增增量脚本：`b_video.cover_file_id` 已直接在目标库迁移并从初始脚本移除，新库改由 `uk_file_b_video_cover` 约束 `file.biz_type='b_video_cover'` 的单封面关联；执行与校验记录见[数据库初始化与验证](../docs/数据库初始化与验证.md)。历史校验和调整需先备份并完成实际数据、结构迁移，再执行 `flyway:repair`；`repair` 本身不迁移业务数据。
 
 新库先用独立 Flyway 入口迁移，再启动应用；应用启动不自动建表或导入种子。后续结构、菜单和数据变更新增更高版本 `V`，不改写已执行文件。

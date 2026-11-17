@@ -12,16 +12,16 @@ import lombok.ToString;
 import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
- * user_bind
+ * user_third_party_account
  */
-@TableName(value = "user_bind", autoResultMap = true)
+@TableName(value = "user_third_party_account", autoResultMap = true)
 @Getter
 @Setter
 @ToString
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserBindEntity extends BaseEntity {
+public class UserThirdPartyAccountEntity extends BaseEntity {
 
     /**
      * 本系统用户ID

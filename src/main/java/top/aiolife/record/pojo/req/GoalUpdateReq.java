@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
+import java.util.List;
 import lombok.Data;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.DecimalMin;
@@ -127,8 +128,7 @@ public class GoalUpdateReq {
     private LocalDateTime endDate;
 
     /**
-     * 目标标签，JSON 数组文本
+     * 目标标签数组
      */
-    @Size(max = 1000)
-    private String tags;
+    private List<String> tags;
 }

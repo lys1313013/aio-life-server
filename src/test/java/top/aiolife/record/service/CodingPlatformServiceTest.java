@@ -11,7 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import top.aiolife.sso.service.SecondaryLockPolicy;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 
 import java.util.Set;
 
@@ -21,7 +21,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
 class CodingPlatformServiceTest {
-    private final IUserBindService bindings = mock(IUserBindService.class);
+    private final IUserThirdPartyAccountService bindings = mock(IUserThirdPartyAccountService.class);
     private CodingPlatformService service;
     private MockRestServiceServer server;
 
@@ -30,7 +30,7 @@ class CodingPlatformServiceTest {
         var builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
         service = new CodingPlatformService(bindings, builder);
-        var bind = new UserBindEntity();
+        var bind = new UserThirdPartyAccountEntity();
         bind.setPlatformUsername("fixture-user");
         bind.setAccessToken("fixture-platform-token");
         when(bindings.getBindByUserIdAndPlatform(11L, "github")).thenReturn(bind);

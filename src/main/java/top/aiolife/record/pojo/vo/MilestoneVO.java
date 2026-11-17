@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.OptBoolean;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.Data;
 
 /** MilestoneVO：仅包含接口需要返回的字段。 */
@@ -25,5 +26,5 @@ public class MilestoneVO {
 
     private String type;
 
-    private String tags;
+    private List<String> tags;
 }

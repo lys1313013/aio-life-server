@@ -1,7 +1,7 @@
 package top.aiolife.record.pojo.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import lombok.Data;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 
@@ -17,11 +17,11 @@ public class ReadRecordVO {
     private Integer totalProgress;
     private Integer currentProgress;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime startTime;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate startDate;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime finishTime;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate finishDate;
 
     private String remark;
 }

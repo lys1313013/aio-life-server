@@ -1,10 +1,10 @@
 package top.aiolife.record.provider.impl;
 
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.vo.DashboardCardVO;
 import top.aiolife.record.provider.DashboardCardProvider;
 import top.aiolife.record.service.ILeetcodeService;
-import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
 import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import lombok.AllArgsConstructor;
@@ -25,7 +25,7 @@ public class LeetcodeCardProvider implements DashboardCardProvider {
 
     private final ILeetcodeService leetcodeService;
     private final UserMapper userMapper;
-    private final IUserBindService userBindService;
+    private final IUserThirdPartyAccountService userThirdPartyAccountService;
 
     @Override
     public String getType() {
@@ -50,14 +50,14 @@ public class LeetcodeCardProvider implements DashboardCardProvider {
     @Override
     public boolean isVisible(long userId) {
         UserEntity user = userMapper.selectById(userId);
-        UserBindEntity bind = userBindService.getBindByUserIdAndPlatform(userId, "leetcode");
+        UserThirdPartyAccountEntity bind = userThirdPartyAccountService.getBindByUserIdAndPlatform(userId, "leetcode");
         return user != null && bind != null && bind.getPlatformUsername() != null;
     }
 
     @Override
     public DashboardCardVO getCard(long userId) {
         UserEntity user = userMapper.selectById(userId);
-        UserBindEntity bind = userBindService.getBindByUserIdAndPlatform(userId, "leetcode");
+        UserThirdPartyAccountEntity bind = userThirdPartyAccountService.getBindByUserIdAndPlatform(userId, "leetcode");
 
         if (user == null || bind == null || bind.getPlatformUsername() == null) {
             return null;

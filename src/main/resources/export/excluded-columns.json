@@ -42,7 +42,7 @@
     "is_deleted": "内部审计、安全字段或存储实现字段，不进入标准导出",
     "update_user": "内部审计、安全字段或存储实现字段，不进入标准导出"
   },
-  "user_bind": {
+  "user_third_party_account": {
     "access_token_ciphertext": "内部审计、安全字段或存储实现字段，不进入标准导出",
     "create_user": "内部审计、安全字段或存储实现字段，不进入标准导出",
     "is_deleted": "内部审计、安全字段或存储实现字段，不进入标准导出",

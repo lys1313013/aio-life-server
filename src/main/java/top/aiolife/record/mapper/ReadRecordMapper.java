@@ -17,7 +17,7 @@ public interface ReadRecordMapper extends BaseMapper<ReadRecordEntity> {
         String statusOrder = inProgressFirst
                 ? "WHEN 'in_progress' THEN 1 WHEN 'not_started' THEN 2 WHEN 'completed' THEN 3 WHEN 'on_hold' THEN 4"
                 : "WHEN 'not_started' THEN 1 WHEN 'in_progress' THEN 2 WHEN 'completed' THEN 3 WHEN 'on_hold' THEN 4";
-        wrapper.last("ORDER BY CASE status " + statusOrder + " ELSE 0 END, finish_time DESC NULLS LAST, create_time DESC NULLS LAST, id DESC");
+        wrapper.last("ORDER BY CASE status " + statusOrder + " ELSE 0 END, finish_date DESC NULLS LAST, create_time DESC NULLS LAST, id DESC");
     }
     @Select("SELECT * FROM read_record WHERE user_id=#{userId} AND id=#{id} AND is_deleted=0 FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)

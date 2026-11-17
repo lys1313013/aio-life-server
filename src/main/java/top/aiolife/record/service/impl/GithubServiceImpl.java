@@ -12,10 +12,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import top.aiolife.core.query.PaginationRequest;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.vo.GithubCommitVO;
 import top.aiolife.record.service.IGithubService;
-import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
 
 /**
  * GitHub 数据服务实现
@@ -28,12 +28,12 @@ import top.aiolife.record.service.IUserBindService;
 @RequiredArgsConstructor
 public class GithubServiceImpl implements IGithubService {
 
-    private final IUserBindService userBindService;
+    private final IUserThirdPartyAccountService userThirdPartyAccountService;
 
     @Override
     public List<GithubCommitVO> searchRecentCommitsForUser(long userId, int page, int perPage) {
         PaginationRequest.validate(page, perPage, 100);
-        UserBindEntity bind = userBindService.getBindByUserIdAndPlatform(userId, "github");
+        UserThirdPartyAccountEntity bind = userThirdPartyAccountService.getBindByUserIdAndPlatform(userId, "github");
         if (bind == null || bind.getPlatformUsername() == null) {
             return List.of();
         }

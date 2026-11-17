@@ -27,7 +27,7 @@ import top.aiolife.record.pojo.entity.ThoughtEntity;
 import top.aiolife.record.pojo.entity.ThoughtRelaEventEntity;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
 import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.pojo.query.BVideoQuery;
 import top.aiolife.record.pojo.query.DeviceQuery;
@@ -93,8 +93,8 @@ import top.aiolife.record.pojo.req.TimeTrackerCategoryAdminUpdateReq;
 import top.aiolife.record.pojo.req.TimeTrackerCategoryCreateReq;
 import top.aiolife.record.pojo.req.TimeTrackerCategorySortReq;
 import top.aiolife.record.pojo.req.TimeTrackerCategoryUpdateReq;
-import top.aiolife.record.pojo.req.UserBindCreateReq;
-import top.aiolife.record.pojo.req.UserBindUpdateReq;
+import top.aiolife.record.pojo.req.UserThirdPartyAccountCreateReq;
+import top.aiolife.record.pojo.req.UserThirdPartyAccountUpdateReq;
 import top.aiolife.record.pojo.req.UserDictDataAdminCreateReq;
 import top.aiolife.record.pojo.req.UserDictDataAdminUpdateReq;
 import top.aiolife.record.pojo.req.UserDictDataCreateReq;
@@ -126,7 +126,7 @@ import top.aiolife.record.pojo.vo.ThoughtRecordVO;
 import top.aiolife.record.pojo.vo.TimeRecordListVO;
 import top.aiolife.record.pojo.vo.TimeRecordRecommendationVO;
 import top.aiolife.record.pojo.vo.TimeTrackerCategoryVO;
-import top.aiolife.record.pojo.vo.UserBindVO;
+import top.aiolife.record.pojo.vo.UserThirdPartyAccountVO;
 import top.aiolife.record.pojo.vo.UserDictDataVO;
 
 /** 接口模型与持久化模型的显式转换，响应仅暴露 VO 声明的字段。 */
@@ -228,11 +228,11 @@ public interface RecordApiConvertor {
         return page == null ? null : page.map(this::toTimeRecordListVO);
     }
 
-    UserBindVO toUserBindVO(UserBindEntity entity);
-    List<UserBindVO> toUserBindVOList(List<UserBindEntity> entities);
+    UserThirdPartyAccountVO toUserThirdPartyAccountVO(UserThirdPartyAccountEntity entity);
+    List<UserThirdPartyAccountVO> toUserThirdPartyAccountVOList(List<UserThirdPartyAccountEntity> entities);
 
-    default PageResp<UserBindVO> toUserBindVOPage(PageResp<UserBindEntity> page) {
-        return page == null ? null : page.map(this::toUserBindVO);
+    default PageResp<UserThirdPartyAccountVO> toUserThirdPartyAccountVOPage(PageResp<UserThirdPartyAccountEntity> page) {
+        return page == null ? null : page.map(this::toUserThirdPartyAccountVO);
     }
 
     HonorCategoryVO toHonorCategoryVO(HonorCategoryEntity entity);
@@ -420,10 +420,10 @@ public interface RecordApiConvertor {
     TimeRecordEntity fromTimeRecordDeleteByDateReq(TimeRecordDeleteByDateReq request);
 
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
-    UserBindEntity fromUserBindCreateReq(UserBindCreateReq request);
+    UserThirdPartyAccountEntity fromUserThirdPartyAccountCreateReq(UserThirdPartyAccountCreateReq request);
 
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
-    UserBindEntity fromUserBindUpdateReq(UserBindUpdateReq request);
+    UserThirdPartyAccountEntity fromUserThirdPartyAccountUpdateReq(UserThirdPartyAccountUpdateReq request);
 
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
     ThoughtEntity fromThoughtQuery(ThoughtQuery request);

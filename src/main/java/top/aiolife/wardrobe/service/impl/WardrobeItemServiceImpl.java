@@ -42,7 +42,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         validateCategory(req.getCategoryId(), userId);
         entity.setUserId(userId);
         entity.fillCreateCommonField(userId);
-        entity.setSeason(joinSeason(req.getSeason()));
+        entity.setSeason(normalizeSeason(req.getSeason()));
         this.save(entity);
         images.replace(userId, AttachmentBizType.WARDROBE_ITEM, entity.getId(), req.getFileId());
     }
@@ -58,7 +58,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
         WardrobeItemEntity entity = reqToEntity(req);
         entity.setId(req.getId());
         entity.fillUpdateCommonField(userId);
-        entity.setSeason(joinSeason(req.getSeason()));
+        entity.setSeason(normalizeSeason(req.getSeason()));
         this.updateById(entity);
         images.replace(userId, AttachmentBizType.WARDROBE_ITEM, entity.getId(), req.getFileId());
     }
@@ -95,7 +95,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
             queryWrapper.eq(WardrobeItemEntity::getCategoryId, categoryId);
         }
         if (season != null && !season.isEmpty()) {
-            queryWrapper.like(WardrobeItemEntity::getSeason, season);
+            queryWrapper.apply("jsonb_exists(season, {0})", season);
         }
         if (keyword != null && !keyword.isEmpty()) {
             queryWrapper.and(w -> IlikeQuery.anyOf(w, keyword,
@@ -186,11 +186,11 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
                 .collect(Collectors.toMap(WardrobeCategoryEntity::getId, WardrobeCategoryEntity::getName, (a, b) -> a));
     }
 
-    private String joinSeason(List<String> season) {
+    private List<String> normalizeSeason(List<String> season) {
         if (season == null || season.isEmpty()) {
             return null;
         }
-        return String.join(",", season);
+        return season.stream().distinct().toList();
     }
 
 }

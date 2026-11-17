@@ -7,10 +7,10 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.vo.DashboardCardVO;
 import top.aiolife.record.provider.DashboardCardProvider;
-import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -28,7 +28,7 @@ import java.time.format.DateTimeFormatter;
 @AllArgsConstructor
 public class ShanbayCardProvider implements DashboardCardProvider {
 
-    private final IUserBindService userBindService;
+    private final IUserThirdPartyAccountService userThirdPartyAccountService;
 
     @Override
     public String getType() {
@@ -52,13 +52,13 @@ public class ShanbayCardProvider implements DashboardCardProvider {
 
     @Override
     public boolean isVisible(long userId) {
-        UserBindEntity bind = userBindService.getBindByUserIdAndPlatform(userId, "shanbay");
+        UserThirdPartyAccountEntity bind = userThirdPartyAccountService.getBindByUserIdAndPlatform(userId, "shanbay");
         return bind != null && bind.getPlatformUsername() != null;
     }
 
     @Override
     public DashboardCardVO getCard(long userId) {
-        UserBindEntity bind = userBindService.getBindByUserIdAndPlatform(userId, "shanbay");
+        UserThirdPartyAccountEntity bind = userThirdPartyAccountService.getBindByUserIdAndPlatform(userId, "shanbay");
         if (bind == null || bind.getPlatformUsername() == null) {
             return null;
         }

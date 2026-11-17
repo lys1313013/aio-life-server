@@ -15,7 +15,7 @@ public class ActivityLogEntity extends BaseEntity {
     private Long userId;
     private String username;
     private String nickname;
-    private String ipAddress;
+    private String clientIp;
     private String browser;
     private String functionName;
     private String functionItem;

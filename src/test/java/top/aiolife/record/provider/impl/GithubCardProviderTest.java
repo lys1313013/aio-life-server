@@ -5,8 +5,8 @@ import org.junit.jupiter.api.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import top.aiolife.record.pojo.vo.DashboardCardVO;
-import top.aiolife.record.service.IUserBindService;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import com.alibaba.fastjson2.JSONObject;
 
 @Tag("external")
@@ -17,7 +17,7 @@ public class GithubCardProviderTest {
     private GithubCardProvider githubCardProvider;
 
     @Autowired
-    private IUserBindService userBindService;
+    private IUserThirdPartyAccountService userThirdPartyAccountService;
 
     @Test
     public void testGetCard() {

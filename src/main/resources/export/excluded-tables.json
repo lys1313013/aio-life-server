@@ -19,6 +19,7 @@
   "conversation": "历史停用模块，不包含在当前业务导出",
   "chat_message": "历史停用模块，不包含在当前业务导出",
   "file": "由附件适配器按业务权限及关联归属导出元数据，原件不包含",
+  "user_bind": "已由 V20261117_10 重命名为 user_third_party_account，导出按新表名登记",
   "data_export_job": "导出控制与审计数据，经专用接口按本人归属查询，不递归导出",
   "data_export_audit_event": "导出控制与审计数据，经专用接口按本人归属查询，不递归导出",
   "data_export_grant": "导出控制与审计数据，经专用接口按本人归属查询，不递归导出",

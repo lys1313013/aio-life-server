@@ -1,6 +1,7 @@
 package top.aiolife.wardrobe.pojo.req;
 
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import top.aiolife.core.id.AttachmentKey;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,9 +36,10 @@ public class WardrobeItemSaveReq {
     private String brand;
 
     /**
-     * 适用季节:春,夏,秋,冬
+     * 适用季节数组:春、夏、秋、冬
      */
-    private List<String> season;
+    @Size(max = 4, message = "适用季节最多选择四项")
+    private List<@Pattern(regexp = "春|夏|秋|冬", message = "适用季节只能为春、夏、秋、冬") String> season;
 
     /**
      * 购买日期

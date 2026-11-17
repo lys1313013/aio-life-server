@@ -3,7 +3,7 @@ package top.aiolife.record.mcp.vo;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 /**
  * MCP 阅读记录视图对象（仅向 AI 暴露精简字段，状态返回中文标签）
@@ -50,16 +50,16 @@ public class ReadRecordMcpVO {
     private Integer currentProgress;
 
     /**
-     * 开始时间
+     * 开始日期
      */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime startTime;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate startDate;
 
     /**
-     * 完成时间
+     * 完成日期
      */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime finishTime;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate finishDate;
 
     /**
      * 备注

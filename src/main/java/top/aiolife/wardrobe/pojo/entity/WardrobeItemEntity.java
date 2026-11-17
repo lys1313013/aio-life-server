@@ -1,13 +1,16 @@
 package top.aiolife.wardrobe.pojo.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import top.aiolife.core.mybatis.StringListJsonTypeHandler;
 import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
@@ -16,7 +19,7 @@ import top.aiolife.core.pojo.entity.BaseEntity;
 @Getter
 @Setter
 @ToString
-@TableName("wardrobe_item")
+@TableName(value = "wardrobe_item", autoResultMap = true)
 public class WardrobeItemEntity extends BaseEntity {
 
     /**
@@ -40,9 +43,10 @@ public class WardrobeItemEntity extends BaseEntity {
     private String brand;
 
     /**
-     * 适用季节:春,夏,秋,冬
+     * 适用季节数组:春、夏、秋、冬，对应 jsonb 列
      */
-    private String season;
+    @TableField(typeHandler = StringListJsonTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    private List<String> season;
 
     /**
      * 购买日期

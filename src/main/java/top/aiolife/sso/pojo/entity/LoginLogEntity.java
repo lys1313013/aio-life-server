@@ -35,9 +35,9 @@ public class LoginLogEntity extends IdentityEntity {
      */
     private Timestamp createdAt;
     /**
-     * ip地址
+     * 客户端来源IP
      */
-    private String ipAddress;
+    private String clientIp;
 
     @Override
     protected Object identityKey() {

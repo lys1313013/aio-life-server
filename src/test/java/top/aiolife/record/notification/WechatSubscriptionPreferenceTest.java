@@ -9,7 +9,7 @@ import top.aiolife.record.mapper.NotificationDeliveryMapper;
 import top.aiolife.record.mapper.NotificationPreferenceMapper;
 import top.aiolife.record.pojo.req.NotificationPreferenceUpdateReq;
 import top.aiolife.record.pojo.entity.NotificationPreferenceEntity;
-import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
 import top.aiolife.record.service.impl.FeishuNotificationServiceImpl;
 
 import java.util.List;
@@ -23,7 +23,7 @@ class WechatSubscriptionPreferenceTest {
     private final FeishuNotificationServiceImpl service = new FeishuNotificationServiceImpl(
             mock(NotificationChannelConfigMapper.class), preferences, mock(NotificationDeliveryMapper.class),
             mock(NotificationCryptoService.class), mock(FeishuAppClient.class), new ObjectMapper(),
-            mock(IUserBindService.class), mock(DistributedLockExecutor.class), mock(DataSourceTransactionManager.class));
+            mock(IUserThirdPartyAccountService.class), mock(DistributedLockExecutor.class), mock(DataSourceTransactionManager.class));
 
     @Test void 新用户微信默认关闭且只出现在试点业务中() {
         when(preferences.selectList(any())).thenReturn(List.of());

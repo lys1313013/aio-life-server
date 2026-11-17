@@ -5,7 +5,6 @@ import top.aiolife.core.id.AttachmentKey;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.Data;
@@ -33,9 +32,8 @@ public class HonorRecordUpdateReq {
 
     private String customCategory;
 
-    /** 标签，JSON 数组文本 */
-    @Size(max = 500)
-    private String tags;
+    /** 标签数组 */
+    private List<String> tags;
 
     private Integer isTop;
 

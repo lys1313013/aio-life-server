@@ -52,9 +52,9 @@ public class MailLogEntity extends IdentityEntity {
     private String errorMsg;
 
     /**
-     * 请求IP
+     * 请求客户端IP
      */
-    private String ipAddress;
+    private String clientIp;
 
     /**
      * 创建时间

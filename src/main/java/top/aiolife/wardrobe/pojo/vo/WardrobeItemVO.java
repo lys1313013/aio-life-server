@@ -25,7 +25,7 @@ public class WardrobeItemVO {
 
     private String brand;
 
-    private String season;
+    private List<String> season;
 
     private LocalDate purchaseDate;
 

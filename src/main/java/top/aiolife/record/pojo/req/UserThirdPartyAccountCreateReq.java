@@ -1,14 +1,12 @@
-package top.aiolife.record.pojo.vo;
+package top.aiolife.record.pojo.req;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
-/** UserBindVO：仅包含接口需要返回的字段。 */
+/** UserThirdPartyAccountCreateReq：仅包含接口允许写入的字段。 */
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class UserBindVO {
-
-    private Long id;
+public class UserThirdPartyAccountCreateReq {
 
     /**
      * 平台类型：github, leetcode, csdn, shanbay, douban, weread

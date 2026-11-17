@@ -5,7 +5,7 @@ import top.aiolife.core.id.AttachmentKey;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
@@ -26,11 +26,11 @@ public class MovieCreateReq {
     private Integer totalProgress;
     private Integer currentProgress;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime startTime;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate startDate;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime finishTime;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate finishDate;
 
     private Integer rating;
 

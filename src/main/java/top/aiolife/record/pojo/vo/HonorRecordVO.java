@@ -28,7 +28,7 @@ public class HonorRecordVO {
 
     private String customCategory;
 
-    private String tags;
+    private List<String> tags;
 
     private List<AttachmentVO> files;
 

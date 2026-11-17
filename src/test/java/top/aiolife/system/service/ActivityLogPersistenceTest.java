@@ -66,7 +66,7 @@ class ActivityLogPersistenceTest {
         var row = new ActivityLogEntity(); row.fillCreateCommonField(13L);
         row.setId(id); row.setLogType(type); row.setUsername("a_%"); row.setUserId(9223372036854775806L);
         row.setRequestMethod("POST"); row.setRequestPath("/tasks/{id}"); row.setFunctionName("待办"); row.setFunctionItem("修改");
-        row.setIpAddress("2001:db8::2"); row.setServerIp("2001:db8::1"); row.setSuccess(id % 2 == 0);
+        row.setClientIp("2001:db8::2"); row.setServerIp("2001:db8::1"); row.setSuccess(id % 2 == 0);
         row.setRequestTime(requestTime == null ? null : LocalDateTime.parse(requestTime));
         row.setCreateTime(LocalDateTime.parse(createTime)); row.setDurationMs(ms); row.setIsDeleted(deleted);
         mapper.insert(row);

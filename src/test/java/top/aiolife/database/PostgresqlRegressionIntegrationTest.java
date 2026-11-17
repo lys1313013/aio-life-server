@@ -64,13 +64,18 @@ import top.aiolife.record.service.RecordImageService;
 import top.aiolife.record.enums.AttachmentBizType;
 import top.aiolife.record.mapper.IIncomeMapper;
 import top.aiolife.record.mapper.IMemoMapper;
+import top.aiolife.record.mapper.IGoalMapper;
+import top.aiolife.record.mapper.IHonorRecordMapper;
 import top.aiolife.record.mapper.IMilestoneMapper;
 import top.aiolife.record.mapper.ITaskMapper;
 import top.aiolife.record.mapper.ITimeRecordMapper;
 import top.aiolife.record.mapper.ITimeTrackerCategoryMapper;
 import top.aiolife.record.mapper.ImageImportTaskMapper;
-import top.aiolife.record.mapper.UserBindMapper;
+import top.aiolife.record.mapper.UserThirdPartyAccountMapper;
 import top.aiolife.record.pojo.entity.BVideoEntity;
+import top.aiolife.record.pojo.entity.GoalEntity;
+import top.aiolife.record.pojo.entity.HonorRecordEntity;
+import top.aiolife.record.pojo.entity.MilestoneEntity;
 import top.aiolife.record.pojo.entity.TaskEntity;
 import top.aiolife.record.pojo.entity.TimeTrackerCategoryEntity;
 import top.aiolife.record.pojo.query.DeviceQuery;
@@ -148,8 +153,8 @@ class PostgresqlRegressionIntegrationTest {
         configuration.getTypeHandlerRegistry().register(NumericBooleanTypeHandler.class);
         for (var mapper : List.of(BankCardFileMapper.class, BankCardMapper.class, BankCardDictionaryMapper.class,
                 BankCardTagMapper.class, BankCardTagRelMapper.class, BankCardCoverTemplateMapper.class,
-                UserBindMapper.class, UserMapper.class, IDeviceMapper.class, IIncomeMapper.class, IExpenseMapper.class,
-                IMemoMapper.class, IMilestoneMapper.class, ITaskMapper.class,
+                UserThirdPartyAccountMapper.class, UserMapper.class, IDeviceMapper.class, IIncomeMapper.class, IExpenseMapper.class,
+                IMemoMapper.class, IMilestoneMapper.class, IGoalMapper.class, IHonorRecordMapper.class, ITaskMapper.class,
                 top.aiolife.system.mapper.StorageObjectMapper.class, IBVideoMapper.class, IAttachmentMapper.class, RecordImageMapper.class, ImageImportTaskMapper.class, ITimeTrackerCategoryMapper.class,
                 ScheduledJobMapper.class)) configuration.addMapper(mapper);
         var factory = new MybatisSqlSessionFactoryBean();
@@ -198,6 +203,36 @@ class PostgresqlRegressionIntegrationTest {
         assertEquals(update.getDate(), saved.getDate());
         assertNull(saved.getEndDate());
         assertNull(jdbc.queryForObject("SELECT end_date FROM milestone WHERE id=?", LocalDate.class, id));
+    }
+
+    @Test void 标签按jsonb字符串数组在实体与列间往返() {
+        var goal = new GoalEntity();
+        goal.setUserId(42L); goal.setTitle("标签目标"); goal.setTags(List.of("旅行", "年度"));
+        mapper(IGoalMapper.class).insert(goal);
+        assertJsonbTags("goal", goal.getId(), List.of("旅行", "年度"), mapper(IGoalMapper.class).selectById(goal.getId()).getTags());
+        var goalPatch = new GoalEntity();
+        goalPatch.setId(goal.getId()); goalPatch.setTags(List.of("年度"));
+        mapper(IGoalMapper.class).updateById(goalPatch);
+        assertJsonbTags("goal", goal.getId(), List.of("年度"), mapper(IGoalMapper.class).selectById(goal.getId()).getTags());
+
+        var honor = new HonorRecordEntity();
+        honor.setUserId(42L); honor.setTitle("标签荣誉"); honor.setHonorDate(LocalDate.of(2024, 1, 1));
+        honor.setTags(List.of("竞赛", "省级"));
+        mapper(IHonorRecordMapper.class).insert(honor);
+        assertJsonbTags("honor_record", honor.getId(), List.of("竞赛", "省级"),
+                mapper(IHonorRecordMapper.class).selectById(honor.getId()).getTags());
+
+        var milestone = new MilestoneEntity();
+        milestone.setUserId(42L); milestone.setTitle("标签里程碑"); milestone.setDate(LocalDate.of(2024, 1, 1));
+        milestone.setType("life"); milestone.setTags(List.of("毕业"));
+        mapper(IMilestoneMapper.class).insert(milestone);
+        assertJsonbTags("milestone", milestone.getId(), List.of("毕业"),
+                mapper(IMilestoneMapper.class).selectById(milestone.getId()).getTags());
+    }
+
+    private void assertJsonbTags(String table, long id, List<String> expected, List<String> actual) {
+        assertEquals(expected, actual);
+        assertEquals("array", jdbc.queryForObject("SELECT jsonb_typeof(tags) FROM " + table + " WHERE id=?", String.class, id));
     }
 
     private RecordImageService images() {
@@ -417,11 +452,11 @@ class PostgresqlRegressionIntegrationTest {
     }
 
     private WereadServiceImpl weread(WereadClient client) {
-        return new WereadServiceImpl(mapper(UserBindMapper.class), client, new WereadReadCache(),
+        return new WereadServiceImpl(mapper(UserThirdPartyAccountMapper.class), client, new WereadReadCache(),
                 new top.aiolife.record.notification.NotificationCryptoService("synthetic-test-master-key"));
     }
     private void connection(long id, long owner, String platform, String meta) {
-        jdbc.update("INSERT INTO user_bind(id,user_id,platform,access_token_ciphertext,meta_fields,update_time) VALUES (?,?,?,?,CAST(? AS jsonb),?)",
+        jdbc.update("INSERT INTO user_third_party_account(id,user_id,platform,access_token_ciphertext,meta_fields,update_time) VALUES (?,?,?,?,CAST(? AS jsonb),?)",
                 id, owner, platform,
                 new top.aiolife.record.notification.NotificationCryptoService("synthetic-test-master-key")
                         .encrypt("user-bind", "wrk-fixture", "user_bind:" + owner),
@@ -438,35 +473,35 @@ class PostgresqlRegressionIntegrationTest {
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             var result = service.sync(42L, "overall", 0);
-            var stored = mapper(UserBindMapper.class).selectById(1);
+            var stored = mapper(UserThirdPartyAccountMapper.class).selectById(1);
             var metadata = JSON.parseObject(stored.getMetaFields());
             assertEquals(result.path("lastSyncTime").asText(), metadata.getString("lastSyncTime"));
             assertTrue(metadata.getJSONObject("extra").getBooleanValue("keep"));
-            assertTrue(updated("user_bind", 1).isAfter(OLD_TIME));
+            assertTrue(updated("user_third_party_account", 1).isAfter(OLD_TIME));
             service.disconnect(42L);
         }
-        assertNull(mapper(UserBindMapper.class).selectById(1));
-        assertNull(jdbc.queryForObject("SELECT access_token_ciphertext FROM user_bind WHERE id=1", String.class));
-        var after = JSON.parseObject(jdbc.queryForObject("SELECT meta_fields::text FROM user_bind WHERE id=1", String.class));
+        assertNull(mapper(UserThirdPartyAccountMapper.class).selectById(1));
+        assertNull(jdbc.queryForObject("SELECT access_token_ciphertext FROM user_third_party_account WHERE id=1", String.class));
+        var after = JSON.parseObject(jdbc.queryForObject("SELECT meta_fields::text FROM user_third_party_account WHERE id=1", String.class));
         assertFalse(after.containsKey("lastSyncTime")); assertTrue(after.containsKey("extra"));
         var crypto = new top.aiolife.record.notification.NotificationCryptoService("synthetic-test-master-key");
         assertEquals("wrk-fixture", crypto.decrypt("user-bind",
-                mapper(UserBindMapper.class).selectById(2).getAccessTokenCiphertext(), "user_bind:43"));
+                mapper(UserThirdPartyAccountMapper.class).selectById(2).getAccessTokenCiphertext(), "user_bind:43"));
         assertEquals("wrk-fixture", crypto.decrypt("user-bind",
-                mapper(UserBindMapper.class).selectById(3).getAccessTokenCiphertext(), "user_bind:42"));
+                mapper(UserThirdPartyAccountMapper.class).selectById(3).getAccessTokenCiphertext(), "user_bind:42"));
     }
 
     @Test void 旧连接版本其他用户及已删除记录不能写入同步时间且空元数据可解绑() {
         connection(1, 42, "weread", "{\"connectionVersion\":\"new\"}");
-        var binds = mapper(UserBindMapper.class);
+        var binds = mapper(UserThirdPartyAccountMapper.class);
         var now = LocalDateTime.now();
         assertEquals(0, binds.recordWereadSync(1, 42, "old", now.toString(), now));
         assertEquals(0, binds.recordWereadSync(1, 43, "new", now.toString(), now));
-        jdbc.update("UPDATE user_bind SET is_deleted=1 WHERE id=1");
+        jdbc.update("UPDATE user_third_party_account SET is_deleted=1 WHERE id=1");
         assertEquals(0, binds.recordWereadSync(1, 42, "new", now.toString(), now));
         connection(2, 42, "weread", null);
         assertEquals(1, binds.clearWereadCredentials(42, now));
-        assertEquals("{}", jdbc.queryForObject("SELECT meta_fields::text FROM user_bind WHERE id=2", String.class));
+        assertEquals("{}", jdbc.queryForObject("SELECT meta_fields::text FROM user_third_party_account WHERE id=2", String.class));
     }
 
     @Test void 修改资料都会更新审计时间且不覆盖创建时间() {

@@ -34,7 +34,7 @@ public class LoginSessionService {
         LoginLogEntity log = new LoginLogEntity();
         log.setUserId(user.getId());
         log.setUsername(user.getUsername());
-        log.setIpAddress(ip);
+        log.setClientIp(ip);
         loginLogMapper.insert(log);
         String token;
         if (issueOnly) {

@@ -11,7 +11,7 @@ import lombok.Setter;
 import lombok.Data;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Data
 public class MovieReq {
@@ -27,11 +27,11 @@ public class MovieReq {
     private Integer totalProgress;
     private Integer currentProgress;
     
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime startTime;
-    
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime finishTime;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate startDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate finishDate;
 
     private Integer rating;
 

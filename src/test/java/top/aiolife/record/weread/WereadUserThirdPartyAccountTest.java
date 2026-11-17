@@ -7,33 +7,33 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.record.client.DoubanAccountClient;
-import top.aiolife.record.mapper.UserBindMapper;
+import top.aiolife.record.mapper.UserThirdPartyAccountMapper;
 import top.aiolife.record.notification.NotificationCryptoService;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.service.IWereadService;
-import top.aiolife.record.service.impl.UserBindServiceImpl;
+import top.aiolife.record.service.impl.UserThirdPartyAccountServiceImpl;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-class WereadUserBindTest {
+class WereadUserThirdPartyAccountTest {
 
-    private UserBindServiceImpl service;
-    private UserBindMapper mapper;
+    private UserThirdPartyAccountServiceImpl service;
+    private UserThirdPartyAccountMapper mapper;
     private IWereadService weread;
 
     @BeforeEach
     void setup() {
-        mapper = mock(UserBindMapper.class);
+        mapper = mock(UserThirdPartyAccountMapper.class);
         weread = mock(IWereadService.class);
-        service = new UserBindServiceImpl(weread, mock(RedisUtil.class), mock(DoubanAccountClient.class),
+        service = new UserThirdPartyAccountServiceImpl(weread, mock(RedisUtil.class), mock(DoubanAccountClient.class),
                 new NotificationCryptoService("synthetic-test-master-key"));
         ReflectionTestUtils.setField(service, "baseMapper", mapper);
     }
 
-    private UserBindEntity binding() {
-        var item = new UserBindEntity();
+    private UserThirdPartyAccountEntity binding() {
+        var item = new UserThirdPartyAccountEntity();
         item.setId(11L);
         item.setUserId(42L);
         item.setPlatform("weread");
@@ -59,7 +59,7 @@ class WereadUserBindTest {
     void add_绑定入口复用微信读书连接服务() {
         service.createForUser(42L, binding());
         verify(weread).connect(42L, "wrk-test");
-        verify(mapper, never()).insert(any(UserBindEntity.class));
+        verify(mapper, never()).insert(any(UserThirdPartyAccountEntity.class));
     }
 
     @Test
@@ -70,7 +70,7 @@ class WereadUserBindTest {
         request.setMetaFields("{}");
         service.updateForUser(42L, request);
         verifyNoInteractions(weread);
-        verify(mapper, never()).updateById(any(UserBindEntity.class));
+        verify(mapper, never()).updateById(any(UserThirdPartyAccountEntity.class));
     }
 
     @Test
@@ -78,7 +78,7 @@ class WereadUserBindTest {
         when(mapper.selectById(11L)).thenReturn(binding());
         service.updateForUser(42L, binding());
         verify(weread).connect(42L, "wrk-test");
-        verify(mapper, never()).updateById(any(UserBindEntity.class));
+        verify(mapper, never()).updateById(any(UserThirdPartyAccountEntity.class));
     }
 
     @Test
@@ -88,7 +88,7 @@ class WereadUserBindTest {
         request.setPlatform("github");
         assertThrows(IllegalArgumentException.class, () -> service.updateForUser(42L, request));
         verifyNoInteractions(weread);
-        verify(mapper, never()).updateById(any(UserBindEntity.class));
+        verify(mapper, never()).updateById(any(UserThirdPartyAccountEntity.class));
     }
 
     @Test
@@ -108,6 +108,6 @@ class WereadUserBindTest {
         request.setPlatform("WeRead");
         service.createForUser(42L, request);
         verify(weread).connect(42L, "wrk-test");
-        verify(mapper, never()).insert(any(UserBindEntity.class));
+        verify(mapper, never()).insert(any(UserThirdPartyAccountEntity.class));
     }
 }

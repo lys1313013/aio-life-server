@@ -8,11 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.record.client.DoubanAccountClient;
-import top.aiolife.record.mapper.UserBindMapper;
+import top.aiolife.record.mapper.UserThirdPartyAccountMapper;
 import top.aiolife.record.notification.NotificationCryptoService;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.vo.DoubanAccountVO;
-import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
 import top.aiolife.record.service.IWereadService;
 
 import java.util.List;
@@ -22,7 +22,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class UserBindServiceImpl extends ServiceImpl<UserBindMapper, UserBindEntity> implements IUserBindService {
+public class UserThirdPartyAccountServiceImpl extends ServiceImpl<UserThirdPartyAccountMapper, UserThirdPartyAccountEntity> implements IUserThirdPartyAccountService {
 
     private static final String TOKEN_PURPOSE = "user-bind";
 
@@ -35,23 +35,23 @@ public class UserBindServiceImpl extends ServiceImpl<UserBindMapper, UserBindEnt
     private final NotificationCryptoService crypto;
 
     @Override
-    public List<UserBindEntity> getBindsByUserId(Long userId) {
-        List<UserBindEntity> list = this.list(new LambdaQueryWrapper<UserBindEntity>()
-                .eq(UserBindEntity::getUserId, userId));
+    public List<UserThirdPartyAccountEntity> getBindsByUserId(Long userId) {
+        List<UserThirdPartyAccountEntity> list = this.list(new LambdaQueryWrapper<UserThirdPartyAccountEntity>()
+                .eq(UserThirdPartyAccountEntity::getUserId, userId));
         list.forEach(this::decryptToken);
         return list;
     }
 
     @Override
-    public UserBindEntity getBindByUserIdAndPlatform(Long userId, String platform) {
-        return decryptToken(this.getOne(new LambdaQueryWrapper<UserBindEntity>()
-                .eq(UserBindEntity::getUserId, userId)
-                .eq(UserBindEntity::getPlatform, platform)));
+    public UserThirdPartyAccountEntity getBindByUserIdAndPlatform(Long userId, String platform) {
+        return decryptToken(this.getOne(new LambdaQueryWrapper<UserThirdPartyAccountEntity>()
+                .eq(UserThirdPartyAccountEntity::getUserId, userId)
+                .eq(UserThirdPartyAccountEntity::getPlatform, platform)));
     }
 
     @Override
-    public List<UserBindEntity> listForUser(long userId, Boolean includeToken) {
-        List<UserBindEntity> list = getBindsByUserId(userId);
+    public List<UserThirdPartyAccountEntity> listForUser(long userId, Boolean includeToken) {
+        List<UserThirdPartyAccountEntity> list = getBindsByUserId(userId);
         list.forEach(item -> {
             // 微信读书凭证始终隐藏，其他平台保留原 includeToken 行为。
             if ("weread".equalsIgnoreCase(item.getPlatform()) || includeToken == null || !includeToken) {
@@ -67,7 +67,7 @@ public class UserBindServiceImpl extends ServiceImpl<UserBindMapper, UserBindEnt
     }
 
     @Override
-    public boolean createForUser(long userId, UserBindEntity entity) {
+    public boolean createForUser(long userId, UserThirdPartyAccountEntity entity) {
         entity.setUserId(userId);
 
         if ("weread".equalsIgnoreCase(entity.getPlatform())
@@ -76,7 +76,7 @@ public class UserBindServiceImpl extends ServiceImpl<UserBindMapper, UserBindEnt
         }
 
         // 检查是否存在同平台绑定
-        UserBindEntity exist = getBindByUserIdAndPlatform(userId, entity.getPlatform());
+        UserThirdPartyAccountEntity exist = getBindByUserIdAndPlatform(userId, entity.getPlatform());
         if (exist != null) {
             throw new IllegalArgumentException("该平台账号已绑定，请勿重复添加");
         }
@@ -101,14 +101,14 @@ public class UserBindServiceImpl extends ServiceImpl<UserBindMapper, UserBindEnt
     }
 
     @Override
-    public boolean updateForUser(long userId, UserBindEntity entity) {
+    public boolean updateForUser(long userId, UserThirdPartyAccountEntity entity) {
         entity.setUserId(userId);
 
         // 检查记录是否存在
         if (entity.getId() == null) {
             throw new IllegalArgumentException("ID不能为空");
         }
-        UserBindEntity exist = getById(entity.getId());
+        UserThirdPartyAccountEntity exist = getById(entity.getId());
         if (exist == null || !exist.getUserId().equals(userId)) {
             throw new IllegalArgumentException("记录不存在或无权操作");
         }
@@ -145,7 +145,7 @@ public class UserBindServiceImpl extends ServiceImpl<UserBindMapper, UserBindEnt
 
     @Override
     public boolean deleteForUser(long userId, long id) {
-        UserBindEntity entity = getById(id);
+        UserThirdPartyAccountEntity entity = getById(id);
         if (entity == null || !entity.getUserId().equals(userId)) {
             throw new IllegalArgumentException("无权操作或记录不存在");
         }
@@ -167,7 +167,7 @@ public class UserBindServiceImpl extends ServiceImpl<UserBindMapper, UserBindEnt
         }
     }
 
-    private UserBindEntity decryptToken(UserBindEntity entity) {
+    private UserThirdPartyAccountEntity decryptToken(UserThirdPartyAccountEntity entity) {
         if (entity != null) {
             String ciphertext = entity.getAccessTokenCiphertext();
             entity.setAccessToken(StringUtils.hasText(ciphertext)

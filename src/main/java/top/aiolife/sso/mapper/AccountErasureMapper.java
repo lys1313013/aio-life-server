@@ -69,8 +69,8 @@ public interface AccountErasureMapper {
     @Delete("DELETE FROM attachment WHERE user_id=#{userId}")
     int purgeFiles(@Param("userId") long userId, @Param("email") String email);
 
-    @Delete("DELETE FROM \"user_bind\" WHERE user_id = #{userId}")
-    int purgeUserBind(@Param("userId") long userId, @Param("email") String email);
+    @Delete("DELETE FROM \"user_third_party_account\" WHERE user_id = #{userId}")
+    int purgeUserThirdPartyAccount(@Param("userId") long userId, @Param("email") String email);
 
     @Delete("DELETE FROM \"password_vault\" WHERE user_id = #{userId}")
     int purgePasswordVault(@Param("userId") long userId, @Param("email") String email);
@@ -216,7 +216,7 @@ public interface AccountErasureMapper {
         purgeLoginLogs(userId, email);
         purgeMailLogs(userId, email);
         purgeFiles(userId, email);
-        purgeUserBind(userId, email);
+        purgeUserThirdPartyAccount(userId, email);
         purgePasswordVault(userId, email);
         purgeUserSecondaryLockMenu(userId, email);
         purgeUserMenuHidden(userId, email);

@@ -10,13 +10,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.record.mapper.IMovieMapper;
 import top.aiolife.record.pojo.entity.MovieEntity;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.req.DoubanMovieImportItemReq;
 import top.aiolife.record.pojo.req.DoubanMovieImportReq;
 import top.aiolife.record.pojo.vo.DoubanMovieImportPreviewVO;
 import top.aiolife.record.pojo.vo.DoubanMovieImportResultVO;
 import top.aiolife.record.service.IDoubanMovieImportService;
-import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
 import top.aiolife.record.util.DoubanSubjectUrl;
 
 import java.util.ArrayList;
@@ -36,7 +36,7 @@ public class DoubanMovieImportServiceImpl implements IDoubanMovieImportService {
     private static final int MAX_RECORDS = 10_000;
 
     private final IMovieMapper movieMapper;
-    private final IUserBindService userBindService;
+    private final IUserThirdPartyAccountService userThirdPartyAccountService;
 
     @Autowired
     private DoubanSourceGuard doubanSources;
@@ -148,7 +148,7 @@ public class DoubanMovieImportServiceImpl implements IDoubanMovieImportService {
         if (!"douban".equals(request.getSource())) {
             addError(preview, 0, "文件 source 必须为 douban");
         }
-        UserBindEntity binding = userBindService.getBindByUserIdAndPlatform(userId, "douban");
+        UserThirdPartyAccountEntity binding = userThirdPartyAccountService.getBindByUserIdAndPlatform(userId, "douban");
         if (binding == null || StrUtil.isBlank(binding.getPlatformUsername())) {
             addError(preview, 0, "请先在账号绑定中绑定豆瓣账号 ID");
         } else if (StrUtil.isBlank(request.getDoubanUserId())
@@ -227,7 +227,7 @@ public class DoubanMovieImportServiceImpl implements IDoubanMovieImportService {
             entity.setDirector(row.getDirector().trim());
         }
         if (row.getMarkedDate() != null) {
-            entity.setFinishTime(row.getMarkedDate().atStartOfDay());
+            entity.setFinishDate(row.getMarkedDate());
         }
         if (row.getRating() != null) {
             entity.setRating(row.getRating());

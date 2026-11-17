@@ -69,7 +69,7 @@ public class ActivityLogAspect {
         row.setLogType(login || logout ? "ACCESS" : "OPERATION");
         row.setAccessType(login ? loginMethod : logout ? "登出" : null);
         // 来源地址使用直连/反向代理解析后的地址，避免直接信任客户端伪造的 XFF。
-        row.setIpAddress(request.getRemoteAddr());
+        row.setClientIp(request.getRemoteAddr());
         Object pattern = request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
         row.setRequestPath(pattern == null ? null : pattern.toString());
         if ("OPERATION".equals(row.getLogType())) {

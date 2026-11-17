@@ -1,7 +1,6 @@
 package top.aiolife.record.mcp;
 
 import cn.dev33.satoken.stp.StpUtil;
-import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.query.QueryOrder;
@@ -192,7 +191,7 @@ public class GoalMcpTools {
         vo.setStartDate(entity.getStartDate());
         vo.setEndDate(entity.getEndDate());
         vo.setCompletedAt(entity.getCompletedAt());
-        vo.setTags(parseTags(entity.getTags()));
+        vo.setTags(entity.getTags());
         if (childStats != null) {
             vo.setCompletedCount((int) childStats[0]);
             vo.setTotalCount((int) childStats[1]);
@@ -236,12 +235,5 @@ public class GoalMcpTools {
             case COMPLETED -> "已完成";
             case ON_HOLD -> "搁置";
         };
-    }
-
-    private List<String> parseTags(String tags) {
-        if (!StringUtils.hasText(tags)) {
-            return null;
-        }
-        return JSON.parseArray(tags, String.class);
     }
 }

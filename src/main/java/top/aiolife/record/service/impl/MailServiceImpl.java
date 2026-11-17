@@ -44,13 +44,13 @@ public class MailServiceImpl implements IMailService {
     }
 
     @Override
-    public void sendSimpleEmail(String sendTo, String title, String content, String bizType, String ipAddress) {
+    public void sendSimpleEmail(String sendTo, String title, String content, String bizType, String clientIp) {
         MailLogEntity logEntity = new MailLogEntity();
         logEntity.setSendTo(sendTo);
         logEntity.setSubject(title);
         // 邮件日志仅作投递审计；正文可能携带验证码，不复制到持久化日志。
         logEntity.setBizType(bizType);
-        logEntity.setIpAddress(ipAddress);
+        logEntity.setClientIp(clientIp);
         logEntity.setCreateTime(LocalDateTime.now());
         logEntity.setStatus(0); // 默认失败
 
@@ -84,12 +84,12 @@ public class MailServiceImpl implements IMailService {
     }
 
     @Override
-    public void sendHtmlEmail(String sendTo, String title, String htmlContent, String bizType, String ipAddress) throws MessagingException {
+    public void sendHtmlEmail(String sendTo, String title, String htmlContent, String bizType, String clientIp) throws MessagingException {
         MailLogEntity logEntity = new MailLogEntity();
         logEntity.setSendTo(sendTo);
         logEntity.setSubject(title);
         logEntity.setBizType(bizType);
-        logEntity.setIpAddress(ipAddress);
+        logEntity.setClientIp(clientIp);
         logEntity.setCreateTime(LocalDateTime.now());
         logEntity.setStatus(0); // 默认失败
 

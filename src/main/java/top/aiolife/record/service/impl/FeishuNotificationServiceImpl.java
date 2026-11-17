@@ -33,7 +33,7 @@ import top.aiolife.record.pojo.vo.FeishuRecipientListVO;
 import top.aiolife.record.pojo.vo.FeishuRecipientVO;
 import top.aiolife.record.pojo.vo.NotificationPreferenceVO;
 import top.aiolife.record.service.FeishuNotificationService;
-import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -62,7 +62,7 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
     private final NotificationCryptoService cryptoService;
     private final FeishuAppClient feishuAppClient;
     private final ObjectMapper objectMapper;
-    private final IUserBindService userBindService;
+    private final IUserThirdPartyAccountService userThirdPartyAccountService;
     private final DistributedLockExecutor locks;
     private final DataSourceTransactionManager transactionManager;
     @Autowired(required = false)
@@ -527,7 +527,7 @@ public class FeishuNotificationServiceImpl implements FeishuNotificationService 
     }
 
     private boolean hasLeetCodeBinding(long userId) {
-        var bind = userBindService.getBindByUserIdAndPlatform(userId, "leetcode");
+        var bind = userThirdPartyAccountService.getBindByUserIdAndPlatform(userId, "leetcode");
         return bind != null && StringUtils.hasText(bind.getPlatformUsername());
     }
 }

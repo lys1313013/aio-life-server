@@ -103,8 +103,8 @@ class QueryHasuraEndToEndTest {
             long id=userIds.getFirst()+100+index;
             String status=index==0 ? "not_started" : "completed";
             db.update("INSERT INTO exercise_record(id,user_id,exercise_type_id,exercise_date,exercise_count,is_deleted,description) VALUES(?,?,9007199254740993,'2026-09-15',?,?,?)",id,user,(index+1)*10,deleted,"私有描述");
-            db.update("INSERT INTO read_record(id,user_id,title,type,status,current_progress,total_progress,start_time,finish_time,create_time,is_deleted,remark) VALUES(?,?,?,1,?,20,100,'2026-09-10','2026-09-20','2026-09-01',?,?)",id,user,"book-"+index,status,deleted,"私有备注");
-            db.update("INSERT INTO movie(id,user_id,title,type,status,current_progress,total_progress,rating,start_time,finish_time,create_time,is_deleted,remark) VALUES(?,?,?,1,?,1,2,5,'2026-09-10','2026-09-20','2026-09-01',?,?)",id,user,"movie-"+index,status,deleted,"私有短评");
+            db.update("INSERT INTO read_record(id,user_id,title,type,status,current_progress,total_progress,start_date,finish_date,create_time,is_deleted,remark) VALUES(?,?,?,1,?,20,100,'2026-09-10','2026-09-20','2026-09-01',?,?)",id,user,"book-"+index,status,deleted,"私有备注");
+            db.update("INSERT INTO movie(id,user_id,title,type,status,current_progress,total_progress,rating,start_date,finish_date,create_time,is_deleted,remark) VALUES(?,?,?,1,?,1,2,5,'2026-09-10','2026-09-20','2026-09-01',?,?)",id,user,"movie-"+index,status,deleted,"私有短评");
             db.update("INSERT INTO b_video(id,user_id,title,url,duration_seconds,watched_duration_seconds,status,last_watched,create_time,is_deleted,notes) VALUES(?,?,?,'https://example.invalid/video',120,60,?,'2026-09-20','2026-09-01',?,?)",id,user,"video-"+index,status,deleted,"私有笔记");
             db.update("INSERT INTO event_record(id,user_id,create_user,title,event_type,event_date,city,venue,ticket_price,duration_minutes,rating,is_deleted,order_number) VALUES(?,?,?,?,'concert','2026-09-15','city','venue',?,60,5,?,?)",id,user,userIds.get(1),"show-"+index,index==0 ? "19.99" : "20.02",deleted,"私有订单号");
         }
@@ -197,8 +197,8 @@ class QueryHasuraEndToEndTest {
     @ParameterizedTest
     @CsvSource({
         "exercise_record,exercise,exercise-record-v4,exerciseRecords,exerciseRecordStats,exerciseDate,exerciseCount,30",
-        "read_record,reading,read-record-v4,readRecords,readRecordStats,createdAt,,",
-        "movie,movie,movie-v4,movies,movieStats,createdAt,,",
+        "read_record,reading,read-record-v5,readRecords,readRecordStats,createdAt,,",
+        "movie,movie,movie-v5,movies,movieStats,createdAt,,",
         "b_video,video,b-video-v3,bVideos,bVideoStats,createdAt,watchedDurationSeconds,120",
         "event_record,event,event-record-v1,eventRecords,eventRecordStats,eventDate,ticketPrice,40.01"})
     void 新数据集真实REST及MCP明细统计分页和隔离(String dataset,String domain,String version,String root,String statsRoot,String date,String numeric,String expectedSum) throws Exception {
@@ -208,8 +208,8 @@ class QueryHasuraEndToEndTest {
         String where="where:{"+date+":{_gte:\"2026-09-01\",_lt:\"2026-10-01\"}}";
         String fields=switch(dataset) {
             case "exercise_record" -> "id exerciseDate exerciseTypeId exerciseCount";
-            case "read_record" -> "id title type author url status totalProgress currentProgress startTime finishTime createdAt";
-            case "movie" -> "id title type director url status totalProgress currentProgress startTime finishTime rating createdAt";
+            case "read_record" -> "id title type author url status totalProgress currentProgress startDate finishDate createdAt";
+            case "movie" -> "id title type director url status totalProgress currentProgress startDate finishDate rating createdAt";
             case "b_video" -> "id title url bvid ownerName durationSeconds watchedDurationSeconds episodes currentEpisode status lastWatched createdAt";
             case "event_record" -> "id title participants eventType eventDate city venue ticketPrice durationMinutes rating";
             default -> throw new IllegalArgumentException(dataset);

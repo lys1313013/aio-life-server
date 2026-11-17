@@ -64,8 +64,8 @@ public class ReadRecordMcpTools {
         mcp.setAuthor(vo.getAuthor());
         mcp.setCurrentProgress(vo.getCurrentProgress());
         mcp.setTotalProgress(vo.getTotalProgress());
-        mcp.setStartTime(vo.getStartTime());
-        mcp.setFinishTime(vo.getFinishTime());
+        mcp.setStartDate(vo.getStartDate());
+        mcp.setFinishDate(vo.getFinishDate());
         mcp.setRemark(vo.getRemark());
         mcp.setStatus(statusLabel(vo.getStatus()));
         return mcp;

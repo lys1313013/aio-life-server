@@ -17,7 +17,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.record.mapper.*;
 import top.aiolife.record.pojo.entity.NotificationChannelConfigEntity;
-import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
 import top.aiolife.record.service.impl.FeishuNotificationServiceImpl;
 
 import java.nio.file.Files;
@@ -75,7 +75,7 @@ class FeishuEnqueueLockIntegrationTest {
         when(configs.selectOne(any())).thenReturn(enabled);
         when(crypto.encrypt(any())).thenReturn("encrypted-payload");
         return new FeishuNotificationServiceImpl(configs, preferences, deliveries, crypto,
-                mock(FeishuAppClient.class), new ObjectMapper(), mock(IUserBindService.class),
+                mock(FeishuAppClient.class), new ObjectMapper(), mock(IUserThirdPartyAccountService.class),
                 new DistributedLockExecutor(client), transactionManager);
     }
 

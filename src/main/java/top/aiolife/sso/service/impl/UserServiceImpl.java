@@ -105,7 +105,7 @@ public class UserServiceImpl implements IUserService {
         // 记录登录日志
         LoginLogEntity loginLogEntity = new LoginLogEntity();
         loginLogEntity.setUsername(loginReq.getUsername());
-        loginLogEntity.setIpAddress(ip);
+        loginLogEntity.setClientIp(ip);
 
         if (userEntity == null || !StringUtils.hasText(userEntity.getPassword())
                 || !StringUtils.hasText(loginReq.getPassword())) {

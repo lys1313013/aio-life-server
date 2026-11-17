@@ -22,14 +22,14 @@ import top.aiolife.record.notification.AbstractNotificationSender;
 import top.aiolife.record.notification.NotificationDispatcher;
 import top.aiolife.record.notification.NotificationRequest;
 import top.aiolife.record.notification.NotificationSendGuard;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.leetcode.QuestionDataResponse;
 import top.aiolife.record.pojo.leetcode.RecentACSubmissionsResponse;
 import top.aiolife.record.pojo.leetcode.TodayRecordResponse;
 import top.aiolife.record.pojo.leetcode.UserCalendarResponse;
 import top.aiolife.record.pojo.vo.DashboardCardVO;
 import top.aiolife.record.service.ILeetcodeService;
-import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
 import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
@@ -58,7 +58,7 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
 
     private final UserMapper userMapper;
 
-    private final IUserBindService userBindService;
+    private final IUserThirdPartyAccountService userThirdPartyAccountService;
 
     private final RestTemplate restTemplate;
 
@@ -131,10 +131,10 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
 
     private void checkUsers() {
         // Find all users with leetcode bind
-        List<UserBindEntity> binds = userBindService.list(new LambdaQueryWrapper<UserBindEntity>()
-                .eq(UserBindEntity::getPlatform, "leetcode"));
+        List<UserThirdPartyAccountEntity> binds = userThirdPartyAccountService.list(new LambdaQueryWrapper<UserThirdPartyAccountEntity>()
+                .eq(UserThirdPartyAccountEntity::getPlatform, "leetcode"));
 
-        for (UserBindEntity bind : binds) {
+        for (UserThirdPartyAccountEntity bind : binds) {
             UserEntity user = userMapper.selectById(bind.getUserId());
             if (user != null) {
                 checkToday(user, true);
@@ -157,7 +157,7 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
             return Pair.of(true, todayUrl);
         }
 
-        UserBindEntity bind = userBindService.getBindByUserIdAndPlatform((long) userEntity.getId(), "leetcode");
+        UserThirdPartyAccountEntity bind = userThirdPartyAccountService.getBindByUserIdAndPlatform((long) userEntity.getId(), "leetcode");
         if (bind == null || bind.getPlatformUsername() == null) {
             return Pair.of(false, todayUrl);
         }
@@ -282,8 +282,8 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
     private void notifyTodayQuestionUsers() {
         LocalDate notificationDate = LocalDate.now();
         // Find all bindings for leetcode
-        List<UserBindEntity> binds = userBindService.list(new LambdaQueryWrapper<UserBindEntity>()
-                .eq(UserBindEntity::getPlatform, "leetcode"));
+        List<UserThirdPartyAccountEntity> binds = userThirdPartyAccountService.list(new LambdaQueryWrapper<UserThirdPartyAccountEntity>()
+                .eq(UserThirdPartyAccountEntity::getPlatform, "leetcode"));
 
         QuestionDataResponse questionData = this.getTodayQuestion();
 
@@ -301,7 +301,7 @@ public class LeetcodeServiceImpl implements ILeetcodeService {
         // 纯文本内容
         String textContent = question.replaceAll("<[^>]+>", "") + "\n\n" + "https://leetcode.cn/problems/" + questionData.getData().getQuestion().getTitleSlug() + "/";
 
-        for (UserBindEntity bind : binds) {
+        for (UserThirdPartyAccountEntity bind : binds) {
             UserEntity user = userMapper.selectById(bind.getUserId());
             if (user != null) {
                 sendNotification(user, new NotificationRequest(

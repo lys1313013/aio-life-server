@@ -10,7 +10,7 @@ import org.springframework.web.client.RestTemplate;
 import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.record.client.LeetcodeClient;
 import top.aiolife.record.notification.*;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.leetcode.*;
 import top.aiolife.record.service.*;
 import top.aiolife.core.redis.RedisUtil;
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 
 class LeetcodeServiceImplTest {
     private final UserMapper users = mock(UserMapper.class);
-    private final IUserBindService binds = mock(IUserBindService.class);
+    private final IUserThirdPartyAccountService binds = mock(IUserThirdPartyAccountService.class);
     private final AbstractNotificationSender email = mock(AbstractNotificationSender.class);
     private final AbstractNotificationSender station = mock(AbstractNotificationSender.class);
     private final NotificationDispatcher feishu = mock(NotificationDispatcher.class);
@@ -38,7 +38,7 @@ class LeetcodeServiceImplTest {
     @BeforeEach
     void setup() {
         user.setId(7L);
-        UserBindEntity bind = new UserBindEntity();
+        UserThirdPartyAccountEntity bind = new UserThirdPartyAccountEntity();
         bind.setUserId(7L);
         bind.setPlatformUsername("test");
         when(users.selectById(7L)).thenReturn(user);

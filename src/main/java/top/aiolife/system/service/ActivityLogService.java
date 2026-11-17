@@ -59,7 +59,7 @@ public class ActivityLogService {
             if (batch.isEmpty()) break;
             for (var row : batch) {
                 writer.write(++index + "," + csv(row.getUsername()) + "," + csv(row.getNickname()) + ","
-                        + csv(row.getIpAddress()) + "," + csv(row.getBrowser()) + ","
+                        + csv(row.getClientIp()) + "," + csv(row.getBrowser()) + ","
                         + ("ACCESS".equals(type) ? csv(row.getAccessType()) :
                         csv(row.getFunctionName()) + "," + csv(row.getFunctionItem())) + ","
                         + (Boolean.TRUE.equals(row.getSuccess()) ? "成功" : "失败") + ","
@@ -96,7 +96,7 @@ public class ActivityLogService {
                         + csv(row.getRequestMethod() == null ? "未采集" : row.getRequestMethod()) + "," + csv(row.getRequestParams() == null ? "未采集" :
                         "{}".equals(row.getRequestParams().replaceAll("\\s", "")) ? "无参数" : row.getRequestParams()) + ","
                         + csv(time) + "," + csv(row.getDurationMs() == null ? "未采集" : row.getDurationMs().toString()) + ","
-                        + csv(row.getIpAddress()) + "," + csv(row.getServerIp() == null ? "未采集" : row.getServerIp()) + ","
+                        + csv(row.getClientIp()) + "," + csv(row.getServerIp() == null ? "未采集" : row.getServerIp()) + ","
                         + (Boolean.TRUE.equals(row.getSuccess()) ? "成功" : "失败") + "\r\n");
             }
             cursor = batch.getLast().getId();

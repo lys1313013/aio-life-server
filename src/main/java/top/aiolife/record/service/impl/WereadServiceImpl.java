@@ -12,9 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import top.aiolife.record.mapper.UserBindMapper;
+import top.aiolife.record.mapper.UserThirdPartyAccountMapper;
 import top.aiolife.record.notification.NotificationCryptoService;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.vo.WereadConnectionVO;
 import top.aiolife.record.pojo.vo.WereadBookLinkVO;
 import top.aiolife.record.service.IWereadService;
@@ -41,17 +41,17 @@ import java.util.List;
 public class WereadServiceImpl implements IWereadService {
     private static final Set<String> MODES = Set.of("weekly", "monthly", "annually", "overall");
     private static final String TOKEN_PURPOSE = "user-bind";
-    private final UserBindMapper mapper;
+    private final UserThirdPartyAccountMapper mapper;
     private final WereadClient client;
     private final WereadReadCache readCache;
     private final NotificationCryptoService crypto;
 
-    private String cacheScope(UserBindEntity connection) {
+    private String cacheScope(UserThirdPartyAccountEntity connection) {
         return connection.getUserId() + ":" + DigestUtil.sha256Hex(
                 connection.getId() + ":" + metadata(connection).getString("connectionVersion") + ":" + credential(connection));
     }
 
-    private JsonNode cachedCall(UserBindEntity connection, String endpoint, Map<String, Object> params) {
+    private JsonNode cachedCall(UserThirdPartyAccountEntity connection, String endpoint, Map<String, Object> params) {
         return readCache.read(cacheScope(connection), endpoint, params, () -> {
             JsonNode result = client.call(credential(connection), endpoint, params);
             if ("/book/info".equals(endpoint) && (result == null || safeBookLink(result.path("deepLink").asText()) == null)) {
@@ -115,13 +115,13 @@ public class WereadServiceImpl implements IWereadService {
         return new WereadRecentVO(true, List.copyOf(result), nextCursor);
     }
 
-    private UserBindEntity find(long userId) {
-        return decryptToken(mapper.selectOne(new LambdaQueryWrapper<UserBindEntity>()
-                .eq(UserBindEntity::getUserId, userId)
-                .eq(UserBindEntity::getPlatform, "weread")));
+    private UserThirdPartyAccountEntity find(long userId) {
+        return decryptToken(mapper.selectOne(new LambdaQueryWrapper<UserThirdPartyAccountEntity>()
+                .eq(UserThirdPartyAccountEntity::getUserId, userId)
+                .eq(UserThirdPartyAccountEntity::getPlatform, "weread")));
     }
 
-    private UserBindEntity requireConnection(long userId) {
+    private UserThirdPartyAccountEntity requireConnection(long userId) {
         var connection = find(userId);
         if (connection == null || !StringUtils.hasText(connection.getAccessToken())) {
             throw new IllegalStateException("请先在同步设置中连接微信读书");
@@ -135,12 +135,12 @@ public class WereadServiceImpl implements IWereadService {
         return view(connection);
     }
 
-    private WereadConnectionVO view(UserBindEntity connection) {
+    private WereadConnectionVO view(UserThirdPartyAccountEntity connection) {
         return new WereadConnectionVO(connection != null && StringUtils.hasText(connection.getAccessToken()),
                 lastSyncTime(connection));
     }
 
-    private JSONObject metadata(UserBindEntity connection) {
+    private JSONObject metadata(UserThirdPartyAccountEntity connection) {
         if (connection == null || !StringUtils.hasText(connection.getMetaFields())) return new JSONObject();
         try {
             JSONObject result = JSON.parseObject(connection.getMetaFields());
@@ -150,14 +150,14 @@ public class WereadServiceImpl implements IWereadService {
         }
     }
 
-    private LocalDateTime lastSyncTime(UserBindEntity connection) {
+    private LocalDateTime lastSyncTime(UserThirdPartyAccountEntity connection) {
         String value = metadata(connection).getString("lastSyncTime");
         if (!StringUtils.hasText(value)) return null;
         try { return LocalDateTime.parse(value.replace(' ', 'T')); }
         catch (DateTimeParseException e) { return null; }
     }
 
-    private String credential(UserBindEntity connection) {
+    private String credential(UserThirdPartyAccountEntity connection) {
         return connection.getAccessToken();
     }
 
@@ -171,7 +171,7 @@ public class WereadServiceImpl implements IWereadService {
         mapper.lockWereadUser(userId);
         var connection = find(userId);
         if (connection == null) {
-            connection = new UserBindEntity();
+            connection = new UserThirdPartyAccountEntity();
             connection.fillCreateCommonField(userId);
             connection.setUserId(userId);
             connection.setPlatform("weread");
@@ -185,13 +185,13 @@ public class WereadServiceImpl implements IWereadService {
             JSONObject meta = metadata(connection);
             meta.remove("lastSyncTime");
             meta.put("connectionVersion", UUID.randomUUID().toString());
-            mapper.update(null, new LambdaUpdateWrapper<UserBindEntity>()
-                    .eq(UserBindEntity::getUserId, userId)
-                    .eq(UserBindEntity::getPlatform, "weread")
-                    .set(UserBindEntity::getAccessTokenCiphertext, encryptToken(userId, apiKey))
-                    .set(UserBindEntity::getMetaFields, meta.toJSONString())
-                    .set(UserBindEntity::getUpdateTime, LocalDateTime.now())
-                    .set(UserBindEntity::getUpdateUser, userId));
+            mapper.update(null, new LambdaUpdateWrapper<UserThirdPartyAccountEntity>()
+                    .eq(UserThirdPartyAccountEntity::getUserId, userId)
+                    .eq(UserThirdPartyAccountEntity::getPlatform, "weread")
+                    .set(UserThirdPartyAccountEntity::getAccessTokenCiphertext, encryptToken(userId, apiKey))
+                    .set(UserThirdPartyAccountEntity::getMetaFields, meta.toJSONString())
+                    .set(UserThirdPartyAccountEntity::getUpdateTime, LocalDateTime.now())
+                    .set(UserThirdPartyAccountEntity::getUpdateUser, userId));
             connection.setAccessToken(apiKey);
             connection.setMetaFields(meta.toJSONString());
         }
@@ -204,9 +204,9 @@ public class WereadServiceImpl implements IWereadService {
         mapper.lockWereadUser(userId);
         // 与账号绑定的解绑语义一致，并在逻辑删除前清除敏感凭证。
         mapper.clearWereadCredentials(userId, LocalDateTime.now());
-        mapper.delete(new LambdaQueryWrapper<UserBindEntity>()
-                .eq(UserBindEntity::getUserId, userId)
-                .eq(UserBindEntity::getPlatform, "weread"));
+        mapper.delete(new LambdaQueryWrapper<UserThirdPartyAccountEntity>()
+                .eq(UserThirdPartyAccountEntity::getUserId, userId)
+                .eq(UserThirdPartyAccountEntity::getPlatform, "weread"));
     }
 
     private void validateMode(String mode) {
@@ -345,7 +345,7 @@ public class WereadServiceImpl implements IWereadService {
         return cachedCall(connection, "/book/getprogress", Map.of("bookId", bookId));
     }
 
-    private UserBindEntity decryptToken(UserBindEntity entity) {
+    private UserThirdPartyAccountEntity decryptToken(UserThirdPartyAccountEntity entity) {
         if (entity != null) {
             String ciphertext = entity.getAccessTokenCiphertext();
             entity.setAccessToken(StringUtils.hasText(ciphertext)

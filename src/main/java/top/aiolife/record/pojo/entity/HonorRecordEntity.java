@@ -9,6 +9,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import top.aiolife.core.mybatis.StringListJsonTypeHandler;
 import top.aiolife.core.pojo.entity.BaseEntity;
 import top.aiolife.record.pojo.vo.AttachmentVO;
 
@@ -21,7 +22,7 @@ import top.aiolife.record.pojo.vo.AttachmentVO;
 @Getter
 @Setter
 @ToString
-@TableName("honor_record")
+@TableName(value = "honor_record", autoResultMap = true)
 public class HonorRecordEntity extends BaseEntity {
 
     private Long userId;
@@ -41,7 +42,8 @@ public class HonorRecordEntity extends BaseEntity {
 
     private String customCategory;
 
-    private String tags;
+    @TableField(typeHandler = StringListJsonTypeHandler.class)
+    private List<String> tags;
 
     @TableField(exist = false)
     private List<String> fileIds;

@@ -8,9 +8,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import top.aiolife.record.client.WeReadClient;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.vo.DashboardCardVO;
-import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
 import top.aiolife.core.redis.RedisUtil;
 
 import java.time.LocalDate;
@@ -29,7 +29,7 @@ class ReadCardProviderTest {
     private static final ZoneId SHANGHAI = ZoneId.of("Asia/Shanghai");
 
     @Mock
-    private IUserBindService userBindService;
+    private IUserThirdPartyAccountService userThirdPartyAccountService;
 
     @Mock
     private WeReadClient weReadClient;
@@ -42,10 +42,10 @@ class ReadCardProviderTest {
 
     @Test
     void isVisible_仅在配置ApiKey后展示() {
-        when(userBindService.getBindByUserIdAndPlatform(1L, "weread"))
-                .thenReturn(UserBindEntity.builder().accessToken("wrk-test").build());
-        when(userBindService.getBindByUserIdAndPlatform(2L, "weread"))
-                .thenReturn(UserBindEntity.builder().accessToken(" ").build());
+        when(userThirdPartyAccountService.getBindByUserIdAndPlatform(1L, "weread"))
+                .thenReturn(UserThirdPartyAccountEntity.builder().accessToken("wrk-test").build());
+        when(userThirdPartyAccountService.getBindByUserIdAndPlatform(2L, "weread"))
+                .thenReturn(UserThirdPartyAccountEntity.builder().accessToken(" ").build());
 
         assertTrue(provider.isVisible(1L));
         assertFalse(provider.isVisible(2L));
@@ -53,8 +53,8 @@ class ReadCardProviderTest {
 
     @Test
     void getCard_今日已阅读时在昨日连续天数上加一() {
-        UserBindEntity bind = UserBindEntity.builder().accessToken("wrk-test").build();
-        when(userBindService.getBindByUserIdAndPlatform(1L, "weread")).thenReturn(bind);
+        UserThirdPartyAccountEntity bind = UserThirdPartyAccountEntity.builder().accessToken("wrk-test").build();
+        when(userThirdPartyAccountService.getBindByUserIdAndPlatform(1L, "weread")).thenReturn(bind);
 
         LocalDate today = LocalDate.now(SHANGHAI);
         long todayBucket = today.atStartOfDay(SHANGHAI).toEpochSecond();
@@ -78,8 +78,8 @@ class ReadCardProviderTest {
 
     @Test
     void getCard_今日未阅读时保留昨日连续天数并缓存今日为零() {
-        UserBindEntity bind = UserBindEntity.builder().accessToken("wrk-test").build();
-        when(userBindService.getBindByUserIdAndPlatform(1L, "weread")).thenReturn(bind);
+        UserThirdPartyAccountEntity bind = UserThirdPartyAccountEntity.builder().accessToken("wrk-test").build();
+        when(userThirdPartyAccountService.getBindByUserIdAndPlatform(1L, "weread")).thenReturn(bind);
 
         LocalDate today = LocalDate.now(SHANGHAI);
         when(weReadClient.getCurrentMonthReadData("wrk-test"))

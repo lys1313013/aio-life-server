@@ -6,10 +6,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import top.aiolife.record.client.WeReadClient;
-import top.aiolife.record.pojo.entity.UserBindEntity;
+import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.vo.DashboardCardVO;
 import top.aiolife.record.provider.DashboardCardProvider;
-import top.aiolife.record.service.IUserBindService;
+import top.aiolife.record.service.IUserThirdPartyAccountService;
 import top.aiolife.core.redis.RedisUtil;
 
 import java.time.Instant;
@@ -36,7 +36,7 @@ public class ReadCardProvider implements DashboardCardProvider {
     private static final long STREAK_CACHE_HOURS = 72;
     private static final int MAX_HISTORY_MONTHS = 24;
 
-    private final IUserBindService userBindService;
+    private final IUserThirdPartyAccountService userThirdPartyAccountService;
     private final WeReadClient weReadClient;
     private final RedisUtil redisUtil;
 
@@ -62,13 +62,13 @@ public class ReadCardProvider implements DashboardCardProvider {
 
     @Override
     public boolean isVisible(long userId) {
-        UserBindEntity bind = userBindService.getBindByUserIdAndPlatform(userId, PLATFORM);
+        UserThirdPartyAccountEntity bind = userThirdPartyAccountService.getBindByUserIdAndPlatform(userId, PLATFORM);
         return bind != null && bind.getAccessToken() != null && !bind.getAccessToken().isBlank();
     }
 
     @Override
     public DashboardCardVO getCard(long userId) {
-        UserBindEntity bind = userBindService.getBindByUserIdAndPlatform(userId, PLATFORM);
+        UserThirdPartyAccountEntity bind = userThirdPartyAccountService.getBindByUserIdAndPlatform(userId, PLATFORM);
         if (bind == null || bind.getAccessToken() == null || bind.getAccessToken().isBlank()) {
             return null;
         }

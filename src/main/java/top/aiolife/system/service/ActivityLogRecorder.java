@@ -44,7 +44,7 @@ public class ActivityLogRecorder {
         if ("OPERATION".equals(row.getLogType()) && "接口操作".equals(row.getFunctionName())) row.setFunctionName(resolveTitle(pagePath, row.getFunctionName()));
         row.setUsername(limit(row.getUsername(), 100));
         row.setNickname(limit(row.getNickname(), 100));
-        row.setIpAddress(limit(row.getIpAddress(), 64));
+        row.setClientIp(limit(row.getClientIp(), 45));
         row.setBrowser(limit(row.getBrowser(), 100));
         row.setFunctionName(limit(row.getFunctionName(), 200));
         row.setRequestPath(limit(row.getRequestPath(), 255));

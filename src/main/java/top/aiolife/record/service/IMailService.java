@@ -20,15 +20,15 @@ public interface IMailService {
     void sendSimpleEmail(String sendTo, String title, String content);
 
     /**
-     * 发送简单邮件（带业务类型和IP）
+     * 发送简单邮件（带业务类型和客户端IP）
      *
-     * @param sendTo    收件人
-     * @param title     标题
-     * @param content   内容
-     * @param bizType   业务类型
-     * @param ipAddress IP地址
+     * @param sendTo   收件人
+     * @param title    标题
+     * @param content  内容
+     * @param bizType  业务类型
+     * @param clientIp 客户端IP
      */
-    void sendSimpleEmail(String sendTo, String title, String content, String bizType, String ipAddress);
+    void sendSimpleEmail(String sendTo, String title, String content, String bizType, String clientIp);
 
     /**
      * 发送HTML邮件
@@ -40,13 +40,13 @@ public interface IMailService {
     void sendHtmlEmail(String sendTo, String title, String htmlContent) throws MessagingException;
 
     /**
-     * 发送HTML邮件（带业务类型和IP）
+     * 发送HTML邮件（带业务类型和客户端IP）
      *
      * @param sendTo      收件人
      * @param title       标题
      * @param htmlContent html内容
      * @param bizType     业务类型
-     * @param ipAddress   IP地址
+     * @param clientIp    客户端IP
      */
-    void sendHtmlEmail(String sendTo, String title, String htmlContent, String bizType, String ipAddress) throws MessagingException;
+    void sendHtmlEmail(String sendTo, String title, String htmlContent, String bizType, String clientIp) throws MessagingException;
 }

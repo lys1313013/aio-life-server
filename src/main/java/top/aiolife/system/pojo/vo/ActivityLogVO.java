@@ -20,7 +20,7 @@ public class ActivityLogVO {
 
     private String nickname;
 
-    private String ipAddress;
+    private String clientIp;
 
     private String browser;
 

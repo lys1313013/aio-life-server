@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
+import java.util.List;
 import lombok.Data;
 import top.aiolife.record.pojo.enums.GoalTypeEnum;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
@@ -114,9 +115,9 @@ public class GoalVO {
     private LocalDateTime completedAt;
 
     /**
-     * 目标标签（JSON格式存储）
+     * 目标标签数组
      */
-    private String tags;
+    private List<String> tags;
 
     /**
      * 已完成子目标数量（非数据库字段）

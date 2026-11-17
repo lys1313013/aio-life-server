@@ -123,7 +123,7 @@ class PasswordLoginCompatibilityTest {
         verify(logs).insert(audit.capture());
         assertFalse(new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(audit.getValue()).has("password"));
         assertEquals("u_test", audit.getValue().getUsername());
-        assertEquals("127.0.0.1", audit.getValue().getIpAddress());
+        assertEquals("127.0.0.1", audit.getValue().getClientIp());
         verifyNoInteractions(sessions);
     }
 }

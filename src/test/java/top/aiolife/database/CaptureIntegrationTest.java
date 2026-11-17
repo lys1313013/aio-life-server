@@ -53,6 +53,7 @@ import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.wardrobe.mapper.WardrobeItemMapper;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -570,7 +571,7 @@ class CaptureIntegrationTest {
         var row = movieMapper.selectById(id);
         assertEquals("created", first.path("operation").asText());
         assertEquals(12, row.getCurrentProgress());
-        assertNotNull(row.getFinishTime());
+        assertNotNull(row.getFinishDate());
         assertNull(row.getRating());
         assertEquals(first, douban.sync(USER, request));
         // 用明显旧的审计时间证明同状态无SQL更新，而非依赖秒级时间碰巧相同。
@@ -596,7 +597,7 @@ class CaptureIntegrationTest {
         movie.setStatus(ProgressStatusEnum.IN_PROGRESS);
         movie.setRating(4);
         movie.setRemark("私人观影笔记");
-        movie.setStartTime(LocalDateTime.of(2019, 2, 3, 4, 5));
+        movie.setStartDate(LocalDate.of(2019, 2, 3));
         movie.fillCreateCommonField(USER);
         movieMapper.insert(movie);
         var cover = new AttachmentEntity();
@@ -612,13 +613,13 @@ class CaptureIntegrationTest {
         assertEquals("updated", completed.path("operation").asText());
         var row = movieMapper.selectById(movie.getId());
         assertEquals(14, row.getCurrentProgress());
-        assertNotNull(row.getFinishTime());
+        assertNotNull(row.getFinishDate());
         var waiting = douban.sync(USER, nativeSync("not_started"));
         assertEquals("updated", waiting.path("operation").asText());
         row = movieMapper.selectById(movie.getId());
         assertEquals(0, row.getCurrentProgress());
-        assertNull(row.getFinishTime());
-        assertEquals(movie.getStartTime(), row.getStartTime());
+        assertNull(row.getFinishDate());
+        assertEquals(movie.getStartDate(), row.getStartDate());
         assertEquals("我的影片名称", row.getTitle());
         assertEquals("原导演", row.getDirector());
         assertEquals(5, row.getType());
@@ -720,7 +721,7 @@ class CaptureIntegrationTest {
         assertEquals(8, row.getTotalProgress());
         assertEquals(0, row.getCurrentProgress());
         assertNotNull(images.find(USER, AttachmentBizType.MOVIE, row.getId()));
-        assertNull(row.getFinishTime());
+        assertNull(row.getFinishDate());
         verify(movieService).parseDoubanMetadata("https://movie.douban.com/subject/999992/");
     }
 

@@ -37,7 +37,7 @@ public class WardrobeItemReq {
     private String brand;
 
     /**
-     * 适用季节:春,夏,秋,冬
+     * 适用季节数组:春、夏、秋、冬
      */
     private List<String> season;
 

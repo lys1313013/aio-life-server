@@ -13,7 +13,7 @@
     </sql>
     <!-- 列表显式排除大字段 request_params。 -->
     <select id="selectOperationPage" resultType="top.aiolife.system.pojo.entity.ActivityLogEntity">
-        SELECT id, log_type, user_id, username, nickname, ip_address, browser, function_name,
+        SELECT id, log_type, user_id, username, nickname, client_ip, browser, function_name,
                function_item, access_type, request_path, request_method, request_time, duration_ms,
                server_ip, success, create_time
         FROM sys_activity_log WHERE <include refid="operationFilter"/>

@@ -37,6 +37,7 @@ import top.aiolife.record.service.RecordImageService;
 import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.record.util.DoubanSubjectUrl;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -112,11 +113,11 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         entity.setUserId(userId);
         entity.fillCreateCommonField(userId);
 
-        if (entity.getStatus() == ProgressStatusEnum.IN_PROGRESS && entity.getStartTime() == null) {
-            entity.setStartTime(LocalDateTime.now());
+        if (entity.getStatus() == ProgressStatusEnum.IN_PROGRESS && entity.getStartDate() == null) {
+            entity.setStartDate(LocalDate.now());
         }
-        if (entity.getStatus() == ProgressStatusEnum.COMPLETED && entity.getFinishTime() == null) {
-            entity.setFinishTime(LocalDateTime.now());
+        if (entity.getStatus() == ProgressStatusEnum.COMPLETED && entity.getFinishDate() == null) {
+            entity.setFinishDate(LocalDate.now());
         }
 
         this.save(entity);
@@ -146,11 +147,11 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         BeanUtil.copyProperties(req, entity);
         entity.fillUpdateCommonField(userId);
 
-        if (entity.getStatus() == ProgressStatusEnum.IN_PROGRESS && entity.getStartTime() == null) {
-            entity.setStartTime(LocalDateTime.now());
+        if (entity.getStatus() == ProgressStatusEnum.IN_PROGRESS && entity.getStartDate() == null) {
+            entity.setStartDate(LocalDate.now());
         }
-        if (entity.getStatus() == ProgressStatusEnum.COMPLETED && entity.getFinishTime() == null) {
-            entity.setFinishTime(LocalDateTime.now());
+        if (entity.getStatus() == ProgressStatusEnum.COMPLETED && entity.getFinishDate() == null) {
+            entity.setFinishDate(LocalDate.now());
         }
 
         // 仅显式传入 rating 才更新评分；null 是清空，未传保留旧值。
