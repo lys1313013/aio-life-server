@@ -11,7 +11,7 @@ class SysDictDataConvertorTest {
     @Test
     void 字典ID按雪花长整型返回不被截断() {
         var entity = new SysDictDataEntity();
-        entity.setDictCode(9007199254740993L);
+        entity.setId(9007199254740993L);
         entity.setDictLabel("测试");
         entity.setDictValue("fixture");
 

@@ -7,33 +7,33 @@ import java.util.List;
 /** 系统银行字典查询及共享行锁。 */
 @Mapper
 public interface BankCardDictionaryMapper {
-    @Select("SELECT d.dict_code AS id,d.dict_label AS name,d.dict_value AS code,CASE WHEN d.is_enabled=1 AND t.is_enabled=1 THEN 1 ELSE 0 END AS is_enabled FROM sys_dict_data d JOIN sys_dict_type t ON t.dict_id=d.dict_id WHERE t.dict_type='bank' AND t.is_deleted=0 AND d.is_deleted=0 ORDER BY d.sort_order NULLS FIRST,d.dict_code")
+    @Select("SELECT d.id AS id,d.dict_label AS name,d.dict_value AS code,CASE WHEN d.is_enabled=1 AND t.is_enabled=1 THEN 1 ELSE 0 END AS is_enabled FROM sys_dict_data d JOIN sys_dict_type t ON t.id=d.dict_type_id WHERE t.dict_type='bank' AND t.is_deleted=0 AND d.is_deleted=0 ORDER BY d.sort_order NULLS FIRST,d.id")
     List<BankCardVO.Bank> selectBanks();
 
     @Select("SELECT id FROM sys_user WHERE id=#{userId} AND is_deleted=0 FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
     Long lockUser(@Param("userId") long userId);
 
-    @Select("SELECT dict_id FROM sys_dict_type WHERE dict_id=#{typeId} FOR UPDATE")
+    @Select("SELECT id FROM sys_dict_type WHERE id=#{typeId} FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
     Long lockType(@Param("typeId") long typeId);
 
-    @Select("SELECT dict_id FROM sys_dict_data WHERE dict_code=#{bankId} AND is_deleted=0")
+    @Select("SELECT dict_type_id FROM sys_dict_data WHERE id=#{bankId} AND is_deleted=0")
     Long selectTypeId(@Param("bankId") long bankId);
 
-    @Select("SELECT dict_type FROM sys_dict_type WHERE dict_id=#{typeId}")
+    @Select("SELECT dict_type FROM sys_dict_type WHERE id=#{typeId}")
     String selectType(@Param("typeId") long typeId);
 
-    @Select("SELECT t.dict_id FROM sys_dict_type t JOIN sys_dict_data d ON d.dict_id=t.dict_id WHERE d.dict_code=#{bankId} AND t.dict_type='bank' AND t.is_deleted=0 AND d.is_deleted=0")
+    @Select("SELECT t.id FROM sys_dict_type t JOIN sys_dict_data d ON d.dict_type_id=t.id WHERE d.id=#{bankId} AND t.dict_type='bank' AND t.is_deleted=0 AND d.is_deleted=0")
     Long selectBankTypeId(@Param("bankId") long bankId);
 
-    @Select("SELECT (d.is_enabled=1 AND t.is_enabled=1) FROM sys_dict_data d JOIN sys_dict_type t ON t.dict_id=d.dict_id WHERE d.dict_code=#{bankId} AND t.dict_type='bank' AND d.is_deleted=0 AND t.is_deleted=0 FOR UPDATE")
+    @Select("SELECT (d.is_enabled=1 AND t.is_enabled=1) FROM sys_dict_data d JOIN sys_dict_type t ON t.id=d.dict_type_id WHERE d.id=#{bankId} AND t.dict_type='bank' AND d.is_deleted=0 AND t.is_deleted=0 FOR UPDATE")
     @Options(useCache=false, flushCache=Options.FlushCachePolicy.TRUE)
     Boolean lockBankEnabled(@Param("bankId") long bankId);
 
-    @Select("SELECT COUNT(*) FROM sys_dict_data d JOIN sys_dict_type t ON t.dict_id=d.dict_id WHERE d.dict_code=#{bankId} AND t.dict_type='bank' AND d.is_deleted=0 AND t.is_deleted=0 AND d.is_enabled=1 AND t.is_enabled=1")
+    @Select("SELECT COUNT(*) FROM sys_dict_data d JOIN sys_dict_type t ON t.id=d.dict_type_id WHERE d.id=#{bankId} AND t.dict_type='bank' AND d.is_deleted=0 AND t.is_deleted=0 AND d.is_enabled=1 AND t.is_enabled=1")
     long countEnabledBank(@Param("bankId") long bankId);
 
-    @Select("SELECT dict_id FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0 ORDER BY dict_id")
+    @Select("SELECT id FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0 ORDER BY id")
     List<Long> selectBankTypeIds();
 }

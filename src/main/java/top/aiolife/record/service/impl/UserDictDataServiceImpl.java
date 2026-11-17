@@ -4,8 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.core.util.SysUtil;
@@ -28,6 +31,7 @@ import java.util.stream.Collectors;
 public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, UserDictDataEntity> implements UserDictDataService {
 
     private final UserDictDataCache dictDataCache;
+    private final DistributedLockExecutor locks;
 
     @Override
     public List<UserDictDataEntity> listUserVisibleDictData(Long userId, String dictType) {
@@ -187,36 +191,16 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
 
         rejectBankTag(target.getDictType());
         if (target.getUserId() == null) {
-            // 锁定公共项，避免并发首次覆盖各插入一条记录。
-            this.getBaseMapper().lockTemplate(id);
-            // 目标是公共字典，生成或更新覆盖记录
+            // 只读公共项只允许改状态，写入内容在加锁前即可确定。
             if (Integer.valueOf(1).equals(target.getIsReadonly())) {
-                // 如果是只读的，只允许用户修改状态，清空其他属性的修改
                 UserDictDataEntity onlyStatusUpdate = new UserDictDataEntity();
                 onlyStatusUpdate.setIsEnabled(updates.getIsEnabled());
                 updates = onlyStatusUpdate;
             }
-
-            UserDictDataEntity existingOverride = this.getOne(new LambdaQueryWrapper<UserDictDataEntity>()
-                    .eq(UserDictDataEntity::getUserId, userId)
-                    .eq(UserDictDataEntity::getTemplateId, id)
-                    .eq(UserDictDataEntity::getIsDeleted, 0)
-                    .last("LIMIT 1"));
-
-            if (existingOverride != null) {
-                // 更新已有的覆盖记录
-                updates.setId(existingOverride.getId());
-                updates.setUserId(userId);
-                updates.setTemplateId(id);
-                updates.fillUpdateCommonField(userId);
-                this.updateById(updates);
-            } else {
-                // 插入新的覆盖记录
-                updates.setId(null);
-                updates.setUserId(userId);
-                updates.setTemplateId(id);
-                updates.fillCreateCommonField(userId);
-                this.save(updates);
+            UserDictDataEntity applied = updates;
+            // 覆盖锁按用户与公共项隔离，避免并发首次覆盖各插入一条记录。
+            if (!locks.tryRun(overrideLockKey(userId, id), () -> savePublicOverride(id, applied, userId))) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "字典正在更新，请稍后重试");
             }
         } else if (target.getUserId().equals(userId)) {
             // 目标是当前用户的记录（私有分类或已有的覆盖记录），直接更新
@@ -246,35 +230,9 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
 
         rejectBankTag(target.getDictType());
         if (target.getUserId() == null) {
-            // 锁定公共项，避免并发首次隐藏各插入一条记录。
-            this.getBaseMapper().lockTemplate(id);
-            // 目标是公共分类，生成隐藏记录
-            UserDictDataEntity existingOverride = this.getOne(new LambdaQueryWrapper<UserDictDataEntity>()
-                    .eq(UserDictDataEntity::getUserId, userId)
-                    .eq(UserDictDataEntity::getTemplateId, id)
-                    .eq(UserDictDataEntity::getIsDeleted, 0)
-                    .last("LIMIT 1"));
-
-            if (existingOverride != null) {
-                // 更新已有覆盖记录的启用标记为 0（停用）
-                UserDictDataEntity update = new UserDictDataEntity();
-                update.setId(existingOverride.getId());
-                update.setIsEnabled(0);
-                update.fillUpdateCommonField(userId);
-                this.updateById(update);
-            } else {
-                // 插入隐藏记录
-                UserDictDataEntity hideRecord = new UserDictDataEntity();
-                hideRecord.setUserId(userId);
-                hideRecord.setTemplateId(id);
-                hideRecord.setDictType(target.getDictType());
-                hideRecord.setDictLabel(target.getDictLabel());
-                hideRecord.setDictValue(target.getDictValue());
-                hideRecord.setColor(target.getColor());
-                hideRecord.setIcon(target.getIcon());
-                hideRecord.setIsEnabled(0); // 停用（隐藏）
-                hideRecord.fillCreateCommonField(userId);
-                this.save(hideRecord);
+            // 覆盖锁按用户与公共项隔离，避免并发首次隐藏各插入一条停用记录。
+            if (!locks.tryRun(overrideLockKey(userId, id), () -> hidePublicDictData(id, target, userId))) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "字典正在更新，请稍后重试");
             }
         } else if (target.getUserId().equals(userId)) {
             // 目标是当前用户的记录，直接物理删除或逻辑删除（已有 is_deleted 字段，使用 removeById 会触发逻辑删除）
@@ -283,6 +241,63 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
             throw new RuntimeException("无权删除此字典数据");
         }
         dictDataCache.evictAfterCommit(userId, target.getDictType());
+    }
+
+    /** 覆盖写入只与同一用户、同一公共项冲突，锁粒度取到用户与预设。 */
+    private static String overrideLockKey(Long userId, Long templateId) {
+        return "record:user-dict:override:" + userId + ":" + templateId;
+    }
+
+    /** 持锁期间读取并写入当前用户对公共字典的覆盖记录。 */
+    private void savePublicOverride(Long templateId, UserDictDataEntity updates, Long userId) {
+        UserDictDataEntity existingOverride = this.getOne(new LambdaQueryWrapper<UserDictDataEntity>()
+                .eq(UserDictDataEntity::getUserId, userId)
+                .eq(UserDictDataEntity::getTemplateId, templateId)
+                .eq(UserDictDataEntity::getIsDeleted, 0)
+                .last("LIMIT 1"));
+
+        if (existingOverride != null) {
+            updates.setId(existingOverride.getId());
+            updates.setUserId(userId);
+            updates.setTemplateId(templateId);
+            updates.fillUpdateCommonField(userId);
+            this.updateById(updates);
+        } else {
+            updates.setId(null);
+            updates.setUserId(userId);
+            updates.setTemplateId(templateId);
+            updates.fillCreateCommonField(userId);
+            this.save(updates);
+        }
+    }
+
+    /** 持锁期间生成或更新当前用户对公共字典的停用记录。 */
+    private void hidePublicDictData(Long templateId, UserDictDataEntity target, Long userId) {
+        UserDictDataEntity existingOverride = this.getOne(new LambdaQueryWrapper<UserDictDataEntity>()
+                .eq(UserDictDataEntity::getUserId, userId)
+                .eq(UserDictDataEntity::getTemplateId, templateId)
+                .eq(UserDictDataEntity::getIsDeleted, 0)
+                .last("LIMIT 1"));
+
+        if (existingOverride != null) {
+            UserDictDataEntity update = new UserDictDataEntity();
+            update.setId(existingOverride.getId());
+            update.setIsEnabled(0);
+            update.fillUpdateCommonField(userId);
+            this.updateById(update);
+        } else {
+            UserDictDataEntity hideRecord = new UserDictDataEntity();
+            hideRecord.setUserId(userId);
+            hideRecord.setTemplateId(templateId);
+            hideRecord.setDictType(target.getDictType());
+            hideRecord.setDictLabel(target.getDictLabel());
+            hideRecord.setDictValue(target.getDictValue());
+            hideRecord.setColor(target.getColor());
+            hideRecord.setIcon(target.getIcon());
+            hideRecord.setIsEnabled(0);
+            hideRecord.fillCreateCommonField(userId);
+            this.save(hideRecord);
+        }
     }
 
     @Override

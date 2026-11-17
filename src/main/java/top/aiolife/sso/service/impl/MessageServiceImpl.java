@@ -106,6 +106,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, MessageEntity
 
     @Override
     public MessageEntity createForUser(long userId, MessageEntity message) {
+        message.setType(1);
         message.setCreateUser(userId);
         message.setUpdateUser(userId);
         message.setSenderId(userId);
@@ -114,9 +115,11 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, MessageEntity
 
     @Override
     public MessageEntity createByAdmin(long adminId, MessageEntity message) {
+        // 管理员发送的系统通知没有发送用户，管理员身份保留在创建人
+        boolean systemNotice = Integer.valueOf(0).equals(message.getType());
         message.setCreateUser(adminId);
         message.setUpdateUser(adminId);
-        message.setSenderId(adminId);
+        message.setSenderId(systemNotice ? null : adminId);
         return createMessage(message);
     }
 

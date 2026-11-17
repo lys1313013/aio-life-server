@@ -24,9 +24,9 @@ class SysDictTypeControllerIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void testGetByDictType_根据类型查询字典() {
-        Long dictId = System.currentTimeMillis() % 1000000 + 900000L;
-        String dictType = "test_type_" + dictId;
-        sysDictTypeMapper.insert(createSysDictType(dictId, dictType));
+        Long id = System.currentTimeMillis() % 1000000 + 900000L;
+        String dictType = "test_type_" + id;
+        sysDictTypeMapper.insert(createSysDictType(id, dictType));
 
         var response = sysDictTypeController.queryById(dictType);
         assertSuccess(response);
@@ -34,9 +34,9 @@ class SysDictTypeControllerIntegrationTest extends BaseIntegrationTest {
         assertEquals(dictType, response.getData().getSysDictTypeEntity().getDictType());
     }
 
-    private SysDictTypeEntity createSysDictType(Long dictId, String dictType) {
+    private SysDictTypeEntity createSysDictType(Long id, String dictType) {
         SysDictTypeEntity entity = new SysDictTypeEntity();
-        entity.setDictId(dictId);
+        entity.setId(id);
         entity.setDictName("测试字典");
         entity.setDictType(dictType);
         entity.setIsEnabled(1);

@@ -180,6 +180,7 @@ class TimeTrackerCategoryCacheRedisTest {
         item.setId(9223372036854775806L);
         item.setTemplateId(9223372036854775805L);
         item.setParentId(null);
+        item.setInheritParent(true);
         item.setCreateTime(LocalDateTime.of(2026, 10, 28, 12, 30));
         first.list(owner, () -> List.of(item)).getFirst().setIsEnabled(0);
         var restored = second.list(owner, () -> fail("应读取 Redis")).getFirst();
@@ -206,6 +207,7 @@ class TimeTrackerCategoryCacheRedisTest {
         var independent = row(0, "另一公共分类"); independent.setId(9L); independent.setSortOrder(30);
         var hiddenParent = row(ownerA, null);
         hiddenParent.setId(100L); hiddenParent.setTemplateId(7L); hiddenParent.setParentId(null);
+        hiddenParent.setInheritParent(true);
         hiddenParent.setIsEnabled(0);
         var privateA = row(ownerA, "A个人分类"); privateA.setId(201L); privateA.setSortOrder(40);
         var privateB = row(ownerB, "B个人分类"); privateB.setId(202L); privateB.setSortOrder(40);
@@ -384,7 +386,7 @@ class TimeTrackerCategoryCacheRedisTest {
 
     private static TimeTrackerCategoryEntity row(long owner, String name) {
         var row = new TimeTrackerCategoryEntity();
-        row.setId(7L); row.setUserId(owner); row.setParentId(0L);
+        row.setId(7L); row.setUserId(owner); row.setParentId(null);
         row.setName(name); row.setIsEnabled(1); row.setIsDeleted(0);
         row.setSortOrder(10); row.setIsTrackTime(1);
         return row;

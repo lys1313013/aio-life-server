@@ -20,6 +20,5 @@ public interface SysDictDataConvertor {
 
     @Mapping(source = "dictLabel", target = "label")
     @Mapping(source = "dictValue", target = "value")
-    @Mapping(source = "dictCode", target = "id")
     SysDictDataVO Entity2VO(SysDictDataEntity sysDictDataEntity);
 }

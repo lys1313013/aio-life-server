@@ -38,10 +38,17 @@ class CurrentSchemaTest {
         String dictionary = CurrentSchema.table("sys_dict_data");
         assertTrue(dictionary.contains("\"sort_order\""));
         assertTrue(dictionary.contains("\"is_enabled\" smallint DEFAULT 1 NOT NULL"));
+        assertTrue(dictionary.contains("\"dict_type_id\""));
+        assertFalse(dictionary.contains("\"dict_code\""));
+        assertFalse(dictionary.contains("\"dict_id\""));
         assertFalse(dictionary.contains("\"dict_sort\""));
         assertFalse(dictionary.contains("\"dict_type\""));
         assertFalse(dictionary.contains("\"status\""));
         assertFalse(dictionary.contains("\"source_item_id\""));
+
+        String dictionaryType = CurrentSchema.table("sys_dict_type");
+        assertTrue(dictionaryType.contains("\"id\" bigint NOT NULL"));
+        assertFalse(dictionaryType.contains("\"dict_id\""));
     }
 
     @Test

@@ -1,12 +1,9 @@
 package top.aiolife.record.pojo.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Getter;
 import lombok.Setter;
-import top.aiolife.core.pojo.entity.AuditEntity;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
  * 字典类型实体
@@ -17,13 +14,7 @@ import top.aiolife.core.pojo.entity.AuditEntity;
 @Getter
 @Setter
 @TableName("sys_dict_type")
-public class SysDictTypeEntity extends AuditEntity {
-
-    /**
-     * 字典类型的唯一标识
-     */
-    @TableId(type = IdType.ASSIGN_ID)
-    private Long dictId;
+public class SysDictTypeEntity extends BaseEntity {
 
     /**
      * 字典名称
@@ -44,12 +35,4 @@ public class SysDictTypeEntity extends AuditEntity {
      * 备注
      */
     private String remark;
-
-    @TableLogic
-    private Integer isDeleted;
-
-    @Override
-    protected Object identityKey() {
-        return dictId;
-    }
 }

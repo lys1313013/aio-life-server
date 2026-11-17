@@ -55,7 +55,7 @@ class QueryHasuraEndToEndTest {
     private final List<Long> apiKeyIds = new ArrayList<>();
     private Process gateway;
     private final String prefix = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
-    private final long timeIdBase = System.currentTimeMillis() * 10_000L;
+    private final long timeRecordIdBase = System.currentTimeMillis() * 10_000L;
     private String sessionA;
     private String tokenA;
     private String tokenB;
@@ -95,8 +95,8 @@ class QueryHasuraEndToEndTest {
         }
         sessionA = sessions.getFirst();
         tokenA = sessionA; tokenB = sessions.get(1);
-        row(timeIdBase + 1, userIds.getFirst(), 30, 0); row(timeIdBase + 2, userIds.getFirst(), 60, 0);
-        row(timeIdBase + 3, userIds.getFirst(), 777, 1); row(timeIdBase + 4, userIds.get(1), 999, 0);
+        row(timeRecordIdBase + 1, userIds.getFirst(), 30, 0); row(timeRecordIdBase + 2, userIds.getFirst(), 60, 0);
+        row(timeRecordIdBase + 3, userIds.getFirst(), 777, 1); row(timeRecordIdBase + 4, userIds.get(1), 999, 0);
         for (int index=0; index<4; index++) {
             long user=index==3 ? userIds.get(1) : userIds.getFirst();
             int deleted=index==2 ? 1 : 0;
@@ -145,14 +145,14 @@ class QueryHasuraEndToEndTest {
         String where = "where:{date:{_gte:\"2026-09-01\",_lt:\"2026-10-01\"}}";
         String details = "query Q { timeRecords(" + where + ",orderBy:[{id:Asc}]) { id date categoryId durationMinutes } }";
         var a = result(tokenA, details).path("timeRecords");
-        assertEquals(2, a.size()); assertEquals(String.valueOf(timeIdBase + 1), a.get(0).path("id").asText());
+        assertEquals(2, a.size()); assertEquals(String.valueOf(timeRecordIdBase + 1), a.get(0).path("id").asText());
         assertEquals("9007199254740993", a.get(0).path("categoryId").textValue());
         String categoryWhere = "where:{date:{_gte:\"2026-09-01\",_lt:\"2026-10-01\"},categoryId:{_eq:\"9007199254740993\"}}";
         assertEquals(2, result(tokenA, "query Q { timeRecords(" + categoryWhere + ") { id } }").path("timeRecords").size());
         var nextPage = result(tokenA, "query Q { rows:timeRecords(" + where + ",limit:1,offset:1){ recordId:id } }").path("rows");
-        assertEquals(1, nextPage.size()); assertEquals(String.valueOf(timeIdBase + 2), nextPage.get(0).path("recordId").asText());
+        assertEquals(1, nextPage.size()); assertEquals(String.valueOf(timeRecordIdBase + 2), nextPage.get(0).path("recordId").asText());
         var b = result(tokenB, details).path("timeRecords");
-        assertEquals(1, b.size()); assertEquals(String.valueOf(timeIdBase + 4), b.get(0).path("id").asText());
+        assertEquals(1, b.size()); assertEquals(String.valueOf(timeRecordIdBase + 4), b.get(0).path("id").asText());
         var stats = result(tokenA, "query Q { timeRecordStats(" + where + ") { count durationMinutes { sum } } }").path("timeRecordStats");
         assertEquals("2", stats.path("count").textValue()); assertEquals("90", stats.path("durationMinutes").path("sum").textValue());
         var empty = result(tokenA, "query Q { timeRecordStats(where:{date:{_gte:\"2026-08-01\",_lt:\"2026-09-01\"}}){count durationMinutes{sum}}}").path("timeRecordStats");
@@ -177,7 +177,7 @@ class QueryHasuraEndToEndTest {
         var args = Map.<String, Object>of("query", details);
         assertTrue(tool(tokenA, "aio_query_validate", args).at("/data/allowed").asBoolean());
         assertEquals(2, tool(tokenA, "aio_query_execute", args).at("/data/result/timeRecords").size());
-        assertEquals(String.valueOf(timeIdBase + 4), tool(tokenB, "aio_query_execute", args).at("/data/result/timeRecords/0/id").asText());
+        assertEquals(String.valueOf(timeRecordIdBase + 4), tool(tokenB, "aio_query_execute", args).at("/data/result/timeRecords/0/id").asText());
         var statsArgs = new java.util.HashMap<>(args); statsArgs.put("query", "query Q { timeRecordStats(" + where + ") { count durationMinutes { sum } } }");
         assertEquals("90", tool(tokenA, "aio_query_execute", statsArgs).at("/data/result/timeRecordStats/durationMinutes/sum").textValue());
         var forged = new java.util.HashMap<>(args); forged.put("userId", userIds.get(1).toString());
@@ -186,7 +186,7 @@ class QueryHasuraEndToEndTest {
         assertEquals(403, mcpWithHeader(tokenA, "X-Hasura-User-Id", userIds.get(1).toString()).statusCode());
         assertEquals(403, mcpWithHeader(tokenA, "Origin", "https://untrusted.example").statusCode());
         var apiKey = apiKeys.generateApiKey(userIds.get(1), "query-mcp-test", 1); apiKeyIds.add(apiKey.getId());
-        assertEquals(String.valueOf(timeIdBase + 4), tool(apiKey.getApiKey(), "aio_query_execute", args).at("/data/result/timeRecords/0/id").asText());
+        assertEquals(String.valueOf(timeRecordIdBase + 4), tool(apiKey.getApiKey(), "aio_query_execute", args).at("/data/result/timeRecords/0/id").asText());
         apiKeys.removeById(apiKey.getId());
         assertEquals(401, mcp(apiKey.getApiKey(), "tools/list", Map.of()).statusCode());
         StpUtil.logoutByTokenValue(sessionA);

@@ -1,13 +1,10 @@
 package top.aiolife.record.pojo.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Getter;
 import lombok.Setter;
-import top.aiolife.core.pojo.entity.AuditEntity;
+import top.aiolife.core.pojo.entity.BaseEntity;
 
 /**
  * 字典数据实体
@@ -18,17 +15,12 @@ import top.aiolife.core.pojo.entity.AuditEntity;
 @Getter
 @Setter
 @TableName("sys_dict_data")
-public class SysDictDataEntity extends AuditEntity {
+public class SysDictDataEntity extends BaseEntity {
 
     /**
-     * 字典代码，作为主键
+     * 所属字典类型ID
      */
-    @TableId(type = IdType.ASSIGN_ID)
-    private Long dictCode;
-    /**
-     * 字典ID
-     */
-    private Long dictId;
+    private Long dictTypeId;
 
     /**
      * 字典名称
@@ -37,7 +29,7 @@ public class SysDictDataEntity extends AuditEntity {
     private String dictName;
 
     /**
-     * 字典类型，由 dict_id 联表 sys_dict_type 派生，不落库
+     * 字典类型，由 dict_type_id 联表 sys_dict_type 派生，不落库
      */
     @TableField(exist = false)
     private String dictType;
@@ -81,12 +73,4 @@ public class SysDictDataEntity extends AuditEntity {
      * 备注
      */
     private String remark;
-
-    @TableLogic
-    private Integer isDeleted;
-
-    @Override
-    protected Object identityKey() {
-        return dictCode;
-    }
 }

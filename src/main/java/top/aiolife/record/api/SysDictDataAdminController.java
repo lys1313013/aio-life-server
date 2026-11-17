@@ -63,20 +63,20 @@ public class SysDictDataAdminController {
     }
 
     @Operation(summary = "管理员更新系统字典数据")
-    @PutMapping("/{dictCode}")
+    @PutMapping("/{id}")
     public ApiResponse<Boolean> update(@CurrentUserId String userId,
-                                       @PathVariable("dictCode") String dictCode,
+                                       @PathVariable("id") String id,
                                        @Valid @RequestBody SysDictDataUpdateReq entityReq) {
         SysDictDataEntity entity = RecordApiConvertor.INSTANCE.fromSysDictDataUpdateReq(entityReq);
         return ApiResponse.success(sysDictService.updateSysDictData(
-                IdCodec.decode(dictCode), entity, IdCodec.decode(userId)));
+                IdCodec.decode(id), entity, IdCodec.decode(userId)));
     }
 
     @Operation(summary = "管理员删除系统字典数据")
-    @DeleteMapping("/{dictCode}")
+    @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@CurrentUserId String userId,
-                                       @PathVariable("dictCode") String dictCode) {
+                                       @PathVariable("id") String id) {
         return ApiResponse.success(sysDictService.deleteSysDictData(
-                IdCodec.decode(dictCode), IdCodec.decode(userId)));
+                IdCodec.decode(id), IdCodec.decode(userId)));
     }
 }

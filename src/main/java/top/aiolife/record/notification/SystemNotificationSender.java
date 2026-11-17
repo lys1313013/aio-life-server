@@ -29,18 +29,12 @@ public class SystemNotificationSender extends AbstractNotificationSender {
     public boolean send(UserEntity user, String title, String htmlContent, String textContent) {
         try {
             MessageEntity message = new MessageEntity();
-            // 系统管理账号ID为1
-            message.setSenderId(1L);
             message.setReceiverId(user.getId());
             message.setTitle(title);
             // 站内信使用纯文本内容
             message.setContent(textContent);
-            // 0-系统通知
+            // 0-系统通知，系统发送不记录发送用户
             message.setType(0);
-            // 设置创建人（系统管理员）
-            message.setCreateUser(1L);
-            // 设置更新人（系统管理员）
-            message.setUpdateUser(1L);
 
             messageService.createMessage(message);
             log.info("系统通知发送成功，用户ID：{}", user.getId());

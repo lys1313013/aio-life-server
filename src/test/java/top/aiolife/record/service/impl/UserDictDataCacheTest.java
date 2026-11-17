@@ -29,6 +29,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.config.RedisConfig;
+import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.record.mapper.UserDictDataMapper;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
 import top.aiolife.record.service.UserDictDataCache;
@@ -44,6 +45,7 @@ class UserDictDataCacheTest {
     private UserDictDataCache dictionaries;
     private UserDictDataServiceImpl service;
     private CacheManager caches;
+    private DistributedLockExecutor locks;
 
     @Configuration
     @EnableCaching(proxyTargetClass = true)
@@ -68,7 +70,11 @@ class UserDictDataCacheTest {
         mapper = context.getBean(UserDictDataMapper.class);
         dictionaries = context.getBean(UserDictDataCache.class);
         caches = context.getBean("cacheManager", CacheManager.class);
-        service = spy(new UserDictDataServiceImpl(dictionaries));
+        service = spy(new UserDictDataServiceImpl(dictionaries, locks = mock(DistributedLockExecutor.class)));
+        when(locks.tryRun(anyString(), any(Runnable.class))).thenAnswer(invocation -> {
+            invocation.getArgument(1, Runnable.class).run();
+            return true;
+        });
         ReflectionTestUtils.setField(service, "baseMapper", mapper);
         when(mapper.selectList(anyWrapper())).thenReturn(List.of());
     }

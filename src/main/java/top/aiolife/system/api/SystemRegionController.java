@@ -27,7 +27,7 @@ public class SystemRegionController {
     @Operation(summary = "查询下级行政区划")
     @GetMapping
     public ApiResponse<List<SystemRegionVO>> children(
-            @RequestParam(defaultValue = "0") @Pattern(regexp = "[0-9]{0,12}") String parentCode) {
+            @RequestParam(required = false) @Pattern(regexp = "[0-9]{1,12}") String parentCode) {
         return ApiResponse.success(service.children(parentCode));
     }
     @Operation(summary = "查询行政区划完整路径")

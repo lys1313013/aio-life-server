@@ -27,7 +27,7 @@ public class IncomeVO {
     /**
      * 收入类型ID
      */
-    private Long incTypeId;
+    private Long incomeTypeId;
 
     /**
      * 收入税额

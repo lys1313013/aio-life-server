@@ -17,7 +17,7 @@ public class ExpenseQuery {
     /**
      * 分类id
      */
-    private String expTypeId;
+    private String expenseTypeId;
 
     /**
      * 支付方式id
@@ -42,7 +42,7 @@ public class ExpenseQuery {
     /**
      * 交易描述
      */
-    private String expDesc;
+    private String expenseDesc;
 
      /**
      * 支出开始时间

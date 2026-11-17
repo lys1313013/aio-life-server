@@ -313,7 +313,7 @@ class PostgresqlRegressionIntegrationTest {
 
     @Test void 收入按年份筛选包含年初年末并保留其他筛选条件() {
         jdbc.update("""
-                INSERT INTO income(id,user_id,gross_amount,inc_date,inc_type_id,is_deleted) VALUES
+                INSERT INTO income(id,user_id,gross_amount,inc_date,income_type_id,is_deleted) VALUES
                 (1,42,100,'2025-12-31',1,0),(2,42,100,'2026-01-01',1,0),
                 (3,42,100,'2026-12-31',1,0),(4,42,100,'2027-01-01',1,0),
                 (5,43,100,'2026-06-01',1,0),(6,42,100,'2026-06-01',1,1),
@@ -321,7 +321,7 @@ class PostgresqlRegressionIntegrationTest {
                 """);
         var controller = incomeController();
         var request = new CommonQuery<IncomeQuery>();
-        var condition = new IncomeQuery(); condition.setYear("2026"); condition.setIncTypeId("1");
+        var condition = new IncomeQuery(); condition.setYear("2026"); condition.setIncomeTypeId("1");
         request.setCondition(condition);
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
@@ -337,7 +337,7 @@ class PostgresqlRegressionIntegrationTest {
 
     @Test void 支出按年份筛选包含年末最后一秒且排除次年零点() {
         jdbc.update("""
-                INSERT INTO expense(id,user_id,bookkeeping_amount,exp_time,exp_type_id,is_deleted) VALUES
+                INSERT INTO expense(id,user_id,bookkeeping_amount,expense_time,expense_type_id,is_deleted) VALUES
                 (1,42,100,'2025-12-31 23:59:59',1,0),(2,42,100,'2026-01-01 00:00:00',1,0),
                 (3,42,100,'2026-12-31 23:59:59',1,0),(4,42,100,'2027-01-01 00:00:00',1,0),
                 (5,43,100,'2026-06-01 00:00:00',1,0),(6,42,100,'2026-06-01 00:00:00',1,1),
@@ -345,7 +345,7 @@ class PostgresqlRegressionIntegrationTest {
                 """);
         var controller = expenseController();
         var request = new CommonQuery<ExpenseQuery>();
-        var condition = new ExpenseQuery(); condition.setYear("2026"); condition.setExpTypeId("1");
+        var condition = new ExpenseQuery(); condition.setYear("2026"); condition.setExpenseTypeId("1");
         request.setCondition(condition);
         try (var auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
@@ -361,7 +361,7 @@ class PostgresqlRegressionIntegrationTest {
 
     @Test void 修改收入维护审计字段且不修改创建信息和其他用户记录() {
         jdbc.update("""
-                INSERT INTO income(id,user_id,gross_amount,inc_date,inc_type_id,create_user,create_time,update_user,update_time)
+                INSERT INTO income(id,user_id,gross_amount,inc_date,income_type_id,create_user,create_time,update_user,update_time)
                 VALUES (1,42,100,'2026-01-01',1,99,?,7,?),(2,43,100,'2026-01-01',1,99,?,7,?)
                 """, OLD_TIME, OLD_TIME, OLD_TIME, OLD_TIME);
         var controller = incomeController();
@@ -382,7 +382,7 @@ class PostgresqlRegressionIntegrationTest {
 
     @Test void 修改支出维护审计字段且不修改创建信息和其他用户记录() {
         jdbc.update("""
-                INSERT INTO expense(id,user_id,bookkeeping_amount,exp_time,exp_type_id,create_user,create_time,update_user,update_time)
+                INSERT INTO expense(id,user_id,bookkeeping_amount,expense_time,expense_type_id,create_user,create_time,update_user,update_time)
                 VALUES (1,42,100,'2026-01-01 00:00:00',1,99,?,7,?),(2,43,100,'2026-01-01 00:00:00',1,99,?,7,?)
                 """, OLD_TIME, OLD_TIME, OLD_TIME, OLD_TIME);
         var controller = expenseController();
@@ -426,10 +426,10 @@ class PostgresqlRegressionIntegrationTest {
     }
 
     @Test void 银行启用状态按数字映射而不是PostgreSQL布尔结果() {
-        jdbc.update("INSERT INTO sys_dict_type(dict_id,dict_type,is_enabled) VALUES (1,'bank',1)");
-        jdbc.update("INSERT INTO sys_dict_data(dict_code,dict_id,dict_label,dict_value,is_enabled) VALUES (1,1,'Fixture','fixture',1)");
+        jdbc.update("INSERT INTO sys_dict_type(id,dict_type,is_enabled) VALUES (1,'bank',1)");
+        jdbc.update("INSERT INTO sys_dict_data(id,dict_type_id,dict_label,dict_value,is_enabled) VALUES (1,1,'Fixture','fixture',1)");
         assertEquals(1, mapper(BankCardDictionaryMapper.class).selectBanks().getFirst().isEnabled());
-        jdbc.update("UPDATE sys_dict_type SET is_enabled=0 WHERE dict_id=1");
+        jdbc.update("UPDATE sys_dict_type SET is_enabled=0 WHERE id=1");
         session.clearCache();
         assertEquals(0, mapper(BankCardDictionaryMapper.class).selectBanks().getFirst().isEnabled());
     }
@@ -674,7 +674,6 @@ class PostgresqlRegressionIntegrationTest {
         job.setJobCode(code);
         job.setName("fixture");
         job.setCron("0 0 1 * * ?");
-        job.setZoneId("Asia/Shanghai");
         job.setIsEnabled(1);
         job.setRevision(0);
         job.fillCreateCommonField(null);

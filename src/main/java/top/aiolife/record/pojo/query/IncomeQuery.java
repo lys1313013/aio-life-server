@@ -13,7 +13,7 @@ public class IncomeQuery {
      /**
      * 收入分类id
      */
-    private String incTypeId;
+    private String incomeTypeId;
 
     /**
      * 年份

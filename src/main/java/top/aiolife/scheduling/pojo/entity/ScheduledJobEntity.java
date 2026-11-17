@@ -15,7 +15,6 @@ public class ScheduledJobEntity extends BaseEntity {
     private String jobCode;
     private String name;
     private String cron;
-    private String zoneId;
     private Integer isEnabled;
     private Integer revision;
 }

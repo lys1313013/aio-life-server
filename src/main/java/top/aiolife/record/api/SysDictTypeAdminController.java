@@ -64,20 +64,20 @@ public class SysDictTypeAdminController {
     }
 
     @Operation(summary = "管理员更新系统字典类型")
-    @PutMapping("/{dictId}")
+    @PutMapping("/{id}")
     public ApiResponse<Boolean> update(@CurrentUserId String userId,
-                                       @PathVariable("dictId") String dictId,
+                                       @PathVariable("id") String id,
                                        @Valid @RequestBody SysDictTypeUpdateReq entityReq) {
         SysDictTypeEntity entity = RecordApiConvertor.INSTANCE.fromSysDictTypeUpdateReq(entityReq);
         return ApiResponse.success(sysDictService.updateSysDictType(
-                IdCodec.decode(dictId), entity, IdCodec.decode(userId)));
+                IdCodec.decode(id), entity, IdCodec.decode(userId)));
     }
 
     @Operation(summary = "管理员删除系统字典类型")
-    @DeleteMapping("/{dictId}")
+    @DeleteMapping("/{id}")
     public ApiResponse<Boolean> delete(@CurrentUserId String userId,
-                                       @PathVariable("dictId") String dictId) {
+                                       @PathVariable("id") String id) {
         return ApiResponse.success(sysDictService.deleteSysDictType(
-                IdCodec.decode(dictId), IdCodec.decode(userId)));
+                IdCodec.decode(id), IdCodec.decode(userId)));
     }
 }

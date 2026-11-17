@@ -49,7 +49,7 @@ public class ScheduledJobService {
         row.setJobCode(code); row.setName(name);
         row.setCron("-".equals(cron) ? (ScheduledJobRegistry.CHECK.equals(code) ? "0 30 23 * * ?" : "0 0 7 * * ?")
                 : ScheduledJobRules.validateCron(cron));
-        row.setZoneId(ScheduledJobRules.ZONE.getId()); row.setIsEnabled(!"-".equals(cron) ? 1 : 0); row.setRevision(0);
+        row.setIsEnabled(!"-".equals(cron) ? 1 : 0); row.setRevision(0);
         row.fillCreateCommonField(null);
         jobs.insertIfAbsent(row);
     }

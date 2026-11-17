@@ -45,7 +45,7 @@ class ScheduledJobTest {
         TableInfoHelper.initTableInfo(assistant, ScheduledJobEntity.class);
         TableInfoHelper.initTableInfo(assistant, ScheduledJobLogEntity.class);
         row = new ScheduledJobEntity(); row.setId(9007199254740993L); row.setJobCode(ScheduledJobRegistry.CHECK);
-        row.setCron("0 30 23 * * ?"); row.setZoneId("Asia/Shanghai"); row.setIsEnabled(1); row.setRevision(0);
+        row.setCron("0 30 23 * * ?"); row.setIsEnabled(1); row.setRevision(0);
         when(jobs.selectById(row.getId())).thenReturn(row);
         ReflectionTestUtils.setField(service, "schedulerEnabled", true);
     }

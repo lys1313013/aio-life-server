@@ -80,7 +80,7 @@ class TimeRecordExercisePersistenceTest {
                 """);
         jdbc.execute("""
                 CREATE TABLE exercise_record (
-                    id BIGINT PRIMARY KEY, user_id BIGINT, time_id BIGINT, exercise_type_id BIGINT,
+                    id BIGINT PRIMARY KEY, user_id BIGINT, time_record_id BIGINT, exercise_type_id BIGINT,
                     exercise_date DATE, exercise_count INT CHECK (exercise_count >= 0), description VARCHAR(255),
                     is_deleted INT DEFAULT 0, create_user BIGINT, update_user BIGINT,
                     create_time TIMESTAMP, update_time TIMESTAMP)
@@ -397,12 +397,12 @@ class TimeRecordExercisePersistenceTest {
         return request;
     }
 
-    private void addExercise(long id, long userId, long timeId) {
+    private void addExercise(long id, long userId, long timeRecordId) {
         jdbc.update("""
-                INSERT INTO exercise_record (id, user_id, time_id, exercise_type_id, exercise_date,
+                INSERT INTO exercise_record (id, user_id, time_record_id, exercise_type_id, exercise_date,
                     exercise_count, description, create_user, update_user, create_time, update_time)
                 VALUES (?, ?, ?, 77, ?, 10, '原备注', ?, ?, '2000-01-01 00:00:00', '2000-01-01 00:00:00')
-                """, id, userId, timeId, DATE, userId, userId);
+                """, id, userId, timeRecordId, DATE, userId, userId);
     }
 
     private int totalCount() {
@@ -410,7 +410,7 @@ class TimeRecordExercisePersistenceTest {
     }
 
     private int activeCount() {
-        return jdbc.queryForObject("SELECT COUNT(*) FROM exercise_record WHERE user_id = 1 AND time_id = 1001 AND is_deleted = 0", Integer.class);
+        return jdbc.queryForObject("SELECT COUNT(*) FROM exercise_record WHERE user_id = 1 AND time_record_id = 1001 AND is_deleted = 0", Integer.class);
     }
 
     private void assertOriginal() {

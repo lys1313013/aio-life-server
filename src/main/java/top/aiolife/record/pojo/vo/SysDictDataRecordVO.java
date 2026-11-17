@@ -10,12 +10,12 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SysDictDataRecordVO {
 
-    private Long dictCode;
+    private Long id;
 
     /**
-     * 字典ID
+     * 所属字典类型ID
      */
-    private Long dictId;
+    private Long dictTypeId;
 
     /**
      * 字典名称

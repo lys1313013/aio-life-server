@@ -4,6 +4,7 @@ import static top.aiolife.support.MockMatchers.anyWrapper;
 import static top.aiolife.support.MockMatchers.anyPage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -53,5 +54,53 @@ class MessagePaginationTest {
         assertFalse(sql.contains("sender_id"));
         assertTrue(values.containsValue(123L));
         assertTrue(values.containsValue(false));
+    }
+
+    @Test
+    void 用户创建消息固定为用户类型并写入发送人() {
+        MessageServiceImpl service = service();
+        MessageEntity message = new MessageEntity();
+        message.setType(0);
+        message.setReceiverId(9L);
+
+        service.createForUser(123L, message);
+
+        assertEquals(1, message.getType());
+        assertEquals(123L, message.getSenderId());
+        assertEquals(123L, message.getCreateUser());
+    }
+
+    @Test
+    void 管理员系统通知不写发送人() {
+        MessageServiceImpl service = service();
+        MessageEntity message = new MessageEntity();
+        message.setType(0);
+        message.setReceiverId(9L);
+
+        service.createByAdmin(5L, message);
+
+        assertNull(message.getSenderId());
+        assertEquals(5L, message.getCreateUser());
+    }
+
+    @Test
+    void 管理员用户消息写入管理员为发送人() {
+        MessageServiceImpl service = service();
+        MessageEntity message = new MessageEntity();
+        message.setType(1);
+        message.setReceiverId(9L);
+
+        service.createByAdmin(5L, message);
+
+        assertEquals(5L, message.getSenderId());
+        assertEquals(5L, message.getCreateUser());
+    }
+
+    private MessageServiceImpl service() {
+        MessageMapper mapper = mock(MessageMapper.class);
+        when(mapper.insert(any(MessageEntity.class))).thenReturn(1);
+        MessageServiceImpl service = new MessageServiceImpl();
+        ReflectionTestUtils.setField(service, "baseMapper", mapper);
+        return service;
     }
 }

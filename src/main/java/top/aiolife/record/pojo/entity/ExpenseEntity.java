@@ -35,7 +35,7 @@ public class ExpenseEntity extends IdentityEntity {
      * 记账金额，计入支出统计；退款或手工调整后可与原始交易金额不同
      */
     private BigDecimal bookkeepingAmount;
-    private Long expTypeId;
+    private Long expenseTypeId;
 
     private Long userId;
 
@@ -62,7 +62,7 @@ public class ExpenseEntity extends IdentityEntity {
      * 支出时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime expTime;
+    private LocalDateTime expenseTime;
 
     /**
      * 交易号
@@ -72,7 +72,7 @@ public class ExpenseEntity extends IdentityEntity {
     /**
      * 交易描述
      */
-    private String expDesc;
+    private String expenseDesc;
 
     /**
      * 商家订单号

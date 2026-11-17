@@ -57,11 +57,11 @@ class MenuClientStatusTest {
         locks = new SecondaryLockMenuResolver(lockMapper, reader);
         jdbc.update("""
                 INSERT INTO sys_menu(id,parent_id,name,path,component,sort_order,visible_clients,is_deleted) VALUES
-                (1,0,'Group','/group','BasicLayout',0,2,0),
+                (1,NULL,'Group','/group','BasicLayout',0,2,0),
                 (2,1,'Child','/group/child','sample/index',0,3,0),
-                (3,0,'Web','/web','sample/index',0,1,0),
-                (4,0,'Neither','/neither','sample/index',0,0,0),
-                (5,0,'Removed','/removed','sample/index',0,3,1)
+                (3,NULL,'Web','/web','sample/index',0,1,0),
+                (4,NULL,'Neither','/neither','sample/index',0,0,0),
+                (5,NULL,'Removed','/removed','sample/index',0,3,1)
                 """);
     }
 

@@ -48,21 +48,21 @@ class TimeCategoryHierarchyTest {
     @Test
     void 父级校验拒绝三级自引用循环和不可见分类() {
         var service = newService();
-        var tree = List.of(category(1, null, 0L), category(2, null, 1L), category(3, 8L, 0L));
+        var tree = List.of(category(1, null, null), category(2, null, 1L), category(3, 8L, null));
         assertDoesNotThrow(() -> service.validateParent(3L, 1L, tree));
         assertThrows(IllegalArgumentException.class, () -> service.validateParent(3L, 2L, tree));
         assertThrows(IllegalArgumentException.class, () -> service.validateParent(1L, 1L, tree));
         assertThrows(IllegalArgumentException.class, () -> service.validateParent(1L, 2L, tree));
         assertThrows(IllegalArgumentException.class, () -> service.validateParent(1L, 3L, tree));
         assertThrows(IllegalArgumentException.class, () -> service.validateParent(3L, 999L, tree));
-        assertDoesNotThrow(() -> service.validateParent(2L, 0L, tree));
+        assertDoesNotThrow(() -> service.validateParent(2L, null, tree));
     }
 
     @Test
     void 新增二级分类只接在同级排序之后() {
         var service = spy(newService());
         doNothing().when(service).lockHierarchy();
-        var root = category(1, null, 0L); root.setSortOrder(900);
+        var root = category(1, null, null); root.setSortOrder(900);
         var child = category(2, 8L, 1L); child.setSortOrder(20);
         doReturn(List.of(root, child)).when(service).listUserCategories(8L);
         doReturn(List.of(root, child)).when(service).listUserVisibleCategories(8L);
@@ -79,7 +79,8 @@ class TimeCategoryHierarchyTest {
         var service = spy(newService());
         doNothing().when(service).lockHierarchy();
         var override = category(100, 8L, null); override.setTemplateId(2L); override.setName("个人名称");
-        doReturn(List.of(category(1, null, 0L), category(2, null, 1L)), List.of(override))
+        override.setInheritParent(true);
+        doReturn(List.of(category(1, null, null), category(2, null, 1L)), List.of(override))
                 .when(service).list(anyWrapper());
         var merged = service.listUserCategories(8L).stream().filter(c -> c.getId() == 2L).findFirst().orElseThrow();
         assertEquals(1L, merged.getParentId());
@@ -88,12 +89,12 @@ class TimeCategoryHierarchyTest {
     }
 
     @Test
-    void 覆盖写零可以移到一级且隐藏父级保留历史元数据() {
+    void 覆盖显式根可以移到一级且隐藏父级保留历史元数据() {
         var service = spy(newService());
         doNothing().when(service).lockHierarchy();
-        var override = category(100, 8L, 0L); override.setTemplateId(2L);
-        var hidden = category(101, 8L, null); hidden.setTemplateId(1L); hidden.setIsEnabled(0);
-        doReturn(List.of(category(1, null, 0L), category(2, null, 1L), category(3, null, 1L)), List.of(override, hidden))
+        var override = category(100, 8L, null); override.setTemplateId(2L); override.setInheritParent(false);
+        var hidden = category(101, 8L, null); hidden.setTemplateId(1L); hidden.setInheritParent(true); hidden.setIsEnabled(0);
+        doReturn(List.of(category(1, null, null), category(2, null, 1L), category(3, null, 1L)), List.of(override, hidden))
                 .when(service).list(anyWrapper());
         var all = service.listUserCategories(8L);
         assertEquals(3, all.size());
@@ -112,20 +113,21 @@ class TimeCategoryHierarchyTest {
     }
 
     @Test
-    void 显式空值恢复公共归属并真正写入数据库NULL() {
+    void 继承标记恢复公共归属并真正写入数据库NULL() {
         var service = spy(newService());
         doNothing().when(service).lockHierarchy();
         var template = category(2, null, 1L);
-        var override = category(100, 8L, 0L); override.setTemplateId(2L);
+        var override = category(100, 8L, 2L); override.setTemplateId(2L);
         doReturn(template).when(service).getById(2L);
         doReturn(override).when(service).getOne(any());
-        doReturn(List.of(category(1, null, 0L), category(2, 8L, 0L))).when(service).listUserCategories(8L);
+        doReturn(List.of(category(1, null, null), category(2, 8L, null))).when(service).listUserCategories(8L);
         doReturn(true).when(service).update(any());
-        var updates = new TimeTrackerCategoryEntity(); updates.setParentId(null);
+        var updates = new TimeTrackerCategoryEntity(); updates.setInheritParent(true);
         service.updateCategory(2L, updates, 8L);
         ArgumentCaptor<Wrapper<TimeTrackerCategoryEntity>> capture = ArgumentCaptor.captor();
         verify(service).update(capture.capture());
         var wrapper = (LambdaUpdateWrapper<?>) capture.getValue();
+        assertTrue(wrapper.getSqlSet().contains("inherit_parent="));
         assertTrue(wrapper.getSqlSet().contains("parent_id="));
         assertTrue(wrapper.getParamNameValuePairs().containsValue(null));
     }
@@ -134,10 +136,10 @@ class TimeCategoryHierarchyTest {
     void 管理员移动公共分类也检查用户私有子分类() {
         var service = spy(newService());
         doNothing().when(service).lockHierarchy();
-        doReturn(category(1, null, 0L)).when(service).getById(1L);
-        doReturn(List.of(category(1, null, 0L), category(2, null, 0L))).when(service).listAllCategories();
+        doReturn(category(1, null, null)).when(service).getById(1L);
+        doReturn(List.of(category(1, null, null), category(2, null, null))).when(service).listAllCategories();
         doReturn(List.of(category(3, 8L, 1L)), List.of()).when(service).list(anyWrapper());
-        doReturn(List.of(category(1, null, 0L), category(2, null, 0L), category(3, 8L, 1L)))
+        doReturn(List.of(category(1, null, null), category(2, null, null), category(3, 8L, 1L)))
                 .when(service).listUserCategories(8L);
         var updates = new TimeTrackerCategoryEntity(); updates.setParentId(2L);
         assertThrows(IllegalArgumentException.class, () -> service.adminUpdateCategory(1L, updates));
@@ -148,9 +150,9 @@ class TimeCategoryHierarchyTest {
     void 新增公共子分类拒绝用户已将其上级移动为二级的情况() {
         var service = spy(newService());
         doNothing().when(service).lockHierarchy();
-        doReturn(List.of(category(1, null, 0L))).when(service).listAllCategories();
-        doReturn(List.of(category(9, 8L, 0L))).when(service).list(anyWrapper());
-        doReturn(List.of(category(1, null, 9L), category(9, 8L, 0L))).when(service).listUserCategories(8L);
+        doReturn(List.of(category(1, null, null))).when(service).listAllCategories();
+        doReturn(List.of(category(9, 8L, null))).when(service).list(anyWrapper());
+        doReturn(List.of(category(1, null, 9L), category(9, 8L, null))).when(service).listUserCategories(8L);
         var child = category(3, null, 1L);
         assertThrows(IllegalArgumentException.class, () -> service.adminCreateCategory(child));
         verify(service, never()).save(any(TimeTrackerCategoryEntity.class));
@@ -160,7 +162,7 @@ class TimeCategoryHierarchyTest {
     void 有子分类或记录时拒绝删除() {
         var service = spy(newService());
         doNothing().when(service).lockHierarchy();
-        doReturn(category(1, 8L, 0L)).when(service).getById(1L);
+        doReturn(category(1, 8L, null)).when(service).getById(1L);
         doReturn(1L).when(service).count(any());
         assertThrows(IllegalArgumentException.class, () -> service.deleteCategory(1L, 8L));
         verify(service, never()).updateById(any());

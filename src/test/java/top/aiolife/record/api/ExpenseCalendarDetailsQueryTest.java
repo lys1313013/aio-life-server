@@ -40,7 +40,7 @@ class ExpenseCalendarDetailsQueryTest {
             columns.add(column + " " + type + (column.equals("id") ? " PRIMARY KEY" : ""));
         }
         jdbc.execute("CREATE TABLE expense (" + String.join(",", columns) + ")");
-        jdbc.execute("INSERT INTO expense(id,user_id,bookkeeping_amount,exp_time,is_deleted) VALUES "
+        jdbc.execute("INSERT INTO expense(id,user_id,bookkeeping_amount,expense_time,is_deleted) VALUES "
                 + "(1,7,10,'2026-08-12 00:00:00',0),(2,7,20,'2026-08-12 00:00:00',0),"
                 + "(3,7,30,'2026-08-13 00:00:00',0),(4,8,999,'2026-08-12 12:00:00',0),"
                 + "(5,7,999,'2026-08-12 12:00:00',1),"

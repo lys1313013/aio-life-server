@@ -61,7 +61,7 @@ class SystemNotificationSenderTest {
         assertFalse(messages.isEmpty(), "应该插入消息到数据库");
 
         MessageEntity message = messages.get(0);
-        assertEquals(1L, message.getSenderId(), "发送者ID应该是系统管理员(1)");
+        assertNull(message.getSenderId(), "系统通知不记录发送用户");
         assertEquals(100L, message.getReceiverId(), "接收者ID应该匹配用户ID");
         assertEquals("测试标题", message.getTitle(), "标题应该匹配");
         assertEquals("纯文本内容", message.getContent(), "内容应该使用纯文本");
@@ -110,7 +110,7 @@ class SystemNotificationSenderTest {
         // 验证每条消息的内容
         for (int i = 0; i < messages.size(); i++) {
             MessageEntity message = messages.get(i);
-            assertEquals(1L, message.getSenderId());
+            assertNull(message.getSenderId(), "系统通知不记录发送用户");
             assertEquals(300L, message.getReceiverId());
             assertEquals(0, message.getType());
         }

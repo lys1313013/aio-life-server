@@ -42,18 +42,20 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
                 .orderByAsc(TimeTrackerCategoryEntity::getId).last("FOR UPDATE"));
     }
 
-    private Long parentId(TimeTrackerCategoryEntity category) {
-        return category.getParentId() == null ? 0L : category.getParentId();
+    /** 覆盖记录的生效父级：继承时跟随模板，否则使用本地父级；null 表示根。 */
+    private Long effectiveParentId(TimeTrackerCategoryEntity override, TimeTrackerCategoryEntity template) {
+        return Boolean.TRUE.equals(override.getInheritParent())
+                ? template.getParentId() : override.getParentId();
     }
 
     /** 基于合并后的树校验，停用节点也参与层级检查。 */
     void validateParent(Long id, Long parentId, List<TimeTrackerCategoryEntity> categories) {
-        if (parentId == 0L) return;
+        if (parentId == null) return;
         if (Objects.equals(id, parentId)) throw new IllegalArgumentException("分类不能作为自己的上级");
         var parent = categories.stream().filter(c -> Objects.equals(c.getId(), parentId))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("上级分类不存在或无权使用"));
-        if (parentId(parent) != 0L) throw new IllegalArgumentException("分类最多支持两级，请选择一级分类作为上级");
-        if (id != null && categories.stream().anyMatch(c -> Objects.equals(parentId(c), id))) {
+        if (parent.getParentId() != null) throw new IllegalArgumentException("分类最多支持两级，请选择一级分类作为上级");
+        if (id != null && categories.stream().anyMatch(c -> Objects.equals(c.getParentId(), id))) {
             throw new IllegalArgumentException("该分类已有子分类，不能移动到其他分类下");
         }
     }
@@ -109,7 +111,8 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
                 merged.setId(publicCategory.getId());
                 merged.setUserId(userId);
                 merged.setTemplateId(publicCategory.getId());
-                merged.setParentId(valueOrTemplate(overrideRecord.getParentId(), parentId(publicCategory)));
+                merged.setParentId(effectiveParentId(overrideRecord, publicCategory));
+                merged.setInheritParent(overrideRecord.getInheritParent());
                 merged.setName(overrideRecord.getName() != null ? overrideRecord.getName() : publicCategory.getName());
                 merged.setColor(overrideRecord.getColor() != null ? overrideRecord.getColor() : publicCategory.getColor());
                 merged.setIcon(overrideRecord.getIcon() != null ? overrideRecord.getIcon() : publicCategory.getIcon());
@@ -136,8 +139,8 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         Map<Long, TimeTrackerCategoryEntity> byId = result.stream()
                 .collect(Collectors.toMap(TimeTrackerCategoryEntity::getId, c -> c));
         for (TimeTrackerCategoryEntity category : result) {
-            if (parentId(category) != 0L) {
-                var parent = byId.get(parentId(category));
+            if (category.getParentId() != null) {
+                var parent = byId.get(category.getParentId());
                 if (parent == null || Objects.equals(parent.getIsEnabled(), 0)) category.setIsEnabled(0);
             }
         }
@@ -183,7 +186,8 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
                 TimeTrackerCategoryEntity hidden = new TimeTrackerCategoryEntity();
                 hidden.setId(publicCat.getId());
                 hidden.setTemplateId(publicCat.getId());
-                hidden.setParentId(valueOrTemplate(override.getParentId(), parentId(publicCat)));
+                hidden.setParentId(effectiveParentId(override, publicCat));
+                hidden.setInheritParent(override.getInheritParent());
                 hidden.setName(override.getName() != null ? override.getName() : publicCat.getName());
                 hidden.setColor(override.getColor() != null ? override.getColor() : publicCat.getColor());
                 hidden.setIcon(override.getIcon() != null ? override.getIcon() : publicCat.getIcon());
@@ -199,13 +203,13 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
 
     @Override
     public void createCategory(TimeTrackerCategoryEntity category, Long userId) {
-        if (parentId(category) != 0L) lockHierarchy();
+        if (category.getParentId() != null) lockHierarchy();
         category.setId(null);
         category.setUserId(userId);
         category.setTemplateId(null);
+        category.setInheritParent(false);
         category.fillCreateCommonField(userId);
-        category.setParentId(parentId(category));
-        if (category.getParentId() != 0L) validateParent(category.getId(), category.getParentId(), listUserCategories(userId));
+        if (category.getParentId() != null) validateParent(category.getId(), category.getParentId(), listUserCategories(userId));
         if (category.getSortOrder() == null) {
             category.setSortOrder(nextSort(listUserVisibleCategories(userId), category.getParentId()));
         }
@@ -231,11 +235,13 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         if (target.getTemplateId() != null) {
             throw new IllegalArgumentException("请使用公共分类ID修改覆盖设置");
         }
-        if (updates.isParentIdSpecified()) {
-            Long desired = updates.getParentId() == null && target.getUserId() == null
-                    ? parentId(target) : parentId(updates);
-            validateParent(categoryId, desired, listUserCategories(userId));
-            if (target.getUserId() != null) updates.setParentId(desired);
+        if (Boolean.TRUE.equals(updates.getInheritParent())) {
+            if (target.getUserId() != null) {
+                throw new IllegalArgumentException("仅公共分类覆盖可以继承父级");
+            }
+            validateParent(categoryId, target.getParentId(), listUserCategories(userId));
+        } else if (updates.isParentIdSpecified()) {
+            validateParent(categoryId, updates.getParentId(), listUserCategories(userId));
         }
 
         boolean changed;
@@ -257,6 +263,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
             updates.setId(categoryId);
             updates.setUserId(userId);
             updates.setTemplateId(target.getTemplateId());
+            updates.setInheritParent(false);
             updates.setCreateUser(target.getCreateUser());
             updates.setCreateTime(target.getCreateTime());
             updates.setIsDeleted(target.getIsDeleted());
@@ -264,6 +271,11 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
             changed = this.update(updates, new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
                     .eq(TimeTrackerCategoryEntity::getId, categoryId)
                     .eq(TimeTrackerCategoryEntity::getUserId, userId));
+            if (updates.isParentIdSpecified()) {
+                changed = this.update(new LambdaUpdateWrapper<TimeTrackerCategoryEntity>()
+                        .eq(TimeTrackerCategoryEntity::getId, categoryId)
+                        .set(TimeTrackerCategoryEntity::getParentId, updates.getParentId())) || changed;
+            }
         } else {
             throw new RuntimeException("无权修改此分类");
         }
@@ -279,7 +291,10 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         TimeTrackerCategoryEntity override = new TimeTrackerCategoryEntity();
         override.setUserId(userId);
         override.setTemplateId(template.getId());
-        override.setParentId(updates.isParentIdSpecified() ? updates.getParentId() : null);
+        boolean inherit = Boolean.TRUE.equals(updates.getInheritParent())
+                || (!updates.isParentIdSpecified() && updates.getInheritParent() == null);
+        override.setInheritParent(inherit);
+        override.setParentId(inherit ? null : updates.getParentId());
         override.setName(changedValue(updates.getName(), template.getName()));
         override.setColor(changedValue(updates.getColor(), template.getColor()));
         override.setIcon(changedValue(updates.getIcon(), template.getIcon()));
@@ -303,8 +318,15 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         LambdaUpdateWrapper<TimeTrackerCategoryEntity> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(TimeTrackerCategoryEntity::getId, overrideId);
 
-        if (updates.isParentIdSpecified()) {
+        if (Boolean.TRUE.equals(updates.getInheritParent())) {
+            wrapper.set(TimeTrackerCategoryEntity::getInheritParent, true);
+            wrapper.set(TimeTrackerCategoryEntity::getParentId, null);
+        } else if (updates.isParentIdSpecified()) {
+            wrapper.set(TimeTrackerCategoryEntity::getInheritParent, false);
             wrapper.set(TimeTrackerCategoryEntity::getParentId, updates.getParentId());
+        } else if (Boolean.FALSE.equals(updates.getInheritParent())) {
+            wrapper.set(TimeTrackerCategoryEntity::getInheritParent, false);
+            wrapper.set(TimeTrackerCategoryEntity::getParentId, null);
         }
         if (updates.getName() != null) {
             wrapper.set(TimeTrackerCategoryEntity::getName, changedValue(updates.getName(), template.getName()));
@@ -369,6 +391,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
                 TimeTrackerCategoryEntity hideRecord = new TimeTrackerCategoryEntity();
                 hideRecord.setUserId(userId);
                 hideRecord.setTemplateId(categoryId);
+                hideRecord.setInheritParent(true);
                 hideRecord.setName(target.getName());
                 hideRecord.setColor(target.getColor());
                 hideRecord.setIcon(target.getIcon());
@@ -418,14 +441,14 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
 
     @Override
     public void adminCreateCategory(TimeTrackerCategoryEntity category) {
-        if (parentId(category) != 0L) lockHierarchy();
+        if (category.getParentId() != null) lockHierarchy();
         category.setId(null);
         category.setUserId(null); // 系统公共预设
         category.setTemplateId(null);
+        category.setInheritParent(false);
         category.fillCreateCommonField(null);
-        category.setParentId(parentId(category));
         validateParent(null, category.getParentId(), listAllCategories());
-        if (category.getParentId() != 0L) validatePublicParentChange(null, category.getParentId());
+        if (category.getParentId() != null) validatePublicParentChange(null, category.getParentId());
         if (category.getSortOrder() == null) {
             category.setSortOrder(nextSort(listAllCategories(), category.getParentId()));
         }
@@ -435,7 +458,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
 
     private int nextSort(List<TimeTrackerCategoryEntity> categories, Long parentId) {
         return categories.stream()
-                .filter(c -> Objects.equals(parentId(c), parentId))
+                .filter(c -> Objects.equals(c.getParentId(), parentId))
                 .map(TimeTrackerCategoryEntity::getSortOrder)
                 .filter(Objects::nonNull)
                 .max(Integer::compareTo)
@@ -462,7 +485,7 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
                 var overrides = this.list(new LambdaQueryWrapper<TimeTrackerCategoryEntity>()
                         .eq(TimeTrackerCategoryEntity::getUserId, owner)
                         .eq(TimeTrackerCategoryEntity::getTemplateId, categoryId));
-                if (overrides.stream().anyMatch(c -> c.getParentId() != null)) continue;
+                if (overrides.stream().anyMatch(c -> !Boolean.TRUE.equals(c.getInheritParent()))) continue;
             }
             validateParent(categoryId, desiredParent, listUserCategories(owner));
         }
@@ -475,17 +498,22 @@ public class TimeTrackerCategoryServiceImpl extends ServiceImpl<ITimeTrackerCate
         if (target == null || target.getUserId() != null) {
             throw new RuntimeException("只能更新公共分类");
         }
-        if (updates.isParentIdSpecified() && !Objects.equals(parentId(updates), parentId(target))) {
-            validateParent(categoryId, parentId(updates), listAllCategories());
-            validatePublicParentChange(categoryId, parentId(updates));
-            updates.setParentId(parentId(updates));
+        if (updates.isParentIdSpecified() && !Objects.equals(updates.getParentId(), target.getParentId())) {
+            validateParent(categoryId, updates.getParentId(), listAllCategories());
+            validatePublicParentChange(categoryId, updates.getParentId());
         }
-        if (updates.isParentIdSpecified()) updates.setParentId(parentId(updates));
         updates.setId(categoryId);
         updates.setUserId(null);
         updates.setTemplateId(null);
+        updates.setInheritParent(false);
         updates.fillUpdateCommonField(null);
-        if (this.updateById(updates)) categoryCache.evictAfterCommit(null);
+        boolean changed = this.updateById(updates);
+        if (updates.isParentIdSpecified() && updates.getParentId() == null) {
+            changed = this.update(new LambdaUpdateWrapper<TimeTrackerCategoryEntity>()
+                    .eq(TimeTrackerCategoryEntity::getId, categoryId)
+                    .set(TimeTrackerCategoryEntity::getParentId, null)) || changed;
+        }
+        if (changed) categoryCache.evictAfterCommit(null);
     }
 
     @Override

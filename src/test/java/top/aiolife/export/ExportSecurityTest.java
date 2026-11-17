@@ -112,13 +112,13 @@ class ExportSecurityTest {
         when(security.menus())
                 .thenReturn(
                         List.of(
-                                menu(1L, 0L, "/profile"),
-                                menu(2L, 0L, "/finance"),
+                                menu(1L, null, "/profile"),
+                                menu(2L, null, "/finance"),
                                 menu(3L, 2L, "/finance/expenses")));
         when(security.lockedMenus(7L)).thenReturn(locked ? List.of(2L) : List.of());
     }
 
-    private SysMenuEntity menu(long id, long parent, String path) {
+    private SysMenuEntity menu(long id, Long parent, String path) {
         var menu = new SysMenuEntity();
         menu.setId(id);
         menu.setParentId(parent);

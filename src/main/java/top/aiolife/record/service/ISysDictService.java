@@ -26,17 +26,17 @@ public interface ISysDictService {
 
     boolean createSysDictData(SysDictDataEntity entity, long userId);
 
-    boolean updateSysDictData(long dictCode, SysDictDataEntity entity, long userId);
+    boolean updateSysDictData(long id, SysDictDataEntity entity, long userId);
 
-    boolean deleteSysDictData(long dictCode, long userId);
+    boolean deleteSysDictData(long id, long userId);
 
     PageResp<SysDictTypeEntity> pageSysDictType(String dictName, int page, int pageSize);
 
     boolean createSysDictType(SysDictTypeEntity entity, long userId);
 
-    boolean updateSysDictType(long dictId, SysDictTypeEntity entity, long userId);
+    boolean updateSysDictType(long id, SysDictTypeEntity entity, long userId);
 
-    boolean deleteSysDictType(long dictId, long userId);
+    boolean deleteSysDictType(long id, long userId);
 
     record DictTypeDetail(SysDictTypeEntity type, List<SysDictDataEntity> data) {
     }

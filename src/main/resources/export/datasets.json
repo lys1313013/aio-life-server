@@ -756,6 +756,11 @@
         "type": "TEXT"
       },
       {
+        "key": "inherit_parent",
+        "label": "是否继承公共分类父级",
+        "type": "TEXT"
+      },
+      {
         "key": "icon",
         "label": "图标名称(Iconify格式)",
         "type": "TEXT"
@@ -1606,7 +1611,7 @@
         "type": "TEXT"
       },
       {
-        "key": "inc_type_id",
+        "key": "income_type_id",
         "label": "收入类型",
         "type": "TEXT"
       },
@@ -1643,7 +1648,7 @@
         "type": "DECIMAL"
       },
       {
-        "key": "exp_type_id",
+        "key": "expense_type_id",
         "label": "支出类型ID",
         "type": "TEXT"
       },
@@ -1663,7 +1668,7 @@
         "type": "TEXT"
       },
       {
-        "key": "exp_time",
+        "key": "expense_time",
         "label": "支出时间",
         "type": "TEXT"
       },
@@ -1688,7 +1693,7 @@
         "type": "TEXT"
       },
       {
-        "key": "exp_desc",
+        "key": "expense_desc",
         "label": "支出描述",
         "type": "TEXT"
       },
@@ -1731,7 +1736,7 @@
       },
       {
         "key": "bank_id",
-        "label": "sys_dict_data.dict_code",
+        "label": "sys_dict_data.id",
         "type": "TEXT"
       },
       {
@@ -2458,8 +2463,8 @@
         "type": "TEXT"
       },
       {
-        "key": "time_id",
-        "label": "时间ID",
+        "key": "time_record_id",
+        "label": "时迹记录ID",
         "type": "TEXT"
       },
       {
@@ -2568,7 +2573,7 @@
   },
   {
     "key": "wardrobe_category",
-    "title": "衣柜分类",
+    "title": "衣橱分类",
     "table": "wardrobe_category",
     "ownerColumn": "user_id",
     "menus": [

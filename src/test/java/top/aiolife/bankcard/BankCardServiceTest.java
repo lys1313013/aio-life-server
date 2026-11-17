@@ -53,8 +53,8 @@ class BankCardServiceTest {
         jdbc = new JdbcTemplate(ds); tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         jdbc.execute("CREATE TABLE sys_user(policy_version VARCHAR(32), policy_accepted_at TIMESTAMP, erasure_requested_at TIMESTAMP, erasure_retry_at TIMESTAMP, id BIGINT PRIMARY KEY,is_deleted INT DEFAULT 0)");
         jdbc.execute("INSERT INTO sys_user(id) VALUES(1),(2)");
-        jdbc.execute("CREATE TABLE sys_dict_type(dict_id BIGINT PRIMARY KEY,dict_type VARCHAR(100),is_enabled SMALLINT,is_deleted INT DEFAULT 0)");
-        jdbc.execute("CREATE TABLE sys_dict_data(dict_code BIGINT PRIMARY KEY,dict_id BIGINT,dict_label VARCHAR(100),dict_value VARCHAR(100),sort_order INT,is_enabled SMALLINT,is_deleted INT DEFAULT 0)");
+        jdbc.execute("CREATE TABLE sys_dict_type(id BIGINT PRIMARY KEY,dict_type VARCHAR(100),is_enabled SMALLINT,is_deleted INT DEFAULT 0)");
+        jdbc.execute("CREATE TABLE sys_dict_data(id BIGINT PRIMARY KEY,dict_type_id BIGINT,dict_label VARCHAR(100),dict_value VARCHAR(100),sort_order INT,is_enabled SMALLINT,is_deleted INT DEFAULT 0)");
         jdbc.execute("INSERT INTO sys_dict_type VALUES(10,'bank',1,0),(11,'other',1,0)");
         jdbc.execute("INSERT INTO sys_dict_data VALUES(20,10,'测试银行','TEST',0,1,0),(21,11,'其他字典','OTHER',0,1,0)");
         jdbc.execute("CREATE TABLE user_dict_data(id BIGINT PRIMARY KEY,user_id BIGINT,dict_type VARCHAR(100),dict_label VARCHAR(100),dict_value VARCHAR(100),color VARCHAR(20),sort_order INT,is_enabled SMALLINT,is_default SMALLINT,is_readonly SMALLINT,is_deleted INT DEFAULT 0,create_user BIGINT,update_user BIGINT,create_time DATETIME,update_time DATETIME)");
@@ -223,7 +223,7 @@ class BankCardServiceTest {
         req.setBankId(null);req.setCustomBankName("我的银行");
         assertNull(tx.execute(s->service.save(1,id,req)).getBankId());
         assertNull(jdbc.queryForObject("SELECT bank_id FROM bank_card WHERE id=?",Long.class,id));
-        jdbc.update("UPDATE sys_dict_data SET is_enabled=0 WHERE dict_code=20");
+        jdbc.update("UPDATE sys_dict_data SET is_enabled=0 WHERE id=20");
         req.setBankId(20L);req.setCustomBankName(null);
         assertThrows(IllegalArgumentException.class,()->tx.execute(s->service.save(1,id,req)));
         assertEquals("我的银行",service.detail(1,id).getBankName());
@@ -278,7 +278,7 @@ class BankCardServiceTest {
     }
     @Test void bankDictionaryTypeAvailabilityAndDeletionGuard() {
         var wrong=request();wrong.setBankId(21L);assertThrows(IllegalArgumentException.class,()->create(1,wrong));
-        var card=create(1,request());jdbc.update("UPDATE sys_dict_data SET is_enabled=0 WHERE dict_code=20");
+        var card=create(1,request());jdbc.update("UPDATE sys_dict_data SET is_enabled=0 WHERE id=20");
         assertThrows(IllegalArgumentException.class,()->create(2,request()));
         var edit=request();edit.setCardNo(null);edit.setAlias("仍可编辑");
         assertEquals("仍可编辑",tx.execute(s->service.save(1,Long.valueOf(card.getId()),edit)).getAlias());
@@ -390,7 +390,7 @@ class BankCardServiceTest {
     }
     @Test void 银行停用后禁止新选用且既有银行卡可继续编辑() {
         long id=template();var req=request();req.setCoverTemplateId(id);var card=create(1,req);
-        jdbc.update("UPDATE sys_dict_data SET is_enabled=0 WHERE dict_code=20");
+        jdbc.update("UPDATE sys_dict_data SET is_enabled=0 WHERE id=20");
         assertTrue(templates().options(20,"debit").isEmpty());
         assertThrows(IllegalArgumentException.class,()->create(2,req));
         assertEquals(FILE_A,tx.execute(s->service.save(1,Long.valueOf(card.getId()),req)).getCoverTemplateFileId());

@@ -32,8 +32,8 @@ class PublicImageControllerTest extends AttachmentDatabaseFixture {
         jdbc.update("INSERT INTO attachment(file_key,id,storage_object_id,user_id,biz_type,biz_id,is_public) VALUES(gen_random_uuid(),?,11,?,'avatar',?,1)",id,owner,owner);
     }
     private void template() {
-        jdbc.update("INSERT INTO sys_dict_type(dict_id,dict_type,is_enabled) VALUES(1,'bank',1)");
-        jdbc.update("INSERT INTO sys_dict_data(dict_code,dict_id,dict_label,dict_value,is_enabled) VALUES(2,1,'fixture','fixture',1)");
+        jdbc.update("INSERT INTO sys_dict_type(id,dict_type,is_enabled) VALUES(1,'bank',1)");
+        jdbc.update("INSERT INTO sys_dict_data(id,dict_type_id,dict_label,dict_value,is_enabled) VALUES(2,1,'fixture','fixture',1)");
         jdbc.update("INSERT INTO bank_card_cover_template(id,name,bank_id,card_type,is_enabled,create_user,update_user) VALUES(3,'fixture',2,'debit',1,42,42)");
         jdbc.update("INSERT INTO attachment(file_key,id,storage_object_id,biz_type,biz_id,is_public) VALUES(gen_random_uuid(),4,11,'bank_card_template_face',3,1)");
     }
@@ -46,7 +46,7 @@ class PublicImageControllerTest extends AttachmentDatabaseFixture {
         verify(minio,times(1)).getFile(eq("fixture"),anyString());
     }
     @Test void 模板或银行停用后即使ETag命中也返回404() throws Exception {
-        template();jdbc.update("UPDATE sys_dict_data SET is_enabled=0 WHERE dict_code=2");
+        template();jdbc.update("UPDATE sys_dict_data SET is_enabled=0 WHERE id=2");
         mvc.perform(get(url()).header("If-None-Match","\""+hash+"\"")).andExpect(status().isNotFound());
         verifyNoInteractions(minio);
     }

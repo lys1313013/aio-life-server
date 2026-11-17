@@ -15,6 +15,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.core.ApiRequestFixtures;
+import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.record.api.*;
 import top.aiolife.record.mapper.*;
 import top.aiolife.record.pojo.entity.*;
@@ -71,7 +72,7 @@ class PermissionMutationTest {
 
     @Test
     void privateDictionary_cannotChangeOwnerOrTemplate() {
-        var service = spy(new UserDictDataServiceImpl(mock(UserDictDataCache.class)));
+        var service = spy(new UserDictDataServiceImpl(mock(UserDictDataCache.class), mock(DistributedLockExecutor.class)));
         var existing = new UserDictDataEntity();
         existing.setId(7L); existing.setUserId(11L);
         var updates = new UserDictDataEntity();

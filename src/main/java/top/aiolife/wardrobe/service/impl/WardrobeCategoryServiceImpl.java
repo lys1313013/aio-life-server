@@ -1,6 +1,7 @@
 package top.aiolife.wardrobe.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.AllArgsConstructor;
@@ -13,6 +14,8 @@ import top.aiolife.wardrobe.pojo.req.CategoryReq;
 import top.aiolife.wardrobe.pojo.vo.CategoryVO;
 import top.aiolife.wardrobe.service.IWardrobeCategoryService;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -51,6 +54,11 @@ public class WardrobeCategoryServiceImpl extends ServiceImpl<WardrobeCategoryMap
         entity.setId(req.getId());
         entity.fillUpdateCommonField(userId);
         this.updateById(entity);
+        if (req.getParentId() == null) {
+            this.update(new LambdaUpdateWrapper<WardrobeCategoryEntity>()
+                    .eq(WardrobeCategoryEntity::getId, req.getId())
+                    .set(WardrobeCategoryEntity::getParentId, null));
+        }
     }
 
     @Override
@@ -88,12 +96,12 @@ public class WardrobeCategoryServiceImpl extends ServiceImpl<WardrobeCategoryMap
     }
 
     private List<CategoryVO> buildTree(List<WardrobeCategoryEntity> list) {
-        Map<Long, List<WardrobeCategoryEntity>> parentMap = list.stream()
-                .collect(Collectors.groupingBy(
-                        e -> e.getParentId() == null ? 0L : e.getParentId()
-                ));
+        Map<Long, List<WardrobeCategoryEntity>> parentMap = new HashMap<>();
+        for (WardrobeCategoryEntity entity : list) {
+            parentMap.computeIfAbsent(entity.getParentId(), key -> new ArrayList<>()).add(entity);
+        }
 
-        return parentMap.getOrDefault(0L, List.of()).stream()
+        return parentMap.getOrDefault(null, List.of()).stream()
                 .map(parent -> {
                     CategoryVO vo = toVO(parent);
                     List<CategoryVO> children = parentMap.getOrDefault(parent.getId(), List.of()).stream()

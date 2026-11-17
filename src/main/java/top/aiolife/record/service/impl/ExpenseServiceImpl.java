@@ -44,27 +44,27 @@ public class ExpenseServiceImpl extends ServiceImpl<IExpenseMapper, ExpenseEntit
         LambdaQueryWrapper<ExpenseEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ExpenseEntity::getUserId, userId);
         if (condition != null) {
-            if (SysUtil.isNotEmpty(condition.getExpTypeId())) {
-                wrapper.eq(ExpenseEntity::getExpTypeId, IdCodec.decode(condition.getExpTypeId()));
+            if (SysUtil.isNotEmpty(condition.getExpenseTypeId())) {
+                wrapper.eq(ExpenseEntity::getExpenseTypeId, IdCodec.decode(condition.getExpenseTypeId()));
             }
             if (SysUtil.isNotEmpty(condition.getPayTypeId())) {
                 wrapper.eq(ExpenseEntity::getPayTypeId, IdCodec.decode(condition.getPayTypeId()));
             }
             if (SysUtil.isNotEmpty(condition.getYear())) {
                 LocalDateTime start = LocalDate.parse(condition.getYear() + "-01-01").atStartOfDay();
-                wrapper.ge(ExpenseEntity::getExpTime, start).lt(ExpenseEntity::getExpTime, start.plusYears(1));
+                wrapper.ge(ExpenseEntity::getExpenseTime, start).lt(ExpenseEntity::getExpenseTime, start.plusYears(1));
             }
-            wrapper.ge(condition.getStartTime() != null, ExpenseEntity::getExpTime, condition.getStartTime());
-            wrapper.le(condition.getEndTime() != null, ExpenseEntity::getExpTime, condition.getEndTime());
-            wrapper.lt(condition.getEndTimeBefore() != null, ExpenseEntity::getExpTime, condition.getEndTimeBefore());
+            wrapper.ge(condition.getStartTime() != null, ExpenseEntity::getExpenseTime, condition.getStartTime());
+            wrapper.le(condition.getEndTime() != null, ExpenseEntity::getExpenseTime, condition.getEndTime());
+            wrapper.lt(condition.getEndTimeBefore() != null, ExpenseEntity::getExpenseTime, condition.getEndTimeBefore());
             IlikeQuery.anyOf(wrapper, SysUtil.isNotEmpty(condition.getRemark()), condition.getRemark(),
                     ExpenseEntity::getRemark);
             IlikeQuery.anyOf(wrapper, SysUtil.isNotEmpty(condition.getCounterparty()), condition.getCounterparty(),
                     ExpenseEntity::getCounterparty);
-            IlikeQuery.anyOf(wrapper, SysUtil.isNotEmpty(condition.getExpDesc()), condition.getExpDesc(),
-                    ExpenseEntity::getExpDesc);
+            IlikeQuery.anyOf(wrapper, SysUtil.isNotEmpty(condition.getExpenseDesc()), condition.getExpenseDesc(),
+                    ExpenseEntity::getExpenseDesc);
         }
-        wrapper.orderByDesc(ExpenseEntity::getExpTime, ExpenseEntity::getId);
+        wrapper.orderByDesc(ExpenseEntity::getExpenseTime, ExpenseEntity::getId);
         Page<ExpenseEntity> result = baseMapper.selectPage(new Page<>(page, pageSize), wrapper);
         return PageResp.of(result.getRecords(), result.getTotal());
     }

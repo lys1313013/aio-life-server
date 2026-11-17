@@ -106,10 +106,10 @@ public class DeviceExpenseService {
                 .eq(ExpenseEntity::getUserId, userId).eq(ExpenseEntity::getId, expenseId));
         if (expense == null) throw missing("支出");
         var defaults = new DeviceCreateReq();
-        defaults.setName(shortText(expense.getExpDesc()));
+        defaults.setName(shortText(expense.getExpenseDesc()));
         if (defaults.getName() == null) defaults.setName(shortText(expense.getRemark()));
         defaults.setPurchasePrice(expense.getBookkeepingAmount());
-        defaults.setPurchaseDate(expense.getExpTime() == null ? null : expense.getExpTime().toLocalDate());
+        defaults.setPurchaseDate(expense.getExpenseTime() == null ? null : expense.getExpenseTime().toLocalDate());
         defaults.setPurchasePlace(shortText(expense.getCounterparty()));
         defaults.setRemark(shortText(expense.getRemark()));
         defaults.setStatus("1");

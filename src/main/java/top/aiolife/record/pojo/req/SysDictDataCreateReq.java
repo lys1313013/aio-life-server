@@ -13,10 +13,10 @@ import lombok.Data;
 public class SysDictDataCreateReq {
 
     /**
-     * 字典ID
+     * 所属字典类型ID
      */
     @NotNull
-    private Long dictId;
+    private Long dictTypeId;
 
     /**
      * 字典排序

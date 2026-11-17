@@ -75,7 +75,7 @@ public class MenuServiceImpl implements IMenuService {
             SysMenuEntity cursor = menu;
             while (cursor != null && visited.add(cursor.getId())) {
                 Long parent = cursor.getParentId();
-                if (parent == null || parent == 0L) return true;
+                if (parent == null) return true;
                 cursor = byId.get(parent);
             }
             return false;
@@ -134,6 +134,7 @@ public class MenuServiceImpl implements IMenuService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public MenuAdminVO update(long id, MenuSaveReq req, long userId) throws Exception {
         validateReq(req, true);
 
@@ -151,6 +152,11 @@ public class MenuServiceImpl implements IMenuService {
         fillEntity(exist, req);
         exist.fillUpdateCommonField(userId);
         sysMenuMapper.updateById(exist);
+        if (req.getParentId() == null) {
+            sysMenuMapper.update(null, new LambdaUpdateWrapper<SysMenuEntity>()
+                    .eq(SysMenuEntity::getId, id)
+                    .set(SysMenuEntity::getParentId, null));
+        }
         return toAdminVo(exist);
     }
 
@@ -281,7 +287,7 @@ public class MenuServiceImpl implements IMenuService {
     }
 
     private void fillEntity(SysMenuEntity entity, MenuSaveReq req) throws Exception {
-        entity.setParentId(req.getParentId() == null ? 0L : req.getParentId());
+        entity.setParentId(req.getParentId());
         entity.setName(req.getName());
         entity.setIconColor(StringUtils.hasText(req.getIconColor()) ? req.getIconColor().trim() : null);
         if (StringUtils.hasText(req.getPath())) {
@@ -300,17 +306,16 @@ public class MenuServiceImpl implements IMenuService {
     private List<MenuRouteVO> buildTree(List<SysMenuEntity> list) {
         Map<Long, List<SysMenuEntity>> childrenMap = new HashMap<>();
         for (SysMenuEntity entity : list) {
-            long pid = entity.getParentId() == null ? 0L : entity.getParentId();
-            childrenMap.computeIfAbsent(pid, k -> new ArrayList<>()).add(entity);
+            childrenMap.computeIfAbsent(entity.getParentId(), k -> new ArrayList<>()).add(entity);
         }
         for (List<SysMenuEntity> children : childrenMap.values()) {
             children.sort(Comparator.comparing(SysMenuEntity::getSortOrder).thenComparing(SysMenuEntity::getId));
         }
 
-        return buildChildren(0L, childrenMap);
+        return buildChildren(null, childrenMap);
     }
 
-    private List<MenuRouteVO> buildChildren(long parentId, Map<Long, List<SysMenuEntity>> childrenMap) {
+    private List<MenuRouteVO> buildChildren(Long parentId, Map<Long, List<SysMenuEntity>> childrenMap) {
         List<SysMenuEntity> children = childrenMap.getOrDefault(parentId, List.of());
         List<MenuRouteVO> result = new ArrayList<>();
         for (SysMenuEntity entity : children) {
@@ -327,17 +332,16 @@ public class MenuServiceImpl implements IMenuService {
     private List<MenuAdminVO> buildAdminTree(List<SysMenuEntity> list) {
         Map<Long, List<SysMenuEntity>> childrenMap = new HashMap<>();
         for (SysMenuEntity entity : list) {
-            long pid = entity.getParentId() == null ? 0L : entity.getParentId();
-            childrenMap.computeIfAbsent(pid, k -> new ArrayList<>()).add(entity);
+            childrenMap.computeIfAbsent(entity.getParentId(), k -> new ArrayList<>()).add(entity);
         }
         for (List<SysMenuEntity> children : childrenMap.values()) {
             children.sort(Comparator.comparing(SysMenuEntity::getSortOrder).thenComparing(SysMenuEntity::getId));
         }
 
-        return buildAdminChildren(0L, childrenMap);
+        return buildAdminChildren(null, childrenMap);
     }
 
-    private List<MenuAdminVO> buildAdminChildren(long parentId, Map<Long, List<SysMenuEntity>> childrenMap) {
+    private List<MenuAdminVO> buildAdminChildren(Long parentId, Map<Long, List<SysMenuEntity>> childrenMap) {
         List<SysMenuEntity> children = childrenMap.getOrDefault(parentId, List.of());
         List<MenuAdminVO> result = new ArrayList<>();
         for (SysMenuEntity entity : children) {
@@ -372,7 +376,7 @@ public class MenuServiceImpl implements IMenuService {
     private MenuAdminVO toAdminVo(SysMenuEntity entity) {
         MenuAdminVO vo = new MenuAdminVO();
         vo.setId(entity.getId());
-        vo.setParentId(entity.getParentId() == null ? 0L : entity.getParentId());
+        vo.setParentId(entity.getParentId());
         vo.setPath(entity.getPath());
         vo.setName(entity.getName());
         vo.setComponent(entity.getComponent());

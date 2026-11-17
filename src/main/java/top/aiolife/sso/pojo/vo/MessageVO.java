@@ -12,6 +12,9 @@ public class MessageVO {
 
     private Long id;
 
+    /**
+     * 发送用户ID；系统通知为空
+     */
     private Long senderId;
 
     private Long receiverId;

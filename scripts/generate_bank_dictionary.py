@@ -70,7 +70,7 @@ def main():
 -- 仅包含银行字典类型和全部3132家机构；菜单单独维护；重复执行保留已有配置和软删除状态。
 -- 已软删除银行字典类型时不恢复类型或补子项；固定 ID 与其他对象冲突直接失败。
 -- 在无并发字典维护的迁移窗口执行；主键冲突直接失败，禁止静默忽略固定 ID 冲突。
-INSERT INTO sys_dict_type(dict_id,dict_name,dict_type,is_enabled,is_deleted,create_user,update_user)
+INSERT INTO sys_dict_type(id,dict_name,dict_type,is_enabled,is_deleted,create_user,update_user)
 SELECT 92626001,'银行','bank',1,0,0,0
 WHERE NOT EXISTS(SELECT 1 FROM sys_dict_type WHERE dict_type='bank');
 
@@ -90,11 +90,11 @@ CREATE TEMPORARY TABLE tmp_nfra_bank_dictionary (
         body.append('INSERT INTO tmp_nfra_bank_dictionary(seed_id,sort_order,label,bank_value,full_name,source_remark) VALUES\n'
                     + ',\n'.join(records[start:start + 200]) + ';\n')
     footer = """
-INSERT INTO sys_dict_data(dict_code,dict_id,sort_order,dict_label,dict_value,is_enabled,is_deleted,create_user,update_user,remark)
-SELECT s.seed_id,(SELECT dict_id FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0),s.sort_order,s.label,s.bank_value,1,0,0,0,s.source_remark
+INSERT INTO sys_dict_data(id,dict_type_id,sort_order,dict_label,dict_value,is_enabled,is_deleted,create_user,update_user,remark)
+SELECT s.seed_id,(SELECT id FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0),s.sort_order,s.label,s.bank_value,1,0,0,0,s.source_remark
 FROM tmp_nfra_bank_dictionary s
-WHERE (SELECT dict_id FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0) IS NOT NULL AND NOT EXISTS (
-  SELECT 1 FROM sys_dict_data d WHERE d.dict_id=(SELECT dict_id FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0)
+WHERE (SELECT id FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0) IS NOT NULL AND NOT EXISTS (
+  SELECT 1 FROM sys_dict_data d WHERE d.dict_type_id=(SELECT id FROM sys_dict_type WHERE dict_type='bank' AND is_deleted=0)
   AND (d.dict_value=s.bank_value OR d.dict_label=s.label OR d.dict_label=s.full_name)
 );
 DROP TABLE tmp_nfra_bank_dictionary;

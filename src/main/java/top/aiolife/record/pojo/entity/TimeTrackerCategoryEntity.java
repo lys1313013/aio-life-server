@@ -27,8 +27,10 @@ public class TimeTrackerCategoryEntity extends BaseEntity {
      * 模板ID，指向被覆盖的公共分类ID
      */
     private Long templateId;
-    /** 上级分类：0 为一级；覆盖记录 null 表示继承公共分类。 */
+    /** 上级分类ID；null 表示根分类。 */
     private Long parentId;
+    /** 覆盖记录是否继承公共分类的父级；非覆盖记录固定为 false。 */
+    private Boolean inheritParent;
 
     @TableField(exist = false)
     @JsonIgnore

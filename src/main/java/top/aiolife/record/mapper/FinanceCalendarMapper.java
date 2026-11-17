@@ -11,16 +11,16 @@ import top.aiolife.record.pojo.vo.FinanceCalendarVO;
 public interface FinanceCalendarMapper {
     @Select("""
         <script>
-        SELECT MIN(CAST(exp_time AS DATE)) AS date, COALESCE(SUM(bookkeeping_amount), 0) AS amount
+        SELECT MIN(CAST(expense_time AS DATE)) AS date, COALESCE(SUM(bookkeeping_amount), 0) AS amount
         FROM expense
         WHERE user_id = #{userId} AND is_deleted = 0
-        <if test="start != null">AND exp_time &gt;= #{start}</if>
-        <if test="end != null">AND exp_time &lt; #{end}</if>
+        <if test="start != null">AND expense_time &gt;= #{start}</if>
+        <if test="end != null">AND expense_time &lt; #{end}</if>
         GROUP BY
         <choose>
-            <when test="granularity == 'year'">EXTRACT(YEAR FROM exp_time)</when>
-            <when test="granularity == 'month'">EXTRACT(YEAR FROM exp_time), EXTRACT(MONTH FROM exp_time)</when>
-            <otherwise>EXTRACT(YEAR FROM exp_time), EXTRACT(MONTH FROM exp_time), EXTRACT(DAY FROM exp_time)</otherwise>
+            <when test="granularity == 'year'">EXTRACT(YEAR FROM expense_time)</when>
+            <when test="granularity == 'month'">EXTRACT(YEAR FROM expense_time), EXTRACT(MONTH FROM expense_time)</when>
+            <otherwise>EXTRACT(YEAR FROM expense_time), EXTRACT(MONTH FROM expense_time), EXTRACT(DAY FROM expense_time)</otherwise>
         </choose>
         ORDER BY date
         </script>

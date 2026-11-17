@@ -47,7 +47,7 @@ public class SysDictServiceImpl implements ISysDictService {
             return List.of();
         }
         LambdaQueryWrapper<SysDictDataEntity> typeQueryWrapper = new LambdaQueryWrapper<>();
-        typeQueryWrapper.eq(SysDictDataEntity::getDictId, sysDictTypeEntity.getDictId());
+        typeQueryWrapper.eq(SysDictDataEntity::getDictTypeId, sysDictTypeEntity.getId());
         QueryOrder.ascNullsFirst(typeQueryWrapper, SysDictDataEntity::getSortOrder);
         return sysDictDataMapper.selectList(typeQueryWrapper);
     }
@@ -61,7 +61,7 @@ public class SysDictServiceImpl implements ISysDictService {
             return null;
         }
         LambdaQueryWrapper<SysDictDataEntity> typeQueryWrapper = new LambdaQueryWrapper<>();
-        typeQueryWrapper.eq(SysDictDataEntity::getDictId, sysDictTypeEntity.getDictId());
+        typeQueryWrapper.eq(SysDictDataEntity::getDictTypeId, sysDictTypeEntity.getId());
         QueryOrder.ascNullsFirst(typeQueryWrapper, SysDictDataEntity::getSortOrder);
         return new DictTypeDetail(sysDictTypeEntity, sysDictDataMapper.selectList(typeQueryWrapper));
     }
@@ -69,8 +69,8 @@ public class SysDictServiceImpl implements ISysDictService {
     @Override
     public PageResp<SysDictDataEntity> pageSysDictData(SysDictTypeQuery condition, int page, int pageSize) {
         LambdaQueryWrapper<SysDictDataEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        QueryOrder.ascNullsFirst(lambdaQueryWrapper, SysDictDataEntity::getDictId,
-                SysDictDataEntity::getSortOrder, SysDictDataEntity::getDictCode);
+        QueryOrder.ascNullsFirst(lambdaQueryWrapper, SysDictDataEntity::getDictTypeId,
+                SysDictDataEntity::getSortOrder, SysDictDataEntity::getId);
 
         if (condition != null && SysUtil.isNotEmpty(condition.getDictLabel())) {
             IlikeQuery.anyOf(lambdaQueryWrapper, condition.getDictLabel(), SysDictDataEntity::getDictLabel);
@@ -85,9 +85,9 @@ public class SysDictServiceImpl implements ISysDictService {
                 // 类型不存在时保持原接口返回空数据
                 return null;
             }
-            Collection<Long> dictIdList = sysDictTypeEntities.stream()
-                    .map(SysDictTypeEntity::getDictId).distinct().toList();
-            lambdaQueryWrapper.in(SysDictDataEntity::getDictId, dictIdList);
+            Collection<Long> dictTypeIdList = sysDictTypeEntities.stream()
+                    .map(SysDictTypeEntity::getId).distinct().toList();
+            lambdaQueryWrapper.in(SysDictDataEntity::getDictTypeId, dictTypeIdList);
         }
 
         Page<SysDictDataEntity> pageRequest = new Page<>(page, pageSize);
@@ -102,12 +102,12 @@ public class SysDictServiceImpl implements ISysDictService {
         }
 
         // 补充 dictName
-        Collection<Long> dictIdList = records.stream()
-                .map(SysDictDataEntity::getDictId).distinct().toList();
-        List<SysDictTypeEntity> sysDictTypeEntities = sysDictTypeMapper.selectByIds(dictIdList);
+        Collection<Long> dictTypeIdList = records.stream()
+                .map(SysDictDataEntity::getDictTypeId).distinct().toList();
+        List<SysDictTypeEntity> sysDictTypeEntities = sysDictTypeMapper.selectByIds(dictTypeIdList);
         records.forEach(sysDictDataEntity -> {
             for (SysDictTypeEntity sysDictTypeEntity : sysDictTypeEntities) {
-                if (sysDictDataEntity.getDictId().equals(sysDictTypeEntity.getDictId())) {
+                if (sysDictDataEntity.getDictTypeId().equals(sysDictTypeEntity.getId())) {
                     sysDictDataEntity.setDictName(sysDictTypeEntity.getDictName());
                     sysDictDataEntity.setDictType(sysDictTypeEntity.getDictType());
                     break;
@@ -120,7 +120,7 @@ public class SysDictServiceImpl implements ISysDictService {
     @Override
     @Transactional
     public boolean createSysDictData(SysDictDataEntity entity, long userId) {
-        entity.setDictCode(null);
+        entity.setId(null);
         entity.setCreateUser(userId);
         entity.setUpdateUser(userId);
         try {
@@ -132,9 +132,9 @@ public class SysDictServiceImpl implements ISysDictService {
 
     @Override
     @Transactional
-    public boolean updateSysDictData(long dictCode, SysDictDataEntity entity, long userId) {
-        bankCardGuard.checkBankChange(dictCode, entity.getDictId(), Integer.valueOf(1).equals(entity.getIsDeleted()));
-        entity.setDictCode(dictCode);
+    public boolean updateSysDictData(long id, SysDictDataEntity entity, long userId) {
+        bankCardGuard.checkBankChange(id, entity.getDictTypeId(), Integer.valueOf(1).equals(entity.getIsDeleted()));
+        entity.setId(id);
         entity.setCreateUser(null);
         entity.setUpdateUser(userId);
         try {
@@ -146,9 +146,9 @@ public class SysDictServiceImpl implements ISysDictService {
 
     @Override
     @Transactional
-    public boolean deleteSysDictData(long dictCode, long userId) {
-        bankCardGuard.checkBankChange(dictCode, null, true);
-        return sysDictDataMapper.deleteById(dictCode) > 0;
+    public boolean deleteSysDictData(long id, long userId) {
+        bankCardGuard.checkBankChange(id, null, true);
+        return sysDictDataMapper.deleteById(id) > 0;
     }
 
     @Override
@@ -156,7 +156,7 @@ public class SysDictServiceImpl implements ISysDictService {
         LambdaQueryWrapper<SysDictTypeEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         IlikeQuery.anyOf(lambdaQueryWrapper, SysUtil.isNotEmpty(dictName),
                 dictName, SysDictTypeEntity::getDictName);
-        lambdaQueryWrapper.orderByAsc(SysDictTypeEntity::getDictId);
+        lambdaQueryWrapper.orderByAsc(SysDictTypeEntity::getId);
 
         Page<SysDictTypeEntity> pageRequest = new Page<>(page, pageSize);
         IPage<SysDictTypeEntity> iPage = sysDictTypeMapper.selectPage(pageRequest, lambdaQueryWrapper);
@@ -166,7 +166,7 @@ public class SysDictServiceImpl implements ISysDictService {
     @Override
     @Transactional
     public boolean createSysDictType(SysDictTypeEntity entity, long userId) {
-        entity.setDictId(null);
+        entity.setId(null);
         entity.setCreateUser(userId);
         entity.setUpdateUser(userId);
         try {
@@ -178,9 +178,9 @@ public class SysDictServiceImpl implements ISysDictService {
 
     @Override
     @Transactional
-    public boolean updateSysDictType(long dictId, SysDictTypeEntity entity, long userId) {
-        bankCardGuard.checkTypeChange(dictId, entity.getDictType(), Integer.valueOf(1).equals(entity.getIsDeleted()));
-        entity.setDictId(dictId);
+    public boolean updateSysDictType(long id, SysDictTypeEntity entity, long userId) {
+        bankCardGuard.checkTypeChange(id, entity.getDictType(), Integer.valueOf(1).equals(entity.getIsDeleted()));
+        entity.setId(id);
         entity.setCreateUser(null);
         entity.setUpdateUser(userId);
         entity.setUpdateTime(LocalDateTime.now());
@@ -193,10 +193,10 @@ public class SysDictServiceImpl implements ISysDictService {
 
     @Override
     @Transactional
-    public boolean deleteSysDictType(long dictId, long userId) {
-        bankCardGuard.checkTypeChange(dictId, null, true);
+    public boolean deleteSysDictType(long id, long userId) {
+        bankCardGuard.checkTypeChange(id, null, true);
         SysDictTypeEntity entity = new SysDictTypeEntity();
-        entity.setDictId(dictId);
+        entity.setId(id);
         entity.setUpdateUser(userId);
         return sysDictTypeMapper.deleteById(entity) > 0;
     }

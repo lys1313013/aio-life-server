@@ -127,7 +127,7 @@ class QueryHttpContractTest {
             login.when(StpUtil::getLoginIdAsString).thenReturn("1");
             mvc(controller).perform(get("/expense/query")
                             .param("page", "2").param("pageSize", "20")
-                            .param("expTypeId", "9007199254740993")
+                            .param("expenseTypeId", "9007199254740993")
                             .param("startTime", "2026-09-01 08:30:00")
                             .param("endTime", "2026-09-12 23:59:59")
                             .param("endTimeBefore", "2026-09-13 00:00:00")
@@ -141,7 +141,7 @@ class QueryHttpContractTest {
         CommonQuery<ExpenseQuery> query = captor.getValue();
         assertEquals(2, query.getPage());
         assertEquals(20, query.getPageSize());
-        assertEquals("9007199254740993", query.getCondition().getExpTypeId());
+        assertEquals("9007199254740993", query.getCondition().getExpenseTypeId());
         assertEquals(LocalDateTime.of(2026, 9, 1, 8, 30), query.getCondition().getStartTime());
         assertEquals("午餐 & 饮料+甜点", query.getCondition().getRemark());
         assertEquals(LocalDateTime.of(2026, 9, 13, 0, 0), query.getCondition().getEndTimeBefore());

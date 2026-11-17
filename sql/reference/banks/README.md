@@ -1,6 +1,6 @@
 # 银行字典数据来源与覆盖范围
 
-本目录保存经过筛选的官方机构名录快照，供 `sys_dict_type.dict_type='bank'` 使用。银行卡继续通过 `bank_id → sys_dict_data.dict_code` 关联，无需新增表或字段。
+本目录保存经过筛选的官方机构名录快照，供 `sys_dict_type.dict_type='bank'` 使用。银行卡继续通过 `bank_id → sys_dict_data.id` 关联，无需新增表或字段。
 
 ## 官方来源
 

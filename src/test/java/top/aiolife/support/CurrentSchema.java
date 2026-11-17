@@ -48,6 +48,8 @@ public final class CurrentSchema {
             while (renames.find()) {
                 definition = definition.replaceAll("(?m)^([ \\t]*)\\\"" + Pattern.quote(renames.group(1))
                         + "\\\"", "$1\"" + renames.group(2) + "\"");
+                definition = definition.replace("PRIMARY KEY (\"" + renames.group(1) + "\")",
+                        "PRIMARY KEY (\"" + renames.group(2) + "\")");
             }
             current = renameTable(sql, current);
         }

@@ -32,6 +32,7 @@ import top.aiolife.bankcard.service.BankCardDictionaryGuard;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.config.MybatisPlusConfig;
 import top.aiolife.core.exception.ExceptionHandle;
+import top.aiolife.core.lock.DistributedLockExecutor;
 import top.aiolife.core.query.QueryParamsArgumentResolver;
 import top.aiolife.record.mapper.IMemoMapper;
 import top.aiolife.record.mapper.ISysDictDataMapper;
@@ -104,8 +105,8 @@ class PaginationOrderingSqlTest {
             jdbc.update("INSERT INTO task(id,user_id,content,column_id,sort_order) VALUES (?,7,'任务',?,0)", id, id % 2);
             jdbc.update("INSERT INTO task_column(id,user_id,title,sort_order) VALUES (?,7,'任务栏',0)", id);
             jdbc.update("INSERT INTO memo(id,user_id,title,update_time) VALUES (?,7,'笔记','2026-10-22 10:00:00')", id);
-            jdbc.update("INSERT INTO sys_dict_type(dict_id,dict_name,dict_type) VALUES (?,'分类',?)", id, "type-" + id);
-            jdbc.update("INSERT INTO sys_dict_data(dict_code,dict_id,sort_order,dict_label,dict_value) VALUES (?,1,0,'字典',?)", id, "value-" + id);
+            jdbc.update("INSERT INTO sys_dict_type(id,dict_name,dict_type) VALUES (?,'分类',?)", id, "type-" + id);
+            jdbc.update("INSERT INTO sys_dict_data(id,dict_type_id,sort_order,dict_label,dict_value) VALUES (?,1,0,'字典',?)", id, "value-" + id);
         }
     }
 
@@ -170,8 +171,8 @@ class PaginationOrderingSqlTest {
         var data = session.getMapper(ISysDictDataMapper.class);
         var types = session.getMapper(ISysDictTypeMapper.class);
         var dictService = new top.aiolife.record.service.impl.SysDictServiceImpl(data, types, guard);
-        assertPages(new SysDictDataAdminController(dictService), "/sysDictData/query", "dictCode", List.of("1", "2", "3", "4", "5"));
-        assertPages(new SysDictTypeAdminController(dictService), "/sysDictType/query", "dictId", List.of("1", "2", "3", "4", "5"));
+        assertPages(new SysDictDataAdminController(dictService), "/sysDictData/query", "id", List.of("1", "2", "3", "4", "5"));
+        assertPages(new SysDictTypeAdminController(dictService), "/sysDictType/query", "id", List.of("1", "2", "3", "4", "5"));
     }
 
     @Test
@@ -187,7 +188,7 @@ class PaginationOrderingSqlTest {
         }
         when(cache.list(null, null)).thenReturn(entries.subList(0, 3));
         when(cache.list(7L, null)).thenReturn(entries.subList(3, 5));
-        var controller = new UserDictDataController(new UserDictDataServiceImpl(cache));
+        var controller = new UserDictDataController(new UserDictDataServiceImpl(cache, mock(DistributedLockExecutor.class)));
         assertPages(controller, "/userDictData/query", "id", List.of("1", "2", "3", "4", "5"));
     }
 
@@ -198,7 +199,7 @@ class PaginationOrderingSqlTest {
         item.setId(1L);
         when(cache.list(null, null)).thenReturn(List.of());
         when(cache.list(7L, null)).thenReturn(List.of(item));
-        var controller = new UserDictDataController(new UserDictDataServiceImpl(cache));
+        var controller = new UserDictDataController(new UserDictDataServiceImpl(cache, mock(DistributedLockExecutor.class)));
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
             login.when(StpUtil::getLoginIdAsString).thenReturn("7");

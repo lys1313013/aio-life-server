@@ -23,13 +23,13 @@ import top.aiolife.wardrobe.service.IWardrobeCategoryService;
 import top.aiolife.wardrobe.service.IWardrobeItemService;
 
 /**
- * 衣柜控制器。
+ * 衣橱控制器。
  *
  * @author Lys
  * @date 2026/11/13
  */
 @Slf4j
-@Tag(name = "衣柜")
+@Tag(name = "衣橱")
 @RestController
 @RequestMapping("/wardrobe")
 @RequiredArgsConstructor
@@ -82,7 +82,7 @@ public class WardrobeController {
         return ApiResponse.success();
     }
 
-    @Operation(summary = "查询衣柜统计")
+    @Operation(summary = "查询衣橱统计")
     @GetMapping("/stats")
     public ApiResponse<WardrobeStatsVO> getStats(@CurrentUserId String userId) {
         return ApiResponse.success(wardrobeItemService.getStats(IdCodec.decode(userId)));

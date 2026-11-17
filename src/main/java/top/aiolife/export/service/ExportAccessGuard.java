@@ -115,7 +115,7 @@ public class ExportAccessGuard {
         while (cursor != null && visited.add(cursor.getId())) {
             if (!(mobile ? MenuClient.MOBILE : MenuClient.WEB).isVisible(cursor.getVisibleClients())
                     || !allowedRole(cursor.getRoles(), roles)) return false;
-            if (cursor.getParentId() == null || cursor.getParentId() == 0L) return true;
+            if (cursor.getParentId() == null) return true;
             cursor = menus.get(cursor.getParentId());
         }
         return false;

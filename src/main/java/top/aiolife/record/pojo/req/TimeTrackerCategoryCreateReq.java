@@ -12,8 +12,11 @@ import lombok.Setter;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TimeTrackerCategoryCreateReq {
 
-    /** 上级分类：0 为一级；覆盖记录 null 表示继承公共分类。 */
+    /** 上级分类ID；null 表示根分类。 */
     private Long parentId;
+
+    /** 覆盖记录是否继承公共分类的父级；仅编辑公共分类覆盖时有效。 */
+    private Boolean inheritParent;
 
     /**
      * 分类名称

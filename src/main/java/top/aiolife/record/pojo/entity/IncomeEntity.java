@@ -48,7 +48,7 @@ public class IncomeEntity extends IdentityEntity {
     /**
      * 收入类型ID
      */
-    private Long incTypeId;
+    private Long incomeTypeId;
     /**
      * 收入税额；NULL表示未记录，0表示零税额
      */

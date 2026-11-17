@@ -163,20 +163,20 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
      */
     private void fillExerciseDetails(long userId, List<TimeRecordEntity> records,
                                      List<TimeRecordDateRangeVO> voList) {
-        Set<Long> timeIds = records.stream()
+        Set<Long> timeRecordIds = records.stream()
                 .map(TimeRecordEntity::getId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        if (timeIds.isEmpty()) {
+        if (timeRecordIds.isEmpty()) {
             return;
         }
 
         List<ExerciseRecordEntity> exerciseRecords = exerciseRecordService.lambdaQuery()
-                .select(ExerciseRecordEntity::getTimeId,
+                .select(ExerciseRecordEntity::getTimeRecordId,
                         ExerciseRecordEntity::getExerciseTypeId,
                         ExerciseRecordEntity::getExerciseCount)
                 .eq(ExerciseRecordEntity::getUserId, userId)
-                .in(ExerciseRecordEntity::getTimeId, timeIds)
+                .in(ExerciseRecordEntity::getTimeRecordId, timeRecordIds)
                 .list();
         if (exerciseRecords.isEmpty()) {
             return;
@@ -192,16 +192,16 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
                         UserDictDataEntity::getDictLabel,
                         (existing, replacement) -> replacement));
 
-        Map<Long, List<TimeRecordExerciseVO>> exercisesByTimeId = exerciseRecords.stream()
+        Map<Long, List<TimeRecordExerciseVO>> exercisesByTimeRecordId = exerciseRecords.stream()
                 .collect(Collectors.groupingBy(
-                        ExerciseRecordEntity::getTimeId,
+                        ExerciseRecordEntity::getTimeRecordId,
                         Collectors.mapping(exercise -> new TimeRecordExerciseVO(
                                 exerciseNameMap.getOrDefault(
                                         exercise.getExerciseTypeId(), "未知运动"),
                                 exercise.getExerciseCount()), Collectors.toList())));
 
         for (int i = 0; i < records.size(); i++) {
-            List<TimeRecordExerciseVO> exercises = exercisesByTimeId.get(records.get(i).getId());
+            List<TimeRecordExerciseVO> exercises = exercisesByTimeRecordId.get(records.get(i).getId());
             if (exercises != null && !exercises.isEmpty()) {
                 voList.get(i).setExercises(exercises);
             }
@@ -222,7 +222,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         BeanUtil.copyProperties(entity, vo);
 
         List<ExerciseRecordEntity> exercises = exerciseRecordService.lambdaQuery()
-                .eq(ExerciseRecordEntity::getTimeId, id)
+                .eq(ExerciseRecordEntity::getTimeRecordId, id)
                 .eq(ExerciseRecordEntity::getUserId, userId)
                 .list();
         if (!exercises.isEmpty()) secondaryLockGuard.checkMenus(userId, "/record/exercise");
@@ -266,9 +266,9 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         }
     }
 
-    private void checkExistingExercises(long userId, List<Long> timeIds) {
-        if (!timeIds.isEmpty() && exerciseRecordService.count(new LambdaQueryWrapper<ExerciseRecordEntity>()
-                .eq(ExerciseRecordEntity::getUserId, userId).in(ExerciseRecordEntity::getTimeId, timeIds)) > 0) {
+    private void checkExistingExercises(long userId, List<Long> timeRecordIds) {
+        if (!timeRecordIds.isEmpty() && exerciseRecordService.count(new LambdaQueryWrapper<ExerciseRecordEntity>()
+                .eq(ExerciseRecordEntity::getUserId, userId).in(ExerciseRecordEntity::getTimeRecordId, timeRecordIds)) > 0) {
             secondaryLockGuard.checkMenus(userId, "/record/exercise");
         }
     }
@@ -345,7 +345,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
                 }
                 ExerciseRecordEntity exercise = new ExerciseRecordEntity();
                 exercise.setUserId(userId);
-                exercise.setTimeId(entity.getId());
+                exercise.setTimeRecordId(entity.getId());
                 exercise.fillCreateCommonField(userId);
                 exercise.setExerciseDate(entity.getDate());
                 exercise.setExerciseTypeId(exerciseReq.getExerciseTypeId());
@@ -416,10 +416,10 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     }
 
     /** 按完整明细列表同步：已有 ID 原位更新，无 ID 新增，未提交的旧明细逻辑删除。 */
-    private void syncExercises(long userId, Long timeId, LocalDate date, List<ExerciseRecordReq> requests) {
+    private void syncExercises(long userId, Long timeRecordId, LocalDate date, List<ExerciseRecordReq> requests) {
         Map<Long, ExerciseRecordEntity> remaining = exerciseRecordService.list(
                         new LambdaQueryWrapper<ExerciseRecordEntity>()
-                                .eq(ExerciseRecordEntity::getTimeId, timeId)
+                                .eq(ExerciseRecordEntity::getTimeRecordId, timeRecordId)
                                 .eq(ExerciseRecordEntity::getUserId, userId))
                 .stream().collect(Collectors.toMap(ExerciseRecordEntity::getId, exercise -> exercise));
         List<ExerciseRecordReq> exercises = requests == null ? List.of() : requests;
@@ -445,7 +445,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
             if (request.getId() == null) {
                 ExerciseRecordEntity exercise = new ExerciseRecordEntity();
                 exercise.setUserId(userId);
-                exercise.setTimeId(timeId);
+                exercise.setTimeRecordId(timeRecordId);
                 exercise.fillCreateCommonField(userId);
                 exercise.setExerciseDate(date);
                 exercise.setExerciseTypeId(request.getExerciseTypeId());
@@ -465,7 +465,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
             // 显式 set 保留次数、描述清空为 null 的语义，不覆盖创建审计信息。
             boolean updated = exerciseRecordService.update(new LambdaUpdateWrapper<ExerciseRecordEntity>()
                     .eq(ExerciseRecordEntity::getId, existing.getId())
-                    .eq(ExerciseRecordEntity::getTimeId, timeId)
+                    .eq(ExerciseRecordEntity::getTimeRecordId, timeRecordId)
                     .eq(ExerciseRecordEntity::getUserId, userId)
                     .set(ExerciseRecordEntity::getExerciseDate, date)
                     .set(ExerciseRecordEntity::getExerciseTypeId, request.getExerciseTypeId())
@@ -476,7 +476,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
             if (!updated) throw new IllegalStateException("更新运动记录失败");
         }
         if (!remaining.isEmpty() && !exerciseRecordService.remove(new LambdaQueryWrapper<ExerciseRecordEntity>()
-                .eq(ExerciseRecordEntity::getTimeId, timeId)
+                .eq(ExerciseRecordEntity::getTimeRecordId, timeRecordId)
                 .eq(ExerciseRecordEntity::getUserId, userId)
                 .in(ExerciseRecordEntity::getId, remaining.keySet()))) {
             throw new IllegalStateException("删除运动记录失败");
@@ -508,7 +508,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
 
         // 删除关联的运动记录
         exerciseRecordService.remove(new LambdaQueryWrapper<ExerciseRecordEntity>()
-                .eq(ExerciseRecordEntity::getTimeId, id)
+                .eq(ExerciseRecordEntity::getTimeRecordId, id)
                 .eq(ExerciseRecordEntity::getUserId, userId));
         invalidateDayCache(userId, existing.getDate());
     }
@@ -532,7 +532,7 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         checkExistingExercises(userId, ids);
         // 2. 删除关联的运动记录
         exerciseRecordService.remove(new LambdaQueryWrapper<ExerciseRecordEntity>()
-                .in(ExerciseRecordEntity::getTimeId, ids)
+                .in(ExerciseRecordEntity::getTimeRecordId, ids)
                 .eq(ExerciseRecordEntity::getUserId, userId));
 
         // 3. 删除时间记录

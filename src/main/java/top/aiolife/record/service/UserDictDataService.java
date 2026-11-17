@@ -38,7 +38,7 @@ public interface UserDictDataService extends IService<UserDictDataEntity> {
     UserDictDataEntity getAccessibleById(long userId, long id);
 
     /**
-     * 管理员分页查询公共基础字典数据（userId = 0）。
+     * 管理员分页查询公共基础字典数据（user_id 为空）。
      */
     PageResp<UserDictDataEntity> pageBaseDictData(String dictType, String dictLabel,
                                                   Integer isEnabled, int page, int pageSize);

@@ -34,7 +34,7 @@ public class ExerciseRecordVO {
     private String description;
 
     /**
-     * 时间 ID
+     * 时迹记录ID
      */
-    private String timeId;
+    private String timeRecordId;
 }

@@ -80,8 +80,8 @@ TTL 为 5 分钟，空列表也缓存；每次请求重新合并公共配置、�
 
 ## 查询参数
 
-旧请求体 `{"page":2,"pageSize":20,"condition":{"expTypeId":"123","startTime":"2026-09-01 08:30:00"}}`
-改为 URL 参数 `page=2&pageSize=20&expTypeId=123&startTime=2026-09-01%2008%3A30%3A00`。
+旧请求体 `{"page":2,"pageSize":20,"condition":{"expenseTypeId":"123","startTime":"2026-09-01 08:30:00"}}`
+改为 URL 参数 `page=2&pageSize=20&expenseTypeId=123&startTime=2026-09-01%2008%3A30%3A00`。
 
 - Web 端 `#/api/query` 的 `getQuery` 和移动端 `@/utils/query` 的 `getQuery` 负责平铺 `condition`、编码参数，原页面传参方式无需修改。
 - 数组使用重复参数，例如 `statuses=in_progress&statuses=on_hold`，单元素数组也可正常绑定。

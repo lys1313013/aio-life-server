@@ -24,7 +24,7 @@ public class ExpenseVO {
      */
     private BigDecimal bookkeepingAmount;
 
-    private Long expTypeId;
+    private Long expenseTypeId;
 
     /**
      * 支付方式
@@ -50,7 +50,7 @@ public class ExpenseVO {
      * 支出时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime expTime;
+    private LocalDateTime expenseTime;
 
     /**
      * 交易号
@@ -60,7 +60,7 @@ public class ExpenseVO {
     /**
      * 交易描述
      */
-    private String expDesc;
+    private String expenseDesc;
 
     /**
      * 商家订单号

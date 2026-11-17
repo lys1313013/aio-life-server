@@ -106,8 +106,8 @@ class DeviceExpenseIntegrationTest {
 
     private ExpenseCreateReq draftExpense() {
         var request = new ExpenseCreateReq();
-        request.setBookkeepingAmount(new BigDecimal("42.50")); request.setExpTypeId(81L); request.setPayTypeId(82L);
-        request.setExpTime(LocalDateTime.of(2026, 11, 12, 12, 0)); request.setRemark("新增关联测试");
+        request.setBookkeepingAmount(new BigDecimal("42.50")); request.setExpenseTypeId(81L); request.setPayTypeId(82L);
+        request.setExpenseTime(LocalDateTime.of(2026, 11, 12, 12, 0)); request.setRemark("新增关联测试");
         return request;
     }
 
@@ -218,8 +218,8 @@ class DeviceExpenseIntegrationTest {
 
     private ExpenseEntity expense(long userId) {
         var row = new ExpenseEntity();
-        row.setUserId(userId); row.setExpTypeId(81L); row.setPayTypeId(82L); row.setBookkeepingAmount(new BigDecimal("42.50")); row.setTransactionAmount(new BigDecimal("60.00"));
-        row.setExpTime(LocalDateTime.of(2026, 10, 22, 23, 30)); row.setExpDesc("模拟耳机");
+        row.setUserId(userId); row.setExpenseTypeId(81L); row.setPayTypeId(82L); row.setBookkeepingAmount(new BigDecimal("42.50")); row.setTransactionAmount(new BigDecimal("60.00"));
+        row.setExpenseTime(LocalDateTime.of(2026, 10, 22, 23, 30)); row.setExpenseDesc("模拟耳机");
         row.setCounterparty("模拟商家"); row.setRemark("模拟备注"); row.setIsDeleted(0);
         expenses.insert(row); return row;
     }

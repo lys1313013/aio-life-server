@@ -49,7 +49,7 @@ public class ExerciseRecordEntity extends BaseEntity {
     private String description;
 
     /**
-     * 时间 ID
+     * 时迹记录ID（关联time_record.id）
      */
-    private Long timeId;
+    private Long timeRecordId;
 }

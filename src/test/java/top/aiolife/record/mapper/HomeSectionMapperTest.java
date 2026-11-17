@@ -37,7 +37,7 @@ class HomeSectionMapperTest {
         jdbc.execute("CREATE TABLE attachment (id VARCHAR(32), file_key VARCHAR(36), biz_type VARCHAR(50), biz_id BIGINT, user_id BIGINT, is_deleted INT DEFAULT 0)");
         jdbc.execute("CREATE TABLE import_job(id BIGINT,biz_type VARCHAR(50),biz_id BIGINT,state VARCHAR(16),create_time TIMESTAMP,is_deleted INT DEFAULT 0)");
         jdbc.execute("CREATE TABLE income (user_id BIGINT, gross_amount DECIMAL(12,2), inc_date DATE, is_deleted INT DEFAULT 0)");
-        jdbc.execute("CREATE TABLE expense (user_id BIGINT, bookkeeping_amount DECIMAL(12,2), exp_time TIMESTAMP, is_deleted INT DEFAULT 0)");
+        jdbc.execute("CREATE TABLE expense (user_id BIGINT, bookkeeping_amount DECIMAL(12,2), expense_time TIMESTAMP, is_deleted INT DEFAULT 0)");
         var configuration = new Configuration(new Environment("test", new JdbcTransactionFactory(), source));
         configuration.setMapUnderscoreToCamelCase(true);
         configuration.addMapper(HomeSectionMapper.class);

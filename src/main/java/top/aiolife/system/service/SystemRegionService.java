@@ -21,10 +21,16 @@ public class SystemRegionService {
 
     /** 每次只取一个父级的子项；不向客户端发送整个乡镇库。 */
     public List<SystemRegionVO> children(String parentCode) {
-        String parent = parentCode == null || parentCode.isBlank() ? "0" : parentCode;
-        checkCode(parent);
-        var rows = mapper.selectList(new LambdaQueryWrapper<SystemRegionEntity>()
-                .eq(SystemRegionEntity::getParentCode, parent).orderByAsc(SystemRegionEntity::getCode));
+        String parent = parentCode == null || parentCode.isBlank() ? null : parentCode;
+        if (parent != null) checkCode(parent);
+        var wrapper = new LambdaQueryWrapper<SystemRegionEntity>();
+        if (parent == null) {
+            wrapper.isNull(SystemRegionEntity::getParentCode);
+        } else {
+            wrapper.eq(SystemRegionEntity::getParentCode, parent);
+        }
+        wrapper.orderByAsc(SystemRegionEntity::getCode);
+        var rows = mapper.selectList(wrapper);
         if (rows.isEmpty()) return List.of();
         Set<String> parents = mapper.selectList(new LambdaQueryWrapper<SystemRegionEntity>()
                 .select(SystemRegionEntity::getParentCode)
@@ -38,7 +44,7 @@ public class SystemRegionService {
         checkCode(code);
         var result = new ArrayList<SystemRegionVO>();
         String current = code;
-        while (!"0".equals(current)) {
+        while (current != null) {
             var row = require(current);
             if (result.size() == 4 || result.stream().anyMatch(item -> item.code().equals(row.getCode())))
                 throw new IllegalStateException("地区目录层级异常");

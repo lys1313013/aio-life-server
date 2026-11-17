@@ -21,6 +21,9 @@ public class MessageEntity extends IdentityEntity {
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
+    /**
+     * 发送用户ID；系统通知（type=0）为空
+     */
     private Long senderId;
 
     private Long receiverId;

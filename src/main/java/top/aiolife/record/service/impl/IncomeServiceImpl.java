@@ -42,8 +42,8 @@ public class IncomeServiceImpl extends ServiceImpl<IIncomeMapper, IncomeEntity> 
         LambdaQueryWrapper<IncomeEntity> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(IncomeEntity::getUserId, userId);
         if (condition != null) {
-            if (SysUtil.isNotEmpty(condition.getIncTypeId())) {
-                wrapper.eq(IncomeEntity::getIncTypeId, IdCodec.decode(condition.getIncTypeId()));
+            if (SysUtil.isNotEmpty(condition.getIncomeTypeId())) {
+                wrapper.eq(IncomeEntity::getIncomeTypeId, IdCodec.decode(condition.getIncomeTypeId()));
             }
             if (SysUtil.isNotEmpty(condition.getYear())) {
                 LocalDate start = LocalDate.parse(condition.getYear() + "-01-01");
@@ -56,7 +56,7 @@ public class IncomeServiceImpl extends ServiceImpl<IIncomeMapper, IncomeEntity> 
                     condition.getEndTimeBefore());
         }
         wrapper.orderByDesc(IncomeEntity::getIncDate);
-        QueryOrder.ascNullsFirst(wrapper, IncomeEntity::getIncTypeId);
+        QueryOrder.ascNullsFirst(wrapper, IncomeEntity::getIncomeTypeId);
         wrapper.orderByDesc(IncomeEntity::getId);
         Page<IncomeEntity> result = baseMapper.selectPage(new Page<>(page, pageSize), wrapper);
         return PageResp.of(result.getRecords(), result.getTotal());
