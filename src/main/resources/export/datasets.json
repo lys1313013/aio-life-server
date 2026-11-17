@@ -2095,13 +2095,13 @@
         "type": "NUMBER"
       },
       {
-        "key": "start_time",
-        "label": "开始阅读时间",
+        "key": "start_date",
+        "label": "开始阅读日期",
         "type": "TEXT"
       },
       {
-        "key": "finish_time",
-        "label": "完成时间",
+        "key": "finish_date",
+        "label": "读完日期",
         "type": "TEXT"
       },
       {
@@ -2177,13 +2177,13 @@
         "type": "NUMBER"
       },
       {
-        "key": "start_time",
-        "label": "开始观看时间",
+        "key": "start_date",
+        "label": "开始观看日期",
         "type": "TEXT"
       },
       {
-        "key": "finish_time",
-        "label": "看完时间",
+        "key": "finish_date",
+        "label": "看完日期",
         "type": "TEXT"
       },
       {

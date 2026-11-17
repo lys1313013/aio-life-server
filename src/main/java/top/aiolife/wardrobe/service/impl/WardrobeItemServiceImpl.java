@@ -2,6 +2,7 @@ package top.aiolife.wardrobe.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import top.aiolife.core.mybatis.IlikeQuery;
+import top.aiolife.core.mybatis.JsonbQuery;
 import top.aiolife.core.query.QueryOrder;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.AllArgsConstructor;
@@ -95,7 +96,7 @@ public class WardrobeItemServiceImpl extends ServiceImpl<WardrobeItemMapper, War
             queryWrapper.eq(WardrobeItemEntity::getCategoryId, categoryId);
         }
         if (season != null && !season.isEmpty()) {
-            queryWrapper.apply("jsonb_exists(season, {0})", season);
+            JsonbQuery.arrayContains(queryWrapper, WardrobeItemEntity::getSeason, season);
         }
         if (keyword != null && !keyword.isEmpty()) {
             queryWrapper.and(w -> IlikeQuery.anyOf(w, keyword,

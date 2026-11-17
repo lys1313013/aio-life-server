@@ -41,6 +41,8 @@ class AccountErasureMapperTest {
             }
         }
         jdbc.execute("ALTER TABLE file RENAME TO attachment");
+        jdbc.execute("ALTER TABLE user_bind RENAME TO user_third_party_account");
+        tables.put("user_third_party_account", tables.remove("user_bind"));
         jdbc.execute("ALTER TABLE attachment ADD COLUMN user_id BIGINT");
         jdbc.execute("CREATE TABLE import_job(id BIGINT,create_user BIGINT,biz_type VARCHAR(50),biz_id BIGINT)");
         jdbc.update("INSERT INTO sys_user(id,username,email,is_deleted,erasure_requested_at) VALUES(7,'fixture','fixture@example.test',0,?)", LocalDateTime.now());

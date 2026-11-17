@@ -66,7 +66,7 @@ public final class IlikeQuery {
         wrapper.apply("lower(" + columnName(column) + ") = lower({0})", value);
     }
 
-    private static <T> String columnName(SFunction<T, ?> column) {
+    static <T> String columnName(SFunction<T, ?> column) {
         LambdaMeta meta = LambdaUtils.extract(column);
         String property = propertyName(meta.getImplMethodName());
         TableInfo tableInfo = tableInfo(meta.getInstantiatedClass());

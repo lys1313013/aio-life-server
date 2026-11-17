@@ -90,7 +90,7 @@ class HomeCardQueryTest {
         assertTrue(sql.contains("user_id ="));
         assertTrue(sql.contains("status IN"));
         assertTrue(sql.contains("CASE status WHEN 'in_progress' THEN 1 WHEN 'not_started' THEN 2"));
-        assertTrue(sql.endsWith("finish_time DESC NULLS LAST, create_time DESC NULLS LAST, id DESC"));
+        assertTrue(sql.endsWith("finish_date DESC NULLS LAST, create_time DESC NULLS LAST, id DESC"));
         var values = ((AbstractWrapper<?, ?, ?>) wrapper)
                 .getParamNameValuePairs().values();
         assertTrue(values.contains(88L));
