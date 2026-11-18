@@ -3,6 +3,7 @@ package top.aiolife.record.mcp;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -161,15 +162,23 @@ class RecordMcpToolsTest {
 
     @Test
     void testTimeRecordSave() {
-        // 测试保存时间记录
+        LocalDate today = LocalDate.of(2026, 11, 18);
+        LocalTime now = LocalTime.of(2, 30);
         TimeRecordSaveMcpReq req = new TimeRecordSaveMcpReq();
-        req.setDate(LocalDate.now());
+        req.setDate(today);
 
-        String result = recordMcpTools.time_record_save(req);
+        try (var dates = mockStatic(LocalDate.class, CALLS_REAL_METHODS);
+             var times = mockStatic(LocalTime.class, CALLS_REAL_METHODS)) {
+            dates.when(LocalDate::now).thenReturn(today);
+            times.when(LocalTime::now).thenReturn(now);
+            String result = recordMcpTools.time_record_save(req);
+            assertTrue(result.contains("保存成功"));
+        }
 
-        assertTrue(result.contains("保存成功"));
         assertNotNull(savedTimeRecord);
+        assertEquals(today, savedTimeRecord.getDate());
         assertEquals(61, savedTimeRecord.getStartMinute());
+        assertEquals(150, savedTimeRecord.getEndMinute());
     }
 
     @Test
