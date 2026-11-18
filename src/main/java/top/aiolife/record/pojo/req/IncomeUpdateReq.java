@@ -17,7 +17,7 @@ public class IncomeUpdateReq {
     private BigDecimal grossAmount;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate incDate;
+    private LocalDate incomeDate;
 
     private String remark;
 

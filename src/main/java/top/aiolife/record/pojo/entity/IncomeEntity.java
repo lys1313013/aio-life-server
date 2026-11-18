@@ -34,7 +34,7 @@ public class IncomeEntity extends IdentityEntity {
      * 收入时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate incDate;
+    private LocalDate incomeDate;
     private String remark;
     private Long userId;
     private Long createUser;

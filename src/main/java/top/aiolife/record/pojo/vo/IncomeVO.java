@@ -20,7 +20,7 @@ public class IncomeVO {
     private BigDecimal grossAmount;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate incDate;
+    private LocalDate incomeDate;
 
     private String remark;
 

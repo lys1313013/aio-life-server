@@ -1586,7 +1586,7 @@
         "type": "DECIMAL"
       },
       {
-        "key": "inc_date",
+        "key": "income_date",
         "label": "收入时间",
         "type": "TEXT"
       },

@@ -32,16 +32,16 @@ public interface FinanceCalendarMapper {
 
     @Select("""
         <script>
-        SELECT MIN(CAST(inc_date AS DATE)) AS date, COALESCE(SUM(gross_amount), 0) AS amount
+        SELECT MIN(CAST(income_date AS DATE)) AS date, COALESCE(SUM(gross_amount), 0) AS amount
         FROM income
         WHERE user_id = #{userId} AND is_deleted = 0
-        <if test="start != null">AND inc_date &gt;= #{start}</if>
-        <if test="end != null">AND inc_date &lt; #{end}</if>
+        <if test="start != null">AND income_date &gt;= #{start}</if>
+        <if test="end != null">AND income_date &lt; #{end}</if>
         GROUP BY
         <choose>
-            <when test="granularity == 'year'">EXTRACT(YEAR FROM inc_date)</when>
-            <when test="granularity == 'month'">EXTRACT(YEAR FROM inc_date), EXTRACT(MONTH FROM inc_date)</when>
-            <otherwise>EXTRACT(YEAR FROM inc_date), EXTRACT(MONTH FROM inc_date), EXTRACT(DAY FROM inc_date)</otherwise>
+            <when test="granularity == 'year'">EXTRACT(YEAR FROM income_date)</when>
+            <when test="granularity == 'month'">EXTRACT(YEAR FROM income_date), EXTRACT(MONTH FROM income_date)</when>
+            <otherwise>EXTRACT(YEAR FROM income_date), EXTRACT(MONTH FROM income_date), EXTRACT(DAY FROM income_date)</otherwise>
         </choose>
         ORDER BY date
         </script>

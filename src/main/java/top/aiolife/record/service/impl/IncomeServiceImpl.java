@@ -47,15 +47,15 @@ public class IncomeServiceImpl extends ServiceImpl<IIncomeMapper, IncomeEntity> 
             }
             if (SysUtil.isNotEmpty(condition.getYear())) {
                 LocalDate start = LocalDate.parse(condition.getYear() + "-01-01");
-                wrapper.ge(IncomeEntity::getIncDate, start).lt(IncomeEntity::getIncDate, start.plusYears(1));
+                wrapper.ge(IncomeEntity::getIncomeDate, start).lt(IncomeEntity::getIncomeDate, start.plusYears(1));
             }
-            wrapper.ge(SysUtil.isNotEmpty(condition.getStartTime()), IncomeEntity::getIncDate,
+            wrapper.ge(SysUtil.isNotEmpty(condition.getStartTime()), IncomeEntity::getIncomeDate,
                     condition.getStartTime());
-            wrapper.le(SysUtil.isNotEmpty(condition.getEndTime()), IncomeEntity::getIncDate, condition.getEndTime());
-            wrapper.lt(SysUtil.isNotEmpty(condition.getEndTimeBefore()), IncomeEntity::getIncDate,
+            wrapper.le(SysUtil.isNotEmpty(condition.getEndTime()), IncomeEntity::getIncomeDate, condition.getEndTime());
+            wrapper.lt(SysUtil.isNotEmpty(condition.getEndTimeBefore()), IncomeEntity::getIncomeDate,
                     condition.getEndTimeBefore());
         }
-        wrapper.orderByDesc(IncomeEntity::getIncDate);
+        wrapper.orderByDesc(IncomeEntity::getIncomeDate);
         QueryOrder.ascNullsFirst(wrapper, IncomeEntity::getIncomeTypeId);
         wrapper.orderByDesc(IncomeEntity::getId);
         Page<IncomeEntity> result = baseMapper.selectPage(new Page<>(page, pageSize), wrapper);

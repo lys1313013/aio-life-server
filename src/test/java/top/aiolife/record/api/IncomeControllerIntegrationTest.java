@@ -69,7 +69,7 @@ class IncomeControllerIntegrationTest extends BaseIntegrationTest {
         entity.setUserId(TEST_USER_ID);
         entity.setIncomeTypeId(1L);
         entity.setGrossAmount(BigDecimal.valueOf(100));
-        entity.setIncDate(LocalDate.now());
+        entity.setIncomeDate(LocalDate.now());
         entity.setIsDeleted(0);
         return entity;
     }

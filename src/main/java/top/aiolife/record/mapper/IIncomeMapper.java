@@ -16,16 +16,16 @@ import java.util.List;
 public interface IIncomeMapper extends BaseMapper<IncomeEntity> {
 
     @Select("""
-            SELECT TO_CHAR(inc_date, 'YYYY') AS year ,sum(gross_amount) as gross_amount,income_type_id as type_id
+            SELECT TO_CHAR(income_date, 'YYYY') AS year ,sum(gross_amount) as gross_amount,income_type_id as type_id
             FROM income where user_id = #{userId} and is_deleted = 0
-            GROUP BY TO_CHAR(inc_date, 'YYYY'), income_type_id
+            GROUP BY TO_CHAR(income_date, 'YYYY'), income_type_id
             """)
     List<IncStaByYearVO> statisticsByYear(long userId);
 
     @Select("""
-            SELECT TO_CHAR(inc_date, 'YYYY') AS year, TO_CHAR(inc_date, 'MM') AS month ,sum(gross_amount) as gross_amount,income_type_id as type_id
+            SELECT TO_CHAR(income_date, 'YYYY') AS year, TO_CHAR(income_date, 'MM') AS month ,sum(gross_amount) as gross_amount,income_type_id as type_id
             FROM income where user_id = #{userId} and is_deleted = 0  
-            GROUP BY TO_CHAR(inc_date, 'YYYY'), TO_CHAR(inc_date, 'MM'), income_type_id
+            GROUP BY TO_CHAR(income_date, 'YYYY'), TO_CHAR(income_date, 'MM'), income_type_id
             """)
     List<IncStaByYearVO> statisticsByMonth(long userId);
 }

@@ -313,7 +313,7 @@ class PostgresqlRegressionIntegrationTest {
 
     @Test void 收入按年份筛选包含年初年末并保留其他筛选条件() {
         jdbc.update("""
-                INSERT INTO income(id,user_id,gross_amount,inc_date,income_type_id,is_deleted) VALUES
+                INSERT INTO income(id,user_id,gross_amount,income_date,income_type_id,is_deleted) VALUES
                 (1,42,100,'2025-12-31',1,0),(2,42,100,'2026-01-01',1,0),
                 (3,42,100,'2026-12-31',1,0),(4,42,100,'2027-01-01',1,0),
                 (5,43,100,'2026-06-01',1,0),(6,42,100,'2026-06-01',1,1),
@@ -361,7 +361,7 @@ class PostgresqlRegressionIntegrationTest {
 
     @Test void 修改收入维护审计字段且不修改创建信息和其他用户记录() {
         jdbc.update("""
-                INSERT INTO income(id,user_id,gross_amount,inc_date,income_type_id,create_user,create_time,update_user,update_time)
+                INSERT INTO income(id,user_id,gross_amount,income_date,income_type_id,create_user,create_time,update_user,update_time)
                 VALUES (1,42,100,'2026-01-01',1,99,?,7,?),(2,43,100,'2026-01-01',1,99,?,7,?)
                 """, OLD_TIME, OLD_TIME, OLD_TIME, OLD_TIME);
         var controller = incomeController();

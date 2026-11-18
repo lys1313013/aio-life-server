@@ -26,6 +26,7 @@ public class SysDictDataCreateReq {
     /**
      * 字典标签
      */
+    @NotBlank
     private String dictLabel;
 
     /**

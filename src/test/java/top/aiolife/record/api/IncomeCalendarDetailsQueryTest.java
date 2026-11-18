@@ -40,7 +40,7 @@ class IncomeCalendarDetailsQueryTest {
             columns.add(column + " " + type + (column.equals("id") ? " PRIMARY KEY" : ""));
         }
         jdbc.execute("CREATE TABLE income (" + String.join(",", columns) + ")");
-        jdbc.execute("INSERT INTO income(id,user_id,gross_amount,inc_date,is_deleted) VALUES "
+        jdbc.execute("INSERT INTO income(id,user_id,gross_amount,income_date,is_deleted) VALUES "
                 + "(1,7,10,'2026-08-12',0),(2,7,20,'2026-08-12',0),"
                 + "(3,7,30,'2026-08-13',0),(4,8,999,'2026-08-12',0),"
                 + "(5,7,999,'2026-08-12',1),"

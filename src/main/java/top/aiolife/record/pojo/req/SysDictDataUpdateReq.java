@@ -3,6 +3,7 @@ package top.aiolife.record.pojo.req;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 /** SysDictDataUpdateReq：仅包含接口允许写入的字段。 */
@@ -23,11 +24,13 @@ public class SysDictDataUpdateReq {
     /**
      * 字典标签
      */
+    @Pattern(regexp = "(?s).*\\S.*", message = "字典标签不能是空白")
     private String dictLabel;
 
     /**
      * 字典值
      */
+    @Pattern(regexp = "(?s).*\\S.*", message = "字典值不能是空白")
     private String dictValue;
 
     /**

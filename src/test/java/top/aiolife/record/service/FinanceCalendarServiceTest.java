@@ -44,7 +44,7 @@ class FinanceCalendarServiceTest {
         source.setURL("jdbc:h2:mem:expense_calendar_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
         jdbc = new JdbcTemplate(source);
         jdbc.execute("CREATE TABLE expense (user_id BIGINT, bookkeeping_amount DECIMAL(12,2), expense_time TIMESTAMP, is_deleted INT DEFAULT 0)");
-        jdbc.execute("CREATE TABLE income (user_id BIGINT, gross_amount DECIMAL(12,2), inc_date DATE, is_deleted INT DEFAULT 0)");
+        jdbc.execute("CREATE TABLE income (user_id BIGINT, gross_amount DECIMAL(12,2), income_date DATE, is_deleted INT DEFAULT 0)");
         jdbc.update("INSERT INTO income VALUES (7,100.10,'2026-10-01',0),(7,20.20,'2026-10-04',0),(7,30.30,'2026-10-05',0),(7,40.40,'2026-11-01',0),(7,50.50,NULL,0),(8,900,'2026-10-01',0),(7,900,'2026-10-01',1)");
         var config = new Configuration(new Environment("test", new JdbcTransactionFactory(), source));
         config.addMapper(FinanceCalendarMapper.class);
