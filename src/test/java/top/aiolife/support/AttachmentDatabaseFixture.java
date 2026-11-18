@@ -41,7 +41,8 @@ public abstract class AttachmentDatabaseFixture {
         }
         var configuration=new MybatisConfiguration(); configuration.setMapUnderscoreToCamelCase(true);
         for(var mapper:java.util.List.of(IBVideoMapper.class,IAttachmentMapper.class,ExternalResourceMapper.class,ImageImportTaskMapper.class,
-            StorageObjectMapper.class,top.aiolife.system.mapper.StorageFileReferenceMapper.class,PublicImageMapper.class,AttachmentCollectionMapper.class)) configuration.addMapper(mapper);
+            StorageObjectMapper.class,top.aiolife.system.mapper.StorageFileReferenceMapper.class,PublicImageMapper.class,AttachmentCollectionMapper.class,
+            ICbtiPersonalityMapper.class,ICbtiResultMapper.class)) configuration.addMapper(mapper);
         var factory=new MybatisSqlSessionFactoryBean(); factory.setDataSource(ds); factory.setConfiguration(configuration);
         session=new SqlSessionTemplate(factory.getObject());
     }

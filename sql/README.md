@@ -72,6 +72,8 @@
 - [V20261118_05__drop_scheduled_job_zone_id.sql](migrations/V20261118_05__drop_scheduled_job_zone_id.sql)：删除 `sys_scheduled_job.zone_id`，调度时区固定为 `Asia/Shanghai` 并只由代码常量维护；保留任务配置、cron、启用状态和执行日志。
 - [V20261118_06__time_tracker_category_inherit_smallint.sql](migrations/V20261118_06__time_tracker_category_inherit_smallint.sql)：把 `time_tracker_category.inherit_parent` 由 `boolean` 改为 `smallint` 的 0/1，与全局 `NumericBooleanTypeHandler` 和其他布尔状态列一致；按新类型重建继承约束，数据语义与行数不变。
 - [V20261118_07__drop_cbti_personality_image_object.sql](migrations/V20261118_07__drop_cbti_personality_image_object.sql)：删除 `cbti_personality.image_object`，人格图片统一由 `attachment` 的 `cbti_personality_image` 关联表达；只删除已无读写方的历史对象路径，不改行数、其他列和索引。
+- [V20261118_08__cbti_attachment_constraints.sql](migrations/V20261118_08__cbti_attachment_constraints.sql)：允许 CBTI 公共人格图片以空用户归属写入，单图部分唯一索引覆盖 CBTI；发现带用户归属或重复有效图时迁移回滚。
+- [V20261118_09__bank_card_membership_value_constraints.sql](migrations/V20261118_09__bank_card_membership_value_constraints.sql)：为银行卡补齐账单日/还款日 1-31、金额非负和有效期存当月第一天约束，为会员记录补齐到期日不早于开通日及金额非负约束；存在越界值时整体拒绝执行。枚举取值仍由请求和服务层维护，不进入数据库约束。
 
 本次按明确要求同步修改历史初始脚本：新库不再创建上述四列；已有库仍保留可执行的迁移。另按明确要求不为 B 站视频封面新增增量脚本：`b_video.cover_file_id` 已直接在目标库迁移并从初始脚本移除，新库改由 `uk_file_b_video_cover` 约束 `file.biz_type='b_video_cover'` 的单封面关联；执行与校验记录见[数据库初始化与验证](../docs/数据库初始化与验证.md)。历史校验和调整需先备份并完成实际数据、结构迁移，再执行 `flyway:repair`；`repair` 本身不迁移业务数据。
 

@@ -70,6 +70,7 @@ public class MembershipRecordWriteService {
     /** 新增订阅并返回完整视图。 */
     @Transactional
     public MembershipVO createVO(long userId, MembershipReq req) {
+        validatePeriod(req);
         normalizeCost(req);
         return toVO(create(userId, req), LocalDate.now());
     }
@@ -77,6 +78,7 @@ public class MembershipRecordWriteService {
     /** 更新订阅并返回完整视图。 */
     @Transactional
     public MembershipVO updateVO(long userId, MembershipReq req) {
+        validatePeriod(req);
         normalizeCost(req);
         return toVO(update(userId, req), LocalDate.now());
     }
@@ -108,6 +110,13 @@ public class MembershipRecordWriteService {
                 .set(MembershipRecordEntity::getIsDeleted, 1)
                 .set(MembershipRecordEntity::getUpdateUser, userId)
                 .set(MembershipRecordEntity::getUpdateTime, LocalDateTime.now()));
+    }
+
+    private void validatePeriod(MembershipReq req) {
+        if (req.getExpiryDate() == null) throw new IllegalArgumentException("到期日期不能为空");
+        if (req.getStartDate() != null && req.getExpiryDate().isBefore(req.getStartDate())) {
+            throw new IllegalArgumentException("到期日期不能早于开通日期");
+        }
     }
 
     public void normalizeCost(MembershipReq req) {

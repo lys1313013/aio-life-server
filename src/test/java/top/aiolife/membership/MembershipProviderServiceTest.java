@@ -71,6 +71,21 @@ class MembershipProviderServiceTest {
         return req;
     }
 
+    @Test void 到期日不能早于开通日且不能为空() {
+        var reversed = req(10L);
+        reversed.setStartDate(LocalDate.now().plusMonths(2));
+        reversed.setExpiryDate(LocalDate.now().plusMonths(1));
+        assertThrows(IllegalArgumentException.class, () -> records.createVO(1, reversed));
+
+        var missing = req(10L);
+        missing.setExpiryDate(null);
+        assertThrows(IllegalArgumentException.class, () -> records.createVO(1, missing));
+
+        var sameDay = req(10L);
+        sameDay.setStartDate(sameDay.getExpiryDate());
+        assertEquals(sameDay.getExpiryDate(), tx.execute(status -> records.createVO(1, sameDay)).getExpiryDate());
+    }
+
     @Test void 全部旧记录未关联平台仍能正常查询列表() {
         tx.execute(status -> records.create(1, req(null)));
         var controller = new MembershipController(records);
