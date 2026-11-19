@@ -2,8 +2,6 @@ package top.aiolife.support;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import org.junit.jupiter.api.*;
 import org.mybatis.spring.SqlSessionTemplate;
@@ -35,10 +33,7 @@ public abstract class AttachmentDatabaseFixture {
         ds.setURL("jdbc:postgresql://"+PG.getHost()+":"+PG.getMappedPort(5432)+"/fixture?stringtype=unspecified");
         ds.setUser("postgres"); ds.setPassword("attachment-fixture");
         jdbc=new JdbcTemplate(ds); manager=new DataSourceTransactionManager(ds); transaction=new TransactionTemplate(manager);
-        try(var paths=Files.list(Path.of("sql/migrations"))) {
-            for(var path:paths.filter(p->p.getFileName().toString().matches("V\\d.*\\.sql"))
-                .filter(p->!p.getFileName().toString().startsWith("V20261110_02_")).sorted().toList()) jdbc.execute(Files.readString(path));
-        }
+        CurrentSchema.initializePostgresFixture(jdbc);
         var configuration=new MybatisConfiguration(); configuration.setMapUnderscoreToCamelCase(true);
         for(var mapper:java.util.List.of(IBVideoMapper.class,IAttachmentMapper.class,ExternalResourceMapper.class,ImageImportTaskMapper.class,
             StorageObjectMapper.class,top.aiolife.system.mapper.StorageFileReferenceMapper.class,PublicImageMapper.class,AttachmentCollectionMapper.class,

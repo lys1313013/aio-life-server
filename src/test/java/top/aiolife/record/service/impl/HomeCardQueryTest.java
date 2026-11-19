@@ -11,11 +11,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import java.util.List;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 import top.aiolife.record.pojo.entity.MovieEntity;
 import top.aiolife.record.pojo.entity.ReadRecordEntity;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.query.MovieQuery;
 import top.aiolife.record.pojo.query.ReadRecordQuery;
+import top.aiolife.record.service.CreativeWorkService;
 import top.aiolife.record.service.IAttachmentService;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,7 +29,8 @@ class HomeCardQueryTest {
     @Test
     void 阅读首页查询限定活跃状态并优先在读且顺序稳定() {
         init(ReadRecordEntity.class);
-        var service = spy(new ReadRecordServiceImpl(mock(IAttachmentService.class), org.mockito.Mockito.mock(RecordImageService.class)));
+        var service = spy(new ReadRecordServiceImpl(mock(IAttachmentService.class), mock(RecordImageService.class)));
+        ReflectionTestUtils.setField(service, "works", mock(CreativeWorkService.class));
         doAnswer(invocation -> {
             Page<ReadRecordEntity> page = invocation.getArgument(0);
             Wrapper<ReadRecordEntity> wrapper = invocation.getArgument(1);
@@ -48,7 +51,8 @@ class HomeCardQueryTest {
     @Test
     void 观影首页查询限定活跃状态并优先在看且顺序稳定() {
         init(MovieEntity.class);
-        var service = spy(new MovieServiceImpl(mock(IAttachmentService.class), org.mockito.Mockito.mock(RecordImageService.class)));
+        var service = spy(new MovieServiceImpl(mock(IAttachmentService.class), mock(RecordImageService.class)));
+        ReflectionTestUtils.setField(service, "works", mock(CreativeWorkService.class));
         doAnswer(invocation -> {
             Page<MovieEntity> page = invocation.getArgument(0);
             Wrapper<MovieEntity> wrapper = invocation.getArgument(1);
@@ -69,7 +73,8 @@ class HomeCardQueryTest {
     @Test
     void 观影默认列表保持原有状态顺序并增加稳定ID兜底() {
         init(MovieEntity.class);
-        var service = spy(new MovieServiceImpl(mock(IAttachmentService.class), org.mockito.Mockito.mock(RecordImageService.class)));
+        var service = spy(new MovieServiceImpl(mock(IAttachmentService.class), mock(RecordImageService.class)));
+        ReflectionTestUtils.setField(service, "works", mock(CreativeWorkService.class));
         doAnswer(invocation -> {
             Page<MovieEntity> page = invocation.getArgument(0);
             Wrapper<MovieEntity> wrapper = invocation.getArgument(1);

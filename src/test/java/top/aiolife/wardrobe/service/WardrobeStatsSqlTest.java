@@ -7,8 +7,6 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +28,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import top.aiolife.config.JsonConfig;
 import top.aiolife.core.web.CurrentUserIdArgumentResolver;
+import top.aiolife.support.CurrentSchema;
 import top.aiolife.wardrobe.api.WardrobeController;
 import top.aiolife.wardrobe.mapper.WardrobeCategoryMapper;
 import top.aiolife.wardrobe.mapper.WardrobeItemMapper;
@@ -68,16 +67,7 @@ class WardrobeStatsSqlTest {
         source.setUser("postgres");
         source.setPassword("isolated-wardrobe");
         jdbc = new JdbcTemplate(source);
-        // 生产迁移按版本执行；公共种子与本次聚合口径无关，沿用回归测试的做法跳过。
-        try (var paths = Files.list(Path.of("sql/migrations"))) {
-            for (var path : paths
-                    .filter(p -> p.getFileName().toString().matches("V\\d.*\\.sql"))
-                    .filter(p -> !p.getFileName().toString().startsWith("V20261110_02_"))
-                    .sorted()
-                    .toList()) {
-                jdbc.execute(Files.readString(path));
-            }
-        }
+        CurrentSchema.initializePostgresFixture(jdbc);
         var configuration = new MybatisConfiguration();
         configuration.setEnvironment(new Environment("test", new JdbcTransactionFactory(), source));
         configuration.setMapUnderscoreToCamelCase(true);

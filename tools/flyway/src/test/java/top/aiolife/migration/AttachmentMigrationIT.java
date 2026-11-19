@@ -37,7 +37,7 @@ class AttachmentMigrationIT {
                 assertEquals("1",SchemaSnapshot.rows(c,"SELECT is_public FROM attachment").getFirst().getFirst());
                 assertNull(SchemaSnapshot.rows(c,"SELECT to_regclass('file')").getFirst().getFirst());
                 assertNull(SchemaSnapshot.rows(c,"SELECT to_regclass('image_import_task')").getFirst().getFirst());
-                assertEquals(69,SchemaSnapshot.read(c).sections().get("tables").size());
+                assertEquals(74,SchemaSnapshot.read(c).sections().get("tables").size());
                 assertTrue(SchemaSnapshot.read(c).sections().get("columns").stream().allMatch(x->x.get(9)!=null&&!x.get(9).isBlank()));
                 assertThrows(Exception.class,()->q.execute("INSERT INTO external_resource(id,platform,resource_type,external_key,source_url,state) VALUES(1,'douban','book_cover','p1','https://example.test','READY')"));
             }

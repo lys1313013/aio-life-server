@@ -39,7 +39,7 @@ class PostgresqlMigrationIT {
             assertEquals(0, flyway.migrate().migrationsExecuted);
             try (var connection = DriverManager.getConnection(url,"postgres","isolated-fixture")) {
                 var snapshot = SchemaSnapshot.read(connection);
-                assertEquals(69, snapshot.sections().get("tables").size());
+                assertEquals(74, snapshot.sections().get("tables").size());
                 assertTrue(snapshot.sections().get("columns").stream().allMatch(c -> c.get(9)!=null && !c.get(9).isBlank()));
                 assertEquals("0", SchemaSnapshot.rows(connection, "SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='sys_dict_data' AND column_name='dict_type'").getFirst().getFirst());
                 assertEquals("1", SchemaSnapshot.rows(connection, "SELECT count(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='sys_dict_type' AND column_name='id'").getFirst().getFirst());

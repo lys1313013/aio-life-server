@@ -7,8 +7,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -112,6 +110,7 @@ import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.service.LoginSessionService;
 import top.aiolife.sso.service.SecondaryLockMenuResolver;
 import top.aiolife.sso.service.UserAvatarFileService;
+import top.aiolife.support.CurrentSchema;
 import top.aiolife.sso.service.impl.UserServiceImpl;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -139,15 +138,7 @@ class PostgresqlRegressionIntegrationTest {
                 + "/fixture?stringtype=unspecified");
         source.setUser("postgres"); source.setPassword("isolated-regression");
         jdbc = new JdbcTemplate(source);
-        try (var paths = Files.list(Path.of("sql/migrations"))) {
-            for (var path : paths
-                    .filter(p -> p.getFileName().toString().matches("V\\d.*\\.sql"))
-                    .filter(p -> !p.getFileName().toString().startsWith("V20261110_02_"))
-                    .sorted()
-                    .toList()) {
-                jdbc.execute(Files.readString(path));
-            }
-        }
+        CurrentSchema.initializePostgresFixture(jdbc);
         var configuration = new MybatisConfiguration();
         configuration.setMapUnderscoreToCamelCase(true);
         configuration.getTypeHandlerRegistry().register(NumericBooleanTypeHandler.class);

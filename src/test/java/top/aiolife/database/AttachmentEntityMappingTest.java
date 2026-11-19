@@ -37,7 +37,7 @@ class AttachmentEntityMappingTest extends AttachmentDatabaseFixture {
             ((BaseMapper)all.getMapper(type)).selectList(new QueryWrapper<>().last("LIMIT 1"));
         }
         var physical=jdbc.queryForList("SELECT table_name FROM information_schema.tables WHERE table_schema=current_schema() AND table_type='BASE TABLE'",String.class);
-        assertEquals(69,physical.size());
+        assertEquals(74,physical.size());
         assertTrue(bound.containsAll(physical),()->"缺失实体："+physical.stream().filter(x->!bound.contains(x)).toList());
     }
 }

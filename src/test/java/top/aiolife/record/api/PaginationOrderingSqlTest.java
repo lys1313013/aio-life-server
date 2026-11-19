@@ -1,8 +1,5 @@
 package top.aiolife.record.api;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
@@ -48,6 +45,7 @@ import top.aiolife.record.service.ITaskService;
 import top.aiolife.record.service.UserDictDataService;
 import top.aiolife.record.service.UserDictDataCache;
 import top.aiolife.record.service.impl.UserDictDataServiceImpl;
+import top.aiolife.support.CurrentSchema;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -75,14 +73,7 @@ class PaginationOrderingSqlTest {
         source.setUser("postgres");
         source.setPassword("isolated-pagination");
         jdbc = new JdbcTemplate(source);
-        try (var migrations = Files.list(Path.of("sql/migrations"))) {
-            for (var migration : migrations
-                    .filter(path -> path.getFileName().toString().matches("V\\d.*\\.sql"))
-                    .filter(path -> !path.getFileName().toString().startsWith("V20261110_02_"))
-                    .sorted().toList()) {
-                jdbc.execute(Files.readString(migration));
-            }
-        }
+        CurrentSchema.initializePostgresFixture(jdbc);
         var configuration = new MybatisConfiguration();
         configuration.setEnvironment(new Environment("test", new JdbcTransactionFactory(), source));
         configuration.setMapUnderscoreToCamelCase(true);
