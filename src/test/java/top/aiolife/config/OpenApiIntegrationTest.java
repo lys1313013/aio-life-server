@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -425,6 +426,28 @@ class OpenApiIntegrationTest {
             assertFalse(api.path("paths").path(path).path("get").path("security").isArray(), path);
         }
         assertTrue(api.at("/security/0").has("bearerAuth"));
+    }
+
+    @Test
+    void 认证上下文参数不出现在完整分组及单接口文档中() throws Exception {
+        JsonNode full = document("/v3/api-docs");
+        JsonNode record = document("/v3/api-docs/record");
+        JsonNode goalDetail = discovery("/docs/operations/get_goals").path("definition");
+        JsonNode refreshDetail = discovery("/docs/operations/post_goals_progress_refresh").path("definition");
+
+        for (JsonNode api : List.of(full, record, goalDetail)) {
+            JsonNode goals = api.at("/paths/~1goals/get");
+            assertEquals(Set.of("type", "status", "keyword", "isPinned"), parameters(goals).keySet());
+        }
+        for (JsonNode api : List.of(full, record, refreshDetail)) {
+            JsonNode refresh = api.at("/paths/~1goals~1progress~1refresh/post");
+            assertTrue(parameters(refresh).isEmpty());
+            assertTrue(refresh.path("requestBody").path("required").asBoolean());
+            assertTrue(api.at("/security/0").has("bearerAuth"));
+        }
+
+        JsonNode audit = full.at("/paths/~1system~1data-export-audits/get");
+        assertEquals(Set.of("page", "pageSize", "userId"), parameters(audit).keySet());
     }
 
     @Test

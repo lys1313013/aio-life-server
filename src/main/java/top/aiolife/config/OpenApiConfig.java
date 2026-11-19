@@ -30,6 +30,8 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 import top.aiolife.core.json.CountSerializer;
 import top.aiolife.core.query.CommonQuery;
 import top.aiolife.core.query.QueryParams;
+import top.aiolife.core.web.CurrentToken;
+import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.pojo.enums.GoalTypeEnum;
 import top.aiolife.sso.api.WechatAuthController;
 import top.aiolife.sso.api.WechatWebLoginController;
@@ -54,6 +56,8 @@ public class OpenApiConfig {
             "/auth/sendResetPasswordCode", "/auth/resetPassword");
 
     static {
+        // 认证上下文由服务端注入，不生成调用方参数。
+        SpringDocUtils.getConfig().addAnnotationsToIgnore(CurrentUserId.class, CurrentToken.class);
         // Long/long 默认输出字符串；CountSerializer 标注的计数字段在属性定制器中覆盖。
         SpringDocUtils.getConfig()
                 .replaceWithSchema(GoalTypeEnum.class, new IntegerSchema()
