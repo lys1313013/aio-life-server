@@ -25,7 +25,12 @@ public class PersonWithRelationships {
     private String birthday;
     private String phone;
     private String email;
-    private String school;
+    private String primarySchool;
+    private String juniorHighSchool;
+    private String highSchool;
+    private String undergraduateSchool;
+    private String mastersSchool;
+    private String doctoralSchool;
     private String socialLinks;
     private String notes;
     private String createdAt;

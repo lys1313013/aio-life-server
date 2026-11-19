@@ -78,11 +78,23 @@ public class PersonRelationship {
     @Property("email")
     private String email;
 
-    /**
-     * 学校
-     */
-    @Property("school")
-    private String school;
+    @Property("primarySchool")
+    private String primarySchool;
+
+    @Property("juniorHighSchool")
+    private String juniorHighSchool;
+
+    @Property("highSchool")
+    private String highSchool;
+
+    @Property("undergraduateSchool")
+    private String undergraduateSchool;
+
+    @Property("mastersSchool")
+    private String mastersSchool;
+
+    @Property("doctoralSchool")
+    private String doctoralSchool;
 
     /**
      * 社交链接，JSON格式

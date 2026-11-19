@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import top.aiolife.core.id.IdCodec;
 import top.aiolife.core.resq.ApiResponse;
@@ -135,10 +136,19 @@ public class RelationshipController {
         person.setBirthday(req.getBirthday());
         person.setPhone(req.getPhone());
         person.setEmail(req.getEmail());
-        person.setSchool(req.getSchool());
+        person.setPrimarySchool(optionalSchool(req.getPrimarySchool()));
+        person.setJuniorHighSchool(optionalSchool(req.getJuniorHighSchool()));
+        person.setHighSchool(optionalSchool(req.getHighSchool()));
+        person.setUndergraduateSchool(optionalSchool(req.getUndergraduateSchool()));
+        person.setMastersSchool(optionalSchool(req.getMastersSchool()));
+        person.setDoctoralSchool(optionalSchool(req.getDoctoralSchool()));
         person.setSocialLinks(req.getSocialLinks());
         person.setNotes(req.getNotes());
         return person;
+    }
+
+    private String optionalSchool(String value) {
+        return StringUtils.hasText(value) ? value.strip() : null;
     }
 
     private RelatesToRelationship toRelationship(String relationType, String direction,

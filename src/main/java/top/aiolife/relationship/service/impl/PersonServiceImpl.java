@@ -156,7 +156,12 @@ public class PersonServiceImpl implements IPersonService {
             result.setBirthday(toString(personNode.get("birthday")));
             result.setPhone(toString(personNode.get("phone")));
             result.setEmail(toString(personNode.get("email")));
-            result.setSchool(toString(personNode.get("school")));
+            result.setPrimarySchool(toString(personNode.get("primarySchool")));
+            result.setJuniorHighSchool(toString(personNode.get("juniorHighSchool")));
+            result.setHighSchool(toString(personNode.get("highSchool")));
+            result.setUndergraduateSchool(toString(personNode.get("undergraduateSchool")));
+            result.setMastersSchool(toString(personNode.get("mastersSchool")));
+            result.setDoctoralSchool(toString(personNode.get("doctoralSchool")));
             result.setSocialLinks(toString(personNode.get("socialLinks")));
             result.setNotes(toString(personNode.get("notes")));
             result.setCreatedAt(toString(personNode.get("createdAt")));

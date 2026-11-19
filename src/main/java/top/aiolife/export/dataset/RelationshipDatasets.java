@@ -76,7 +76,12 @@ public class RelationshipDatasets implements ExportDatasetContributor {
                                 {"birthday", "生日"},
                                 {"phone", "电话"},
                                 {"email", "邮箱"},
-                                {"school", "学校"},
+                                {"primarySchool", "小学"},
+                                {"juniorHighSchool", "初中学校"},
+                                {"highSchool", "高中学校"},
+                                {"undergraduateSchool", "本科学校"},
+                                {"mastersSchool", "硕士学校"},
+                                {"doctoralSchool", "博士学校"},
                                 {"socialLinks", "社交链接"},
                                 {"notes", "备注"},
                                 {"createdAt", "创建时间"},
@@ -104,8 +109,11 @@ public class RelationshipDatasets implements ExportDatasetContributor {
                                   + " p.id>$cursor) RETURN p.id AS id, p.name AS name, p.category"
                                   + " AS category, p.description AS description, p.tags AS tags,"
                                   + " p.birthday AS birthday, p.phone AS phone, p.email AS email,"
-                                  + " p.school AS school, p.socialLinks AS socialLinks, p.notes AS"
-                                  + " notes, p.createdAt AS createdAt, p.updatedAt AS updatedAt"
+                                  + " p.primarySchool AS primarySchool, p.juniorHighSchool AS juniorHighSchool,"
+                                  + " p.highSchool AS highSchool, p.undergraduateSchool AS undergraduateSchool,"
+                                  + " p.mastersSchool AS mastersSchool, p.doctoralSchool AS doctoralSchool,"
+                                  + " p.socialLinks AS socialLinks, p.notes AS notes,"
+                                  + " p.createdAt AS createdAt, p.updatedAt AS updatedAt"
                                   + " ORDER BY id LIMIT $limit";
             try (var session = driver.session()) {
                 return session.executeRead(

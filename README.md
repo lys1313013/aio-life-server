@@ -82,6 +82,8 @@ mvn spring-boot:run
 
 也可使用 `./start.sh`，先检查 PostgreSQL / Redis 和已启用的 Neo4j 端口，再启动应用；它不创建数据库、不执行迁移、不拉起依赖容器。`./start.sh --clean` 会先清理编译产物，`SKIP_DEPS_CHECK=true` 可跳过端口检查。
 
+启用关系图谱的已有库升级前，需执行 [Neo4j 数据迁移](neo4j/migrations/README.md)。
+
 | 入口 | 默认地址 |
 | --- | --- |
 | 业务 API 前缀 | `http://localhost:45678/api` |
