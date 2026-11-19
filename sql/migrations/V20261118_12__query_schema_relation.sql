@@ -1,0 +1,176 @@
+-- 目的：保存数据库关系图谱的逻辑关系，并加入 Web 管理员菜单。
+-- 前置：PostgreSQL 18+，已执行此前 Flyway 迁移。
+-- 影响：新增元数据表与初始关系，不读写业务记录。
+-- 重跑：由 Flyway 版本历史控制；失败时由事务回滚。
+-- 执行：mvn -f tools/flyway/pom.xml compile flyway:migrate flyway:validate。
+
+CREATE TABLE query_schema_relation (
+    id bigint PRIMARY KEY,
+    source_table varchar(63) COLLATE "C" NOT NULL,
+    target_table varchar(63) COLLATE "C" NOT NULL,
+    relation_key varchar(120) COLLATE "C" NOT NULL,
+    display_name varchar(120) NOT NULL,
+    relation_kind varchar(16) COLLATE "C" NOT NULL,
+    cardinality varchar(16) COLLATE "C" NOT NULL,
+    column_mapping jsonb NOT NULL,
+    conditions jsonb NOT NULL DEFAULT '[]'::jsonb,
+    description varchar(800) NOT NULL DEFAULT '',
+    create_user bigint,
+    create_time timestamp(0) without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_user bigint,
+    update_time timestamp(0) without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted smallint NOT NULL DEFAULT 0,
+    CONSTRAINT ck_query_schema_relation_kind CHECK (
+        relation_kind IN ('reference', 'owner', 'polymorphic', 'hierarchy', 'dictionary', 'scoped')
+    ),
+    CONSTRAINT ck_query_schema_relation_cardinality CHECK (
+        cardinality ~ '^(1|0[.][.]1|N|0[.][.]N):(1|0[.][.]1|N|0[.][.]N)$'
+    ),
+    CONSTRAINT ck_query_schema_relation_mapping CHECK (
+        jsonb_typeof(column_mapping) = 'array' AND column_mapping <> '[]'::jsonb
+    ),
+    CONSTRAINT ck_query_schema_relation_conditions CHECK (jsonb_typeof(conditions) = 'array'),
+    CONSTRAINT ck_query_schema_relation_is_deleted CHECK (is_deleted IN (0, 1))
+);
+
+CREATE UNIQUE INDEX uk_query_schema_relation_source_key ON query_schema_relation (source_table, relation_key)
+    WHERE is_deleted = 0;
+
+COMMENT ON TABLE query_schema_relation IS '数据库图谱的逻辑表关系配置';
+COMMENT ON COLUMN query_schema_relation.id IS '逻辑关系ID，由应用生成雪花ID';
+COMMENT ON COLUMN query_schema_relation.source_table IS 'public 下的来源物理表名';
+COMMENT ON COLUMN query_schema_relation.target_table IS 'public 下的目标物理表名';
+COMMENT ON COLUMN query_schema_relation.relation_key IS '来源表内稳定的关系标识';
+COMMENT ON COLUMN query_schema_relation.display_name IS '页面显示的关系名称';
+COMMENT ON COLUMN query_schema_relation.relation_kind IS '关系类型：reference 普通引用，owner 用户归属，polymorphic 多态，hierarchy 树形，dictionary 字典，scoped 按范围匹配';
+COMMENT ON COLUMN query_schema_relation.cardinality IS '来源到目标基数，格式为来源:目标，例如 N:0..1';
+COMMENT ON COLUMN query_schema_relation.column_mapping IS '等值字段映射数组，每项含 sourceColumn 和 targetColumn';
+COMMENT ON COLUMN query_schema_relation.conditions IS '匹配条件数组，每项含 side、column、operator 及可选 value，条件之间为且';
+COMMENT ON COLUMN query_schema_relation.description IS '关系含义及补充业务规则';
+COMMENT ON COLUMN query_schema_relation.create_user IS '创建人用户ID，系统初始关系为空';
+COMMENT ON COLUMN query_schema_relation.create_time IS '创建时间';
+COMMENT ON COLUMN query_schema_relation.update_user IS '最后更新人用户ID，系统初始关系为空';
+COMMENT ON COLUMN query_schema_relation.update_time IS '最后更新时间';
+COMMENT ON COLUMN query_schema_relation.is_deleted IS '逻辑删除标记：0 有效，1 删除';
+
+INSERT INTO sys_menu (id, parent_id, name, path, component, meta, roles, sort_order, visible_clients)
+VALUES (2307, 2300, 'QuerySchema', '/query/schema', 'data-query/schema/index',
+        '{"icon":"lucide:network","title":"数据库关系图谱","authority":["admin"],"keepAlive":false}', 'admin', 4, 1);
+
+-- 数据来源：数据库结构注释和业务代码。条件属于图谱元数据。
+INSERT INTO query_schema_relation
+    (id, source_table, target_table, relation_key, display_name, relation_kind, cardinality,
+     column_mapping, conditions, description)
+VALUES
+    (230000000000000001, 'time_record', 'time_tracker_category', 'category_id_time_tracker_category', '时迹分类', 'scoped', 'N:0..1', '[{"sourceColumn":"category_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"template_id","operator":"isNull","value":null}]'::jsonb, '分类为公共或同用户，template_id IS NULL，且 is_deleted = 0。 公共分类保留原 ID，名称按当前用户覆盖解析。停用分类保留历史名称。'),
+    (230000000000000002, 'exercise_record', 'time_record', 'time_record_id_time_record', '运动关联时迹', 'reference', 'N:0..1', '[{"sourceColumn":"time_record_id","targetColumn":"id"},{"sourceColumn":"user_id","targetColumn":"user_id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标有效，且双方 user_id 相同。'),
+    (230000000000000003, 'time_record', 'read_record', 'relate_id_read_record', '关联阅读记录', 'polymorphic', 'N:0..1', '[{"sourceColumn":"relate_id","targetColumn":"id"},{"sourceColumn":"user_id","targetColumn":"user_id"}]'::jsonb, '[{"side":"source","column":"relate_type","operator":"eq","value":"1"},{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'relate_type = 1，且阅读记录未删除、同用户。'),
+    (230000000000000004, 'time_record', 'movie', 'relate_id_movie', '关联影视记录', 'polymorphic', 'N:0..1', '[{"sourceColumn":"relate_id","targetColumn":"id"},{"sourceColumn":"user_id","targetColumn":"user_id"}]'::jsonb, '[{"side":"source","column":"relate_type","operator":"eq","value":"2"},{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'relate_type = 2，且影视记录未删除、同用户。'),
+    (230000000000000005, 'time_tracker_category', 'time_tracker_category', 'parent_id_time_tracker_category', '分类父级', 'hierarchy', 'N:0..1', '[{"sourceColumn":"parent_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, 'NULL 表示根分类。父级须为公共或同用户可见分类。 覆盖行的 inherit_parent 决定是否沿用模板父级。'),
+    (230000000000000006, 'time_tracker_category', 'time_tracker_category', 'template_id_time_tracker_category', '分类覆盖来源', 'scoped', 'N:0..1', '[{"sourceColumn":"template_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"user_id","operator":"isNull","value":null},{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标为公共预设，user_id IS NULL 且未删除。 以 user_id + template_id 查找当前用户的有效覆盖。'),
+    (230000000000000007, 'task', 'task_column', 'column_id_task_column', '所属看板列', 'reference', 'N:0..1', '[{"sourceColumn":"column_id","targetColumn":"id"},{"sourceColumn":"user_id","targetColumn":"user_id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标有效，且双方 user_id 相同。 未分配时 column_id 为 NULL。'),
+    (230000000000000008, 'task_detail', 'task', 'task_id_task', '所属任务', 'reference', 'N:1', '[{"sourceColumn":"task_id","targetColumn":"id"},{"sourceColumn":"user_id","targetColumn":"user_id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标有效，且双方 user_id 相同。'),
+    (230000000000000009, 'goal', 'goal', 'parent_id_goal', '目标父级', 'hierarchy', 'N:0..1', '[{"sourceColumn":"parent_id","targetColumn":"id"},{"sourceColumn":"user_id","targetColumn":"user_id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标有效，且双方 user_id 相同。 NULL 表示顶层目标。'),
+    (230000000000000010, 'thought_rela_event', 'thought', 'thought_id_thought', '所属闪念', 'reference', 'N:1', '[{"sourceColumn":"thought_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标 is_deleted = 0。 附属事件用 content 保存文本。'),
+    (230000000000000011, 'honor_record', 'honor_category', 'category_id_honor_category', '荣誉分类', 'scoped', 'N:0..1', '[{"sourceColumn":"category_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '分类为公共预设或同用户，且未删除。'),
+    (230000000000000012, 'wardrobe_item', 'wardrobe_category', 'category_id_wardrobe_category', '衣物分类', 'scoped', 'N:0..1', '[{"sourceColumn":"category_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '分类为公共预设或同用户，且未删除。'),
+    (230000000000000013, 'wardrobe_category', 'wardrobe_category', 'parent_id_wardrobe_category', '衣橱分类父级', 'hierarchy', 'N:0..1', '[{"sourceColumn":"parent_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, 'NULL 表示根分类。父类需在当前分类可用范围内。'),
+    (230000000000000014, 'life_footprint', 'sys_region', 'region_code_sys_region', '所在行政区', 'reference', 'N:0..1', '[{"sourceColumn":"region_code","targetColumn":"code"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标 is_deleted = 0。 保存选中的最深层行政区编码。'),
+    (230000000000000015, 'sys_region', 'sys_region', 'parent_code_sys_region', '上级行政区', 'hierarchy', 'N:0..1', '[{"sourceColumn":"parent_code","targetColumn":"code"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标 is_deleted = 0。 NULL 表示省级根节点。'),
+    (230000000000000016, 'sys_menu', 'sys_menu', 'parent_id_sys_menu', '上级菜单', 'hierarchy', 'N:0..1', '[{"sourceColumn":"parent_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标 is_deleted = 0。 NULL 表示根菜单。'),
+    (230000000000000017, 'user_menu_hidden', 'sys_menu', 'menu_id_sys_menu', '隐藏菜单', 'reference', 'N:1', '[{"sourceColumn":"menu_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标 is_deleted = 0。'),
+    (230000000000000018, 'user_quick_nav', 'sys_menu', 'menu_id_sys_menu', '快捷导航菜单', 'reference', 'N:1', '[{"sourceColumn":"menu_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标 is_deleted = 0。'),
+    (230000000000000019, 'user_secondary_lock_menu', 'sys_menu', 'menu_id_sys_menu', '二级锁菜单', 'reference', 'N:1', '[{"sourceColumn":"menu_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标 is_deleted = 0。'),
+    (230000000000000020, 'api_key_log', 'api_key', 'api_key_id_api_key', '对应 API Key', 'reference', 'N:1', '[{"sourceColumn":"api_key_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, '调用日志保留历史调用归属。'),
+    (230000000000000021, 'feedback_comment', 'feedback', 'feedback_id_feedback', '所属反馈', 'reference', 'N:1', '[{"sourceColumn":"feedback_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标 is_deleted = 0。 评论人可能是反馈用户或管理员。'),
+    (230000000000000022, 'sys_scheduled_job_log', 'sys_scheduled_job', 'job_id_sys_scheduled_job', '所属定时任务', 'reference', 'N:1', '[{"sourceColumn":"job_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000023, 'membership_record', 'membership_provider', 'provider_id_membership_provider', '会员平台', 'reference', 'N:0..1', '[{"sourceColumn":"provider_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标 is_deleted = 0。 未关联平台时可为空。'),
+    (230000000000000024, 'cbti_result', 'cbti_personality', 'personality_code_cbti_personality', 'CBTI 人格', 'reference', 'N:1', '[{"sourceColumn":"personality_code","targetColumn":"code"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标 is_deleted = 0。'),
+    (230000000000000025, 'bank_card', 'bank_card_cover_template', 'cover_template_id_bank_card_cover_template', '公共卡面模板', 'reference', 'N:0..1', '[{"sourceColumn":"cover_template_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标 is_deleted = 0。 模板需匹配银行卡的银行和卡类型。'),
+    (230000000000000026, 'bank_card_tag_rel', 'bank_card', 'bank_card_id_bank_card', '银行卡标签中间表', 'reference', 'N:1', '[{"sourceColumn":"bank_card_id","targetColumn":"id"},{"sourceColumn":"user_id","targetColumn":"user_id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标有效，且双方 user_id 相同。'),
+    (230000000000000027, 'device_expense', 'device', 'device_id_device', '设备支出中间表 / 设备', 'reference', 'N:1', '[{"sourceColumn":"device_id","targetColumn":"id"},{"sourceColumn":"user_id","targetColumn":"user_id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标有效，且双方 user_id 相同。'),
+    (230000000000000028, 'device_expense', 'expense', 'expense_id_expense', '设备支出中间表 / 支出', 'reference', 'N:1', '[{"sourceColumn":"expense_id","targetColumn":"id"},{"sourceColumn":"user_id","targetColumn":"user_id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标有效，且双方 user_id 相同。'),
+    (230000000000000029, 'sys_dict_data', 'sys_dict_type', 'dict_type_id_sys_dict_type', '所属系统字典类型', 'reference', 'N:1', '[{"sourceColumn":"dict_type_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标 is_deleted = 0。'),
+    (230000000000000030, 'user_dict_data', 'user_dict_data', 'template_id_user_dict_data', '字典覆盖来源', 'scoped', 'N:0..1', '[{"sourceColumn":"template_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"user_id","operator":"isNull","value":null},{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标为同 dict_type 的公共预设，user_id IS NULL 且未删除。 有效覆盖按 user_id + template_id 查找，公共只读预设不采用自定义名称。'),
+    (230000000000000031, 'exercise_record', 'user_dict_data', 'exercise_type_id_user_dict_data', '运动类型', 'dictionary', 'N:0..1', '[{"sourceColumn":"exercise_type_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"dict_type","operator":"eq","value":"exercise_type"},{"side":"target","column":"template_id","operator":"isNull","value":null},{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'dict_type = ''exercise_type''，公共或同用户，且 template_id IS NULL，且未删除。'),
+    (230000000000000032, 'expense', 'user_dict_data', 'expense_type_id_user_dict_data', '支出类型', 'dictionary', 'N:0..1', '[{"sourceColumn":"expense_type_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"dict_type","operator":"eq","value":"exp_type"},{"side":"target","column":"template_id","operator":"isNull","value":null},{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'dict_type = ''exp_type''，公共或同用户，且 template_id IS NULL，且未删除。'),
+    (230000000000000033, 'expense', 'user_dict_data', 'pay_type_id_user_dict_data', '支付方式', 'dictionary', 'N:0..1', '[{"sourceColumn":"pay_type_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"dict_type","operator":"eq","value":"pay_type"},{"side":"target","column":"template_id","operator":"isNull","value":null},{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'dict_type = ''pay_type''，公共或同用户，且 template_id IS NULL，且未删除。'),
+    (230000000000000034, 'income', 'user_dict_data', 'income_type_id_user_dict_data', '收入类型', 'dictionary', 'N:0..1', '[{"sourceColumn":"income_type_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"dict_type","operator":"eq","value":"income_type"},{"side":"target","column":"template_id","operator":"isNull","value":null},{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'dict_type = ''income_type''，公共或同用户，且 template_id IS NULL，且未删除。'),
+    (230000000000000035, 'bank_card_tag_rel', 'user_dict_data', 'tag_id_user_dict_data', '银行卡标签', 'dictionary', 'N:0..1', '[{"sourceColumn":"tag_id","targetColumn":"id"},{"sourceColumn":"user_id","targetColumn":"user_id"}]'::jsonb, '[{"side":"target","column":"dict_type","operator":"eq","value":"bank_card_tag"},{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'dict_type = ''bank_card_tag''，同用户，且未删除。'),
+    (230000000000000036, 'bank_card', 'sys_dict_data', 'bank_id_sys_dict_data', '银行字典项', 'dictionary', 'N:0..1', '[{"sourceColumn":"bank_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '所属系统字典类型为 ''bank''，目标未删除。 银行卡自填银行时 bank_id 为空。'),
+    (230000000000000037, 'bank_card_cover_template', 'sys_dict_data', 'bank_id_sys_dict_data', '银行字典项', 'dictionary', 'N:0..1', '[{"sourceColumn":"bank_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '所属系统字典类型为 ''bank''，目标未删除。'),
+    (230000000000000038, 'notification_preference', 'notification_channel_config', 'user_id_channel_notification_channel_config', '偏好对应渠道配置', 'scoped', 'N:0..1', '[{"sourceColumn":"user_id","targetColumn":"user_id"},{"sourceColumn":"channel","targetColumn":"channel"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '解析当前有效的渠道配置。'),
+    (230000000000000039, 'notification_delivery', 'notification_channel_config', 'user_id_channel_notification_channel_config', '投递对应渠道配置', 'scoped', 'N:0..1', '[{"sourceColumn":"user_id","targetColumn":"user_id"},{"sourceColumn":"channel","targetColumn":"channel"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '重试时读取当前有效配置。'),
+    (230000000000000040, 'notification_delivery', 'notification_preference', 'user_id_biz_type_channel_notification_preference', '投递策略的偏好匹配', 'scoped', 'N:0..1', '[{"sourceColumn":"user_id","targetColumn":"user_id"},{"sourceColumn":"biz_type","targetColumn":"biz_type"},{"sourceColumn":"channel","targetColumn":"channel"}]'::jsonb, '[]'::jsonb, '按用户、通知类型和渠道查找有效偏好。 投递发生时检查偏好，当前偏好可能已变更。'),
+    (230000000000000041, 'data_export_grant', 'data_export_job', 'job_id_data_export_job', '对应导出任务', 'reference', 'N:0..1', '[{"sourceColumn":"job_id","targetColumn":"id"},{"sourceColumn":"user_id","targetColumn":"user_id"}]'::jsonb, '[]'::jsonb, '关联同用户导出任务。 建单前或无有效任务时为空。'),
+    (230000000000000042, 'data_export_audit_event', 'data_export_job', 'job_id_data_export_job', '对应导出任务', 'reference', 'N:0..1', '[{"sourceColumn":"job_id","targetColumn":"id"},{"sourceColumn":"user_id","targetColumn":"user_id"}]'::jsonb, '[]'::jsonb, '关联同用户导出任务。 建单前或无有效任务时为空。'),
+    (230000000000000043, 'attachment', 'storage_object', 'storage_object_id_storage_object', '附件的物理对象', 'reference', 'N:0..1', '[{"sourceColumn":"storage_object_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, '有效附件必须有对象，历史缺失且已删除的附件可为空。'),
+    (230000000000000044, 'attachment', 'external_resource', 'external_resource_id_external_resource', '附件的远程来源', 'reference', 'N:0..1', '[{"sourceColumn":"external_resource_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, '本地上传或系统生成的附件可为空。'),
+    (230000000000000045, 'external_resource', 'storage_object', 'storage_object_id_storage_object', '来源解析出的物理对象', 'reference', 'N:0..1', '[{"sourceColumn":"storage_object_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, '来源状态为 READY 时存在。'),
+    (230000000000000046, 'import_job', 'external_resource', 'external_resource_id_external_resource', '导入等待的共享来源', 'reference', 'N:1', '[{"sourceColumn":"external_resource_id","targetColumn":"id"}]'::jsonb, '[{"side":"target","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, '目标 is_deleted = 0。'),
+    (230000000000000047, 'import_job', 'attachment', 'result_attachment_id_attachment', '导入产出的附件', 'reference', 'N:0..1', '[{"sourceColumn":"result_attachment_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, '任务状态 READY 时记录结果。 使用附件内部主键 id，公开接口用 file_key。'),
+    (230000000000000048, 'import_job', 'b_video', 'biz_id_b_video', '导入目标视频', 'polymorphic', 'N:0..1', '[{"sourceColumn":"biz_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"biz_type","operator":"eq","value":"b_video_cover"}]'::jsonb, 'biz_type = ''b_video_cover''，且视频有效。'),
+    (230000000000000049, 'attachment', 'movie', 'biz_id_movie', '影视记录的附件', 'polymorphic', '0..1:0..1', '[{"sourceColumn":"biz_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"biz_type","operator":"eq","value":"movie_cover"},{"side":"source","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'biz_type = ''movie_cover''，有效附件 is_deleted = 0。 同一业务位置由部分唯一索引约束，至多一条有效附件。'),
+    (230000000000000050, 'attachment', 'read_record', 'biz_id_read_record', '阅读记录的附件', 'polymorphic', '0..1:0..1', '[{"sourceColumn":"biz_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"biz_type","operator":"eq","value":"read_cover"},{"side":"source","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'biz_type = ''read_cover''，有效附件 is_deleted = 0。 同一业务位置由部分唯一索引约束，至多一条有效附件。'),
+    (230000000000000051, 'attachment', 'device', 'biz_id_device', '设备档案的附件', 'polymorphic', '0..1:0..1', '[{"sourceColumn":"biz_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"biz_type","operator":"eq","value":"device_cover"},{"side":"source","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'biz_type = ''device_cover''，有效附件 is_deleted = 0。 同一业务位置由部分唯一索引约束，至多一条有效附件。'),
+    (230000000000000052, 'attachment', 'wardrobe_item', 'biz_id_wardrobe_item', '衣物档案的附件', 'polymorphic', '0..1:0..1', '[{"sourceColumn":"biz_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"biz_type","operator":"eq","value":"wardrobe_item_cover"},{"side":"source","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'biz_type = ''wardrobe_item_cover''，有效附件 is_deleted = 0。 同一业务位置由部分唯一索引约束，至多一条有效附件。'),
+    (230000000000000053, 'attachment', 'b_video', 'biz_id_b_video', 'B 站视频的附件', 'polymorphic', '0..1:0..1', '[{"sourceColumn":"biz_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"biz_type","operator":"eq","value":"b_video_cover"},{"side":"source","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'biz_type = ''b_video_cover''，有效附件 is_deleted = 0。 同一业务位置由部分唯一索引约束，至多一条有效附件。'),
+    (230000000000000054, 'attachment', 'sys_user', 'biz_id_sys_user', 'AIO Life 用户的附件', 'polymorphic', '0..1:0..1', '[{"sourceColumn":"biz_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"biz_type","operator":"eq","value":"avatar"},{"side":"source","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'biz_type = ''avatar''，有效附件 is_deleted = 0。 同一业务位置由部分唯一索引约束，至多一条有效附件。'),
+    (230000000000000055, 'attachment', 'bank_card', 'biz_id_bank_card', '银行卡档案的附件', 'polymorphic', '0..1:0..1', '[{"sourceColumn":"biz_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"biz_type","operator":"eq","value":"bank_card_face"},{"side":"source","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'biz_type = ''bank_card_face''，有效附件 is_deleted = 0。 同一业务位置由部分唯一索引约束，至多一条有效附件。'),
+    (230000000000000056, 'attachment', 'bank_card_cover_template', 'biz_id_bank_card_cover_template', '公共银行卡卡面的附件', 'polymorphic', '0..1:0..1', '[{"sourceColumn":"biz_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"biz_type","operator":"eq","value":"bank_card_template_face"},{"side":"source","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'biz_type = ''bank_card_template_face''，有效附件 is_deleted = 0。 同一业务位置由部分唯一索引约束，至多一条有效附件。'),
+    (230000000000000057, 'attachment', 'cbti_personality', 'biz_id_cbti_personality', 'CBTI 人格类型的附件', 'polymorphic', '0..1:0..1', '[{"sourceColumn":"biz_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"biz_type","operator":"eq","value":"cbti_personality_image"},{"side":"source","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'biz_type = ''cbti_personality_image''，有效附件 is_deleted = 0。 同一业务位置由部分唯一索引约束，至多一条有效附件。'),
+    (230000000000000058, 'attachment', 'feedback', 'biz_id_feedback', '用户反馈的附件', 'polymorphic', 'N:0..1', '[{"sourceColumn":"biz_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"biz_type","operator":"eq","value":"feedback"},{"side":"source","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'biz_type = ''feedback''，有效附件 is_deleted = 0。 同一业务记录可绑定多条，按 sort_order 排列。'),
+    (230000000000000059, 'attachment', 'feedback_comment', 'biz_id_feedback_comment', '反馈评论的附件', 'polymorphic', 'N:0..1', '[{"sourceColumn":"biz_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"biz_type","operator":"eq","value":"feedback_comment"},{"side":"source","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'biz_type = ''feedback_comment''，有效附件 is_deleted = 0。 同一业务记录可绑定多条，按 sort_order 排列。'),
+    (230000000000000060, 'attachment', 'honor_record', 'biz_id_honor_record', '荣誉记录的附件', 'polymorphic', 'N:0..1', '[{"sourceColumn":"biz_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"biz_type","operator":"eq","value":"honor_record"},{"side":"source","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'biz_type = ''honor_record''，有效附件 is_deleted = 0。 同一业务记录可绑定多条，按 sort_order 排列。'),
+    (230000000000000061, 'attachment', 'event_record', 'biz_id_event_record', '活动记录的附件', 'polymorphic', 'N:0..1', '[{"sourceColumn":"biz_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"biz_type","operator":"eq","value":"event_record"},{"side":"source","column":"is_deleted","operator":"eq","value":"0"}]'::jsonb, 'biz_type = ''event_record''，有效附件 is_deleted = 0。 同一业务记录可绑定多条，按 sort_order 排列。'),
+    (230000000000000062, 'anniversary_record', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000063, 'api_key', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000064, 'attachment', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:0..1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, 'NULL 可表示公共预设或无用户归属，具体语义见字段注释。'),
+    (230000000000000065, 'b_video', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000066, 'bank_card', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000067, 'bank_card_tag_rel', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000068, 'cbti_result', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000069, 'data_export_audit_event', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:0..1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, 'NULL 可表示公共预设或无用户归属，具体语义见字段注释。'),
+    (230000000000000070, 'data_export_grant', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000071, 'data_export_job', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000072, 'device', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000073, 'device_expense', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000074, 'event_record', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000075, 'exercise_record', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000076, 'expense', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000077, 'feedback', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000078, 'feedback_comment', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000079, 'goal', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000080, 'honor_category', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:0..1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, 'NULL 可表示公共预设或无用户归属，具体语义见字段注释。'),
+    (230000000000000081, 'honor_record', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000082, 'income', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000083, 'life_footprint', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000084, 'login_log', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:0..1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, 'NULL 可表示公共预设或无用户归属，具体语义见字段注释。'),
+    (230000000000000085, 'mbti_result', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000086, 'membership_record', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000087, 'memo', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000088, 'milestone', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000089, 'movie', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000090, 'notification_channel_config', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000091, 'notification_delivery', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000092, 'notification_preference', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000093, 'password_vault', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000094, 'read_record', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000095, 'sys_activity_log', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:0..1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, 'NULL 可表示公共预设或无用户归属，具体语义见字段注释。'),
+    (230000000000000096, 'task', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000097, 'task_column', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000098, 'task_detail', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000099, 'thought', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000100, 'time_record', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000101, 'time_tracker_category', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:0..1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, 'NULL 可表示公共预设或无用户归属，具体语义见字段注释。'),
+    (230000000000000102, 'user_body_profile', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', '0..1:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000103, 'user_dict_data', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:0..1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, 'NULL 可表示公共预设或无用户归属，具体语义见字段注释。'),
+    (230000000000000104, 'user_home_card_preference', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000105, 'user_menu_hidden', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000106, 'user_quick_nav', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000107, 'user_secondary_lock_menu', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000108, 'user_third_party_account', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000109, 'wardrobe_category', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:0..1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, 'NULL 可表示公共预设或无用户归属，具体语义见字段注释。'),
+    (230000000000000110, 'wardrobe_item', 'sys_user', 'user_id_sys_user', '所属用户', 'owner', 'N:1', '[{"sourceColumn":"user_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, ''),
+    (230000000000000111, 'message', 'sys_user', 'sender_id_sys_user', '发送用户', 'owner', 'N:0..1', '[{"sourceColumn":"sender_id","targetColumn":"id"}]'::jsonb, '[{"side":"source","column":"type","operator":"eq","value":"1"}]'::jsonb, 'type = 1 时存在发送用户，type = 0 为空。'),
+    (230000000000000112, 'message', 'sys_user', 'receiver_id_sys_user', '接收用户', 'owner', 'N:1', '[{"sourceColumn":"receiver_id","targetColumn":"id"}]'::jsonb, '[]'::jsonb, '');

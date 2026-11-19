@@ -16,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.config.MybatisPlusConfig;
+import top.aiolife.system.mapper.QuerySchemaCatalogMapper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +28,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -59,6 +61,27 @@ class PhysicalTableEntitySelectIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private QuerySchemaCatalogMapper schemaCatalogMapper;
+
+    @Test
+    void 图谱目录映射真实字段注释主键和可空性() {
+        var columns = schemaCatalogMapper.listBusinessColumns();
+        var userId = columns.stream()
+                .filter(column -> column.tableName().equals("sys_user") && column.columnName().equals("id"))
+                .findFirst().orElseThrow();
+        assertTrue(userId.primaryKey());
+        assertFalse(userId.nullable());
+        assertFalse(userId.tableComment().isBlank());
+        assertFalse(userId.columnComment().isBlank());
+
+        var userEmail = columns.stream()
+                .filter(column -> column.tableName().equals("sys_user") && column.columnName().equals("email"))
+                .findFirst().orElseThrow();
+        assertFalse(userEmail.primaryKey());
+        assertTrue(userEmail.nullable());
+    }
 
     @Test
     void 所有物理表均可按实体全部字段查询一条() {
