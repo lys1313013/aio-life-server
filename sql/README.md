@@ -74,6 +74,9 @@
 - [V20261118_07__drop_cbti_personality_image_object.sql](migrations/V20261118_07__drop_cbti_personality_image_object.sql)：删除 `cbti_personality.image_object`，人格图片统一由 `attachment` 的 `cbti_personality_image` 关联表达；只删除已无读写方的历史对象路径，不改行数、其他列和索引。
 - [V20261118_08__cbti_attachment_constraints.sql](migrations/V20261118_08__cbti_attachment_constraints.sql)：允许 CBTI 公共人格图片以空用户归属写入，单图部分唯一索引覆盖 CBTI；发现带用户归属或重复有效图时迁移回滚。
 - [V20261118_09__bank_card_membership_value_constraints.sql](migrations/V20261118_09__bank_card_membership_value_constraints.sql)：为银行卡补齐账单日/还款日 1-31、金额非负和有效期存当月第一天约束，为会员记录补齐到期日不早于开通日及金额非负约束；存在越界值时整体拒绝执行。枚举取值仍由请求和服务层维护，不进入数据库约束。
+- [V20261118_10__rename_income_date.sql](migrations/V20261118_10__rename_income_date.sql)：统一收入日期字段命名。
+- [V20261118_11__dict_label_value_not_blank.sql](migrations/V20261118_11__dict_label_value_not_blank.sql)：限制字典项标签和值不可为空白。
+- [V20261118_12__query_schema_relation.sql](migrations/V20261118_12__query_schema_relation.sql)：新增一张数据库图谱配置表，初始化 112 条逻辑关系和 Web 管理员菜单。
 
 本次按明确要求同步修改历史初始脚本：新库不再创建上述四列；已有库仍保留可执行的迁移。另按明确要求不为 B 站视频封面新增增量脚本：`b_video.cover_file_id` 已直接在目标库迁移并从初始脚本移除，新库改由 `uk_file_b_video_cover` 约束 `file.biz_type='b_video_cover'` 的单封面关联；执行与校验记录见[数据库初始化与验证](../docs/数据库初始化与验证.md)。历史校验和调整需先备份并完成实际数据、结构迁移，再执行 `flyway:repair`；`repair` 本身不迁移业务数据。
 
@@ -82,6 +85,27 @@
 ## 公共来源与后续维护
 
 `reference/banks/` 等目录保存公共来源快照与许可，不是可执行脚本。生成器只输出待审阅草稿，不覆盖已执行迁移。后续 SQL 按同类合并、异类分开维护，并遵守 Flyway 版本不可改写的约定。
+
+## 高校目录
+
+[V20261119_03](migrations/V20261119_03__create_university.sql) 建立 `university` 表。[V20261119_04](migrations/V20261119_04__seed_universities.sql) 导入教育部《全国高等学校名单》截至 2026-06-17 的完整中国大陆名录，共 3,196 所。教育部于 2026-06-18 发布名单，范围覆盖普通高校 2,952 所（本科 1,412 所、高职专科 1,540 所）及成人高校 244 所。[教育部公告](https://www.moe.gov.cn/jyb_xxgk/s5743/s5744/202606/t20260618_1441074.html)
+
+| 原始附件 | SHA-256 |
+| --- | --- |
+| [全国普通高等学校名单 XLS](https://hudong.moe.gov.cn/jyb_xxgk/s5743/s5744/202606/W020260618416094865984.xls) | `29c40f083b639888e429cf40b68f9a75782d1ce81131c99aabca65b65b36eaea` |
+| [全国成人高等学校名单 XLS](https://hudong.moe.gov.cn/jyb_xxgk/s5743/s5744/202606/W020260618307096079727.xls) | `34765edba0ceda935ca7d4455bc2eb105b94eee8d8d4d7c9150fba327cf11bbf` |
+
+种子保留附件中的学校名称及备注，按附件的省级分组名称匹配 `sys_region` 的省级编码，覆盖 31 个省级地区。种子 ID 按两份附件的行序预分配，后续更新名单时应保留现有高校 ID。迁移使用仓库内固定数据，可离线执行，若有省级编码无法关联则整份种子迁移回滚。
+
+## 豆瓣榜单
+
+[V20261118_13](migrations/V20261118_13__works_and_rankings.sql) 建立作品和榜单表。[V20261118_14](migrations/V20261118_14__douban_top250.sql) 导入电影和读书各 250 个条目。[V20261119_01](migrations/V20261119_01__match_record_work_by_douban_url.sql) 切换为按个人记录 URL 的豆瓣条目 ID 查询作品。[V20261119_02](migrations/V20261119_02__store_record_external_identity.sql) 将观影和阅读的外部系统编码及条目 ID 保存为生成列，已有链接自动补齐。普通页面只读本地榜单和图片缓存。
+
+在后端仓库根目录运行以下命令，路径参数使用下一个尚未占用的 Flyway 版本。Python 环境需安装 `beautifulsoup4`。生成器只读取官方榜单分页，校验成功后创建新文件。审阅名次变化后按项目的独立 Flyway 入口执行迁移。
+
+```bash
+python3 sql/reference/refresh_douban_rankings.py sql/migrations/VYYYYMMDD_NN__refresh_douban_rankings.sql
+```
 
 ## 附件四表切换
 
