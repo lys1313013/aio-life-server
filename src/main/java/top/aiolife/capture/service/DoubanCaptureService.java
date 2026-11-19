@@ -1,5 +1,7 @@
 package top.aiolife.capture.service;
 
+import top.aiolife.record.service.CreativeWorkService;
+
 import static top.aiolife.capture.service.CaptureValues.*;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -42,6 +44,7 @@ public class DoubanCaptureService {
     private final ObjectMapper json;
     private final DoubanSyncCoverService syncCovers;
     private final RecordImageService images;
+    private final CreativeWorkService works;
     private static final String[] EDITABLE = {
         "title",
         "author",
@@ -317,7 +320,7 @@ public class DoubanCaptureService {
                     target == ProgressStatusEnum.COMPLETED && total > 0 ? total : 0);
             if (target == ProgressStatusEnum.COMPLETED) movie.setFinishDate(LocalDate.now());
             String cover = text(draft, "coverImgUrl", false, 2048);
-            if (cover != null && !cover.isBlank()) {
+            if (cover != null && !cover.isBlank() && !works.detailsReady(subject)) {
                 try {
                     movie.setFileId(syncCovers.upload(user, cover));
                 } catch (RuntimeException error) {

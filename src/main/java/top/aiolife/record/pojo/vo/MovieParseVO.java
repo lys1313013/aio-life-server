@@ -14,6 +14,7 @@ public class MovieParseVO {
 
     @Schema(description = "影片或剧集标题")
     private String title;
+    private Long retryCoverWorkId;
 
     @Schema(description = "类型：1=电影，2=电视剧", allowableValues = {"1", "2"})
     private Integer type;
@@ -27,7 +28,7 @@ public class MovieParseVO {
     @Schema(description = "已入库的封面文件 ID；封面上传失败时为空")
     private String fileId;
 
-    @Schema(description = "封面原始地址；封面已上传时为空")
+    @Schema(description = "共享封面的本地鉴权预览路径，缓存缺失时为空")
     private String coverImgUrl;
 
     @Schema(description = "总集数或总时长")

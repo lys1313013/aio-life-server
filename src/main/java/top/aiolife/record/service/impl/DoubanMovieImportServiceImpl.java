@@ -160,17 +160,10 @@ public class DoubanMovieImportServiceImpl implements IDoubanMovieImportService {
     private Map<String, MovieEntity> loadExisting(Long userId) {
         List<MovieEntity> movies = movieMapper.selectList(new LambdaQueryWrapper<MovieEntity>()
                 .eq(MovieEntity::getUserId, userId)
-                .isNotNull(MovieEntity::getUrl));
+                .eq(MovieEntity::getPlatform, "douban"));
         Map<String, MovieEntity> result = new HashMap<>();
         for (MovieEntity movie : movies) {
-            try {
-                DoubanSubjectUrl.Subject subject = DoubanSubjectUrl.parse(movie.getUrl());
-                if (subject.mediaType() == DoubanSubjectUrl.MediaType.MOVIE) {
-                    result.putIfAbsent(subject.subjectId(), movie);
-                }
-            } catch (IllegalArgumentException ignored) {
-                // 非豆瓣链接不参与本次判重。
-            }
+            result.putIfAbsent(movie.getExternalKey(), movie);
         }
         return result;
     }

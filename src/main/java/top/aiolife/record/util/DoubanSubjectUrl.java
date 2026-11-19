@@ -72,8 +72,18 @@ public final class DoubanSubjectUrl {
     }
 
     public enum MediaType {
-        MOVIE,
-        BOOK
+        MOVIE("movie"),
+        BOOK("book");
+
+        private final String resourceType;
+
+        MediaType(String domain) {
+            resourceType = domain + "_subject";
+        }
+
+        public String resourceType() {
+            return resourceType;
+        }
     }
 
     public record Subject(MediaType mediaType, String subjectId, String canonicalUrl) {

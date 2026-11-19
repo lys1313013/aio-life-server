@@ -1,5 +1,7 @@
 package top.aiolife.record.service.impl;
 
+import top.aiolife.record.service.CreativeWorkService;
+
 import cn.dev33.satoken.stp.StpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,6 +56,9 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
     private final RecordImageService images;
 
     @Autowired
+    private CreativeWorkService works;
+
+    @Autowired
     private DoubanSourceGuard doubanSources;
 
     @Override
@@ -75,6 +80,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         if (StrUtil.isNotBlank(query.getDirector())) {
             IlikeQuery.anyOf(wrapper, query.getDirector(), MovieEntity::getDirector);
         }
+        IMovieMapper.filterRanking(wrapper, query.getRankingListId());
         IMovieMapper.applyPageOrder(wrapper, Boolean.TRUE.equals(query.getInProgressFirst()));
 
         query.validatePagination();
@@ -91,6 +97,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             vo.setId(String.valueOf(entity.getId()));
             return vo;
         }).collect(Collectors.toList());
+        works.fill(DoubanSubjectUrl.MediaType.MOVIE, voList);
         voPage.setRecords(voList);
 
         return voPage;
@@ -100,14 +107,14 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
     @Transactional(rollbackFor = Exception.class)
     public Long saveRecord(MovieReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
-        var source = DoubanSourceGuard.optionalSubject(req.getUrl());
+        var source = DoubanSourceGuard.optionalSubject(req.getUrl(), DoubanSubjectUrl.MediaType.MOVIE);
         if (source != null) {
             BaseEntity existing = doubanSources.lockExisting(userId, source);
             if (existing != null) return existing.getId();
             req.setUrl(source.canonicalUrl());
         }
         validateRating(req.getRating());
-        ensureCoverUploaded(req, true);
+        if (source == null) ensureCoverUploaded(req, true);
         MovieEntity entity = new MovieEntity();
         BeanUtil.copyProperties(req, entity);
         entity.setUserId(userId);
@@ -129,7 +136,12 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
     @Transactional(rollbackFor = Exception.class)
     public void updateRecord(MovieReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
-        var source = DoubanSourceGuard.optionalSubject(req.getUrl());
+        MovieEntity entity = this.getById(req.getId());
+        if (entity == null || !entity.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("记录不存在或无权限");
+        }
+        if (req.getUrl() == null) req.setUrl(entity.getUrl());
+        var source = DoubanSourceGuard.optionalSubject(req.getUrl(), DoubanSubjectUrl.MediaType.MOVIE);
         if (source != null) {
             BaseEntity duplicate = doubanSources.lockExisting(userId, source);
             if (duplicate != null && !duplicate.getId().equals(req.getId())) {
@@ -138,11 +150,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             req.setUrl(source.canonicalUrl());
         }
         validateRating(req.getRating());
-        ensureCoverUploaded(req, true);
-        MovieEntity entity = this.getById(req.getId());
-        if (entity == null || !entity.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("记录不存在或无权限");
-        }
+        if (source == null) ensureCoverUploaded(req, true);
 
         BeanUtil.copyProperties(req, entity);
         entity.fillUpdateCommonField(userId);
@@ -192,12 +200,39 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         return parseDouban(url, false);
     }
 
-    private MovieReq parseDouban(String url, boolean uploadCover) {
+    private MovieReq parseDouban(String url, boolean includeCoverPreview) {
         DoubanSubjectUrl.Subject subject = DoubanSubjectUrl.parse(url);
         if (subject.mediaType() != DoubanSubjectUrl.MediaType.MOVIE) {
             throw new IllegalArgumentException("该地址不是豆瓣电影条目地址");
         }
-        url = subject.canonicalUrl();
+        var work = works.resolve(subject, DoubanSubjectUrl.MediaType.MOVIE, StpUtil.getLoginIdAsLong(), target -> {
+            var details = fetchDetails(subject.canonicalUrl());
+            target.setTitle(details.getTitle());
+            target.setDirector(details.getDirector());
+            target.setCastNames(details.getCastNamesJson());
+            if (details.getCoverImgUrl() != null) target.setCoverUrl(details.getCoverImgUrl());
+            Integer total = details.getTotalProgress();
+            if (total != null && total <= 0) total = null;
+            boolean series = Integer.valueOf(2).equals(details.getType());
+            target.setKind(series ? "series" : "film");
+            target.setEpisodeCount(series ? total : null);
+            target.setDurationMinutes(series ? null : total);
+        });
+        var result = new MovieReq();
+        result.setTitle(work.getTitle());
+        result.setUrl(subject.canonicalUrl());
+        result.setDirector(work.getDirector());
+        result.setCoverImgUrl(includeCoverPreview ? works.cachedCoverPath(work) : null);
+        if (includeCoverPreview && result.getCoverImgUrl() == null && work.getCoverUrl() != null) {
+            result.setRetryCoverWorkId(work.getId());
+        }
+        boolean series = "series".equals(work.getKind());
+        result.setType(series ? 2 : 1);
+        result.setTotalProgress(series ? work.getEpisodeCount() : work.getDurationMinutes());
+        return result;
+    }
+
+    private MovieReq fetchDetails(String url) {
         MovieReq res = new MovieReq();
         res.setUrl(url);
         res.setType(1); // 默认为电影
@@ -214,7 +249,6 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
                 }
                 if (apiSuccess && StrUtil.isNotBlank(res.getTitle())) {
                     log.info("Douban Rexxar API parse success: {}", res.getTitle());
-                    if (uploadCover) ensureCoverUploaded(res, false);
                     return res;
                 }
             }
@@ -234,7 +268,9 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
                     .timeout(10000)
                     .get();
 
-            log.info("Douban parse HTML title: {}", doc.title());
+            if (doc.selectFirst("#info, .sub-meta, meta[property=og:type], script[type=application/ld+json]") == null) {
+                throw new IllegalArgumentException("未取得豆瓣影视详情页");
+            }
             
             // 1. 尝试从 JSON-LD 提取信息
             parseFromJsonLd(doc, res);
@@ -248,7 +284,6 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             }
 
             // 4. 下载封面图并上传到 MinIO，解决豆瓣 CDN 防盗链问题
-            if (uploadCover) ensureCoverUploaded(res, false);
 
         } catch (Exception e) {
             log.error("解析豆瓣链接失败: {}", url, e);
@@ -309,6 +344,8 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
                 return false;
             }
 
+            if (!root.hasNonNull("title") || root.path("title").asText().isBlank()) return false;
+            if ("tv".equals(type)) res.setType(2);
             applyRexxarData(root, res);
             return true;
         } catch (Exception e) {
@@ -342,17 +379,28 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
             res.setDirector(root.get("directors").get(0).get("name").asText());
         }
 
+        readCast(root.path("actors"), res);
         // 时长或集数
         if (root.has("episodes_count") && root.get("episodes_count").asInt() > 0) {
             res.setTotalProgress(root.get("episodes_count").asInt());
             res.setType(2); // 电视剧
-        } else if (root.has("durations") && root.get("durations").isArray() && root.get("durations").size() > 0) {
+        } else if (!Integer.valueOf(2).equals(res.getType()) && root.has("durations") && root.get("durations").isArray() && root.get("durations").size() > 0) {
             String durationStr = root.get("durations").get(0).asText();
             Matcher m = Pattern.compile("(\\d+)").matcher(durationStr);
             if (m.find()) {
                 res.setTotalProgress(Integer.parseInt(m.group(1)));
             }
         }
+    }
+
+    private void readCast(JsonNode people, MovieReq result) {
+        if (!people.isArray()) return;
+        var names = new ObjectMapper().createArrayNode();
+        for (var person : people) {
+            String name = person.path("name").asText("").trim();
+            if (!name.isEmpty()) names.add(name);
+        }
+        if (!names.isEmpty()) result.setCastNamesJson(names.toString());
     }
 
     private String firstText(JsonNode... nodes) {
@@ -398,6 +446,8 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         try {
             JsonNode rootNode = new ObjectMapper().readTree(jsonLd.data());
             
+            readCast(rootNode.path("actor"), res);
+            if ("TVSeries".equals(rootNode.path("@type").asText())) res.setType(2);
             if (rootNode.has("name") && StrUtil.isBlank(res.getTitle())) {
                 res.setTitle(rootNode.get("name").asText());
             }
@@ -470,34 +520,20 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
 
         // 获取总集数/时长
         if (res.getTotalProgress() == null || res.getTotalProgress() == 0) {
-            Element runtimeSpan = doc.selectFirst("span[property=v:runtime]");
-            if (runtimeSpan != null) {
-                try {
-                    res.setTotalProgress(Integer.parseInt(runtimeSpan.attr("content")));
-                } catch (NumberFormatException ignored) {}
-            } else {
-                Element episodesSpan = doc.selectFirst("#info span.pl:contains(集数)");
-                if (episodesSpan != null && episodesSpan.nextSibling() != null) {
-                    try {
-                        res.setTotalProgress(Integer.parseInt(episodesSpan.nextSibling().toString().trim()));
-                    } catch (NumberFormatException ignored) {}
-                } else {
-                    // 移动端兜底获取时长
-                    Element subMeta = doc.selectFirst(".sub-meta");
-                    if (subMeta != null) {
-                        String metaText = subMeta.text();
-                        Matcher m = Pattern.compile("片长(\\d+)分钟").matcher(metaText);
-                        if (m.find()) {
-                            res.setTotalProgress(Integer.parseInt(m.group(1)));
-                        } else {
-                            // 匹配集数
-                            m = Pattern.compile("(\\d+)集").matcher(metaText);
-                            if (m.find()) {
-                                res.setTotalProgress(Integer.parseInt(m.group(1)));
-                            }
-                        }
-                    }
-                }
+            Element episodes = doc.selectFirst("#info span.pl:contains(集数)");
+            Element meta = doc.selectFirst(".sub-meta");
+            String summary = meta == null ? "" : meta.text();
+            Matcher count = Pattern.compile("(\\d+)集").matcher(summary);
+            if (episodes != null || count.find()) {
+                res.setType(2);
+                String value = episodes == null ? count.group(1)
+                        : episodes.nextSibling() == null ? "" : episodes.nextSibling().toString().trim();
+                if (value.matches("[0-9]{1,8}")) res.setTotalProgress(Integer.parseInt(value));
+            } else if (!Integer.valueOf(2).equals(res.getType())) {
+                Element runtime = doc.selectFirst("span[property=v:runtime]");
+                Matcher minutes = Pattern.compile("片长(\\d+)分钟").matcher(summary);
+                String value = runtime == null ? (minutes.find() ? minutes.group(1) : "") : runtime.attr("content");
+                if (value.matches("[0-9]{1,8}")) res.setTotalProgress(Integer.parseInt(value));
             }
         }
     }
@@ -513,12 +549,14 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         
         List<MovieEntity> entities = this.list(wrapper);
         images.fill(userId, AttachmentBizType.MOVIE, entities, MovieEntity::getId, MovieEntity::setFileId);
-        return entities.stream().map(entity -> {
+        List<MovieVO> result = entities.stream().map(entity -> {
             MovieVO vo = new MovieVO();
             BeanUtil.copyProperties(entity, vo);
             vo.setId(String.valueOf(entity.getId()));
             return vo;
         }).collect(Collectors.toList());
+        works.fill(DoubanSubjectUrl.MediaType.MOVIE, result);
+        return result;
     }
 
     @Override
@@ -533,6 +571,7 @@ public class MovieServiceImpl extends ServiceImpl<IMovieMapper, MovieEntity> imp
         MovieVO vo = new MovieVO();
         BeanUtil.copyProperties(entity, vo);
         vo.setId(String.valueOf(entity.getId()));
+        works.fill(DoubanSubjectUrl.MediaType.MOVIE, List.of(vo));
         return vo;
     }
 }

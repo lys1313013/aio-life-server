@@ -13,6 +13,7 @@ import java.util.List;
 @Data
 public class MovieQuery implements PaginationRequest {
     private String title;
+    private Long rankingListId;
     private String director;
     private Integer type;
     @Schema(description = "状态集合，重复键传递；省略或空集合表示全部状态。首页使用 not_started 与 in_progress。")

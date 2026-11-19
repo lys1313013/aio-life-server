@@ -7,6 +7,21 @@ import top.aiolife.record.pojo.entity.ExternalResourceEntity;
 
 @Mapper
 public interface ExternalResourceMapper extends BaseMapper<ExternalResourceEntity> {
+    @Select("""
+        <script>
+        SELECT k.work_id FROM (VALUES
+          <foreach collection="keys" index="id" item="key" separator=",">
+            (CAST(#{id} AS bigint), CAST(#{key.platform} AS text), CAST(#{key.resourceType} AS text),
+             CAST(#{key.externalKey} AS text), CAST(#{key.variant} AS text))
+          </foreach>
+        ) AS k(work_id,platform,resource_type,external_key,variant)
+        JOIN external_resource r USING(platform,resource_type,external_key,variant)
+        JOIN storage_object o ON o.id=r.storage_object_id AND o.is_deleted=0
+        WHERE r.state='READY' AND r.is_deleted=0
+        </script>
+        """)
+    List<Long> readyWorks(@Param("keys") java.util.Map<Long, ExternalResourceEntity> keys);
+
     @Insert("""
         INSERT INTO external_resource(id,platform,resource_type,external_key,variant,source_url,state,attempts,
           create_user,update_user,create_time,update_time,is_deleted)

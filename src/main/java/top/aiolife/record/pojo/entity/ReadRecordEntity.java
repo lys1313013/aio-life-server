@@ -1,8 +1,10 @@
 package top.aiolife.record.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDate;
 import lombok.Getter;
@@ -17,14 +19,22 @@ import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 @TableName("read_record")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ReadRecordEntity extends BaseEntity {
-
     private String title;
 
     private Integer type;
 
     private String author;
 
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String url;
+
+    @JsonIgnore
+    @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
+    private String platform;
+
+    @JsonIgnore
+    @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
+    private String externalKey;
 
     /**
      * 图片文件ID

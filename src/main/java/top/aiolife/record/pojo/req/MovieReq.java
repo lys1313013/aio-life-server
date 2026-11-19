@@ -17,7 +17,11 @@ import java.time.LocalDate;
 public class MovieReq {
     private Long id;
     private String title;
+    @JsonIgnore
+    private Long retryCoverWorkId;
     private Integer type;
+    @JsonIgnore
+    private String castNamesJson;
     private String director;
     private String url;
     @Pattern(regexp = AttachmentKey.PATTERN)

@@ -1,5 +1,7 @@
 package top.aiolife.record.service.impl;
 
+import top.aiolife.record.service.CreativeWorkService;
+
 import cn.dev33.satoken.stp.StpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +48,9 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
     private final RecordImageService images;
 
     @Autowired
+    private CreativeWorkService works;
+
+    @Autowired
     private DoubanSourceGuard doubanSources;
 
     @Override
@@ -64,6 +69,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
             wrapper.and(condition -> IlikeQuery.anyOf(condition, query.getTitle(),
                     ReadRecordEntity::getTitle, ReadRecordEntity::getAuthor));
         }
+        ReadRecordMapper.filterRanking(wrapper, query.getRankingListId());
         ReadRecordMapper.applyPageOrder(wrapper, Boolean.TRUE.equals(query.getInProgressFirst()));
 
         query.validatePagination();
@@ -80,6 +86,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
             vo.setId(String.valueOf(entity.getId()));
             return vo;
         }).collect(Collectors.toList());
+        works.fill(DoubanSubjectUrl.MediaType.BOOK, voList);
         voPage.setRecords(voList);
 
         return voPage;
@@ -89,13 +96,13 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
     @Transactional(rollbackFor = Exception.class)
     public Long saveRecord(ReadRecordReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
-        var source = DoubanSourceGuard.optionalSubject(req.getUrl());
+        var source = DoubanSourceGuard.optionalSubject(req.getUrl(), DoubanSubjectUrl.MediaType.BOOK);
         if (source != null) {
             BaseEntity existing = doubanSources.lockExisting(userId, source);
             if (existing != null) return existing.getId();
             req.setUrl(source.canonicalUrl());
         }
-        ensureCoverUploaded(req, true);
+        if (source == null) ensureCoverUploaded(req, true);
         ReadRecordEntity entity = new ReadRecordEntity();
         BeanUtil.copyProperties(req, entity);
         entity.setUserId(userId);
@@ -117,7 +124,12 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
     @Transactional(rollbackFor = Exception.class)
     public void updateRecord(ReadRecordReq req) {
         Long userId = StpUtil.getLoginIdAsLong();
-        var source = DoubanSourceGuard.optionalSubject(req.getUrl());
+        ReadRecordEntity entity = this.getById(req.getId());
+        if (entity == null || !entity.getUserId().equals(userId)) {
+            throw new IllegalArgumentException("记录不存在或无权限");
+        }
+        if (req.getUrl() == null) req.setUrl(entity.getUrl());
+        var source = DoubanSourceGuard.optionalSubject(req.getUrl(), DoubanSubjectUrl.MediaType.BOOK);
         if (source != null) {
             BaseEntity duplicate = doubanSources.lockExisting(userId, source);
             if (duplicate != null && !duplicate.getId().equals(req.getId())) {
@@ -125,11 +137,8 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
             }
             req.setUrl(source.canonicalUrl());
         }
-        ensureCoverUploaded(req, true);
-        ReadRecordEntity entity = this.getById(req.getId());
-        if (entity == null || !entity.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("记录不存在或无权限");
-        }
+        if (source == null) ensureCoverUploaded(req, true);
+
         
         BeanUtil.copyProperties(req, entity);
         entity.fillUpdateCommonField(userId);
@@ -166,12 +175,34 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         return parseDouban(url, false);
     }
 
-    private ReadRecordReq parseDouban(String url, boolean uploadCover) {
+    private ReadRecordReq parseDouban(String url, boolean includeCoverPreview) {
         DoubanSubjectUrl.Subject subject = DoubanSubjectUrl.parse(url);
         if (subject.mediaType() != DoubanSubjectUrl.MediaType.BOOK) {
             throw new IllegalArgumentException("该地址不是豆瓣书籍条目地址");
         }
-        url = subject.canonicalUrl();
+        var work = works.resolve(subject, DoubanSubjectUrl.MediaType.BOOK, StpUtil.getLoginIdAsLong(), target -> {
+            var details = fetchDetails(subject.canonicalUrl());
+            target.setTitle(details.getTitle());
+            target.setAuthor(details.getAuthor());
+            if (details.getCoverImgUrl() != null) target.setCoverUrl(details.getCoverImgUrl());
+            Integer total = details.getTotalProgress();
+            if (total != null && total <= 0) total = null;
+            target.setPageCount(total);
+        });
+        var result = new ReadRecordReq();
+        result.setTitle(work.getTitle());
+        result.setUrl(subject.canonicalUrl());
+        result.setAuthor(work.getAuthor());
+        result.setCoverImgUrl(includeCoverPreview ? works.cachedCoverPath(work) : null);
+        if (includeCoverPreview && result.getCoverImgUrl() == null && work.getCoverUrl() != null) {
+            result.setRetryCoverWorkId(work.getId());
+        }
+        result.setType(1);
+        result.setTotalProgress(work.getPageCount());
+        return result;
+    }
+
+    private ReadRecordReq fetchDetails(String url) {
         ReadRecordReq res = new ReadRecordReq();
         res.setUrl(url);
         res.setType(1); // 默认为书籍
@@ -181,6 +212,9 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
                     .timeout(5000)
                     .get();
             
+            if (doc.selectFirst("#info, meta[property=book:author], meta[property=book:isbn]") == null) {
+                throw new IllegalArgumentException("未取得豆瓣图书详情页");
+            }
             // 获取标题
             Element titleElement = doc.selectFirst("meta[property=og:title]");
             if (titleElement != null) {
@@ -228,8 +262,6 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
                 throw new IllegalArgumentException("豆瓣反爬限制或页面结构改变，解析失败，请手动填写");
             }
 
-            // 下载封面图并上传到 MinIO，解决豆瓣 CDN 防盗链问题
-            if (uploadCover) ensureCoverUploaded(res, false);
 
             // 获取作者
             Element authorElement = doc.selectFirst("meta[property=book:author]");
@@ -325,12 +357,14 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         
         List<ReadRecordEntity> entities = this.list(wrapper);
         images.fill(userId, AttachmentBizType.READ_RECORD, entities, ReadRecordEntity::getId, ReadRecordEntity::setFileId);
-        return entities.stream().map(entity -> {
+        List<ReadRecordVO> result = entities.stream().map(entity -> {
             ReadRecordVO vo = new ReadRecordVO();
             BeanUtil.copyProperties(entity, vo);
             vo.setId(String.valueOf(entity.getId()));
             return vo;
         }).collect(Collectors.toList());
+        works.fill(DoubanSubjectUrl.MediaType.BOOK, result);
+        return result;
     }
 
     @Override
@@ -345,6 +379,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         ReadRecordVO vo = new ReadRecordVO();
         BeanUtil.copyProperties(entity, vo);
         vo.setId(String.valueOf(entity.getId()));
+        works.fill(DoubanSubjectUrl.MediaType.BOOK, List.of(vo));
         return vo;
     }
 }

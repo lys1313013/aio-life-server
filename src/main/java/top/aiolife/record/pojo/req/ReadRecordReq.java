@@ -3,6 +3,7 @@ package top.aiolife.record.pojo.req;
 import jakarta.validation.constraints.Pattern;
 import top.aiolife.core.id.AttachmentKey;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import io.swagger.v3.oas.annotations.media.Schema;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
@@ -15,6 +16,8 @@ public class ReadRecordReq {
     private Long id;
     @Schema(description = "书名或文章标题")
     private String title;
+    @JsonIgnore
+    private Long retryCoverWorkId;
     @Schema(description = "阅读类型：1=书籍，2=文章或网页", allowableValues = {"1", "2"})
     private Integer type;
     @Schema(description = "作者")

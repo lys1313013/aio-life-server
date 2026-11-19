@@ -164,6 +164,8 @@ class DoubanMovieImportServiceImplTest {
         entity.setUserId(7L);
         entity.setTitle("已有片名");
         entity.setUrl("https://movie.douban.com/subject/1292052/");
+        entity.setPlatform("douban");
+        entity.setExternalKey("1292052");
         return entity;
     }
 }

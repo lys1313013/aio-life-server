@@ -90,6 +90,7 @@ class CaptureIntegrationTest {
     @Autowired ObjectMapper json;
     @Autowired JdbcTemplate jdbc;
     @Autowired StringRedisTemplate redis;
+    @MockitoBean top.aiolife.record.service.CreativeWorkService works;
     @MockitoBean SecondaryLockGuard locks;
     @MockitoBean UserDictDataService dictionaries;
     @MockitoBean IReadRecordService readService;

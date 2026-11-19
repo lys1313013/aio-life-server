@@ -26,17 +26,21 @@ public class DoubanSourceGuard {
     private final IMovieMapper movies;
     private final ReadRecordMapper reads;
 
-    public static DoubanSubjectUrl.Subject optionalSubject(String url) {
+    public static DoubanSubjectUrl.Subject optionalSubject(String url, DoubanSubjectUrl.MediaType expected) {
         if (url == null || url.isBlank()) return null;
+        DoubanSubjectUrl.Subject subject;
         try {
-            return DoubanSubjectUrl.parse(url);
+            subject = DoubanSubjectUrl.parse(url);
         } catch (IllegalArgumentException e) {
             return null;
         }
+        if (subject.mediaType() != expected) throw new IllegalArgumentException("条目与记录类型不一致");
+        if (subject.subjectId().length() > 255) throw new IllegalArgumentException("外部条目ID过长");
+        return subject;
     }
 
     public BaseEntity lockExisting(long user, DoubanSubjectUrl.Subject s) {
-        // 复用现有用户行锁串行化该用户的书影写入，不增加表、字段或来源持久化。
+        // 复用现有用户行锁串行化同一用户的书影写入。
         if (users.selectForAuthUpdate(user) == null) throw CaptureValues.missing();
         return find(user, s, true);
     }
@@ -44,39 +48,17 @@ public class DoubanSourceGuard {
     public BaseEntity find(long user, DoubanSubjectUrl.Subject s, boolean lock) {
         List<? extends BaseEntity> matches;
         if (s.mediaType() == DoubanSubjectUrl.MediaType.BOOK) {
-            List<ReadRecordEntity> candidates =
-                    lock
-                            ? reads.captureLockSubjects(user, s.subjectId())
-                            : reads.selectList(
-                                    new LambdaQueryWrapper<ReadRecordEntity>()
-                                            .eq(ReadRecordEntity::getUserId, user)
-                                            .like(
-                                                    ReadRecordEntity::getUrl,
-                                                    "/subject/" + s.subjectId()));
-            matches =
-                    candidates.stream()
-                            .filter(
-                                    e ->
-                                            DoubanSubjectUrl.matches(
-                                                    e.getUrl(), s.mediaType(), s.subjectId()))
-                            .toList();
+            matches = lock ? reads.captureLockSubjects(user, s.subjectId())
+                    : reads.selectList(new LambdaQueryWrapper<ReadRecordEntity>()
+                            .eq(ReadRecordEntity::getUserId, user)
+                            .eq(ReadRecordEntity::getPlatform, "douban")
+                            .eq(ReadRecordEntity::getExternalKey, s.subjectId()));
         } else {
-            List<MovieEntity> candidates =
-                    lock
-                            ? movies.captureLockSubjects(user, s.subjectId())
-                            : movies.selectList(
-                                    new LambdaQueryWrapper<MovieEntity>()
-                                            .eq(MovieEntity::getUserId, user)
-                                            .like(
-                                                    MovieEntity::getUrl,
-                                                    "/subject/" + s.subjectId()));
-            matches =
-                    candidates.stream()
-                            .filter(
-                                    e ->
-                                            DoubanSubjectUrl.matches(
-                                                    e.getUrl(), s.mediaType(), s.subjectId()))
-                            .toList();
+            matches = lock ? movies.captureLockSubjects(user, s.subjectId())
+                    : movies.selectList(new LambdaQueryWrapper<MovieEntity>()
+                            .eq(MovieEntity::getUserId, user)
+                            .eq(MovieEntity::getPlatform, "douban")
+                            .eq(MovieEntity::getExternalKey, s.subjectId()));
         }
         if (matches.size() > 1) throw conflict("该豆瓣条目已有多条历史记录，请先在阅读或观影页面处理重复记录");
         return matches.isEmpty() ? null : matches.getFirst();
