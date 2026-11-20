@@ -257,7 +257,7 @@ Mockito 通过 Maven Surefire 在测试 JVM 启动时加载代理；`maven-depen
 
 ## 数据库初始化与增量升级
 
-仅支持 PostgreSQL 18+，不维护旧数据库运行兼容。`sql/migrations/` 是唯一当前 Flyway 发现目录；初始结构为 `V20261110_01__postgresql_schema.sql`（68 张业务表），公共种子按用途拆为 `V20261110_02_001` 至 `V20261110_02_011`，目录及顺序见 `sql/README.md`。旧库结构、数据及历史修正 SQL 均不保留在工作树中，原文件仅通过 Git 历史追溯；当前 SQL 只维护 PostgreSQL。日常不改写已执行的 PostgreSQL 迁移，新结构或数据变更新增更高版本 `V`。
+仅支持 PostgreSQL 18+。 `sql/migrations/` 是唯一 Flyway 发现目录。初始脚本 `V20261110_01__postgresql_schema.sql` 定义截至 `20261120.01` 的 74 张表，公共种子按用途管理，见 [SQL 入口](sql/README.md)。2026-11-20 的一次性整理及已有库登记见[数据库初始化与验证](docs/数据库初始化与验证.md#已有库升级与登记)。日常结构或种子变更新增高于 `20261120.01` 的 `V`。
 
 通过 `mvn -f tools/flyway/pom.xml compile flyway:migrate flyway:validate` 独立迁移，使用 `FLYWAY_URL`、`FLYWAY_USER`、`FLYWAY_PASSWORD`；应用启动不迁移。新增更高版本 V，不能自动 baseline、清库或跳过失败。未知非空结构先只读预检，显式 baseline 必须提供匹配的 v6 PostgreSQL `schema.contract`。
 

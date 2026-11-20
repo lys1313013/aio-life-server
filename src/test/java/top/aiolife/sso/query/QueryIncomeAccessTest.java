@@ -22,15 +22,15 @@ class QueryIncomeAccessTest {
         var service = new QueryAccessService(props, mock(QueryGrantStore.class), accounts, locks, keys);
         var decision = service.checkToken(props.getServiceKey(), 101L, "ak-fixture", true, "income_month");
         assertEquals("ai_income_reader", decision.role()); assertTrue(decision.scopes().contains("income.read"));
-        verify(locks).checkMenus(101L, "/mcp/tools", "/finance/income");
-        verify(locks).checkMenus(101L, "/query/workbench", "/query/models");
+        verify(locks).checkMenusForSession(101L, null, "/mcp/tools", "/finance/income");
+        verify(locks).checkMenusForSession(101L, null, "/query/workbench", "/query/models");
         key.setUserId(102L);
         assertThrows(RuntimeException.class, () -> service.checkToken(props.getServiceKey(), 101L, "ak-fixture", true, "income_month"));
         key.setUserId(101L);
-        doThrow(new IllegalArgumentException("locked")).when(locks).checkMenus(101L, "/mcp/tools", "/finance/income");
+        doThrow(new IllegalArgumentException("locked")).when(locks).checkMenusForSession(101L, null, "/mcp/tools", "/finance/income");
         assertThrows(IllegalArgumentException.class, () -> service.checkToken(props.getServiceKey(), 101L, "ak-fixture", true, "income_month"));
         reset(locks);
-        doThrow(new IllegalArgumentException("workspace locked")).when(locks).checkMenus(101L, "/query/workbench", "/query/models");
+        doThrow(new IllegalArgumentException("workspace locked")).when(locks).checkMenusForSession(101L, null, "/query/workbench", "/query/models");
         assertThrows(IllegalArgumentException.class, () -> service.checkToken(props.getServiceKey(), 101L, "ak-fixture", true, "catalog"));
         assertThrows(IllegalArgumentException.class, () -> service.checkToken(props.getServiceKey(), 101L, "ak-fixture", true, "income_month"));
     }

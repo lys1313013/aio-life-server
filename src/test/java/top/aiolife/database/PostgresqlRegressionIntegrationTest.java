@@ -107,6 +107,7 @@ import top.aiolife.sso.mapper.LoginLogMapper;
 import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
+import top.aiolife.sso.service.AuthAttemptStore;
 import top.aiolife.sso.service.LoginSessionService;
 import top.aiolife.sso.service.SecondaryLockMenuResolver;
 import top.aiolife.sso.service.UserAvatarFileService;
@@ -498,7 +499,7 @@ class PostgresqlRegressionIntegrationTest {
     @Test void 修改资料都会更新审计时间且不覆盖创建时间() {
         var users = new UserServiceImpl(mapper(UserMapper.class), mock(ApiKeyMapper.class), mock(LoginSessionService.class),
                 mock(LoginLogMapper.class), mock(IMailService.class), mock(RedisUtil.class), mock(UserSecondaryLockMenuMapper.class),
-                mock(SecondaryLockMenuResolver.class), mock(UserAvatarFileService.class));
+                mock(SecondaryLockMenuResolver.class), mock(UserAvatarFileService.class), mock(AuthAttemptStore.class));
         var change = new UserEntity(); change.setId(42L); change.setNickname("after"); change.setUpdateUser(99L);
         var created = mapper(UserMapper.class).selectById(42).getCreateTime();
         users.updateUser(change, null, false);

@@ -127,9 +127,9 @@ public interface IUserService {
     void setSecondaryPassword(long userId, String password, String oldPassword);
 
     /**
-     * 验证二级密码，返回解锁 key
+     * 验证二级密码并为当前登录会话解锁菜单。
      */
-    String verifySecondaryPassword(long userId, String password, String menuPath);
+    void verifySecondaryPassword(long userId, String password, String menuPath);
 
     /**
      * 获取用户锁定的菜单 ID 列表

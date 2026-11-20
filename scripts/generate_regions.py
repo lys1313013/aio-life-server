@@ -20,7 +20,8 @@ def main():
     codes = set()
     counts = [0, 0, 0, 0]
 
-    def walk(items, parent="0", level=1):
+    def walk(items, parent=None, level=1):
+        parent_code = "NULL" if parent is None else f"'{parent}'"
         for item in items:
             code = item["code"]
             if not code.isdigit() or len(code) > 12 or code in codes or level > 4:
@@ -28,7 +29,7 @@ def main():
             codes.add(code)
             counts[level - 1] += 1
             name = item["name"].replace("'", "''")
-            rows.append(f"({900000000000000000 + int(code)},'{code}','{parent}','{name}',{level},'NBS-2023',0)")
+            rows.append(f"({900000000000000000 + int(code)},'{code}',{parent_code},'{name}',{level},'NBS-2023',0)")
             if item.get("children"):
                 walk(item["children"], code, level + 1)
 

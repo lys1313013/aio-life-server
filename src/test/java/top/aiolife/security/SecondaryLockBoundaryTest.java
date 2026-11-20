@@ -18,6 +18,7 @@ import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
 import top.aiolife.sso.pojo.entity.UserSecondaryLockMenuEntity;
 import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.sso.util.RequestLoginContext;
+import top.aiolife.sso.util.SecondaryLockSession;
 import top.aiolife.system.mapper.ISysMenuMapper;
 import top.aiolife.system.pojo.entity.SysMenuEntity;
 
@@ -97,13 +98,14 @@ class SecondaryLockBoundaryTest {
             var resolver = new SecondaryLockMenuResolver(locks, new MenuAccessReader(menus));
             var redis = mock(RedisUtil.class);
             var interceptor = new SecondaryLockInterceptor(resolver, redis, new ObjectMapper());
-            try (var identity = mockStatic(RequestLoginContext.class)) {
+            try (var identity = mockStatic(RequestLoginContext.class); var session = mockStatic(StpUtil.class)) {
+                session.when(StpUtil::getTokenValue).thenReturn("session-a");
                 identity.when(RequestLoginContext::userIdOrNull).thenReturn(11L);
                 var response = new MockHttpServletResponse();
                 assertFalse(interceptor.preHandle(new MockHttpServletRequest("PUT", route.getKey()), response, new Object()));
                 assertTrue(response.getContentAsString().contains("2001"));
                 assertTrue(response.getContentAsString().contains(route.getValue()));
-                when(redis.hasKey("secondary:unlock:11:" + route.getValue())).thenReturn(true);
+                when(redis.hasKey(SecondaryLockSession.unlockKey(11L, SecondaryLockSession.hash("session-a"), route.getValue()))).thenReturn(true);
                 assertTrue(interceptor.preHandle(new MockHttpServletRequest("PUT", route.getKey()),
                         new MockHttpServletResponse(), new Object()));
             }
@@ -111,7 +113,7 @@ class SecondaryLockBoundaryTest {
     }
 
     @Test
-    void parentAndLeafLocks_useDatabaseHierarchyAndOriginalUnlockKeys() {
+    void parentAndLeafLocks_useDatabaseHierarchyAndSessionUnlockKeys() {
         var locks = mock(UserSecondaryLockMenuMapper.class); var menus = mock(ISysMenuMapper.class);
         var parent = new UserSecondaryLockMenuEntity(); parent.setMenuId(1L);
         var child = new UserSecondaryLockMenuEntity(); child.setMenuId(2L);
@@ -122,11 +124,12 @@ class SecondaryLockBoundaryTest {
         assertEquals(Set.of("/record", "/my-hub/honor"), resolver.findMatchedPaths(11L, "/honorRecords/7"));
         assertEquals(Set.of("/record", "/my-hub/honor"), resolver.findLockedMenus(11L, Set.of("/my-hub/honor")));
         var redis = mock(RedisUtil.class);
-        when(redis.hasKey("secondary:unlock:11:/record")).thenReturn(true);
+        String hash = SecondaryLockSession.hash("session-a");
+        when(redis.hasKey(SecondaryLockSession.unlockKey(11L, hash, "/record"))).thenReturn(true);
         var guard = new SecondaryLockGuard(resolver, redis);
-        assertThrows(SecondaryLockRequiredException.class, () -> guard.checkMenus(11L, "/my-hub/honor"));
-        when(redis.hasKey("secondary:unlock:11:/my-hub/honor")).thenReturn(true);
-        assertDoesNotThrow(() -> guard.checkMenus(11L, "/my-hub/honor"));
+        assertThrows(SecondaryLockRequiredException.class, () -> guard.checkMenusForSession(11L, hash, "/my-hub/honor"));
+        when(redis.hasKey(SecondaryLockSession.unlockKey(11L, hash, "/my-hub/honor"))).thenReturn(true);
+        assertDoesNotThrow(() -> guard.checkMenusForSession(11L, hash, "/my-hub/honor"));
     }
 
     @Test
@@ -135,7 +138,8 @@ class SecondaryLockBoundaryTest {
             var resolver = mock(SecondaryLockMenuResolver.class); var redis = mock(RedisUtil.class);
             when(resolver.findMatchedPaths(11L, "/tasks")).thenReturn(Set.of("/task/todo"));
             var interceptor = new SecondaryLockInterceptor(resolver, redis, new ObjectMapper());
-            try (var identity = mockStatic(RequestLoginContext.class)) {
+            try (var identity = mockStatic(RequestLoginContext.class); var session = mockStatic(StpUtil.class)) {
+                session.when(StpUtil::getTokenValue).thenReturn("session-a");
                 identity.when(RequestLoginContext::userIdOrNull).thenReturn(11L);
                 var response = new MockHttpServletResponse();
                 assertFalse(interceptor.preHandle(new MockHttpServletRequest("GET", uri), response, new Object()));
@@ -153,7 +157,7 @@ class SecondaryLockBoundaryTest {
         var target = new DummyTool();
         var tool = new McpToolRegistry.RegisteredMcpTool("task_list", "dummy", target,
                 DummyTool.class.getMethod("run"), null, null, null);
-        var result = invoker.invoke(tool, Map.of(), null, null);
+        var result = invoker.invoke(tool, Map.of(), null, null, null);
         assertTrue(result.isError()); assertFalse(target.called);
         verify(guard).checkTool("task_list");
     }

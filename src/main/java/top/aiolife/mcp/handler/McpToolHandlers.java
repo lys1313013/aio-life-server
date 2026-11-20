@@ -34,9 +34,10 @@ public class McpToolHandlers {
                         .tool(tool.mcpTool())
                         .callHandler((exchange, request) -> {
                             Object loginId = currentLoginId(exchange);
+                            String sessionHash = (String) exchange.transportContext().get(McpServerConfig.SESSION_HASH_CONTEXT_KEY);
                             RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
                             log.info("[MCP] 用户 {} 调用工具 {}", loginId == null ? "unknown" : loginId, tool.name());
-                            return toolInvoker.invoke(tool, request.arguments(), loginId, requestAttributes);
+                            return toolInvoker.invoke(tool, request.arguments(), loginId, sessionHash, requestAttributes);
                         })
                         .build())
                 .toList();

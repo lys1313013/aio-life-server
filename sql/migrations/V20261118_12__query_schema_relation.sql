@@ -1,63 +1,9 @@
--- 目的：保存数据库关系图谱的逻辑关系，并加入 Web 管理员菜单。
--- 前置：PostgreSQL 18+，已执行此前 Flyway 迁移。
--- 影响：新增元数据表与初始关系，不读写业务记录。
--- 重跑：由 Flyway 版本历史控制；失败时由事务回滚。
--- 执行：mvn -f tools/flyway/pom.xml compile flyway:migrate flyway:validate。
+-- 目的：初始化数据库图谱关系。
+-- 前置：PostgreSQL 18+，基线表结构已创建。
+-- 影响：写入公共种子。来源为 V20261118_12 的逻辑关系配置。
+-- 重跑：由 Flyway 基线事务管理，失败整体回滚。
+-- 执行：mvn -f tools/flyway/pom.xml compile flyway:migrate
 
-CREATE TABLE query_schema_relation (
-    id bigint PRIMARY KEY,
-    source_table varchar(63) COLLATE "C" NOT NULL,
-    target_table varchar(63) COLLATE "C" NOT NULL,
-    relation_key varchar(120) COLLATE "C" NOT NULL,
-    display_name varchar(120) NOT NULL,
-    relation_kind varchar(16) COLLATE "C" NOT NULL,
-    cardinality varchar(16) COLLATE "C" NOT NULL,
-    column_mapping jsonb NOT NULL,
-    conditions jsonb NOT NULL DEFAULT '[]'::jsonb,
-    description varchar(800) NOT NULL DEFAULT '',
-    create_user bigint,
-    create_time timestamp(0) without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_user bigint,
-    update_time timestamp(0) without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    is_deleted smallint NOT NULL DEFAULT 0,
-    CONSTRAINT ck_query_schema_relation_kind CHECK (
-        relation_kind IN ('reference', 'owner', 'polymorphic', 'hierarchy', 'dictionary', 'scoped')
-    ),
-    CONSTRAINT ck_query_schema_relation_cardinality CHECK (
-        cardinality ~ '^(1|0[.][.]1|N|0[.][.]N):(1|0[.][.]1|N|0[.][.]N)$'
-    ),
-    CONSTRAINT ck_query_schema_relation_mapping CHECK (
-        jsonb_typeof(column_mapping) = 'array' AND column_mapping <> '[]'::jsonb
-    ),
-    CONSTRAINT ck_query_schema_relation_conditions CHECK (jsonb_typeof(conditions) = 'array'),
-    CONSTRAINT ck_query_schema_relation_is_deleted CHECK (is_deleted IN (0, 1))
-);
-
-CREATE UNIQUE INDEX uk_query_schema_relation_source_key ON query_schema_relation (source_table, relation_key)
-    WHERE is_deleted = 0;
-
-COMMENT ON TABLE query_schema_relation IS '数据库图谱的逻辑表关系配置';
-COMMENT ON COLUMN query_schema_relation.id IS '逻辑关系ID，由应用生成雪花ID';
-COMMENT ON COLUMN query_schema_relation.source_table IS 'public 下的来源物理表名';
-COMMENT ON COLUMN query_schema_relation.target_table IS 'public 下的目标物理表名';
-COMMENT ON COLUMN query_schema_relation.relation_key IS '来源表内稳定的关系标识';
-COMMENT ON COLUMN query_schema_relation.display_name IS '页面显示的关系名称';
-COMMENT ON COLUMN query_schema_relation.relation_kind IS '关系类型：reference 普通引用，owner 用户归属，polymorphic 多态，hierarchy 树形，dictionary 字典，scoped 按范围匹配';
-COMMENT ON COLUMN query_schema_relation.cardinality IS '来源到目标基数，格式为来源:目标，例如 N:0..1';
-COMMENT ON COLUMN query_schema_relation.column_mapping IS '等值字段映射数组，每项含 sourceColumn 和 targetColumn';
-COMMENT ON COLUMN query_schema_relation.conditions IS '匹配条件数组，每项含 side、column、operator 及可选 value，条件之间为且';
-COMMENT ON COLUMN query_schema_relation.description IS '关系含义及补充业务规则';
-COMMENT ON COLUMN query_schema_relation.create_user IS '创建人用户ID，系统初始关系为空';
-COMMENT ON COLUMN query_schema_relation.create_time IS '创建时间';
-COMMENT ON COLUMN query_schema_relation.update_user IS '最后更新人用户ID，系统初始关系为空';
-COMMENT ON COLUMN query_schema_relation.update_time IS '最后更新时间';
-COMMENT ON COLUMN query_schema_relation.is_deleted IS '逻辑删除标记：0 有效，1 删除';
-
-INSERT INTO sys_menu (id, parent_id, name, path, component, meta, roles, sort_order, visible_clients)
-VALUES (2307, 2300, 'QuerySchema', '/query/schema', 'data-query/schema/index',
-        '{"icon":"lucide:network","title":"数据库关系图谱","authority":["admin"],"keepAlive":false}', 'admin', 4, 1);
-
--- 数据来源：数据库结构注释和业务代码。条件属于图谱元数据。
 INSERT INTO query_schema_relation
     (id, source_table, target_table, relation_key, display_name, relation_kind, cardinality,
      column_mapping, conditions, description)

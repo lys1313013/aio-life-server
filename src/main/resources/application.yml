@@ -1,5 +1,9 @@
 server:
   port: 45678
+  forward-headers-strategy: ${AIO_LIFE_FORWARD_HEADERS_STRATEGY:NONE}
+  tomcat:
+    remoteip:
+      internal-proxies: '${AIO_LIFE_TRUSTED_PROXY_REGEX:(?!)}'
   servlet:
     context-path: /api # 固定前缀
 
@@ -190,11 +194,19 @@ aio:
       # 仅首次初始化定时任务时读取；已有任务请在 Web 系统管理 → 定时任务中修改。
       leetcode-corn: 0 30 23 * * ?
       auth:
+        login:
+          ip-limit: 60
+          ip-window-seconds: 60
+          account-ip-limit: 5
+          account-ip-window-seconds: 600
+          account-limit: 20
+          account-window-seconds: 900
         code:
           interval-seconds: 180 # 验证码发送间隔（秒），默认3分钟
           ip-limit-day: 100 # 单IP单日发送限制次数
           email-limit-day: 20 # 单邮箱单日发送限制次数
           total-limit-day: 1000 # 全局单日总发送限制次数
+          zone: ${AIO_LIFE_AUTH_CODE_ZONE:Asia/Shanghai}
       minio:
         endpoint: ${AIO_LIFE_MINIO_ENDPOINT:http://localhost:1300}
         access-key: ${AIO_LIFE_MINIO_ACCESS_KEY:aio_life}

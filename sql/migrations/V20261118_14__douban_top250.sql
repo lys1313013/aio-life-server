@@ -1,8 +1,8 @@
 -- 目的：导入 2026-11-18 采集的豆瓣电影及读书 Top 250 完整快照。
 -- 来源：https://movie.douban.com/top250 和 https://book.douban.com/top250，各十页。
 -- 前置：PostgreSQL 18+，作品与榜单表已建立。
--- 影响：更新两个滚动榜及已有记录关联，不修改个人资料或已解析的作品详情。
--- 重跑：按外部身份和榜单期次合并；后续刷新生成新版本。
+-- 影响：初始化两个公共榜单及其作品。
+-- 重跑：由 Flyway 基线事务管理，失败整体回滚。
 -- 执行：通过独立 Flyway migrate 执行，整份快照在同一事务提交。
 CREATE TEMP TABLE douban_snapshot (
   media text NOT NULL CHECK (media IN ('movie','book')),
@@ -524,43 +524,18 @@ BEGIN
 END $$;
 
 INSERT INTO ranking_list (id, publisher_code, list_key, edition_key, name, source_url, last_sync_time)
-VALUES (24001,'douban','movie_top250','current','豆瓣电影Top250','https://movie.douban.com/top250',CURRENT_TIMESTAMP),
-       (24002,'douban','book_top250','current','豆瓣读书Top250','https://book.douban.com/top250',CURRENT_TIMESTAMP)
-ON CONFLICT (publisher_code, list_key, edition_key) DO UPDATE
-SET last_sync_time = EXCLUDED.last_sync_time, is_deleted = 0, update_time = CURRENT_TIMESTAMP;
+VALUES
+  (24001, 'douban', 'movie_top250', 'current', '豆瓣电影Top250', 'https://movie.douban.com/top250', CURRENT_TIMESTAMP),
+  (24002, 'douban', 'book_top250', 'current', '豆瓣读书Top250', 'https://book.douban.com/top250', CURRENT_TIMESTAMP);
 
 INSERT INTO creative_work (id, platform, resource_type, external_key, kind, title, cover_url)
-SELECT (CASE media WHEN 'book' THEN 242000000000000000 ELSE 241000000000000000 END) + subject::bigint,
+SELECT (CASE media WHEN 'book' THEN 242000000000000000 ELSE 241000000000000000 END) + subject::BIGINT,
        'douban', media || '_subject', subject, CASE media WHEN 'book' THEN 'book' ELSE 'film' END, title, cover
-FROM douban_snapshot
-ON CONFLICT (platform,resource_type,external_key) WHERE external_key IS NOT NULL DO UPDATE
-SET title = CASE WHEN creative_work.metadata_ready_time IS NULL THEN EXCLUDED.title ELSE creative_work.title END,
-    cover_url = CASE WHEN creative_work.metadata_ready_time IS NULL THEN EXCLUDED.cover_url ELSE creative_work.cover_url END,
-    is_deleted = 0, update_time = CURRENT_TIMESTAMP;
+FROM douban_snapshot;
 
-UPDATE ranking_list_item i SET is_deleted = 1, update_time = CURRENT_TIMESTAMP
-FROM ranking_list l
-WHERE l.id = i.ranking_list_id AND l.publisher_code = 'douban' AND l.edition_key = 'current'
-  AND l.list_key IN ('book_top250','movie_top250') AND i.is_deleted = 0
-  AND NOT EXISTS (SELECT 1 FROM douban_snapshot s JOIN creative_work w
-    ON w.platform = 'douban' AND w.resource_type = s.media || '_subject' AND w.external_key = s.subject
-    WHERE s.media || '_top250' = l.list_key AND w.id = i.creative_work_id);
-
-INSERT INTO ranking_list_item (id,ranking_list_id,creative_work_id,rank,sort_order)
-SELECT (CASE s.media WHEN 'book' THEN 244000000000000000 ELSE 243000000000000000 END) + s.subject::bigint,
-       l.id, w.id, s.rank, s.rank - 1
-FROM douban_snapshot s JOIN creative_work w ON w.platform = 'douban'
-  AND w.resource_type = s.media || '_subject' AND w.external_key = s.subject
-JOIN ranking_list l ON l.publisher_code = 'douban' AND l.list_key = s.media || '_top250' AND l.edition_key = 'current'
-ON CONFLICT (ranking_list_id, creative_work_id) DO UPDATE
-SET rank = EXCLUDED.rank, sort_order = EXCLUDED.sort_order, is_deleted = 0, update_time = CURRENT_TIMESTAMP;
-
-UPDATE movie r SET creative_work_id = w.id FROM creative_work w
-WHERE w.platform = 'douban' AND w.resource_type = 'movie_subject' AND w.is_deleted = 0
-  AND substring(trim(r.url) FROM '(?i)^https?://movie[.]douban[.]com/subject/([0-9]+)/?([?#].*)?$') = w.external_key
-  AND r.creative_work_id IS DISTINCT FROM w.id;
-
-UPDATE read_record r SET creative_work_id = w.id FROM creative_work w
-WHERE w.platform = 'douban' AND w.resource_type = 'book_subject' AND w.is_deleted = 0
-  AND substring(trim(r.url) FROM '(?i)^https?://book[.]douban[.]com/subject/([0-9]+)/?([?#].*)?$') = w.external_key
-  AND r.creative_work_id IS DISTINCT FROM w.id;
+INSERT INTO ranking_list_item (id, ranking_list_id, creative_work_id, rank, sort_order)
+SELECT (CASE media WHEN 'book' THEN 244000000000000000 ELSE 243000000000000000 END) + subject::BIGINT,
+       CASE media WHEN 'book' THEN 24002 ELSE 24001 END,
+       (CASE media WHEN 'book' THEN 242000000000000000 ELSE 241000000000000000 END) + subject::BIGINT,
+       rank, rank - 1
+FROM douban_snapshot;

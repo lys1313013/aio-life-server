@@ -1,7 +1,10 @@
 package top.aiolife.sso.service;
 
+import cn.dev33.satoken.stp.StpUtil;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import top.aiolife.record.service.IMailService;
 import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
@@ -11,6 +14,7 @@ import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.service.impl.UserServiceImpl;
+import top.aiolife.sso.service.AuthAttemptStore.EmailPurpose;
 import top.aiolife.sso.util.PasswordUtil;
 
 import java.util.List;
@@ -24,21 +28,31 @@ class SecondaryPasswordTest {
     private UserMapper mapper;
     private RedisUtil redis;
     private UserServiceImpl service;
+    private AuthAttemptStore authAttempts;
     private UserEntity user;
+    private MockedStatic<StpUtil> session;
 
     @BeforeEach
     void setup() {
+        session = mockStatic(StpUtil.class);
+        session.when(StpUtil::getTokenValue).thenReturn("session-a");
         mapper = mock(UserMapper.class);
         redis = mock(RedisUtil.class);
+        authAttempts = mock(AuthAttemptStore.class);
         var menus = mock(SecondaryLockMenuResolver.class);
         when(menus.findMatchedPaths(1L, "/finance")).thenReturn(Set.of("/finance"));
         service = new UserServiceImpl(mapper, mock(ApiKeyMapper.class), mock(LoginSessionService.class),
                 mock(LoginLogMapper.class), mock(IMailService.class), redis,
-                mock(UserSecondaryLockMenuMapper.class), menus, mock(UserAvatarFileService.class));
+                mock(UserSecondaryLockMenuMapper.class), menus, mock(UserAvatarFileService.class), authAttempts);
         user = new UserEntity();
         user.setId(1L);
         user.setEmail("fixture@example.com");
         when(mapper.selectById(1L)).thenReturn(user);
+    }
+
+    @AfterEach
+    void closeSession() {
+        session.close();
     }
 
     @Test
@@ -48,7 +62,7 @@ class SecondaryPasswordTest {
             assertThrows(IllegalArgumentException.class, () -> service.resetSecondaryPassword(1L, "123456", invalid));
         }
         verify(mapper, never()).updateById(any(UserEntity.class));
-        verifyNoInteractions(redis);
+        verifyNoInteractions(redis, authAttempts);
     }
 
     @Test
@@ -87,11 +101,12 @@ class SecondaryPasswordTest {
 
     @Test
     void 邮箱找回正确验证码才设置数字密码() {
-        when(redis.get("secondary:reset:code:fixture@example.com")).thenReturn("123456");
+        doThrow(new IllegalArgumentException("验证码错误或已过期"))
+                .when(authAttempts).consumeEmailCode(EmailPurpose.RESET_SECONDARY_PASSWORD, "fixture@example.com", "bad");
         assertThrows(RuntimeException.class, () -> service.resetSecondaryPassword(1L, "bad", "0012"));
         verify(mapper, never()).updateById(any(UserEntity.class));
         service.resetSecondaryPassword(1L, "123456", "0012");
         assertTrue(PasswordUtil.matches("0012", user.getSecondaryPassword()));
-        verify(redis).delete("secondary:reset:code:fixture@example.com");
+        verify(authAttempts).consumeEmailCode(EmailPurpose.RESET_SECONDARY_PASSWORD, "fixture@example.com", "123456");
     }
 }

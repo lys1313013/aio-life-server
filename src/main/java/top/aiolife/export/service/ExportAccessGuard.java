@@ -15,8 +15,8 @@ import top.aiolife.core.exception.SecondaryLockRequiredException;
 import top.aiolife.export.dataset.ExportDataset;
 import top.aiolife.export.mapper.ExportSecurityMapper;
 import top.aiolife.core.redis.RedisUtil;
-import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
 import top.aiolife.sso.pojo.entity.UserEntity;
+import top.aiolife.sso.util.SecondaryLockSession;
 import top.aiolife.system.pojo.entity.SysMenuEntity;
 import top.aiolife.system.service.MenuClient;
 
@@ -70,6 +70,11 @@ public class ExportAccessGuard {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public void check(long userId, List<ExportDataset> datasets, boolean requireUnlocked) {
+        check(userId, datasets, requireUnlocked, requireUnlocked ? SecondaryLockSession.currentHash() : null);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public void check(long userId, List<ExportDataset> datasets, boolean requireUnlocked, String sessionHash) {
         UserEntity user = security.user(userId);
         if (user == null) throw ExportException.denied();
         Map<Long, SysMenuEntity> menus =
@@ -104,7 +109,7 @@ public class ExportAccessGuard {
                                                     || accessible(m, menus, roles, true))
                             .findFirst()
                             .orElseThrow(ExportException::denied);
-            if (requireUnlocked) checkLocks(match, menus, locked, userId);
+            if (requireUnlocked) checkLocks(match, menus, locked, userId, sessionHash);
         }
     }
 
@@ -128,13 +133,13 @@ public class ExportAccessGuard {
     }
 
     private void checkLocks(
-            SysMenuEntity leaf, Map<Long, SysMenuEntity> menus, Set<Long> locked, long userId) {
+            SysMenuEntity leaf, Map<Long, SysMenuEntity> menus, Set<Long> locked, long userId, String sessionHash) {
         Set<Long> visited = new HashSet<>();
         for (SysMenuEntity cursor = leaf;
                 cursor != null && visited.add(cursor.getId());
                 cursor = menus.get(cursor.getParentId())) {
             if (locked.contains(cursor.getId())
-                    && !redis.hasKey(SecondaryLockInterceptor.unlockKey(userId, cursor.getPath())))
+                    && !SecondaryLockSession.isUnlocked(redis, userId, sessionHash, cursor.getPath()))
                 throw new SecondaryLockRequiredException(cursor.getPath());
         }
     }

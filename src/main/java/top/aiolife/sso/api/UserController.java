@@ -42,7 +42,7 @@ public class UserController {
     @Operation(summary = "账号密码登录")
     @PostMapping("/auth/login")
     public ApiResponse<UserLoginVO> login(@Valid @RequestBody LoginReq loginReq, HttpServletRequest request) {
-        return ApiResponse.success(userService.login(loginReq, AuthService.clientIp(request)));
+        return ApiResponse.success(userService.login(loginReq, request.getRemoteAddr()));
     }
 
     @Operation(summary = "修改登录密码")
@@ -130,7 +130,7 @@ public class UserController {
     @Operation(summary = "发送二级密码重置邮箱验证码")
     @PostMapping("/auth/send-reset-secondary-password-code")
     public ApiResponse<Void> sendResetSecondaryPasswordCode(@CurrentUserId String userId, HttpServletRequest request) {
-        userService.sendResetSecondaryPasswordCode(IdCodec.decode(userId), AuthService.clientIp(request));
+        userService.sendResetSecondaryPasswordCode(IdCodec.decode(userId), request.getRemoteAddr());
         return ApiResponse.success();
     }
 

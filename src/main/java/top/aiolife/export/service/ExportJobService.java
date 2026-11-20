@@ -185,7 +185,7 @@ public class ExportJobService {
                 || !attempt.getSecurityHash()
                         .equals(ExportAccessGuard.securityHash(access.user(attempt.getUserId()))))
             throw ExportException.denied();
-        access.check(attempt.getUserId(), scope.decode(attempt.getScopeJson()), true);
+        access.check(attempt.getUserId(), scope.decode(attempt.getScopeJson()), true, attempt.getSessionHash());
     }
 
     @Transactional

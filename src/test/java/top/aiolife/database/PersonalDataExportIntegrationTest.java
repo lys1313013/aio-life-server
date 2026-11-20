@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -32,10 +33,10 @@ import top.aiolife.export.pojo.entity.ExportJobEntity;
 import top.aiolife.export.pojo.req.ExportCreateReq;
 import top.aiolife.export.service.*;
 import top.aiolife.sso.pojo.entity.UserEntity;
+import top.aiolife.support.CurrentSchema;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.DriverManager;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -70,12 +71,10 @@ class PersonalDataExportIntegrationTest {
         POSTGRES.start();
         String url = "jdbc:postgresql://" + POSTGRES.getHost() + ":" + POSTGRES.getMappedPort(5432)
                 + "/fixture?stringtype=unspecified";
-        try (var connection = DriverManager.getConnection(url, "postgres", "isolated-export");
-                var statement = connection.createStatement();
-                var paths = Files.list(Path.of("sql/migrations"))) {
-            for (var migration : paths.filter(path -> path.getFileName().toString().matches("V\\d.*\\.sql"))
-                    .sorted().toList()) statement.execute(Files.readString(migration));
-        }
+        var dataSource = new DriverManagerDataSource(url, "postgres", "isolated-export");
+        var fixture = new JdbcTemplate(dataSource);
+        CurrentSchema.initializePostgresFixture(fixture);
+        fixture.execute(Files.readString(Path.of("sql/migrations/V20261110_02_002__data_export_coordinator.sql")));
         // 显式覆盖属性，不允许测试读取运行环境中的业务数据源。
         properties.add("spring.datasource.url", () -> url);
         properties.add("spring.datasource.username", () -> "postgres");

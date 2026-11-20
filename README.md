@@ -196,6 +196,14 @@ Compose 示例中的默认账号和密码仅供本地使用。镜像发布流程
 
 ## 功能配置与运维入口
 
+### 认证限流与可信代理
+
+- 默认使用 TCP 对端地址。经反向代理部署时，将后端端口限制在代理可访问的网络内。公网入口覆盖客户端提供的 `X-Forwarded-For` 与 `X-Forwarded-Proto`，可信内层代理再追加自己看到的上一跳地址。
+- 在后端环境中设置 `AIO_LIFE_FORWARD_HEADERS_STRATEGY=NATIVE`，并将 `AIO_LIFE_TRUSTED_PROXY_REGEX` 配置为实际代理地址的精确正则。例如实际代理为 `172.22.0.7` 时填 `172[.]22[.]0[.]7`，多地址用 `|` 分隔。默认正则匹配不到任何地址。部署后通过直连和代理路径分别检查认证日志记录的 IP。
+- 登录限额可通过 `aio.life.server.auth.login` 调整。默认单 IP 每 60 秒 60 个请求，单账号每 900 秒 20 次失败，同账号同 IP 每 600 秒 5 次失败。密码校验中的请求暂占失败额度。
+- 注册、找回登录密码和找回二级密码共享邮箱冷却及每日发送配额，配置在 `aio.life.server.auth.code`。日界线默认按 `Asia/Shanghai`，可用 `AIO_LIFE_AUTH_CODE_ZONE` 覆盖。额度按获准发送的请求计入，邮件服务器异常后仍需等冷却。到达限额返回 `429`，`Retry-After` 单位为秒。
+- 升级时将所有认证流量切换到新版本实例。升级前发出的验证码需要重新获取。
+
 ### 文件、头像与对象存储
 
 - 附件内部主键与导入结果引用保持 bigint；所有业务接口中的附件标识（含上传 `FileVO.id`、`avatarFileId`、`fileId`、`coverFileId`、`fileIds`）统一使用 `attachment.file_key` 的 UUIDv4，不接受内部数字主键。迁移执行 `V20261116_12__attachment_file_key.sql`，应用以 Java `UUID.randomUUID()` 生成新 key。

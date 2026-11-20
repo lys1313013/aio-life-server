@@ -221,7 +221,7 @@ class QueryHttpContractTest {
     }
 
     @Test
-    void testVerificationCode_仅POST请求体发送且保留客户端IP() throws Exception {
+    void testVerificationCode_仅POST请求体发送且忽略客户端提供的转发头() throws Exception {
         IUserService service = mock(IUserService.class);
         MockMvc mvc = mvc(new AuthController(service));
         for (String path : List.of("/auth/sendEmailCode", "/auth/sendResetPasswordCode")) {
@@ -232,14 +232,17 @@ class QueryHttpContractTest {
         verifyNoInteractions(service);
         mvc.perform(post("/auth/sendEmailCode").contentType(MediaType.APPLICATION_JSON)
                         .header("x-forwarded-for", "192.0.2.1")
+                        .header("Proxy-Client-IP", "192.0.2.2")
+                        .with(request -> { request.setRemoteAddr("198.51.100.10"); return request; })
                         .content("{\"email\":\"user@example.com\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
-        verify(service).sendRegisterCode("user@example.com", "192.0.2.1");
+        verify(service).sendRegisterCode("user@example.com", "198.51.100.10");
         mvc.perform(post("/auth/sendResetPasswordCode").contentType(MediaType.APPLICATION_JSON)
                         .header("x-forwarded-for", "192.0.2.2")
+                        .with(request -> { request.setRemoteAddr("198.51.100.20"); return request; })
                         .content("{\"email\":\"user@example.com\"}"))
                 .andExpect(status().isOk());
-        verify(service).sendResetPasswordCode("user@example.com", "192.0.2.2");
+        verify(service).sendResetPasswordCode("user@example.com", "198.51.100.20");
         verifyNoMoreInteractions(service);
     }
 

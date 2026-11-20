@@ -22,6 +22,7 @@ import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.pojo.entity.UserSecondaryLockMenuEntity;
 import top.aiolife.sso.service.IApiKeyService;
+import top.aiolife.sso.util.PasswordUtil;
 import top.aiolife.system.mapper.ISysMenuMapper;
 import top.aiolife.system.pojo.entity.SysMenuEntity;
 
@@ -150,6 +151,55 @@ class QueryAccessHttpIntegrationTest {
         mvc.perform(post(QueryAccessController.INTERNAL_CHECK_TOKEN_PATH).header("Authorization", "Bearer " + session)
                 .header("X-AIO-Query-Service-Key", KEY).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"dataset\":\"time_record\"}")).andExpect(status().isUnauthorized());
+    }
+
+    @Test void 解锁只授权当前会话并可用于该会话签发的查询授权() throws Exception {
+        String menuPath = "/time/time-tracker";
+        SysMenuEntity menu = menus.selectOne(new LambdaQueryWrapper<SysMenuEntity>().eq(SysMenuEntity::getPath, menuPath));
+        if (menu == null) {
+            menu = new SysMenuEntity();
+            menu.setPath(menuPath);
+            menu.setName("时迹锁测试");
+            menu.setVisibleClients(3);
+            menu.fillCreateCommonField(userId);
+            menus.insert(menu);
+        }
+        var lock = new UserSecondaryLockMenuEntity();
+        lock.setUserId(userId);
+        lock.setMenuId(menu.getId());
+        lock.fillCreateCommonField(userId);
+        locks.insert(lock);
+        var user = new UserEntity();
+        user.setId(userId);
+        user.setSecondaryPassword(PasswordUtil.hashPassword("0123"));
+        users.updateById(user);
+
+        String otherSession = StpUtil.getStpLogic().createLoginSession(userId);
+        tokens.add(otherSession);
+        String apiKey = apiKeys.generateApiKey(userId, "session-lock-fixture", 1).getApiKey();
+        String verifyBody = json.writeValueAsString(Map.of("password", "0123", "menuPath", menuPath));
+        assertEquals(2001, checkToken(session, KEY).path("code").intValue());
+        mvc.perform(post("/auth/secondary-verify").header("Authorization", "Bearer " + session)
+                .contentType(MediaType.APPLICATION_JSON).content(verifyBody))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(0));
+
+        assertEquals(0, checkToken(session, KEY).path("code").intValue());
+        assertEquals(2001, checkToken(otherSession, KEY).path("code").intValue());
+        assertEquals(2001, checkToken(apiKey, KEY).path("code").intValue());
+        mvc.perform(get("/timeRecord/query").param("date", "2026-11-20")
+                .header("Authorization", "Bearer " + session)).andExpect(jsonPath("$.code").value(0));
+        for (String credential : List.of(otherSession, apiKey)) {
+            mvc.perform(get("/timeRecord/query").param("date", "2026-11-20")
+                    .header("Authorization", "Bearer " + credential)).andExpect(jsonPath("$.code").value(2001));
+        }
+        mvc.perform(post("/auth/secondary-verify").header("Authorization", "Bearer " + apiKey)
+                .contentType(MediaType.APPLICATION_JSON).content(verifyBody)).andExpect(status().isForbidden());
+
+        var grant = issue();
+        assertEquals(0, evaluate(grant, KEY).path("code").intValue());
+        StpUtil.logoutByTokenValue(session);
+        assertNotEquals(0, evaluate(grant, KEY).path("code").intValue());
+        assertEquals(2001, checkToken(otherSession, KEY).path("code").intValue());
     }
 
     @Test void 直接校验ApiKey且删除及过期立即失效() throws Exception {

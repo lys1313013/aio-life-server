@@ -49,7 +49,7 @@ class FilePreviewSecurityTest {
         file.setFileType("text/html");
         file.setIsPublic(1);
         when(files.getByKey(ID)).thenReturn(file);
-        when(guard.resolveLoginUserId()).thenReturn(null);
+        when(guard.resolveIdentity()).thenReturn(null);
         when(guard.check(file, null)).thenReturn(FilePreviewGuard.AccessDecision.ALLOW);
         when(minio.objectExists("aiolife", OBJECT)).thenReturn(true);
     }

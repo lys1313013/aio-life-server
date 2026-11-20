@@ -80,24 +80,10 @@ public class ApiKeyInterceptor implements HandlerInterceptor {
                     request.getRequestURI(),
                     request.getMethod(),
                     response.getStatus(),
-                    getIpAddress(request)
+                    request.getRemoteAddr()
             );
             // 本次请求结束，结束身份切换，保持会话清洁
             StpUtil.endSwitch();
         }
-    }
-
-    private String getIpAddress(HttpServletRequest request) {
-        String ip = request.getHeader("x-forwarded-for");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        return ip;
     }
 }

@@ -16,11 +16,15 @@ import top.aiolife.sso.pojo.req.LoginReq;
 import top.aiolife.sso.pojo.req.ChangePasswordReq;
 import top.aiolife.sso.pojo.req.RegisterReq;
 import top.aiolife.sso.pojo.req.ResetPasswordReq;
-import top.aiolife.core.redis.RedisUtil;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+import top.aiolife.sso.service.AuthAttemptStore;
+import top.aiolife.sso.service.AuthAttemptStore.EmailPurpose;
 import top.aiolife.sso.service.LegalPolicyService;
 import top.aiolife.sso.service.LoginSessionService;
 import top.aiolife.sso.service.impl.UserServiceImpl;
 import top.aiolife.sso.util.PasswordUtil;
+import top.aiolife.record.service.IMailService;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -31,7 +35,8 @@ class PasswordLoginCompatibilityTest {
     @Mock UserMapper users;
     @Mock LoginLogMapper logs;
     @Mock LoginSessionService sessions;
-    @Mock RedisUtil redis;
+    @Mock AuthAttemptStore authAttempts;
+    @Mock IMailService mail;
     @InjectMocks UserServiceImpl service;
 
     @Test void 微信无密码账号不能密码登录且不会空指针() {
@@ -47,8 +52,25 @@ class PasswordLoginCompatibilityTest {
         user.setPassword(PasswordUtil.hashPassword("password"));
         when(users.selectOne(any())).thenReturn(user);
         LoginReq request = new LoginReq(); request.setUsername("old"); request.setPassword("password");
+        var attempt = new AuthAttemptStore.LoginAttempt("account", "account-ip", "attempt");
+        when(authAttempts.reserveLogin("old", "ip")).thenReturn(attempt);
         service.login(request, "ip");
-        verify(sessions).complete(user, "ip", true);
+        var calls = inOrder(authAttempts, users, sessions);
+        calls.verify(authAttempts).reserveLogin("old", "ip");
+        calls.verify(users).selectOne(any());
+        calls.verify(authAttempts).releaseSuccessfulLogin(attempt);
+        calls.verify(sessions).complete(user, "ip", true);
+    }
+
+    @Test void 登录限流在查库和会话签发之前执行() {
+        when(authAttempts.reserveLogin("blocked", "192.0.2.1"))
+                .thenThrow(new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS));
+        var request = new LoginReq();
+        request.setUsername("blocked");
+        request.setPassword("password");
+        assertEquals(HttpStatus.TOO_MANY_REQUESTS,
+                assertThrows(ResponseStatusException.class, () -> service.login(request, "192.0.2.1")).getStatusCode());
+        verifyNoInteractions(users, logs, sessions);
     }
 
     @Test void 无密码账号修改密码返回明确业务错误() {
@@ -81,8 +103,8 @@ class PasswordLoginCompatibilityTest {
         req.setCode("123456");
         req.setAgreedPolicy(true);
         req.setPolicyVersion(LegalPolicyService.VERSION);
-        when(redis.get("register:code:bcrypt@example.com")).thenReturn("123456");
         service.register(req);
+        verify(authAttempts).consumeEmailCode(EmailPurpose.REGISTER, "bcrypt@example.com", "123456");
         var created = ArgumentCaptor.forClass(UserEntity.class);
         verify(users).insert(created.capture());
         assertTrue(PasswordUtil.matches("register-password", created.getValue().getPassword()));
@@ -101,7 +123,18 @@ class PasswordLoginCompatibilityTest {
         reset.setPassword("中".repeat(25));
         assertThrows(IllegalArgumentException.class, () -> service.register(register));
         assertThrows(IllegalArgumentException.class, () -> service.resetPassword(reset));
-        verifyNoInteractions(redis, users);
+        verifyNoInteractions(authAttempts, users);
+    }
+
+    @Test void 找回密码仅向账号已绑定地址发送验证码() {
+        var user = new UserEntity();
+        user.setEmail("Owner@example.com");
+        when(users.selectOne(any())).thenReturn(user);
+        when(authAttempts.issueEmailCode(EmailPurpose.RESET_PASSWORD, user.getEmail(), "192.0.2.1"))
+                .thenReturn("012345");
+        service.sendResetPasswordCode("owner@example.com", "192.0.2.1");
+        verify(mail).sendSimpleEmail(user.getEmail(), "重置密码验证码", "您的验证码是：012345，有效期5分钟。",
+                "reset_pwd", "192.0.2.1");
     }
 
     @ParameterizedTest
@@ -124,6 +157,8 @@ class PasswordLoginCompatibilityTest {
         assertFalse(new com.fasterxml.jackson.databind.ObjectMapper().valueToTree(audit.getValue()).has("password"));
         assertEquals("u_test", audit.getValue().getUsername());
         assertEquals("127.0.0.1", audit.getValue().getClientIp());
+        verify(authAttempts).reserveLogin("u_test", "127.0.0.1");
+        verifyNoMoreInteractions(authAttempts);
         verifyNoInteractions(sessions);
     }
 }

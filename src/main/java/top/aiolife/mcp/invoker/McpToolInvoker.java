@@ -30,9 +30,10 @@ public class McpToolInvoker {
     public McpSchema.CallToolResult invoke(McpToolRegistry.RegisteredMcpTool tool,
                                            Map<String, Object> arguments,
                                            Object loginId,
+                                           String sessionHash,
                                            RequestAttributes requestAttributes) {
         try {
-            Object result = McpSaTokenScope.runWithContext(loginId, requestAttributes, () -> {
+            Object result = McpSaTokenScope.runWithContext(loginId, sessionHash, requestAttributes, () -> {
                 secondaryLockGuard.checkTool(tool.name());
                 return invokeTool(tool, arguments);
             });

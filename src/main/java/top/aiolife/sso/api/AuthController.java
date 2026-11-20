@@ -11,7 +11,6 @@ import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.sso.pojo.req.RegisterReq;
 import top.aiolife.sso.pojo.req.SendEmailCodeReq;
 import top.aiolife.sso.pojo.req.ResetPasswordReq;
-import top.aiolife.sso.service.AuthService;
 import top.aiolife.sso.service.IUserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -34,7 +33,7 @@ public class AuthController {
     @PostMapping("/sendEmailCode")
     public ApiResponse<Void> sendEmailCode(@Valid @RequestBody SendEmailCodeReq body, HttpServletRequest request) {
         requireEmail(body);
-        userService.sendRegisterCode(body.getEmail(), AuthService.clientIp(request));
+        userService.sendRegisterCode(body.getEmail(), request.getRemoteAddr());
         return ApiResponse.success();
     }
 
@@ -42,7 +41,7 @@ public class AuthController {
     @PostMapping("/sendResetPasswordCode")
     public ApiResponse<Void> sendResetPasswordCode(@Valid @RequestBody SendEmailCodeReq body, HttpServletRequest request) {
         requireEmail(body);
-        userService.sendResetPasswordCode(body.getEmail(), AuthService.clientIp(request));
+        userService.sendResetPasswordCode(body.getEmail(), request.getRemoteAddr());
         return ApiResponse.success();
     }
 

@@ -8,6 +8,7 @@ import org.springframework.web.server.ResponseStatusException;
 import top.aiolife.sso.service.AccountStatusGuard;
 import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.sso.service.IApiKeyService;
+import top.aiolife.sso.util.SecondaryLockSession;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -42,8 +43,9 @@ public class QueryAccessService {
         var policy = policy(dataset);
         if (!accounts.isActive(userId)) throw denied();
         // 两个查询页面与 API/MCP 共享只读查询能力，入口锁不能通过其他传输绕过。
-        locks.checkMenus(userId, "/query/workbench", "/query/models");
-        locks.checkMenus(userId, policy.menus());
+        String sessionHash = apiKey ? null : SecondaryLockSession.hash(token);
+        locks.checkMenusForSession(userId, sessionHash, "/query/workbench", "/query/models");
+        locks.checkMenusForSession(userId, sessionHash, policy.menus());
         long expiresAt;
         if (apiKey) {
             var key = apiKeys.getByApiKey(token);
@@ -65,7 +67,7 @@ public class QueryAccessService {
         requireEnabled();
         if (!properties.getAllowedApps().contains(appId)) throw denied();
         requireSourceSession(Long.toString(userId), sessionToken);
-        checkUser(userId);
+        checkUser(userId, sessionToken);
         store.rateLimit(userId);
         String id = UUID.randomUUID().toString().replace("-", "");
         byte[] secret = new byte[32]; RANDOM.nextBytes(secret);
@@ -86,7 +88,7 @@ public class QueryAccessService {
                 || grant.expiresAt() <= Instant.now().getEpochSecond()
                 || !properties.getAllowedApps().contains(grant.appId())) throw denied();
         requireSourceSession(grant.userId(), grant.authorizerToken());
-        checkUser(Long.parseLong(grant.userId()));
+        checkUser(Long.parseLong(grant.userId()), grant.authorizerToken());
         return new QueryAccessModels.Decision(grant.userId(), grant.appId(), id, "ai_time_reader",
                 Set.of("time.read"), grant.expiresAt());
     }
@@ -114,10 +116,11 @@ public class QueryAccessService {
         };
     }
 
-    private void checkUser(long userId) {
+    private void checkUser(long userId, String sessionToken) {
         if (!accounts.isActive(userId)) throw denied();
-        locks.checkMenus(userId, "/query/workbench", "/query/models");
-        locks.checkMenus(userId, "/mcp/tools", "/time/time-tracker", "/time/dashboard");
+        String sessionHash = SecondaryLockSession.hash(sessionToken);
+        locks.checkMenusForSession(userId, sessionHash, "/query/workbench", "/query/models");
+        locks.checkMenusForSession(userId, sessionHash, "/mcp/tools", "/time/time-tracker", "/time/dashboard");
     }
 
     private void requireSourceSession(String userId, String token) {

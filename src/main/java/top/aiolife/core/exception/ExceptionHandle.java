@@ -39,7 +39,7 @@ public class ExceptionHandle {
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiResponse<Object>> handleResponseStatus(ResponseStatusException e) {
-        return ResponseEntity.status(e.getStatusCode())
+        return ResponseEntity.status(e.getStatusCode()).headers(e.getHeaders())
                 .body(ApiResponse.error(ResponseCodeConst.PARAM_FAIL, e.getReason()));
     }
 

@@ -27,7 +27,7 @@ public class FileAccessService {
         response.setHeader("Cache-Control","private, no-store");
         var attachment=fileService.getByKey(id);
         if(attachment==null) { response.setStatus(404); return; }
-        var decision=guard.check(attachment,guard.resolveLoginUserId());
+        var decision=guard.check(attachment,guard.resolveIdentity());
         if(decision!=FilePreviewGuard.AccessDecision.ALLOW) {
             response.setStatus(decision==FilePreviewGuard.AccessDecision.UNAUTHORIZED?401:403); return;
         }

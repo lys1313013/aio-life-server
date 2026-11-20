@@ -24,12 +24,14 @@ import top.aiolife.export.service.ExportTime;
 import top.aiolife.export.storage.ExportArtifactStore;
 import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.pojo.entity.UserEntity;
+import top.aiolife.sso.util.SecondaryLockSession;
 import top.aiolife.system.pojo.entity.SysMenuEntity;
 
 import java.io.ByteArrayInputStream;
 import java.util.List;
 
 class ExportSecurityTest {
+    private static final String SESSION_HASH = SecondaryLockSession.hash("session-a");
     private final ExportSecurityMapper security = mock(ExportSecurityMapper.class);
     private final RedisUtil redis = mock(RedisUtil.class);
     private final ExportAccessGuard guard = new ExportAccessGuard(security, redis);
@@ -38,13 +40,13 @@ class ExportSecurityTest {
     void 所有菜单祖先必须在同一端启用且满足角色() {
         setupMenus("user", false);
         var dataset = dataset();
-        assertDoesNotThrow(() -> guard.check(7L, List.of(dataset), true));
+        assertDoesNotThrow(() -> guard.check(7L, List.of(dataset), true, SESSION_HASH));
         var parent = security.menus().get(1);
         parent.setVisibleClients(0);
-        assertThrows(ExportException.class, () -> guard.check(7L, List.of(dataset), true));
+        assertThrows(ExportException.class, () -> guard.check(7L, List.of(dataset), true, SESSION_HASH));
         parent.setVisibleClients(1);
         parent.setRoles("admin");
-        assertThrows(ExportException.class, () -> guard.check(7L, List.of(dataset), true));
+        assertThrows(ExportException.class, () -> guard.check(7L, List.of(dataset), true, SESSION_HASH));
     }
 
     @Test
@@ -52,12 +54,14 @@ class ExportSecurityTest {
         setupMenus("admin", true);
         assertThrows(
                 SecondaryLockRequiredException.class,
-                () -> guard.check(7L, List.of(dataset()), true));
-        when(redis.hasKey(anyString())).thenReturn(true);
-        assertDoesNotThrow(() -> guard.check(7L, List.of(dataset()), true));
+                () -> guard.check(7L, List.of(dataset()), true, SESSION_HASH));
+        when(redis.hasKey(SecondaryLockSession.unlockKey(7L, SESSION_HASH, "/finance"))).thenReturn(true);
+        assertDoesNotThrow(() -> guard.check(7L, List.of(dataset()), true, SESSION_HASH));
+        assertThrows(SecondaryLockRequiredException.class,
+                () -> guard.check(7L, List.of(dataset()), true, SecondaryLockSession.hash("session-b")));
         when(security.lockedMenus(7L)).thenReturn(List.of(1L));
         when(redis.hasKey(anyString())).thenReturn(false);
-        assertThrows(SecondaryLockRequiredException.class, () -> guard.check(7L, List.of(), true));
+        assertThrows(SecondaryLockRequiredException.class, () -> guard.check(7L, List.of(), true, SESSION_HASH));
     }
 
     @Test

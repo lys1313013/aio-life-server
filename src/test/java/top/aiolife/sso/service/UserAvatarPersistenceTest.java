@@ -49,7 +49,8 @@ class UserAvatarPersistenceTest {
         var minio = new MinioUtil(); ReflectionTestUtils.setField(minio,"serveBaseUrl","https://example.test/api");
         users = new UserServiceImpl(session.getMapper(UserMapper.class), mock(ApiKeyMapper.class), mock(LoginSessionService.class),
             mock(LoginLogMapper.class), mock(IMailService.class), mock(RedisUtil.class), mock(UserSecondaryLockMenuMapper.class),
-            mock(SecondaryLockMenuResolver.class), new UserAvatarFileService(session.getMapper(IAttachmentMapper.class), minio,org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class)));
+            mock(SecondaryLockMenuResolver.class), new UserAvatarFileService(session.getMapper(IAttachmentMapper.class), minio,org.mockito.Mockito.mock(top.aiolife.record.service.VideoCoverStorage.class)),
+            mock(AuthAttemptStore.class));
         tx = new TransactionTemplate(new DataSourceTransactionManager(source));
     }
     private UserEntity update() { var e = new UserEntity(); e.setId(42L); return e; }

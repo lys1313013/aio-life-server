@@ -1,7 +1,5 @@
 package top.aiolife.sso.service;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,6 +13,7 @@ import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import top.aiolife.sso.mapper.AccountErasureMapper;
+import top.aiolife.support.CurrentSchema;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** 从当前完整结构获得列清单，用真实 SQL 验证归属和软删除行清理，不连接实际用户数据库。 */
@@ -23,28 +22,23 @@ class AccountErasureMapperTest {
         var source = new JdbcDataSource();
         source.setURL("jdbc:h2:mem:erase_" + UUID.randomUUID() + ";MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;NON_KEYWORDS=USER;DB_CLOSE_DELAY=-1");
         var jdbc = new JdbcTemplate(source);
-        var tablePattern = Pattern.compile("CREATE TABLE(?: IF NOT EXISTS)? \"([^\"]+)\" \\((.*?)\\n \\);", Pattern.DOTALL);
-        var columnPattern = Pattern.compile("(?m)^\\s*\"([^\"]+)\"");
+        var tablePattern = Pattern.compile("(?ms)^CREATE TABLE \"([^\"]+)\" \\(\\n(.*?)^\\);");
+        var columnPattern = Pattern.compile("(?m)^  \"([^\"]+)\"");
         var tables = new LinkedHashMap<String, List<String>>();
-        var matcher = tablePattern.matcher(Files.readString(Path.of("sql/migrations/V20261110_01__postgresql_schema.sql")));
+        var matcher = tablePattern.matcher(CurrentSchema.baselineDdl());
         while (matcher.find()) {
             String table = matcher.group(1);
             var columns = columnPattern.matcher(matcher.group(2)).results().map(m -> m.group(1)).toList();
-            tables.put(table, columns);
             var definitions = columns.stream().map(column -> "\"" + column + "\" " +
                     (column.endsWith("_at") || column.endsWith("_time") ? "TIMESTAMP" :
                      column.equals("id") || column.endsWith("_id") || column.equals("create_user") || column.equals("is_deleted") ? "BIGINT" : "VARCHAR(500)")).toList();
             jdbc.execute("CREATE TABLE \"" + table + "\" (" + String.join(",", definitions) + ")");
-            if (columns.contains("user_id")) {
+            if (columns.contains("user_id") && !table.equals("attachment")) {
+                tables.put(table, columns);
                 jdbc.update("INSERT INTO \"" + table + "\" (id,user_id) VALUES(1,7),(2,8),(3,NULL)");
                 if (columns.contains("is_deleted")) jdbc.update("UPDATE \"" + table + "\" SET is_deleted=1 WHERE user_id=7");
             }
         }
-        jdbc.execute("ALTER TABLE file RENAME TO attachment");
-        jdbc.execute("ALTER TABLE user_bind RENAME TO user_third_party_account");
-        tables.put("user_third_party_account", tables.remove("user_bind"));
-        jdbc.execute("ALTER TABLE attachment ADD COLUMN user_id BIGINT");
-        jdbc.execute("CREATE TABLE import_job(id BIGINT,create_user BIGINT,biz_type VARCHAR(50),biz_id BIGINT)");
         jdbc.update("INSERT INTO sys_user(id,username,email,is_deleted,erasure_requested_at) VALUES(7,'fixture','fixture@example.test',0,?)", LocalDateTime.now());
         jdbc.update("INSERT INTO attachment(id,user_id,create_user,biz_type) VALUES(11,7,7,'avatar'),(12,8,8,'avatar'),(13,NULL,7,'bank_card_template_face')");
         jdbc.update("INSERT INTO thought_rela_event(id,thought_id,create_user) VALUES(1,1,8),(2,2,8)");

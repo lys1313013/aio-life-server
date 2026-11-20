@@ -30,14 +30,14 @@ class CurrentSchemaTest {
     }
 
     @Test
-    void table_新增来源字段后仍应用公共字段迁移() throws IOException {
+    void table_建表定义包含当前字典字段() throws IOException {
         String wardrobe = CurrentSchema.table("wardrobe_item");
         assertTrue(wardrobe.contains("\"remark\""));
         assertFalse(wardrobe.contains("\"memo\""));
 
         String dictionary = CurrentSchema.table("sys_dict_data");
         assertTrue(dictionary.contains("\"sort_order\""));
-        assertTrue(dictionary.contains("\"is_enabled\" smallint DEFAULT 1 NOT NULL"));
+        assertTrue(dictionary.contains("\"is_enabled\" SMALLINT DEFAULT 1 NOT NULL"));
         assertTrue(dictionary.contains("\"dict_type_id\""));
         assertFalse(dictionary.contains("\"dict_code\""));
         assertFalse(dictionary.contains("\"dict_id\""));
@@ -47,7 +47,8 @@ class CurrentSchemaTest {
         assertFalse(dictionary.contains("\"source_item_id\""));
 
         String dictionaryType = CurrentSchema.table("sys_dict_type");
-        assertTrue(dictionaryType.contains("\"id\" bigint NOT NULL"));
+        assertTrue(Pattern.compile("(?m)^  \"id\" BIGINT(?: CONSTRAINT \"[^\"]+\")? NOT NULL,")
+                .matcher(dictionaryType).find());
         assertFalse(dictionaryType.contains("\"dict_id\""));
     }
 
@@ -77,7 +78,7 @@ class CurrentSchemaTest {
     }
 
     @Test
-    void table_应用迁移块内带缩进的头像删列语句() throws IOException {
+    void table_用户表不包含历史头像指针() throws IOException {
         String user = CurrentSchema.table("sys_user");
         assertFalse(user.contains("\"avatar_file_id\""));
         assertTrue(user.contains("\"nickname\""));
@@ -89,6 +90,6 @@ class CurrentSchemaTest {
     void table_无条件建表语句同样属于当前结构() throws IOException {
         String sql = CurrentSchema.table("device_expense");
         assertTrue(sql.startsWith("CREATE TABLE \"device_expense\""));
-        assertTrue(sql.contains("\"expense_id\" bigint NOT NULL"));
+        assertTrue(sql.contains("\"expense_id\" BIGINT NOT NULL"));
     }
 }

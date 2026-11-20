@@ -66,10 +66,7 @@ class ExportDatasetRegistryTest {
         }
         var matcher =
                 Pattern.compile("CREATE TABLE(?: IF NOT EXISTS)? \"([^\"]+)\"")
-                        .matcher(
-                                Files.readString(
-                                        Path.of(
-                                                "sql/migrations/V20261110_01__postgresql_schema.sql")));
+                        .matcher(CurrentSchema.baselineDdl());
         while (matcher.find()) {
             String table = matcher.group(1);
             assertTrue(
@@ -89,17 +86,7 @@ class ExportDatasetRegistryTest {
                         Files.readString(
                                 Path.of("src/main/resources/export/excluded-columns.json")),
                         new TypeReference<>() {});
-        String schema =
-                Files.readString(Path.of("sql/migrations/V20261110_01__postgresql_schema.sql"));
         for (var dataset : datasets) {
-            var table =
-                    Pattern.compile(
-                                    "CREATE TABLE(?: IF NOT EXISTS)? \""
-                                            + dataset.table()
-                                            + "\"\\s*\\((.*?)\\)",
-                                    Pattern.DOTALL)
-                            .matcher(CurrentSchema.table(dataset.table()));
-            assertTrue(table.find(), dataset.table());
             Set<String> actual = new HashSet<>();
             var fields = Pattern.compile("(?m)^\\s*\"([^\"]+)\"\\s+").matcher(CurrentSchema.table(dataset.table()));
             while (fields.find()) {

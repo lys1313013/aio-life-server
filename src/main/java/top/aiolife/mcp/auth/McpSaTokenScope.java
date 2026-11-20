@@ -1,5 +1,6 @@
 package top.aiolife.mcp.auth;
 
+import cn.dev33.satoken.context.SaHolder;
 import cn.dev33.satoken.context.SaTokenContextForThreadLocalStorage;
 import cn.dev33.satoken.context.model.SaRequest;
 import cn.dev33.satoken.context.model.SaResponse;
@@ -7,6 +8,7 @@ import cn.dev33.satoken.context.model.SaStorage;
 import cn.dev33.satoken.stp.StpUtil;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
+import top.aiolife.sso.util.SecondaryLockSession;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -24,11 +26,7 @@ public final class McpSaTokenScope {
     private McpSaTokenScope() {
     }
 
-    public static <T> T runWithLoginId(Object loginId, ThrowingSupplier<T> supplier) throws Exception {
-        return runWithRequestAttributes(null, () -> runWithLoginIdInternal(loginId, supplier));
-    }
-
-    public static <T> T runWithRequestAttributes(RequestAttributes requestAttributes,
+    private static <T> T runWithRequestAttributes(RequestAttributes requestAttributes,
                                                  ThrowingSupplier<T> supplier) throws Exception {
         RequestAttributes originalAttributes = RequestContextHolder.getRequestAttributes();
         if (requestAttributes != null) {
@@ -46,21 +44,31 @@ public final class McpSaTokenScope {
     }
 
     public static <T> T runWithContext(Object loginId,
+                                       String sessionHash,
                                        RequestAttributes requestAttributes,
                                        ThrowingSupplier<T> supplier) throws Exception {
-        return runWithRequestAttributes(requestAttributes, () -> runWithLoginIdInternal(loginId, supplier));
+        return runWithRequestAttributes(requestAttributes, () -> runWithLoginIdInternal(loginId, sessionHash, supplier));
     }
 
-    private static <T> T runWithLoginIdInternal(Object loginId, ThrowingSupplier<T> supplier) throws Exception {
+    private static <T> T runWithLoginIdInternal(Object loginId, String sessionHash, ThrowingSupplier<T> supplier) throws Exception {
         if (loginId == null) {
             return supplier.get();
         }
 
         SaTokenContextForThreadLocalStorage.Box originalBox = SaTokenContextForThreadLocalStorage.getBox();
-        SimpleSaStorage storage = new SimpleSaStorage();
-        SaTokenContextForThreadLocalStorage.setBox(SimpleSaRequest.INSTANCE, SimpleSaResponse.INSTANCE, storage);
+        SaTokenContextForThreadLocalStorage.setBox(SimpleSaRequest.INSTANCE, SimpleSaResponse.INSTANCE, new SimpleSaStorage());
         try {
-            return runWithSwitchLoginId(loginId, supplier);
+            SaStorage storage = SaHolder.getStorage();
+            String key = SecondaryLockSession.MCP_SESSION_HASH;
+            Object previousHash = storage.get(key);
+            if (sessionHash == null) storage.delete(key);
+            else storage.set(key, sessionHash);
+            try {
+                return runWithSwitchLoginId(loginId, supplier);
+            } finally {
+                if (previousHash == null) storage.delete(key);
+                else storage.set(key, previousHash);
+            }
         } finally {
             restoreOriginalBox(originalBox);
         }

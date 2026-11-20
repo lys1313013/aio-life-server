@@ -59,6 +59,7 @@ import top.aiolife.record.service.ITimeRecordService;
 import top.aiolife.record.service.ITimeTrackerCategoryService;
 import top.aiolife.record.service.ThoughtCreationService;
 import top.aiolife.sso.service.SecondaryLockGuard;
+import top.aiolife.sso.util.SecondaryLockSession;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -75,6 +76,9 @@ public class RecordMcpE2ETest {
 
     @Autowired
     private ITaskDetail taskDetailService;
+
+    @Autowired
+    private SecondaryLockGuard secondaryLockGuard;
 
     private McpSyncClient mcpClient;
     private StpLogic originalStpLogic;
@@ -215,7 +219,7 @@ public class RecordMcpE2ETest {
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(taskDetailService);
+        Mockito.reset(taskDetailService, secondaryLockGuard);
         originalStpLogic = StpUtil.getStpLogic();
         StpLogic mockLogic = new StpLogic("login") {
             @Override
@@ -225,6 +229,10 @@ public class RecordMcpE2ETest {
             @Override
             public Object getLoginIdDefaultNull() {
                 return 1L;
+            }
+            @Override
+            public String getTokenValue() {
+                return isSwitch() ? null : "mcp-login-session";
             }
             @Override
             public void checkLogin() {
@@ -323,6 +331,10 @@ public class RecordMcpE2ETest {
 
     @Test
     void testCallTimeRecordSaveTool() {
+        Mockito.doAnswer(call -> {
+            assertEquals(SecondaryLockSession.hash("mcp-login-session"), SecondaryLockSession.currentHash());
+            return null;
+        }).when(secondaryLockGuard).checkTool("time_record_save");
         mcpClient.initialize();
 
         McpSchema.CallToolResult result = mcpClient.callTool(new McpSchema.CallToolRequest(
@@ -335,6 +347,7 @@ public class RecordMcpE2ETest {
             System.out.println("Call tool error: " + result.content());
         }
         assertFalse(result.isError());
+        Mockito.verify(secondaryLockGuard).checkTool("time_record_save");
         McpSchema.TextContent content = (McpSchema.TextContent) result.content().get(0);
         assertTrue(content.text().contains("保存成功") || content.text().contains("true"));
     }

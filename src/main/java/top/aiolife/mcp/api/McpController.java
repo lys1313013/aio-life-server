@@ -51,7 +51,7 @@ public class McpController {
             throw new ApiException(ResponseCodeConst.COMMON_FAIL, "工具不存在: " + request.name());
         }
         Map<String, Object> args = request.arguments() != null ? request.arguments() : Map.of();
-        var result = toolInvoker.invoke(tool, args, null, null);
+        var result = toolInvoker.invoke(tool, args, null, null, null);
         Map<String, Object> resp = new LinkedHashMap<>();
         resp.put("content", result.content());
         resp.put("isError", result.isError());

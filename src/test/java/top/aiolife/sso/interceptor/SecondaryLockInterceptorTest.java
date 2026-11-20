@@ -11,6 +11,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import top.aiolife.sso.service.SecondaryLockMenuResolver;
 import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.util.RequestLoginContext;
+import top.aiolife.sso.util.SecondaryLockSession;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -25,15 +26,17 @@ class SecondaryLockInterceptorTest {
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         try (var stp = mockStatic(StpUtil.class)) {
             stp.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
+            stp.when(StpUtil::getTokenValue).thenReturn("session-a");
             RequestLoginContext.checkLogin();
             when(menu.findMatchedPaths(7L, "/timeRecord/recommendNext")).thenReturn(Set.of("/timeRecord"));
-            when(redis.hasKey("secondary:unlock:7:/timeRecord")).thenReturn(false, true);
+            String unlockKey = SecondaryLockSession.unlockKey(7L, SecondaryLockSession.hash("session-a"), "/timeRecord");
+            when(redis.hasKey(unlockKey)).thenReturn(false, true);
             var response = new MockHttpServletResponse();
             assertFalse(interceptor.preHandle(request, response, new Object()));
             assertTrue(response.getContentAsString().contains("需要二级密码验证"));
             assertTrue(interceptor.preHandle(request, new MockHttpServletResponse(), new Object()));
             stp.verify(StpUtil::getLoginIdAsLong, times(1));
-            verify(redis, times(2)).hasKey("secondary:unlock:7:/timeRecord");
+            verify(redis, times(2)).hasKey(unlockKey);
         } finally {
             RequestContextHolder.resetRequestAttributes();
         }

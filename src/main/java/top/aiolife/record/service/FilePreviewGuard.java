@@ -5,6 +5,7 @@ import top.aiolife.record.mapper.AttachmentBusinessMapper;
 
 import lombok.RequiredArgsConstructor;
 import cn.dev33.satoken.context.SaHolder;
+import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.stp.StpUtil;
 import org.springframework.stereotype.Component;
 import top.aiolife.bankcard.mapper.BankCardFileMapper;
@@ -12,6 +13,7 @@ import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.pojo.entity.AttachmentEntity;
 import top.aiolife.sso.service.AccountStatusGuard;
 import top.aiolife.sso.service.SecondaryLockGuard;
+import top.aiolife.sso.util.SecondaryLockSession;
 
 import java.util.List;
 
@@ -45,16 +47,14 @@ public class FilePreviewGuard {
         FORBIDDEN
     }
 
-    /**
-     * 解析当前登录用户 ID。
-     * 优先走 Sa-Token 上下文（Authorization 头）；未命中时回退到 Cookie / URL 参数中的 token。
-     *
-     * @return 登录用户 ID，未登录返回 null
-     */
-    public Long resolveLoginUserId() {
+    public record Identity(long userId, String sessionHash) {}
+
+    /** 同时解析附件访问身份与同一凭据对应的菜单解锁会话。 */
+    public Identity resolveIdentity() {
         if (StpUtil.isLogin()) {
-            Long userId = StpUtil.getLoginIdAsLong();
-            return accountStatusGuard.isActive(userId) ? userId : null;
+            long userId = StpUtil.getLoginIdAsLong();
+            return accountStatusGuard.isActive(userId)
+                    ? new Identity(userId, SecondaryLockSession.currentHash()) : null;
         }
         String tokenName = StpUtil.getTokenName();
         String token = SaHolder.getRequest().getCookieValue(tokenName);
@@ -69,7 +69,13 @@ public class FilePreviewGuard {
         }
         Object loginId = StpUtil.getLoginIdByToken(token);
         Long userId = loginId == null ? null : Long.parseLong(loginId.toString());
-        return accountStatusGuard.isActive(userId) ? userId : null;
+        if (!accountStatusGuard.isActive(userId)) return null;
+        try {
+            StpUtil.getStpLogic().checkActiveTimeout(token);
+        } catch (NotLoginException e) {
+            return null;
+        }
+        return new Identity(userId, SecondaryLockSession.hash(token));
     }
 
     /**
@@ -90,35 +96,31 @@ public class FilePreviewGuard {
      * 私有入口要求登录并校验附件归属与业务授权；匿名公开读取使用独立内容地址。
      *
      * @param fileEntity 文件记录
-     * @param userId     当前登录用户 ID（未登录为 null）
+     * @param identity   当前认证身份（未登录为 null）
      * @return 访问判定结果
      */
-    public AccessDecision check(AttachmentEntity fileEntity, Long userId) {
+    public AccessDecision check(AttachmentEntity fileEntity, Identity identity) {
+        if (identity == null) return AccessDecision.UNAUTHORIZED;
+        Long userId = identity.userId();
         if ("b_video_cover".equals(fileEntity.getBizType())) {
-            if (userId == null) return AccessDecision.UNAUTHORIZED;
             if (!userId.equals(fileEntity.getUserId()) || fileEntity.getBizId() == null)
                 return AccessDecision.FORBIDDEN;
-            secondaryLockGuard.checkMenus(userId, "/record/videoWatch");
+            secondaryLockGuard.checkMenusForSession(userId, identity.sessionHash(), "/record/videoWatch");
             return videoMapper.countOwnedVideo(fileEntity.getBizId(), userId) > 0
                     ? AccessDecision.ALLOW : AccessDecision.FORBIDDEN;
         }
         if ("bank_card_template_face".equals(fileEntity.getBizType())) {
-            if (userId==null) return AccessDecision.UNAUTHORIZED;
             if (isAdmin(userId)) return AccessDecision.ALLOW;
             if (fileEntity.getBizId()==null) return AccessDecision.FORBIDDEN;
-            secondaryLockGuard.checkMenus(userId,"/finance/bank-cards");
+            secondaryLockGuard.checkMenusForSession(userId, identity.sessionHash(), "/finance/bank-cards");
             long visible = bankCardFileMapper.countVisibleTemplate(fileEntity.getBizId(), userId);
             return visible>0 ? AccessDecision.ALLOW : AccessDecision.FORBIDDEN;
         }
         if ("bank_card_face".equals(fileEntity.getBizType())) {
-            if (userId == null) return AccessDecision.UNAUTHORIZED;
             if (!userId.equals(fileEntity.getUserId())) return AccessDecision.FORBIDDEN;
-            secondaryLockGuard.checkMenus(userId, "/finance/bank-cards");
+            secondaryLockGuard.checkMenusForSession(userId, identity.sessionHash(), "/finance/bank-cards");
             if (fileEntity.getBizId() != null && bankCardFileMapper.countOwnedCard(fileEntity.getBizId(), userId) == 0) return AccessDecision.FORBIDDEN;
             return AccessDecision.ALLOW;
-        }
-        if (userId == null) {
-            return AccessDecision.UNAUTHORIZED;
         }
         if (!userId.equals(fileEntity.getUserId()) && !(isAdmin(userId) && Set.of("feedback","feedback_comment").contains(fileEntity.getBizType()))) {
             return AccessDecision.FORBIDDEN;
@@ -133,7 +135,7 @@ public class FilePreviewGuard {
             case "device_cover" -> "/my-hub/device";
             default -> null;
         };
-        if (menu != null) secondaryLockGuard.checkMenus(userId, menu);
+        if (menu != null) secondaryLockGuard.checkMenusForSession(userId, identity.sessionHash(), menu);
         if(fileEntity.getBizId()!=null && Set.of("movie_cover","read_cover","device_cover","wardrobe_item_cover","honor_record","event_record","feedback","feedback_comment","avatar").contains(fileEntity.getBizType())) {
             if(fileEntity.getUserId()==null || bindings.countOwned(fileEntity.getBizType(),fileEntity.getBizId(),fileEntity.getUserId())==0)
                 return AccessDecision.FORBIDDEN;

@@ -44,6 +44,7 @@ import top.aiolife.sso.mapper.*;
 import top.aiolife.sso.pojo.req.ResetPasswordReq;
 import top.aiolife.sso.service.impl.ApiKeyServiceImpl;
 import top.aiolife.sso.service.impl.UserServiceImpl;
+import top.aiolife.sso.service.AuthAttemptStore.EmailPurpose;
 import top.aiolife.sso.util.PasswordUtil;
 
 import java.util.UUID;
@@ -63,7 +64,7 @@ class CredentialRevocationTest {
     private JdbcTemplate jdbc;
     private UserServiceImpl users;
     private UserMapper userMapper;
-    private RedisUtil redis;
+    private AuthAttemptStore authAttempts;
     private MockMvc mvc;
 
     @BeforeEach
@@ -102,11 +103,11 @@ class CredentialRevocationTest {
         var session = new SqlSessionTemplate(factory.getObject());
         userMapper = session.getMapper(UserMapper.class);
         var apiKeyMapper = session.getMapper(ApiKeyMapper.class);
-        redis = mock(RedisUtil.class);
+        authAttempts = mock(AuthAttemptStore.class);
         var implementation = new UserServiceImpl(userMapper, apiKeyMapper, mock(LoginSessionService.class),
-                mock(LoginLogMapper.class), mock(IMailService.class), redis,
+                mock(LoginLogMapper.class), mock(IMailService.class), mock(RedisUtil.class),
                 mock(UserSecondaryLockMenuMapper.class), mock(SecondaryLockMenuResolver.class),
-                mock(UserAvatarFileService.class));
+                mock(UserAvatarFileService.class), authAttempts);
         var proxy = new ProxyFactory(implementation);
         proxy.setProxyTargetClass(true);
         var interceptor = new TransactionInterceptor();
@@ -167,7 +168,6 @@ class CredentialRevocationTest {
     @Test
     void 密码找回撤销全部旧会话并允许新会话() throws Exception {
         String web = token(1, "web"), mobile = token(1, "mobile"), other = token(2, "web");
-        when(redis.get("reset:code:one@example.com")).thenReturn("123456");
         users.resetPassword(resetRequest("123456"));
         assertRejected(web);
         assertRejected(mobile);
@@ -178,14 +178,15 @@ class CredentialRevocationTest {
         assertTrue(PasswordUtil.matches("new-password", user.getPassword()));
         assertAccess(token(1, "web"), 1);
         assertAccess(other, 2);
-        verify(redis).delete("reset:code:one@example.com");
+        verify(authAttempts).consumeEmailCode(EmailPurpose.RESET_PASSWORD, "one@example.com", "123456");
     }
 
     @Test
     void 验证码错误不更改密码或撤销会话() throws Exception {
         String web = token(1, "web");
         String password = userMapper.selectById(1L).getPassword();
-        when(redis.get("reset:code:one@example.com")).thenReturn("123456");
+        doThrow(new IllegalArgumentException("验证码错误或已过期"))
+                .when(authAttempts).consumeEmailCode(EmailPurpose.RESET_PASSWORD, "one@example.com", "wrong");
         assertThrows(RuntimeException.class, () -> users.resetPassword(resetRequest("wrong")));
         assertEquals(password, userMapper.selectById(1L).getPassword());
         assertAccess(web, 1);
@@ -220,7 +221,6 @@ class CredentialRevocationTest {
     @Test
     void 撤销会话失败不提交新密码() {
         String password = userMapper.selectById(1L).getPassword();
-        when(redis.get("reset:code:one@example.com")).thenReturn("123456");
         try (var stp = mockStatic(StpUtil.class)) {
             stp.when(() -> StpUtil.logout(1L)).thenThrow(new IllegalStateException("session store unavailable"));
             assertThrows(IllegalStateException.class, () -> users.resetPassword(resetRequest("123456")));
@@ -280,8 +280,8 @@ class CredentialRevocationTest {
 
         @GetMapping("/file/preview/probe")
         String fileUser() {
-            Long id = files.resolveLoginUserId();
-            return id == null ? "anonymous" : id.toString();
+            var identity = files.resolveIdentity();
+            return identity == null ? "anonymous" : Long.toString(identity.userId());
         }
     }
 }

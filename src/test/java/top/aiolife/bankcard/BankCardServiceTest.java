@@ -307,11 +307,11 @@ class BankCardServiceTest {
         var file=new AttachmentEntity();
         file.setBizType("bank_card_face");file.setUserId(1L);file.setCreateUser(1L);file.setIsPublic(1);
         assertEquals(FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));
-        assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,2L));
-        assertEquals(FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,1L));
+        assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,new FilePreviewGuard.Identity(2L,"session-hash")));
+        assertEquals(FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,new FilePreviewGuard.Identity(1L,"session-hash")));
         file.setBizId(123L);
-        assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,1L));
-        Mockito.verify(lock,Mockito.atLeastOnce()).checkMenus(1L,"/finance/bank-cards");
+        assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,new FilePreviewGuard.Identity(1L,"session-hash")));
+        Mockito.verify(lock,Mockito.atLeastOnce()).checkMenusForSession(1L,"session-hash","/finance/bank-cards");
     }
 
     BankCardCoverTemplateService templates() { return templateService; }
@@ -403,12 +403,12 @@ class BankCardServiceTest {
         Mockito.doReturn(false).when(preview).isAdmin(ArgumentMatchers.anyLong());
         var file=new AttachmentEntity();file.setBizType(BankCardCoverTemplateService.FILE_TYPE);file.setIsPublic(1);
         assertEquals(FilePreviewGuard.AccessDecision.UNAUTHORIZED,preview.check(file,null));
-        assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,2L));
+        assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,new FilePreviewGuard.Identity(2L,"session-hash")));
         file.setBizId(id);
-        assertEquals(FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,2L));
+        assertEquals(FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,new FilePreviewGuard.Identity(2L,"session-hash")));
         tx.execute(s->templates().setEnabled(1,id,0));
-        assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,2L));
-        assertEquals(FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,1L));
+        assertEquals(FilePreviewGuard.AccessDecision.FORBIDDEN,preview.check(file,new FilePreviewGuard.Identity(2L,"session-hash")));
+        assertEquals(FilePreviewGuard.AccessDecision.ALLOW,preview.check(file,new FilePreviewGuard.Identity(1L,"session-hash")));
     }
     @Test void 并发删除与选用不会产生悬空引用() throws Exception {
         long id=template();var req=request();req.setCoverTemplateId(id);

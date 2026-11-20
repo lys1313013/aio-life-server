@@ -1,6 +1,7 @@
 package top.aiolife.sso.interceptor;
 
 import top.aiolife.sso.util.RequestLoginContext;
+import top.aiolife.sso.util.SecondaryLockSession;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,7 +33,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SecondaryLockInterceptor implements HandlerInterceptor {
 
-    private static final String UNLOCK_KEY_PREFIX = "secondary:unlock:";
     private static final String FAIL_COUNT_KEY_PREFIX = "secondary:fail:";
     private static final long UNLOCK_TTL_MINUTES = 30;
     private static final int MAX_FAIL_COUNT = 5;
@@ -58,8 +58,12 @@ public class SecondaryLockInterceptor implements HandlerInterceptor {
                         ? segment.valueToMatch() : element.value())
                 .collect(Collectors.joining());
         if (request.getContextPath().isEmpty() && path.startsWith("/api/")) path = path.substring(4);
-        String lockedMenu = menuResolver.findMatchedPaths(userId, path).stream()
-                .filter(menu -> !redisUtil.hasKey(unlockKey(userId, menu))).findFirst().orElse(null);
+        var matchedMenus = menuResolver.findMatchedPaths(userId, path);
+        if (matchedMenus.isEmpty()) return true;
+        String sessionHash = SecondaryLockSession.currentHash();
+        String lockedMenu = matchedMenus.stream()
+                .filter(menu -> !SecondaryLockSession.isUnlocked(redisUtil, userId, sessionHash, menu))
+                .findFirst().orElse(null);
         if (lockedMenu == null) return true;
 
         response.setStatus(HttpServletResponse.SC_OK);
@@ -72,10 +76,6 @@ public class SecondaryLockInterceptor implements HandlerInterceptor {
     }
 
     // ── 以下为 static 工具方法，供 Controller 层调用 ──
-
-    public static String unlockKey(long userId, String menuPath) {
-        return UNLOCK_KEY_PREFIX + userId + ":" + menuPath;
-    }
 
     public static String failCountKey(long userId) {
         return FAIL_COUNT_KEY_PREFIX + userId;

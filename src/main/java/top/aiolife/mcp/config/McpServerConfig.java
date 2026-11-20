@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
 import top.aiolife.mcp.handler.McpToolHandlers;
+import top.aiolife.sso.util.SecondaryLockSession;
 
 /**
  * MCP Server 配置
@@ -24,6 +25,7 @@ import top.aiolife.mcp.handler.McpToolHandlers;
 public class McpServerConfig {
 
     public static final String LOGIN_ID_CONTEXT_KEY = "loginId";
+    public static final String SESSION_HASH_CONTEXT_KEY = "secondaryLockSessionHash";
 
     @Bean
     public WebMvcStreamableServerTransportProvider webMvcStreamableServerTransportProvider(McpJsonConfig mcpJsonConfig) {
@@ -32,7 +34,11 @@ public class McpServerConfig {
                 .jsonMapper(mcpJsonConfig.get())
                 .contextExtractor(serverRequest -> {
                     Map<String, Object> context = new HashMap<>();
-                    context.put(LOGIN_ID_CONTEXT_KEY, StpUtil.getLoginIdDefaultNull());
+                    Object loginId = StpUtil.getLoginIdDefaultNull();
+                    context.put(LOGIN_ID_CONTEXT_KEY, loginId);
+                    if (loginId != null && !StpUtil.isSwitch()) {
+                        context.put(SESSION_HASH_CONTEXT_KEY, SecondaryLockSession.currentHash());
+                    }
                     return McpTransportContext.create(context);
                 })
                 .build();

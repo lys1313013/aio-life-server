@@ -1,8 +1,6 @@
 package top.aiolife.sso.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import java.time.Instant;
@@ -19,7 +17,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DuplicateKeyException;
@@ -37,6 +34,7 @@ import top.aiolife.core.redis.RedisUtil;
 import top.aiolife.sso.convertor.UserConvertor;
 import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
 import top.aiolife.sso.util.SecondaryPasswordPolicy;
+import top.aiolife.sso.util.SecondaryLockSession;
 import top.aiolife.sso.mapper.ApiKeyMapper;
 import top.aiolife.sso.mapper.LoginLogMapper;
 import top.aiolife.sso.mapper.UserMapper;
@@ -56,6 +54,8 @@ import top.aiolife.sso.pojo.vo.UserInfoVO;
 import top.aiolife.sso.pojo.vo.UserLoginVO;
 import top.aiolife.sso.pojo.vo.UserVO;
 import top.aiolife.sso.service.IUserService;
+import top.aiolife.sso.service.AuthAttemptStore;
+import top.aiolife.sso.service.AuthAttemptStore.EmailPurpose;
 import top.aiolife.sso.service.LoginSessionService;
 import top.aiolife.sso.service.LegalPolicyService;
 import top.aiolife.sso.service.UserAvatarFileService;
@@ -82,44 +82,26 @@ public class UserServiceImpl implements IUserService {
     private final UserSecondaryLockMenuMapper lockMenuMapper;
     private final SecondaryLockMenuResolver secondaryLockMenuResolver;
     private final UserAvatarFileService avatarFiles;
-
-    @Value("${aio.life.server.auth.code.interval-seconds:180}")
-    private long intervalSeconds;
-
-    @Value("${aio.life.server.auth.code.ip-limit-day:100}")
-    private long ipLimitDay;
-
-    @Value("${aio.life.server.auth.code.email-limit-day:20}")
-    private long emailLimitDay;
-
-    @Value("${aio.life.server.auth.code.total-limit-day:1000}")
-    private long totalLimitDay;
+    private final AuthAttemptStore authAttempts;
 
     @Override
     public UserLoginVO login(LoginReq loginReq, String ip) {
+        var attempt = authAttempts.reserveLogin(loginReq.getUsername(), ip);
         LambdaQueryWrapper<UserEntity> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         IlikeQuery.lowerEquals(lambdaQueryWrapper, UserEntity::getUsername, loginReq.getUsername());
 
         UserEntity userEntity = userMapper.selectOne(lambdaQueryWrapper);
 
-        // 记录登录日志
-        LoginLogEntity loginLogEntity = new LoginLogEntity();
-        loginLogEntity.setUsername(loginReq.getUsername());
-        loginLogEntity.setClientIp(ip);
-
-        if (userEntity == null || !StringUtils.hasText(userEntity.getPassword())
-                || !StringUtils.hasText(loginReq.getPassword())) {
+        if (userEntity == null || !PasswordUtil.matches(loginReq.getPassword(), userEntity.getPassword())) {
             // 失败登录也不记录输入密码，避免把真实旧密码或输错的密码写入日志。
+            LoginLogEntity loginLogEntity = new LoginLogEntity();
+            loginLogEntity.setUsername(loginReq.getUsername());
+            loginLogEntity.setClientIp(ip);
             loginLogMapper.insert(loginLogEntity);
             throw new RuntimeException("用户名或密码错误");
         }
 
-        // 校验密码
-        if (!PasswordUtil.matches(loginReq.getPassword(), userEntity.getPassword())) {
-            loginLogMapper.insert(loginLogEntity);
-            throw new RuntimeException("用户名或密码错误");
-        }
-
+        authAttempts.releaseSuccessfulLogin(attempt);
         return loginSessionService.complete(userEntity, ip, true);
     }
 
@@ -382,76 +364,30 @@ public class UserServiceImpl implements IUserService {
             throw new RuntimeException("邮箱已被注册");
         }
 
-        checkRateLimit(email, ip);
-
-        // 生成验证码
-        String code = RandomUtil.randomNumbers(6);
-        // 存入Redis，5分钟有效
-        redisUtil.set("register:code:" + email, code, 5, TimeUnit.MINUTES);
-
-        // 更新频率限制记录
-        updateRateLimit(email, ip);
-
-        // 发送邮件
-        mailService.sendSimpleEmail(email, "注册验证码", "您的验证码是：" + code + "，有效期5分钟。", "register", ip);
+        sendEmailCode(EmailPurpose.REGISTER, email, ip, "注册验证码", "register");
     }
 
     @Override
     public void sendResetPasswordCode(String email, String ip) {
         requireEmail(email);
-        // 校验邮箱是否已注册
-        LambdaQueryWrapper<UserEntity> emailWrapper = new LambdaQueryWrapper<>();
-        IlikeQuery.lowerEquals(emailWrapper, UserEntity::getEmail, email);
-        if (userMapper.selectCount(emailWrapper) == 0) {
+        UserEntity user = findByEmail(email);
+        if (user == null) {
             throw new RuntimeException("邮箱未注册");
         }
 
-        checkRateLimit(email, ip);
-
-        // 生成验证码
-        String code = RandomUtil.randomNumbers(6);
-        // 存入Redis，5分钟有效
-        redisUtil.set("reset:code:" + email, code, 5, TimeUnit.MINUTES);
-
-        // 更新频率限制记录
-        updateRateLimit(email, ip);
-
-        // 发送邮件
-        mailService.sendSimpleEmail(email, "重置密码验证码", "您的验证码是：" + code + "，有效期5分钟。", "reset_pwd", ip);
+        sendEmailCode(EmailPurpose.RESET_PASSWORD, user.getEmail(), ip, "重置密码验证码", "reset_pwd");
     }
 
-    /** 验证码最大错误尝试次数，超过后验证码作废，需重新发送 */
-    private static final int EMAIL_CODE_MAX_ATTEMPTS = 5;
+    private UserEntity findByEmail(String email) {
+        LambdaQueryWrapper<UserEntity> emailWrapper = new LambdaQueryWrapper<>();
+        IlikeQuery.lowerEquals(emailWrapper, UserEntity::getEmail, email);
+        return userMapper.selectOne(emailWrapper);
+    }
 
-    /**
-     * 校验邮箱验证码。校验失败计入尝试次数（与验证码同生命周期），
-     * 达到上限后作废验证码，防止对 6 位数字验证码的爆破。
-     * 校验成功立即删除验证码（一次性使用）。
-     *
-     * @param codeKey   验证码在 Redis 中的完整 key
-     * @param inputCode 用户输入的验证码
-     */
-    private void verifyEmailCode(String codeKey, String inputCode) {
-        String code = redisUtil.get(codeKey);
-        if (code == null) {
-            throw new RuntimeException("验证码错误或已过期");
-        }
-        if (code.equals(inputCode)) {
-            redisUtil.delete(codeKey);
-            redisUtil.delete(codeKey + ":attempts");
-            return;
-        }
-        String attemptKey = codeKey + ":attempts";
-        Long attempts = redisUtil.increment(attemptKey, 1);
-        if (attempts != null && attempts == 1) {
-            redisUtil.expire(attemptKey, 5, TimeUnit.MINUTES);
-        }
-        if (attempts != null && attempts >= EMAIL_CODE_MAX_ATTEMPTS) {
-            redisUtil.delete(codeKey);
-            redisUtil.delete(attemptKey);
-            throw new RuntimeException("验证码错误次数过多，已失效，请重新获取");
-        }
-        throw new RuntimeException("验证码错误或已过期");
+    private void sendEmailCode(EmailPurpose purpose, String email, String ip, String title, String bizType) {
+        String code = authAttempts.issueEmailCode(purpose, email, ip);
+        mailService.sendSimpleEmail(email, title,
+                "您的验证码是：" + code + "，有效期" + AuthAttemptStore.CODE_MINUTES + "分钟。", bizType, ip);
     }
 
     /** 发送验证码前校验邮箱必填且格式有效。 */
@@ -464,84 +400,15 @@ public class UserServiceImpl implements IUserService {
         }
     }
 
-    /**
-     * 检查频率限制
-     */
-    private void checkRateLimit(String email, String ip) {        // 频率限制：3分钟内只能发送一次（使用配置的 intervalSeconds）
-        String lockKey = "code:lock:" + email;
-        if (redisUtil.hasKey(lockKey)) {
-            throw new RuntimeException("操作过于频繁，请" + (intervalSeconds / 60) + "分钟后再试");
-        }
-
-        String today = DateUtil.today();
-        String ipKey = "code:limit:ip:" + today + ":" + ip;
-        String emailKey = "code:limit:email:" + today + ":" + email;
-        String totalKey = "code:limit:total:" + today;
-
-        // 全局单日总限制
-        String totalCountStr = redisUtil.get(totalKey);
-        if (totalCountStr != null && Long.parseLong(totalCountStr) >= totalLimitDay) {
-            throw new RuntimeException("今日发送验证码总次数已达上限，请明天再试");
-        }
-
-        // IP单日限制
-        String ipCountStr = redisUtil.get(ipKey);
-        if (ipCountStr != null && Long.parseLong(ipCountStr) >= ipLimitDay) {
-            throw new RuntimeException("当前IP今日发送次数已达上限");
-        }
-
-        // 邮箱单日限制
-        String emailCountStr = redisUtil.get(emailKey);
-        if (emailCountStr != null && Long.parseLong(emailCountStr) >= emailLimitDay) {
-            throw new RuntimeException("当前邮箱今日发送次数已达上限");
-        }
-    }
-
-    /**
-     * 更新频率限制记录
-     */
-    private void updateRateLimit(String email, String ip) {
-        // 设置间隔锁
-        String lockKey = "code:lock:" + email;
-        redisUtil.set(lockKey, "1", intervalSeconds, TimeUnit.SECONDS);
-
-        String today = DateUtil.today();
-        String ipKey = "code:limit:ip:" + today + ":" + ip;
-        String emailKey = "code:limit:email:" + today + ":" + email;
-        String totalKey = "code:limit:total:" + today;
-
-        // 更新全局计数
-        Long totalCount = redisUtil.increment(totalKey, 1);
-        if (totalCount != null && totalCount == 1) {
-            redisUtil.expire(totalKey, 1, TimeUnit.DAYS);
-        }
-
-        // 更新IP计数
-        Long ipCount = redisUtil.increment(ipKey, 1);
-        if (ipCount != null && ipCount == 1) {
-            redisUtil.expire(ipKey, 1, TimeUnit.DAYS);
-        }
-
-        // 更新邮箱计数
-        Long emailCount = redisUtil.increment(emailKey, 1);
-        if (emailCount != null && emailCount == 1) {
-            redisUtil.expire(emailKey, 1, TimeUnit.DAYS);
-        }
-    }
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void resetPassword(ResetPasswordReq resetPasswordReq) {
         PasswordUtil.validatePassword(resetPasswordReq.getPassword());
-        // 校验验证码（含尝试次数限制，成功即作废）
-        verifyEmailCode("reset:code:" + resetPasswordReq.getEmail(), resetPasswordReq.getCode());
-
-        LambdaQueryWrapper<UserEntity> emailWrapper = new LambdaQueryWrapper<>();
-        IlikeQuery.lowerEquals(emailWrapper, UserEntity::getEmail, resetPasswordReq.getEmail());
-        UserEntity userEntity = userMapper.selectOne(emailWrapper);
+        UserEntity userEntity = findByEmail(resetPasswordReq.getEmail());
         if (userEntity == null) {
-            throw new RuntimeException("用户不存在");
+            throw new IllegalArgumentException("验证码错误或已过期");
         }
+        authAttempts.consumeEmailCode(EmailPurpose.RESET_PASSWORD, userEntity.getEmail(), resetPasswordReq.getCode());
 
         userEntity.setPassword(PasswordUtil.hashPassword(resetPasswordReq.getPassword()));
         userEntity.setUpdateTime(LocalDateTime.now());
@@ -557,8 +424,7 @@ public class UserServiceImpl implements IUserService {
     public void register(RegisterReq registerReq) {
         PasswordUtil.validatePassword(registerReq.getPassword());
         LegalPolicyService.requireAcceptance(registerReq.getAgreedPolicy(), registerReq.getPolicyVersion());
-        // 校验验证码（含尝试次数限制，成功即作废）
-        verifyEmailCode("register:code:" + registerReq.getEmail(), registerReq.getCode());
+        authAttempts.consumeEmailCode(EmailPurpose.REGISTER, registerReq.getEmail(), registerReq.getCode());
         // 校验用户名是否已存在
         LambdaQueryWrapper<UserEntity> usernameWrapper = new LambdaQueryWrapper<>();
         IlikeQuery.lowerEquals(usernameWrapper, UserEntity::getUsername, registerReq.getUsername());
@@ -620,7 +486,11 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public String verifySecondaryPassword(long userId, String password, String menuPath) {
+    public void verifySecondaryPassword(long userId, String password, String menuPath) {
+        String sessionHash = SecondaryLockSession.currentHash();
+        if (sessionHash == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "请使用登录会话解锁菜单");
+        }
         UserEntity user = userMapper.selectById(userId);
         if (user == null) {
             throw new RuntimeException("用户不存在");
@@ -636,14 +506,12 @@ public class UserServiceImpl implements IUserService {
         if (path.startsWith("/api/")) path = path.substring(4);
         Set<String> paths = secondaryLockMenuResolver.findMatchedPaths(userId, path);
         verifySecondaryPasswordOrThrow(user, password);
-        // 一次密码验证同时满足当前菜单及其父级锁；键仍是原锁定菜单路径。
+        // 一次密码验证同时满足当前菜单及其父级锁，授权仅归当前登录会话。
         if (paths.isEmpty()) paths = Set.of(menuPath);
-        String unlockKey = null;
         for (String lockedPath : paths) {
-            unlockKey = SecondaryLockInterceptor.unlockKey(userId, lockedPath);
+            String unlockKey = SecondaryLockSession.unlockKey(userId, sessionHash, lockedPath);
             redisUtil.set(unlockKey, "1", SecondaryLockInterceptor.unlockTtlSeconds(), TimeUnit.SECONDS);
         }
-        return unlockKey;
     }
 
     /**
@@ -718,14 +586,7 @@ public class UserServiceImpl implements IUserService {
             throw new RuntimeException("未绑定邮箱，无法找回二级密码");
         }
 
-        checkRateLimit(email, ip);
-
-        String code = RandomUtil.randomNumbers(6);
-        redisUtil.set("secondary:reset:code:" + email, code, 5, TimeUnit.MINUTES);
-
-        updateRateLimit(email, ip);
-
-        mailService.sendSimpleEmail(email, "重置二级密码验证码", "您的验证码是：" + code + "，有效期5分钟。", "secondary_pwd", ip);
+        sendEmailCode(EmailPurpose.RESET_SECONDARY_PASSWORD, email, ip, "重置二级密码验证码", "secondary_pwd");
     }
 
     @Override
@@ -741,7 +602,7 @@ public class UserServiceImpl implements IUserService {
             throw new RuntimeException("未绑定邮箱");
         }
 
-        verifyEmailCode("secondary:reset:code:" + email, code);
+        authAttempts.consumeEmailCode(EmailPurpose.RESET_SECONDARY_PASSWORD, email, code);
 
         user.setSecondaryPassword(PasswordUtil.hashPassword(password));
         user.setUpdateTime(LocalDateTime.now());
