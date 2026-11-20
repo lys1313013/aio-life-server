@@ -1,47 +1,40 @@
 package top.aiolife.sso.service;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.boot.env.YamlPropertySourceLoader;
-import org.springframework.core.env.MapPropertySource;
-import org.springframework.context.annotation.ContextAnnotationAutowireCandidateResolver;
-import org.springframework.core.env.StandardEnvironment;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.test.util.ReflectionTestUtils;
-import top.aiolife.sso.service.impl.UserServiceImpl;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.context.ConfigurationPropertiesAutoConfiguration;
+import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import top.aiolife.sso.config.AuthAbuseProperties;
 
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class VerificationCodeConfigTest {
-    @Test void testBinding_配置文件及覆盖值正确注入实际限流字段() throws Exception {
-        var environment = new StandardEnvironment();
-        for (var source : new YamlPropertySourceLoader().load("application", new ClassPathResource("application.yml"))) {
-            environment.getPropertySources().addLast(source);
-        }
-        var beanFactory = new DefaultListableBeanFactory();
-        beanFactory.setAutowireCandidateResolver(new ContextAnnotationAutowireCandidateResolver());
-        beanFactory.addEmbeddedValueResolver(environment::resolveRequiredPlaceholders);
-        var injector = new AutowiredAnnotationBeanPostProcessor();
-        injector.setBeanFactory(beanFactory);
-        var service = mock(UserServiceImpl.class);
-        injector.processInjection(service);
-        assertEquals(180L, ReflectionTestUtils.getField(service, "intervalSeconds"));
-        assertEquals(100L, ReflectionTestUtils.getField(service, "ipLimitDay"));
-        assertEquals(20L, ReflectionTestUtils.getField(service, "emailLimitDay"));
-        assertEquals(1000L, ReflectionTestUtils.getField(service, "totalLimitDay"));
-        environment.getPropertySources().addFirst(new MapPropertySource("overrides", Map.of(
-                "aio.life.server.auth.code.interval-seconds", 42,
-                "aio.life.server.auth.code.ip-limit-day", 43,
-                "aio.life.server.auth.code.email-limit-day", 44,
-                "aio.life.server.auth.code.total-limit-day", 45)));
-        injector.processInjection(service);
-        assertEquals(42L, ReflectionTestUtils.getField(service, "intervalSeconds"));
-        assertEquals(43L, ReflectionTestUtils.getField(service, "ipLimitDay"));
-        assertEquals(44L, ReflectionTestUtils.getField(service, "emailLimitDay"));
-        assertEquals(45L, ReflectionTestUtils.getField(service, "totalLimitDay"));
+    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+            .withInitializer(new ConfigDataApplicationContextInitializer())
+            .withConfiguration(AutoConfigurations.of(ConfigurationPropertiesAutoConfiguration.class))
+            .withUserConfiguration(AuthAbuseProperties.class);
+
+    @Test
+    void testBinding_配置文件及覆盖值正确注入实际限流字段() {
+        contextRunner.run(context -> {
+            var code = context.getBean(AuthAbuseProperties.class).getCode();
+            assertEquals(180, code.getIntervalSeconds());
+            assertEquals(100, code.getIpLimitDay());
+            assertEquals(20, code.getEmailLimitDay());
+            assertEquals(1000, code.getTotalLimitDay());
+        });
+        contextRunner.withPropertyValues(
+                "aio.life.server.auth.code.interval-seconds=42",
+                "aio.life.server.auth.code.ip-limit-day=43",
+                "aio.life.server.auth.code.email-limit-day=44",
+                "aio.life.server.auth.code.total-limit-day=45"
+        ).run(context -> {
+            var code = context.getBean(AuthAbuseProperties.class).getCode();
+            assertEquals(42, code.getIntervalSeconds());
+            assertEquals(43, code.getIpLimitDay());
+            assertEquals(44, code.getEmailLimitDay());
+            assertEquals(45, code.getTotalLimitDay());
+        });
     }
 }

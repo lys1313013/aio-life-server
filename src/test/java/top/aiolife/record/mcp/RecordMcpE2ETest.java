@@ -1,28 +1,23 @@
 package top.aiolife.record.mcp;
 
-import top.aiolife.record.mapper.ITimeRecordMapper;
+import cn.dev33.satoken.SaManager;
 import cn.dev33.satoken.context.SaTokenContext;
-import cn.dev33.satoken.context.model.SaRequest;
-import cn.dev33.satoken.context.model.SaResponse;
-import cn.dev33.satoken.context.model.SaStorage;
+import cn.dev33.satoken.context.second.SaTokenSecondContext;
 import cn.dev33.satoken.dao.SaTokenDao;
 import cn.dev33.satoken.dao.SaTokenDaoDefaultImpl;
 import cn.dev33.satoken.dao.SaTokenDaoRedisJackson;
+import cn.dev33.satoken.spring.SaTokenContextForSpringInJakartaServlet;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import java.lang.reflect.Proxy;
 import java.time.Duration;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +35,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Primary;
+import top.aiolife.config.SaTokenConfig;
 import top.aiolife.core.resq.ApiResponse;
 import top.aiolife.mcp.auth.McpSaTokenScope;
 import top.aiolife.record.api.*;
@@ -58,6 +54,10 @@ import top.aiolife.record.service.ITaskService;
 import top.aiolife.record.service.ITimeRecordService;
 import top.aiolife.record.service.ITimeTrackerCategoryService;
 import top.aiolife.record.service.ThoughtCreationService;
+import top.aiolife.sso.interceptor.ApiKeyInterceptor;
+import top.aiolife.sso.interceptor.SecondaryLockInterceptor;
+import top.aiolife.sso.interceptor.UserLastActiveInterceptor;
+import top.aiolife.sso.service.AccountStatusGuard;
 import top.aiolife.sso.service.SecondaryLockGuard;
 import top.aiolife.sso.util.SecondaryLockSession;
 
@@ -82,6 +82,8 @@ public class RecordMcpE2ETest {
 
     private McpSyncClient mcpClient;
     private StpLogic originalStpLogic;
+    private SaTokenContext originalSaTokenContext;
+    private SaTokenSecondContext originalSaTokenSecondContext;
 
     @Configuration
     @EnableAutoConfiguration(exclude = {
@@ -103,47 +105,6 @@ public class RecordMcpE2ETest {
         @Bean
         public SecondaryLockGuard secondaryLockGuard() {
             return Mockito.mock(SecondaryLockGuard.class);
-        }
-
-        @Bean
-        @Primary
-        public SaTokenContext saTokenContext() {
-            return new SaTokenContext() {
-                private final SaStorage storage = new SaStorage() {
-                    private final Map<String, Object> map = new ConcurrentHashMap<>();
-                    @Override public Object getSource() { return map; }
-                    @Override public Object get(String key) { return map.get(key); }
-                    @Override public SaStorage set(String key, Object value) { map.put(key, value); return this; }
-                    @Override public SaStorage delete(String key) { map.remove(key); return this; }
-                };
-                @Override public SaRequest getRequest() {
-                    return new SaRequest() {
-                        @Override public Object getSource() { return this; }
-                        @Override public String getParam(String name) { return null; }
-                        @Override public Collection<String> getParamNames() { return Collections.emptyList(); }
-                        @Override public Map<String, String> getParamMap() { return Collections.emptyMap(); }
-                        @Override public String getHeader(String name) { return null; }
-                        @Override public String getCookieValue(String name) { return null; }
-                        @Override public String getCookieFirstValue(String name) { return null; }
-                        @Override public String getCookieLastValue(String name) { return null; }
-                        @Override public String getRequestPath() { return "/mcp"; }
-                        @Override public String getUrl() { return "/mcp"; }
-                        @Override public String getMethod() { return "POST"; }
-                        @Override public Object forward(String path) { return null; }
-                    };
-                }
-                @Override public SaResponse getResponse() {
-                    return new SaResponse() {
-                        @Override public Object getSource() { return this; }
-                        @Override public SaResponse setStatus(int sc) { return this; }
-                        @Override public SaResponse setHeader(String name, String value) { return this; }
-                        @Override public SaResponse addHeader(String name, String value) { return this; }
-                        @Override public Object redirect(String url) { return null; }
-                    };
-                }
-                @Override public SaStorage getStorage() { return storage; }
-                @Override public boolean matchPath(String pattern, String path) { return true; }
-            };
         }
 
         @Bean
@@ -221,6 +182,13 @@ public class RecordMcpE2ETest {
     void setUp() {
         Mockito.reset(taskDetailService, secondaryLockGuard);
         originalStpLogic = StpUtil.getStpLogic();
+        // Spring 可能复用测试上下文，但 SaManager 的全局状态会被其他测试替换。
+        originalSaTokenContext = SaManager.getSaTokenContext();
+        originalSaTokenSecondContext = SaManager.getSaTokenSecondContext();
+        SaManager.setSaTokenContext(new SaTokenContextForSpringInJakartaServlet());
+        // MCP 工具在工作线程执行，复用生产环境的线程本地上下文。
+        new SaTokenConfig(Mockito.mock(ApiKeyInterceptor.class), Mockito.mock(SecondaryLockInterceptor.class),
+                Mockito.mock(UserLastActiveInterceptor.class), Mockito.mock(AccountStatusGuard.class)).initSecondContext();
         StpLogic mockLogic = new StpLogic("login") {
             @Override
             public long getLoginIdAsLong() {
@@ -255,6 +223,8 @@ public class RecordMcpE2ETest {
         } finally {
             // StpUtil 是全局状态，不能让 MCP 的测试身份影响后续真实鉴权测试。
             StpUtil.setStpLogic(originalStpLogic);
+            SaManager.setSaTokenContext(originalSaTokenContext);
+            SaManager.setSaTokenSecondContext(originalSaTokenSecondContext);
         }
     }
 
