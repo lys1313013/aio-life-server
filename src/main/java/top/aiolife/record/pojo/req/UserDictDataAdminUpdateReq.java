@@ -43,9 +43,9 @@ public class UserDictDataAdminUpdateReq {
     private String icon;
 
     /**
-     * 特定分类所需的额外扩展字段(JSON)
+     * 字典项的补充属性（JSON 字符串）
      */
-    private String extData;
+    private String extraData;
 
     /**
      * 是否默认值：1=是，0=否

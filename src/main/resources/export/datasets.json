@@ -420,8 +420,8 @@
         "type": "TEXT"
       },
       {
-        "key": "ext_data",
-        "label": "特定分类所需的额外扩展字段(JSON)",
+        "key": "extra_data",
+        "label": "字典项的补充属性，未配置时为空",
         "type": "TEXT"
       },
       {

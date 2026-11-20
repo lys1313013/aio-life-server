@@ -74,7 +74,8 @@ public class UserDictDataServiceImpl extends ServiceImpl<UserDictDataMapper, Use
                 merged.setDictValue((!readonly && overrideRecord.getDictValue() != null) ? overrideRecord.getDictValue() : publicCategory.getDictValue());
                 merged.setColor((!readonly && overrideRecord.getColor() != null) ? overrideRecord.getColor() : publicCategory.getColor());
                 merged.setIcon((!readonly && overrideRecord.getIcon() != null) ? overrideRecord.getIcon() : publicCategory.getIcon());
-                merged.setExtData((!readonly && overrideRecord.getExtData() != null) ? overrideRecord.getExtData() : publicCategory.getExtData());
+                merged.setExtraData((!readonly && overrideRecord.getExtraData() != null)
+                        ? overrideRecord.getExtraData() : publicCategory.getExtraData());
                 merged.setSortOrder((!readonly && overrideRecord.getSortOrder() != null) ? overrideRecord.getSortOrder() : publicCategory.getSortOrder());
                 // 保留真实状态：覆盖记录的 isEnabled 优先；管理页需要看到停用项
                 merged.setIsEnabled(overrideRecord.getIsEnabled() != null ? overrideRecord.getIsEnabled() : publicCategory.getIsEnabled());

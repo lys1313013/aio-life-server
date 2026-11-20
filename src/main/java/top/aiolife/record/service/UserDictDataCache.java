@@ -18,7 +18,7 @@ import top.aiolife.record.pojo.entity.UserDictDataEntity;
 @Service
 @Slf4j
 public class UserDictDataCache {
-    public static final String CACHE_NAME = "userDictData:v3";
+    public static final String CACHE_NAME = "userDictData:v4";
 
     /** 缓存键不接受 null；公共预设单独使用固定键，数据库侧以 user_id IS NULL 表达。 */
     public static String key(Long userId, String dictType) {
