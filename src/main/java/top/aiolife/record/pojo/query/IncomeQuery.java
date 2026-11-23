@@ -1,6 +1,7 @@
 package top.aiolife.record.pojo.query;
 
 import lombok.Data;
+import top.aiolife.record.enums.LedgerSort;
 
 /**
  * 类功能描述
@@ -31,4 +32,7 @@ public class IncomeQuery {
     private String endTime;
     /** 结束日期（不包含），格式 yyyy-MM-dd。 */
     private String endTimeBefore;
+
+    /** 明细排序，金额使用税前收入金额。 */
+    private LedgerSort sort;
 }

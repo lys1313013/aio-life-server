@@ -2,6 +2,7 @@ package top.aiolife.record.pojo.query;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import top.aiolife.record.enums.LedgerSort;
 
 import java.time.LocalDateTime;
 
@@ -59,4 +60,7 @@ public class ExpenseQuery {
     /** 日历明细范围的结束时间，不包含该时刻；旧 endTime 仍保持包含语义。 */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime endTimeBefore;
+
+    /** 明细排序，金额使用记账金额。 */
+    private LedgerSort sort;
 }

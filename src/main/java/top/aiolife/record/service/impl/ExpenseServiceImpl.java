@@ -18,6 +18,7 @@ import top.aiolife.core.mybatis.IlikeQuery;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.core.util.SysUtil;
 import top.aiolife.record.enums.DictTypeEnum;
+import top.aiolife.record.enums.LedgerSort;
 import top.aiolife.record.mapper.IExpenseMapper;
 import top.aiolife.record.pojo.entity.ExpenseEntity;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
@@ -64,7 +65,11 @@ public class ExpenseServiceImpl extends ServiceImpl<IExpenseMapper, ExpenseEntit
             IlikeQuery.anyOf(wrapper, SysUtil.isNotEmpty(condition.getExpenseDesc()), condition.getExpenseDesc(),
                     ExpenseEntity::getExpenseDesc);
         }
-        wrapper.orderByDesc(ExpenseEntity::getExpenseTime, ExpenseEntity::getId);
+        LedgerSort sort = condition == null ? null : condition.getSort();
+        wrapper.orderBy(sort == LedgerSort.AMOUNT_ASC || sort == LedgerSort.AMOUNT_DESC,
+                sort == LedgerSort.AMOUNT_ASC, ExpenseEntity::getBookkeepingAmount);
+        wrapper.orderBy(true, sort == LedgerSort.DATE_ASC, ExpenseEntity::getExpenseTime);
+        wrapper.orderByDesc(ExpenseEntity::getId);
         Page<ExpenseEntity> result = baseMapper.selectPage(new Page<>(page, pageSize), wrapper);
         return PageResp.of(result.getRecords(), result.getTotal());
     }

@@ -16,6 +16,7 @@ import top.aiolife.core.query.QueryOrder;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.core.util.SysUtil;
 import top.aiolife.record.enums.DictTypeEnum;
+import top.aiolife.record.enums.LedgerSort;
 import top.aiolife.record.mapper.IIncomeMapper;
 import top.aiolife.record.pojo.entity.IncomeEntity;
 import top.aiolife.record.pojo.entity.UserDictDataEntity;
@@ -55,7 +56,10 @@ public class IncomeServiceImpl extends ServiceImpl<IIncomeMapper, IncomeEntity> 
             wrapper.lt(SysUtil.isNotEmpty(condition.getEndTimeBefore()), IncomeEntity::getIncomeDate,
                     condition.getEndTimeBefore());
         }
-        wrapper.orderByDesc(IncomeEntity::getIncomeDate);
+        LedgerSort sort = condition == null ? null : condition.getSort();
+        wrapper.orderBy(sort == LedgerSort.AMOUNT_ASC || sort == LedgerSort.AMOUNT_DESC,
+                sort == LedgerSort.AMOUNT_ASC, IncomeEntity::getGrossAmount);
+        wrapper.orderBy(true, sort == LedgerSort.DATE_ASC, IncomeEntity::getIncomeDate);
         QueryOrder.ascNullsFirst(wrapper, IncomeEntity::getIncomeTypeId);
         wrapper.orderByDesc(IncomeEntity::getId);
         Page<IncomeEntity> result = baseMapper.selectPage(new Page<>(page, pageSize), wrapper);

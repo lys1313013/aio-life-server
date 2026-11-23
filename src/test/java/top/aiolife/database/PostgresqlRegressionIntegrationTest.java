@@ -60,6 +60,7 @@ import top.aiolife.record.mapper.IAttachmentMapper;
 import top.aiolife.record.mapper.RecordImageMapper;
 import top.aiolife.record.service.RecordImageService;
 import top.aiolife.record.enums.AttachmentBizType;
+import top.aiolife.record.enums.LedgerSort;
 import top.aiolife.record.mapper.IIncomeMapper;
 import top.aiolife.record.mapper.IMemoMapper;
 import top.aiolife.record.mapper.IGoalMapper;
@@ -306,7 +307,7 @@ class PostgresqlRegressionIntegrationTest {
     @Test void 收入按年份筛选包含年初年末并保留其他筛选条件() {
         jdbc.update("""
                 INSERT INTO income(id,user_id,gross_amount,income_date,income_type_id,is_deleted) VALUES
-                (1,42,100,'2025-12-31',1,0),(2,42,100,'2026-01-01',1,0),
+                (1,42,100,'2025-12-31',1,0),(2,42,200,'2026-01-01',1,0),
                 (3,42,100,'2026-12-31',1,0),(4,42,100,'2027-01-01',1,0),
                 (5,43,100,'2026-06-01',1,0),(6,42,100,'2026-06-01',1,1),
                 (7,42,100,'2026-06-01',2,0)
@@ -324,13 +325,27 @@ class PostgresqlRegressionIntegrationTest {
             assertEquals(List.of("3"), controller.query("42", request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
             condition.setYear(null); condition.setStartTime(null);
             assertEquals(List.of("4", "3", "2", "1"), controller.query("42", request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
+
+            request.setPageSize(2);
+            condition.setSort(LedgerSort.AMOUNT_DESC);
+            assertEquals(List.of(2L, 4L), controller.query("42", request).getData().getItems().stream().map(row -> row.getId()).toList());
+            request.setPage(2);
+            assertEquals(List.of(3L, 1L), controller.query("42", request).getData().getItems().stream().map(row -> row.getId()).toList());
+            condition.setSort(LedgerSort.AMOUNT_ASC);
+            assertEquals(List.of(1L, 2L), controller.query("42", request).getData().getItems().stream().map(row -> row.getId()).toList());
+
+            condition.setSort(LedgerSort.DATE_ASC);
+            request.setPage(1);
+            assertEquals(List.of(1L, 2L), controller.query("42", request).getData().getItems().stream().map(row -> row.getId()).toList());
+            request.setPage(2);
+            assertEquals(List.of(3L, 4L), controller.query("42", request).getData().getItems().stream().map(row -> row.getId()).toList());
         }
     }
 
     @Test void 支出按年份筛选包含年末最后一秒且排除次年零点() {
         jdbc.update("""
                 INSERT INTO expense(id,user_id,bookkeeping_amount,expense_time,expense_type_id,is_deleted) VALUES
-                (1,42,100,'2025-12-31 23:59:59',1,0),(2,42,100,'2026-01-01 00:00:00',1,0),
+                (1,42,100,'2025-12-31 23:59:59',1,0),(2,42,200,'2026-01-01 00:00:00',1,0),
                 (3,42,100,'2026-12-31 23:59:59',1,0),(4,42,100,'2027-01-01 00:00:00',1,0),
                 (5,43,100,'2026-06-01 00:00:00',1,0),(6,42,100,'2026-06-01 00:00:00',1,1),
                 (7,42,100,'2026-06-01 00:00:00',2,0)
@@ -348,6 +363,20 @@ class PostgresqlRegressionIntegrationTest {
             assertEquals(List.of("3"), controller.query("42", request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
             condition.setYear(null); condition.setStartTime(null);
             assertEquals(List.of("4", "3", "2", "1"), controller.query("42", request).getData().getItems().stream().map(row -> row.getId().toString()).toList());
+
+            request.setPageSize(2);
+            condition.setSort(LedgerSort.AMOUNT_DESC);
+            assertEquals(List.of(2L, 4L), controller.query("42", request).getData().getItems().stream().map(row -> row.getId()).toList());
+            request.setPage(2);
+            assertEquals(List.of(3L, 1L), controller.query("42", request).getData().getItems().stream().map(row -> row.getId()).toList());
+            condition.setSort(LedgerSort.AMOUNT_ASC);
+            assertEquals(List.of(1L, 2L), controller.query("42", request).getData().getItems().stream().map(row -> row.getId()).toList());
+
+            condition.setSort(LedgerSort.DATE_ASC);
+            request.setPage(1);
+            assertEquals(List.of(1L, 2L), controller.query("42", request).getData().getItems().stream().map(row -> row.getId()).toList());
+            request.setPage(2);
+            assertEquals(List.of(3L, 4L), controller.query("42", request).getData().getItems().stream().map(row -> row.getId()).toList());
         }
     }
 

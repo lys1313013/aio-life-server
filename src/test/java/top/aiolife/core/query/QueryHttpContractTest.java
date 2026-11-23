@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.MediaType;
@@ -23,6 +24,7 @@ import top.aiolife.core.exception.ExceptionHandle;
 import top.aiolife.feedback.api.FeedbackController;
 import top.aiolife.feedback.pojo.query.FeedbackAdminQuery;
 import top.aiolife.record.api.*;
+import top.aiolife.record.enums.LedgerSort;
 import top.aiolife.record.pojo.enums.ProgressStatusEnum;
 import top.aiolife.record.pojo.query.ExpenseQuery;
 import top.aiolife.record.pojo.query.MovieQuery;
@@ -119,9 +121,10 @@ class QueryHttpContractTest {
         assertEquals("BUG", captor.getValue().getCondition().getFeedbackType());
     }
 
-    @Test
+    @ParameterizedTest
+    @EnumSource(LedgerSort.class)
     @SuppressWarnings("unchecked")
-    void testExpense_分页和日期条件从URL绑定到泛型DTO() throws Exception {
+    void testExpense_分页日期和排序从URL绑定到泛型DTO(LedgerSort sort) throws Exception {
         ExpController controller = mock(ExpController.class);
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsString).thenReturn("1");
@@ -131,6 +134,7 @@ class QueryHttpContractTest {
                             .param("startTime", "2026-09-01 08:30:00")
                             .param("endTime", "2026-09-12 23:59:59")
                             .param("endTimeBefore", "2026-09-13 00:00:00")
+                            .param("sort", sort.name())
                             .param("remark", "午餐 & 饮料+甜点")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"page\":99,\"condition\":{\"remark\":\"不应读取请求体\"}}"))
@@ -145,6 +149,7 @@ class QueryHttpContractTest {
         assertEquals(LocalDateTime.of(2026, 9, 1, 8, 30), query.getCondition().getStartTime());
         assertEquals("午餐 & 饮料+甜点", query.getCondition().getRemark());
         assertEquals(LocalDateTime.of(2026, 9, 13, 0, 0), query.getCondition().getEndTimeBefore());
+        assertEquals(sort, query.getCondition().getSort());
     }
 
     @Test
@@ -211,6 +216,8 @@ class QueryHttpContractTest {
         try (var login = mockStatic(StpUtil.class)) {
             login.when(StpUtil::getLoginIdAsString).thenReturn("1");
             mvc(expense).perform(get("/expense/query").param("startTime", "not-a-date"))
+                    .andExpect(status().isBadRequest());
+            mvc(expense).perform(get("/expense/query").param("sort", "1"))
                     .andExpect(status().isBadRequest());
         }
         verifyNoInteractions(expense);
