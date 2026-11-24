@@ -1,5 +1,7 @@
 package top.aiolife.membership.pojo.req;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Data;
@@ -14,6 +16,7 @@ import lombok.Data;
 public class MembershipCreateReq {
 
 
+    @NotBlank
     private String name;
 
     private String category;
@@ -28,6 +31,7 @@ public class MembershipCreateReq {
 
     private LocalDate startDate;
 
+    @NotNull
     private LocalDate expiryDate;
 
     private BigDecimal price;

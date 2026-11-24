@@ -70,7 +70,7 @@ public class MembershipRecordWriteService {
     /** 新增订阅并返回完整视图。 */
     @Transactional
     public MembershipVO createVO(long userId, MembershipReq req) {
-        validatePeriod(req);
+        validatePeriod(req.getStartDate(), req.getExpiryDate());
         normalizeCost(req);
         return toVO(create(userId, req), LocalDate.now());
     }
@@ -78,8 +78,6 @@ public class MembershipRecordWriteService {
     /** 更新订阅并返回完整视图。 */
     @Transactional
     public MembershipVO updateVO(long userId, MembershipReq req) {
-        validatePeriod(req);
-        normalizeCost(req);
         return toVO(update(userId, req), LocalDate.now());
     }
 
@@ -112,9 +110,9 @@ public class MembershipRecordWriteService {
                 .set(MembershipRecordEntity::getUpdateTime, LocalDateTime.now()));
     }
 
-    private void validatePeriod(MembershipReq req) {
-        if (req.getExpiryDate() == null) throw new IllegalArgumentException("到期日期不能为空");
-        if (req.getStartDate() != null && req.getExpiryDate().isBefore(req.getStartDate())) {
+    private void validatePeriod(LocalDate startDate, LocalDate expiryDate) {
+        if (expiryDate == null) throw new IllegalArgumentException("到期日期不能为空");
+        if (startDate != null && expiryDate.isBefore(startDate)) {
             throw new IllegalArgumentException("到期日期不能早于开通日期");
         }
     }
@@ -167,6 +165,17 @@ public class MembershipRecordWriteService {
     public MembershipRecordEntity update(long userId, MembershipReq req) {
         MembershipRecordEntity previous = mapper.lockOwned(req.getId(), userId);
         if (previous == null) throw new IllegalArgumentException("会员记录不存在");
+        validatePeriod(req.getStartDate() == null ? previous.getStartDate() : req.getStartDate(),
+                req.getExpiryDate() == null ? previous.getExpiryDate() : req.getExpiryDate());
+        if (req.getPrice() != null || req.getBillingCycle() != null || req.getMonthlyAmount() != null) {
+            boolean priceChanged = req.getPrice() != null && (previous.getPrice() == null
+                    || req.getPrice().compareTo(previous.getPrice()) != 0);
+            boolean cycleChanged = req.getBillingCycle() != null && !req.getBillingCycle().equals(previous.getBillingCycle());
+            if (req.getMonthlyAmount() == null && !priceChanged && !cycleChanged) req.setMonthlyAmount(previous.getMonthlyAmount());
+            if (req.getPrice() == null) req.setPrice(previous.getPrice());
+            if (req.getBillingCycle() == null) req.setBillingCycle(previous.getBillingCycle());
+            normalizeCost(req);
+        }
         Long providerId = req.hasProviderId() ? req.getProviderId() : previous.getProviderId();
         MembershipProviderEntity provider = providers.lockForRecord(providerId, previous.getProviderId());
         MembershipRecordEntity entity = BeanUtil.copyProperties(req, MembershipRecordEntity.class);

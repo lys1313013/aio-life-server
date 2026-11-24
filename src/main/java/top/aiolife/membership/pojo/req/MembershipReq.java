@@ -1,5 +1,6 @@
 package top.aiolife.membership.pojo.req;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -18,6 +19,7 @@ import java.time.LocalDate;
 @Data
 public class MembershipReq {
 
+    @NotNull
     private Long id;
 
     private String name;

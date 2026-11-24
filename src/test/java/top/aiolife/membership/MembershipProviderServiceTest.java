@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 import java.util.List;
@@ -84,6 +85,23 @@ class MembershipProviderServiceTest {
         var sameDay = req(10L);
         sameDay.setStartDate(sameDay.getExpiryDate());
         assertEquals(sameDay.getExpiryDate(), tx.execute(status -> records.createVO(1, sameDay)).getExpiryDate());
+    }
+
+    @Test void 只改备注保留年付费用并使用已有周期重算新价格() {
+        var request = req(null);
+        request.setBillingCycle("year");
+        request.setPrice(new BigDecimal("120"));
+        request.setMonthlyAmount(new BigDecimal("8.00"));
+        var created = tx.execute(status -> records.createVO(1, request));
+        var patch = new MembershipReq();
+        patch.setId(created.getId());
+        patch.setRemark("更新备注");
+        var updated = tx.execute(status -> records.updateVO(1, patch));
+        assertEquals(created.getExpiryDate(), updated.getExpiryDate());
+        assertEquals("year", updated.getBillingCycle());
+        assertEquals(new BigDecimal("8.00"), updated.getMonthlyAmount());
+        patch.setPrice(new BigDecimal("240"));
+        assertEquals(new BigDecimal("20.00"), tx.execute(status -> records.updateVO(1, patch)).getMonthlyAmount());
     }
 
     @Test void 全部旧记录未关联平台仍能正常查询列表() {
