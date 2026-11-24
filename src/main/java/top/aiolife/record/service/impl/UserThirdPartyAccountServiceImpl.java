@@ -75,6 +75,10 @@ public class UserThirdPartyAccountServiceImpl extends ServiceImpl<UserThirdParty
             throw new IllegalArgumentException("微信读书 API Key 不能为空");
         }
 
+        if ("duolingo".equals(entity.getPlatform())) {
+            prepareDuolingoBinding(entity);
+        }
+
         // 检查是否存在同平台绑定
         UserThirdPartyAccountEntity exist = getBindByUserIdAndPlatform(userId, entity.getPlatform());
         if (exist != null) {
@@ -124,6 +128,10 @@ public class UserThirdPartyAccountServiceImpl extends ServiceImpl<UserThirdParty
             return true;
         }
 
+        boolean duolingo = "duolingo".equals(entity.getPlatform() == null ? exist.getPlatform() : entity.getPlatform());
+        if (duolingo) {
+            prepareDuolingoBinding(entity);
+        }
         entity.fillUpdateCommonField(userId);
 
         // 留空表示保留原令牌；只加密本次提交的新值。
@@ -135,7 +143,12 @@ public class UserThirdPartyAccountServiceImpl extends ServiceImpl<UserThirdParty
 
         boolean success;
         try {
-            success = updateById(entity);
+            // 切换到仅使用公开账号的多邻国时，同时清除旧平台凭证。
+            success = duolingo ? lambdaUpdate()
+                    .eq(UserThirdPartyAccountEntity::getId, entity.getId())
+                    .eq(UserThirdPartyAccountEntity::getUserId, userId)
+                    .set(UserThirdPartyAccountEntity::getAccessTokenCiphertext, null)
+                    .update(entity) : updateById(entity);
         } catch (DuplicateKeyException e) {
             throw new IllegalArgumentException("该平台账号已绑定，请勿重复添加", e);
         }
@@ -174,6 +187,16 @@ public class UserThirdPartyAccountServiceImpl extends ServiceImpl<UserThirdParty
                     ? crypto.decrypt(TOKEN_PURPOSE, ciphertext, aad(entity.getUserId())) : null);
         }
         return entity;
+    }
+
+    private void prepareDuolingoBinding(UserThirdPartyAccountEntity entity) {
+        String username = entity.getPlatformUsername() == null ? "" : entity.getPlatformUsername().strip();
+        if (!username.matches("[\\p{L}\\p{M}\\p{N}_.-]{1,128}")
+                || username.matches("\\.{1,2}")) {
+            throw new IllegalArgumentException("请填写多邻国个人主页 /profile/ 后的用户名");
+        }
+        entity.setPlatformUsername(username);
+        entity.setAccessToken(null);
     }
 
     private String encryptToken(long userId, String token) {

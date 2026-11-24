@@ -91,7 +91,7 @@ public class ReadCardProvider implements DashboardCardProvider {
 
             cacheStreak(userId, bind.getAccessToken(), today, todayStreak);
             card.setValue(formatDuration(todaySeconds));
-            card.setValueColor(todaySeconds == 0 ? "red" : "#3FB27F");
+            card.setValueColor(todaySeconds == 0 ? DashboardCardColors.NEGATIVE : DashboardCardColors.POSITIVE);
             card.setTotalValue(displayedStreak + " 天");
 
             card.setRefreshInterval(300);

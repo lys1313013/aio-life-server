@@ -133,7 +133,7 @@ public class GithubCardProvider implements DashboardCardProvider {
                 }
 
                 card.setValue(todayContributions + "");
-                card.setValueColor(todayContributions > 0 ? "#3FB27F" : "red");
+                card.setValueColor(todayContributions > 0 ? DashboardCardColors.POSITIVE : DashboardCardColors.NEGATIVE);
                 card.setTitleClickUrl("https://github.com/" + bind.getPlatformUsername());
             } else {
                 card.setValue("获取失败");

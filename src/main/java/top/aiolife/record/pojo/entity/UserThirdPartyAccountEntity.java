@@ -29,7 +29,7 @@ public class UserThirdPartyAccountEntity extends BaseEntity {
     private Long userId;
 
     /**
-     * 平台类型：github, leetcode, csdn, shanbay, douban, weread
+     * 平台类型：github, leetcode, csdn, shanbay, duolingo, douban, weread
      */
     private String platform;
 

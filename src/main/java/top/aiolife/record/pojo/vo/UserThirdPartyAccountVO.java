@@ -11,7 +11,7 @@ public class UserThirdPartyAccountVO {
     private Long id;
 
     /**
-     * 平台类型：github, leetcode, csdn, shanbay, douban, weread
+     * 平台类型：github, leetcode, csdn, shanbay, duolingo, douban, weread
      */
     private String platform;
 

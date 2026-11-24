@@ -42,6 +42,7 @@ public class MenuVisualService {
     );
     private static final Map<String, MenuVisualVO> PUBLIC_VISUALS = Map.of(
         "links", new MenuVisualVO(null, null, "lucide:layout-grid", null),
+        "duolingo", new MenuVisualVO(null, null, "simple-icons:duolingo", "#58cc02"),
         "shanbay", new MenuVisualVO(null, null, "svg:shanbay", null)
     );
 

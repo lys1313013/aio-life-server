@@ -58,7 +58,7 @@ class HomeCardPreferenceServiceTest {
         assertEquals(0, cards.stream().filter(card -> card.isEnabled() == 0).count());
         assertTrue(cards.stream().filter(card -> List.of("section.memo", "section.finance", "section.income", "section.expense", "section.video", "section.device")
                 .contains(card.cardKey())).allMatch(card -> card.isEnabled() == 1));
-        assertEquals(5, cards.stream().filter(card -> card.group().equals("overview")).count());
+        assertEquals(6, cards.stream().filter(card -> card.group().equals("overview")).count());
         assertEquals(HomeCardCatalog.ALL.size(), cards.stream().filter(card -> card.isEnabled() == 1).count());
         verify(mapper, never()).insert(any(HomeCardPreferenceEntity.class));
     }

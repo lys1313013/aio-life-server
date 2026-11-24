@@ -71,7 +71,7 @@ public class LeetcodeCardProvider implements DashboardCardProvider {
             Pair<Boolean, String> result = leetcodeService.checkToday(user, false);
             card.setTitleClickUrl(result.getSecond());
             card.setValue(result.getFirst() ? "已完成" : "未完成");
-            card.setValueColor(result.getFirst() ? "#3FB27F" : "red");
+            card.setValueColor(result.getFirst() ? DashboardCardColors.POSITIVE : DashboardCardColors.NEGATIVE);
             card.setTotalTitle(getTotalTitle());
             card.setTotalValue(String.valueOf(leetcodeService.getTodaySubmissionCount(bind.getPlatformUsername())));
             card.setRefreshInterval(600);

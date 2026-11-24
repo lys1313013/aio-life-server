@@ -105,22 +105,22 @@ public class ShanbayCardProvider implements DashboardCardProvider {
                     card.setTotalValue(totalValue + " 分钟");
                     
                     card.setValue(hasCheckedIn ? "已打卡" : "未打卡");
-                    card.setValueColor(hasCheckedIn ? "#3fb27f" : "#ff4d4f");
+                    card.setValueColor(hasCheckedIn ? DashboardCardColors.POSITIVE : DashboardCardColors.NEGATIVE);
                 } else {
                     // 没有打卡记录
                     card.setTotalValue("0 分钟");
                     card.setValue("未打卡");
-                    card.setValueColor("#ff4d4f");
+                    card.setValueColor(DashboardCardColors.NEGATIVE);
                 }
             } else {
                 card.setValue("获取失败");
-                card.setValueColor("#ff4d4f");
+                card.setValueColor(DashboardCardColors.NEGATIVE);
                 log.error("Shanbay API response invalid: {}", jsonStr);
             }
         } catch (Exception e) {
             log.error("获取扇贝数据失败", e);
             card.setValue("获取失败");
-            card.setValueColor("#ff4d4f");
+            card.setValueColor(DashboardCardColors.NEGATIVE);
             card.setTotalValue("0 分钟");
         }
 

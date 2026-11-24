@@ -50,7 +50,7 @@ public class ExerciseCardProvider implements DashboardCardProvider {
         try {
             int count = exerciseRecordService.countTodayExerciseTypes(userId);
             card.setValue(String.valueOf(count));
-            card.setValueColor(count == 0 ? "red" : "#3FB27F");
+            card.setValueColor(count == 0 ? DashboardCardColors.NEGATIVE : DashboardCardColors.POSITIVE);
             card.setTotalTitle(getTotalTitle());
             card.setTotalValue(exerciseRecordService.getConsecutiveExerciseDays(userId) + " 天");
             card.setRefreshInterval(600);
