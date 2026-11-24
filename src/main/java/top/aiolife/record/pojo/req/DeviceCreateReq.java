@@ -1,5 +1,6 @@
 package top.aiolife.record.pojo.req;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import top.aiolife.core.id.AttachmentKey;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -20,6 +21,7 @@ public class DeviceCreateReq {
      * 设备的名称
      */
     @Size(max = 255)
+    @NotBlank
     private String name;
 
     /**

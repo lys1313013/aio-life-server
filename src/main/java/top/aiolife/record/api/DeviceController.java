@@ -59,7 +59,7 @@ public class DeviceController {
                                        @Valid @RequestBody DeviceUpdateReq entityReq) {
         DeviceEntity entity = RecordApiConvertor.INSTANCE.fromDeviceUpdateReq(entityReq);
         return ApiResponse.success(deviceService.updateForUser(
-                IdCodec.decode(userId), IdCodec.decode(id), entity));
+                IdCodec.decode(userId), IdCodec.decode(id), entity, entityReq.hasFileId()));
     }
 
     @Operation(summary = "删除设备")

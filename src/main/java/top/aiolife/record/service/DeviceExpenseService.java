@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -61,8 +62,6 @@ public class DeviceExpenseService {
             row.setUpdateUser(userId);
             row.setCreateTime(LocalDateTime.now());
             row.setUpdateTime(row.getCreateTime());
-            if (row.getTransactionAmount() == null) row.setTransactionAmount(row.getBookkeepingAmount());
-            if (row.getBookkeepingAmount() == null) row.setBookkeepingAmount(row.getTransactionAmount());
             return row;
         }).toList();
         if (!expenseService.saveBatch(rows)) {
@@ -107,7 +106,7 @@ public class DeviceExpenseService {
         if (expense == null) throw missing("支出");
         var defaults = new DeviceCreateReq();
         defaults.setName(shortText(expense.getExpenseDesc()));
-        if (defaults.getName() == null) defaults.setName(shortText(expense.getRemark()));
+        if (defaults.getName() == null) defaults.setName(Objects.toString(shortText(expense.getRemark()), ""));
         defaults.setPurchasePrice(expense.getBookkeepingAmount());
         defaults.setPurchaseDate(expense.getExpenseTime() == null ? null : expense.getExpenseTime().toLocalDate());
         defaults.setPurchasePlace(shortText(expense.getCounterparty()));

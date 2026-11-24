@@ -1,5 +1,9 @@
 package top.aiolife.record.pojo.req;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotNull;
@@ -72,4 +76,16 @@ public class ExpenseUpdateReq {
      * 交易状态
      */
     private String transactionStatus;
+
+    @JsonIgnore
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private boolean transactionAmountProvided;
+
+    public void setTransactionAmount(BigDecimal transactionAmount) {
+        this.transactionAmount = transactionAmount;
+        this.transactionAmountProvided = true;
+    }
+
+    public boolean hasTransactionAmount() { return transactionAmountProvided; }
 }

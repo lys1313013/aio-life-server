@@ -1,6 +1,7 @@
 package top.aiolife.record.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import java.time.LocalDate;
@@ -75,7 +76,7 @@ public class ExpenseServiceImpl extends ServiceImpl<IExpenseMapper, ExpenseEntit
     }
 
     @Override
-    public void updateForUser(long userId, ExpenseEntity entity) {
+    public boolean updateForUser(long userId, ExpenseEntity entity, boolean transactionAmountProvided) {
         entity.setUserId(userId);
         entity.setUpdateUser(userId);
         entity.setUpdateTime(LocalDateTime.now());
@@ -88,10 +89,11 @@ public class ExpenseServiceImpl extends ServiceImpl<IExpenseMapper, ExpenseEntit
                 throw new ApiException(ResponseCodeConst.COMMON_FAIL, "交易号已存在: " + entity.getTransactionId());
             }
         }
-        LambdaQueryWrapper<ExpenseEntity> wrapper = new LambdaQueryWrapper<>();
+        LambdaUpdateWrapper<ExpenseEntity> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.set(transactionAmountProvided && entity.getTransactionAmount() == null, ExpenseEntity::getTransactionAmount, null);
         wrapper.eq(ExpenseEntity::getId, entity.getId());
         wrapper.eq(ExpenseEntity::getUserId, userId);
-        baseMapper.update(entity, wrapper);
+        return baseMapper.update(entity, wrapper) > 0;
     }
 
     @Override

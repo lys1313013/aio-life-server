@@ -1,5 +1,6 @@
 package top.aiolife.record.pojo.req;
 
+import jakarta.validation.constraints.NotNull;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
@@ -14,9 +15,11 @@ public class IncomeCreateReq {
     /**
      * 收入金额，未减税额
      */
+    @NotNull
     private BigDecimal grossAmount;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
+    @NotNull
     private LocalDate incomeDate;
 
     private String remark;
@@ -24,6 +27,7 @@ public class IncomeCreateReq {
     /**
      * 收入类型ID
      */
+    @NotNull
     private Long incomeTypeId;
 
     /**

@@ -19,7 +19,7 @@ public interface IExpenseService extends IService<ExpenseEntity> {
     PageResp<ExpenseEntity> pageForUser(long userId, ExpenseQuery condition, int page, int pageSize);
 
     /** 仅更新当前用户拥有的支出，审计时间由服务端维护。 */
-    void updateForUser(long userId, ExpenseEntity entity);
+    boolean updateForUser(long userId, ExpenseEntity entity, boolean transactionAmountProvided);
 
     /** 按年度和支出分类统计，分类名称取用户可见字典。 */
     List<ExpStaticByYearVO> statisticsByYear(long userId);

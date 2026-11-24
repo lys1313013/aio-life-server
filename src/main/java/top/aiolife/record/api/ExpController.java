@@ -3,6 +3,8 @@ package top.aiolife.record.api;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -63,14 +65,14 @@ public class ExpController {
     public ApiResponse<Boolean> update(@CurrentUserId String userId,
                                        @Valid @RequestBody ExpenseUpdateReq entityReq) {
         ExpenseEntity entity = RecordApiConvertor.INSTANCE.fromExpenseUpdateReq(entityReq);
-        expenseService.updateForUser(IdCodec.decode(userId), entity);
-        return ApiResponse.success(true);
+        return ApiResponse.success(expenseService.updateForUser(
+                IdCodec.decode(userId), entity, entityReq.hasTransactionAmount()));
     }
 
     @Operation(summary = "批量新增支出记录")
     @PostMapping("/saveBatch")
     public ApiResponse<Boolean> saveBatch(@CurrentUserId String userId,
-                                          @Valid @RequestBody List<@Valid ExpenseCreateReq> requests) {
+                                          @Valid @NotEmpty @RequestBody List<@NotNull @Valid ExpenseCreateReq> requests) {
         deviceExpenseService.createExpensesWithTransactionCheck(IdCodec.decode(userId), requests);
         return ApiResponse.success();
     }

@@ -20,7 +20,7 @@ public interface IDeviceService extends IService<DeviceEntity> {
     boolean createForUser(long userId, DeviceEntity entity);
 
     /** 仅更新当前用户拥有的设备，不允许修改归属。 */
-    boolean updateForUser(long userId, long id, DeviceEntity entity);
+    boolean updateForUser(long userId, long id, DeviceEntity entity, boolean fileIdProvided);
 
     /** 查询当前用户的设备，不存在时返回 null。 */
     DeviceEntity getOwnedOrNull(long userId, long id);

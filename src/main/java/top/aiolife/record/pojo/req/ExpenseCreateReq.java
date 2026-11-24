@@ -1,5 +1,6 @@
 package top.aiolife.record.pojo.req;
 
+import jakarta.validation.constraints.NotNull;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.Valid;
@@ -27,8 +28,10 @@ public class ExpenseCreateReq {
     /**
      * 记账金额，计入支出统计
      */
+    @NotNull
     private BigDecimal bookkeepingAmount;
 
+    @NotNull
     private Long expenseTypeId;
 
     /**
@@ -55,6 +58,7 @@ public class ExpenseCreateReq {
      * 支出时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @NotNull
     private LocalDateTime expenseTime;
 
     /**

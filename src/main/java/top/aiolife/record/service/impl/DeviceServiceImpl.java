@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
+import java.time.LocalDate;
+import top.aiolife.core.exception.ApiException;
+import top.aiolife.core.constant.ResponseCodeConst;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.record.enums.AttachmentBizType;
@@ -47,6 +50,7 @@ public class DeviceServiceImpl extends ServiceImpl<IDeviceMapper, DeviceEntity> 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean createForUser(long userId, DeviceEntity entity) {
+        validateDates(entity.getPurchaseDate(), entity.getEndDate());
         entity.setId(null);
         entity.setUserId(userId);
         entity.fillCreateCommonField(userId);
@@ -57,7 +61,11 @@ public class DeviceServiceImpl extends ServiceImpl<IDeviceMapper, DeviceEntity> 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean updateForUser(long userId, long id, DeviceEntity entity) {
+    public boolean updateForUser(long userId, long id, DeviceEntity entity, boolean fileIdProvided) {
+        DeviceEntity previous = baseMapper.lockOwned(userId, id);
+        if (previous == null) return false;
+        validateDates(entity.getPurchaseDate() == null ? previous.getPurchaseDate() : entity.getPurchaseDate(),
+                entity.getEndDate() == null ? previous.getEndDate() : entity.getEndDate());
         entity.setId(id);
         entity.setUserId(null);
         entity.fillUpdateCommonField(userId);
@@ -65,8 +73,14 @@ public class DeviceServiceImpl extends ServiceImpl<IDeviceMapper, DeviceEntity> 
         wrapper.eq(DeviceEntity::getId, id);
         wrapper.eq(DeviceEntity::getUserId, userId);
         if (baseMapper.update(entity, wrapper) == 0) return false;
-        images.replace(userId, AttachmentBizType.DEVICE, id, entity.getFileId());
+        if (fileIdProvided) images.replace(userId, AttachmentBizType.DEVICE, id, entity.getFileId());
         return true;
+    }
+
+    private void validateDates(LocalDate purchaseDate, LocalDate endDate) {
+        if (purchaseDate != null && endDate != null && endDate.isBefore(purchaseDate)) {
+            throw new ApiException(ResponseCodeConst.PARAM_FAIL, "结束日期不能早于购买日期");
+        }
     }
 
     @Override

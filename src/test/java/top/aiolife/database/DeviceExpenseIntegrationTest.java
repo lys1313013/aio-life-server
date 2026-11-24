@@ -1,7 +1,18 @@
 package top.aiolife.database;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import top.aiolife.core.exception.ApiException;
+import top.aiolife.record.api.DeviceController;
+import top.aiolife.record.api.ExpController;
+import top.aiolife.record.pojo.req.ExpenseUpdateReq;
+import top.aiolife.record.enums.AttachmentBizType;
+import top.aiolife.record.mapper.IAttachmentMapper;
+import top.aiolife.record.pojo.entity.AttachmentEntity;
+import top.aiolife.record.pojo.req.DeviceUpdateReq;
+import top.aiolife.record.service.impl.DeviceServiceImpl;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -41,10 +52,13 @@ import static org.mockito.ArgumentMatchers.any;
 @ActiveProfiles("test")
 @SpringBootTest(classes = PhysicalTableEntitySelectIntegrationTest.DatabaseMapperTestApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@Import({DeviceExpenseService.class, ExpenseServiceImpl.class, RecordImageService.class})
+@Import({DeviceExpenseService.class, ExpenseServiceImpl.class, RecordImageService.class, DeviceServiceImpl.class})
 @Transactional
 class DeviceExpenseIntegrationTest {
     @Autowired private DeviceExpenseService service;
+    @Autowired private DeviceServiceImpl deviceService;
+    @Autowired private ExpenseServiceImpl expenseService;
+    @Autowired private IAttachmentMapper attachments;
     @Autowired private IDeviceMapper devices;
     @Autowired private IExpenseMapper expenses;
     @MockitoSpyBean private DeviceExpenseMapper links;
@@ -67,8 +81,58 @@ class DeviceExpenseIntegrationTest {
         assertEquals(device.getId(), service.context(1L, rows.get(0).getId()).getDevice().getId());
         assertEquals("随支出新建的设备", service.context(1L, rows.get(1).getId()).getDevice().getName());
         assertNull(service.context(1L, rows.get(2).getId()).getDevice());
-        assertEquals(new BigDecimal("42.50"), rows.getFirst().getTransactionAmount());
+        assertNull(rows.getFirst().getTransactionAmount());
         assertEquals(new BigDecimal("100.00"), devices.selectById(device.getId()).getPurchasePrice());
+    }
+
+    @Test void 局部编辑设备保留图片并按已有购买日期校验结束日期() throws Exception {
+        var controller = new DeviceController(deviceService, service);
+        var device = device(1L);
+        device.setPurchaseDate(LocalDate.of(2026, 10, 1));
+        devices.updateById(device);
+        var attachment = new AttachmentEntity();
+        attachment.fillCreateCommonField(1L);
+        attachment.setBizType(AttachmentBizType.DEVICE.getBizType());
+        attachment.setBizId(device.getId());
+        attachment.setStorageObjectId(123L);
+        attachments.insert(attachment);
+        String id = device.getId().toString();
+        var json = new ObjectMapper();
+        controller.update("1", id, json.readValue("{\"remark\":\"新备注\"}", DeviceUpdateReq.class));
+        assertEquals(attachment.getFileKey(), deviceService.getOwnedOrNull(1L, device.getId()).getFileId());
+        var invalid = new DeviceUpdateReq();
+        invalid.setEndDate(device.getPurchaseDate().minusDays(1));
+        assertThrows(ApiException.class, () -> controller.update("1", id, invalid));
+        controller.update("1", id, json.readValue("{\"fileId\":null}", DeviceUpdateReq.class));
+        assertNull(deviceService.getOwnedOrNull(1L, device.getId()).getFileId());
+    }
+
+    @Test void 无描述和备注时提供空的设备名称供填写() {
+        var request = draftExpense();
+        request.setRemark(null);
+        service.createExpenses(1L, List.of(request));
+        var row = expenses.selectOne(new LambdaQueryWrapper<ExpenseEntity>().eq(ExpenseEntity::getUserId, 1L)
+                .eq(ExpenseEntity::getExpenseTime, request.getExpenseTime()).isNull(ExpenseEntity::getRemark));
+        assertEquals("", service.context(1L, row.getId()).getDefaults().getName());
+    }
+
+    @Test void 支出原始交易金额区分未提交零值与清空() throws Exception {
+        var controller = new ExpController(expenseService, service);
+        var row = expense(1L);
+        var json = new ObjectMapper();
+        var update = new ExpenseUpdateReq();
+        update.setId(row.getId());
+        update.setRemark("只改备注");
+        assertTrue(controller.update("1", update).getData());
+        assertEquals(new BigDecimal("60.00"), expenses.selectById(row.getId()).getTransactionAmount());
+        update.setTransactionAmount(BigDecimal.ZERO);
+        assertTrue(controller.update("1", update).getData());
+        assertEquals(new BigDecimal("0.00"), expenses.selectById(row.getId()).getTransactionAmount());
+        var clear = json.readValue("{\"transactionAmount\":null}", ExpenseUpdateReq.class);
+        clear.setId(row.getId());
+        assertTrue(controller.update("1", clear).getData());
+        assertNull(expenses.selectById(row.getId()).getTransactionAmount());
+        assertEquals(row.getBookkeepingAmount(), expenses.selectById(row.getId()).getBookkeepingAmount());
     }
 
     @Test void 新增关联互斥且设备锁定时不写入支出() {
