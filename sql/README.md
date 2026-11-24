@@ -25,6 +25,10 @@
 
 已有数据库按[合并前版本升级与登记](../docs/数据库初始化与验证.md#已有库升级与登记)执行。后续增量使用高于 `20261120.01` 的新版本。
 
+[20261124.01](migrations/V20261124_01__refresh_tablet_device_icon.sql) 将原平板预设替换为 `svg:ipad`，客户端需包含新资产。
+[20261124.02](migrations/V20261124_02__refresh_electronic_device_icons.sql) 同步手机、电脑和显示器的描边图标预设。
+[20261124.03](migrations/V20261124_03__refresh_vr_headset_device_icon.sql) 将 VR / AR 设备预设替换为实心头显图标。
+
 ## 公共来源与后续维护
 
 `reference/banks/` 等目录保存公共来源快照与许可，不是可执行脚本。生成器只输出待审阅草稿，不覆盖已执行迁移。后续 SQL 按同类合并、异类分开维护，并遵守 Flyway 版本不可改写的约定。
