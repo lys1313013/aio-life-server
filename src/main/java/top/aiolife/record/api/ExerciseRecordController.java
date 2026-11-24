@@ -15,6 +15,7 @@ import top.aiolife.core.web.CurrentUserId;
 import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.pojo.dto.ExerciseStatisticsDTO;
 import top.aiolife.record.pojo.entity.ExerciseRecordEntity;
+import top.aiolife.record.pojo.query.ExerciseDashboardQuery;
 import top.aiolife.record.pojo.query.ExerciseRecordQuery;
 import top.aiolife.record.pojo.query.ExerciseStatisticsQuery;
 import top.aiolife.record.pojo.req.CommonReq;
@@ -111,19 +112,12 @@ public class ExerciseRecordController {
         return ApiResponse.success(exerciseRecordService.lightStatistics(IdCodec.decode(userId), params));
     }
 
-    /**
-     * 首页运动汇总：按天 × 运动类型聚合，支持游标翻页（向下滚动加载历史）
-     *
-     * @param lastDate 上一页返回的最早日期的前一天；首次传 null 表示从今天（含）开始
-     * @param limit    每页返回的不重复日期数量上限（默认 7）
-     */
     @Operation(summary = "分页查询每日运动汇总")
     @GetMapping("/dashboardSummary")
     public ApiResponse<ExerciseDashboardSummaryVO> getDashboardSummary(
             @CurrentUserId String userId,
-            @RequestParam(required = false) String lastDate,
-            @RequestParam(required = false, defaultValue = "7") Integer limit) {
-        return ApiResponse.success(exerciseRecordService.dashboardSummary(
-                IdCodec.decode(userId), lastDate, limit));
+            @Valid @QueryParams ExerciseDashboardQuery query) {
+        return ApiResponse.success(exerciseRecordService.getDashboardSummary(
+                IdCodec.decode(userId), query.getLastDate(), query.getPageSize()));
     }
 }

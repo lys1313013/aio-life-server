@@ -3,7 +3,6 @@ package top.aiolife.record.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import top.aiolife.core.mybatis.IlikeQuery;
@@ -42,7 +41,6 @@ import java.util.stream.Collectors;
  * @author Lys
  * @date 2025-11-29 18:40
  */
-@Slf4j
 @Service
 public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper, ExerciseRecordEntity> implements IExerciseRecordService {
 
@@ -175,20 +173,6 @@ public class ExerciseRecordServiceImpl extends ServiceImpl<IExerciseRecordMapper
         result.setHasMore(hasMore);
         result.setLastDate(hasMore ? dates.get(dates.size() - 1).minusDays(1) : null);
         return result;
-    }
-
-    @Override
-    public ExerciseDashboardSummaryVO dashboardSummary(long userId, String lastDate, Integer limit) {
-        LocalDate cursor = null;
-        if (SysUtil.isNotEmpty(lastDate)) {
-            try {
-                cursor = LocalDate.parse(lastDate);
-            } catch (Exception exception) {
-                log.warn("解析 lastDate 失败，使用默认值: {}", lastDate, exception);
-            }
-        }
-        int safeLimit = (limit == null || limit <= 0 || limit > 30) ? 7 : limit;
-        return getDashboardSummary(userId, cursor, safeLimit);
     }
 
     @Override

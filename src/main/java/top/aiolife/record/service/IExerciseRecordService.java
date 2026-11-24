@@ -45,11 +45,6 @@ public interface IExerciseRecordService extends IService<ExerciseRecordEntity> {
      */
     ExerciseDashboardSummaryVO getDashboardSummary(Long userId, LocalDate lastDate, int limit);
 
-    /**
-     * 首页运动汇总：在服务内解析日期游标并收敛 limit，非法游标按默认值处理。
-     */
-    ExerciseDashboardSummaryVO dashboardSummary(long userId, String lastDate, Integer limit);
-
     /** 当前用户的运动记录分页，运动日期与 ID 倒序。 */
     PageResp<ExerciseRecordEntity> pageForUser(long userId, ExerciseRecordQuery filters, int page, int pageSize);
 

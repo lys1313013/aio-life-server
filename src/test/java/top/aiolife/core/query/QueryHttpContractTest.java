@@ -121,6 +121,22 @@ class QueryHttpContractTest {
         assertEquals("BUG", captor.getValue().getCondition().getFeedbackType());
     }
 
+    @Test
+    void 运动汇总拒绝错误游标和页大小() throws Exception {
+        var controller = mock(ExerciseRecordController.class);
+        var http = mvc(controller);
+        try (var login = mockStatic(StpUtil.class)) {
+            login.when(StpUtil::getLoginIdAsString).thenReturn("1");
+            for (var invalid : List.of("lastDate=2026-02-30", "lastDate=", "pageSize=0", "pageSize=31", "limit=7")) {
+                http.perform(get("/exerciseRecord/dashboardSummary?" + invalid))
+                        .andExpect(status().isBadRequest());
+            }
+            verifyNoInteractions(controller);
+            http.perform(get("/exerciseRecord/dashboardSummary")).andExpect(status().isOk());
+            verify(controller).getDashboardSummary(eq("1"), argThat(query -> query.getPageSize() == 7));
+        }
+    }
+
     @ParameterizedTest
     @EnumSource(LedgerSort.class)
     @SuppressWarnings("unchecked")
