@@ -16,7 +16,6 @@ import top.aiolife.relationship.convertor.RelationshipApiConvertor;
 import top.aiolife.relationship.pojo.entity.PersonRelationship;
 import top.aiolife.relationship.pojo.entity.RelatesToRelationship;
 import top.aiolife.relationship.pojo.req.PersonReq;
-import top.aiolife.relationship.pojo.req.RelationshipDeleteReq;
 import top.aiolife.relationship.pojo.req.RelationshipReq;
 import top.aiolife.relationship.pojo.req.RelationshipUpdateReq;
 import top.aiolife.relationship.pojo.vo.*;
@@ -118,11 +117,10 @@ public class RelationshipController {
     }
 
     @Operation(summary = "删除人物关系")
-    @DeleteMapping
+    @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteRelationship(@CurrentUserId String userId,
-                                                @Valid @RequestBody RelationshipDeleteReq req) {
-        relationshipService.deleteRelationship(IdCodec.decode(userId),
-                req.getSourcePersonId(), req.getTargetPersonId());
+                                                @PathVariable String id) {
+        relationshipService.deleteRelationship(IdCodec.decode(userId), id);
         return ApiResponse.success();
     }
 

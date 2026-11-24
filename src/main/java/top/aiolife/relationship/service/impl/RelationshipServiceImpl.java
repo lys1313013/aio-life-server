@@ -11,6 +11,7 @@ import top.aiolife.relationship.repository.RelationshipRepository;
 import top.aiolife.relationship.service.IRelationshipService;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -84,47 +85,39 @@ public class RelationshipServiceImpl implements IRelationshipService {
     @Override
     public RelatesToRelationship updateRelationship(Long userId, String relationshipId, RelatesToRelationship relationship) {
         try (Session session = driver.session()) {
-            var check = session.run(
-                "MATCH (p:Person {userId: $userId})-[r:RELATES_TO]-() WHERE elementId(r) = $id RETURN elementId(r)",
-                Map.of("id", relationshipId, "userId", userId)
-            );
-            if (!check.hasNext()) {
-                throw new RuntimeException("无权操作该关系或关系不存在");
-            }
-
-            session.run(
-                """
-                MATCH ()-[r:RELATES_TO]->()
-                WHERE elementId(r) = $id
-                SET r.relationType = $relationType, r.direction = $direction, r.description = $description, r.tags = $tags
-                """,
-                Map.of(
-                    "id", relationshipId,
-                    "relationType", relationship.getRelationType() != null ? relationship.getRelationType() : "",
-                    "direction", relationship.getDirection() != null ? relationship.getDirection() : "双向",
-                    "description", relationship.getDescription() != null ? relationship.getDescription() : "",
-                    "tags", relationship.getTags() != null ? relationship.getTags() : ""
-                )
-            );
+            var changes = new HashMap<String, Object>();
+            if (relationship.getRelationType() != null) changes.put("relationType", relationship.getRelationType());
+            if (relationship.getDirection() != null) changes.put("direction", relationship.getDirection());
+            if (relationship.getDescription() != null) changes.put("description", relationship.getDescription());
+            if (relationship.getTags() != null) changes.put("tags", relationship.getTags());
+            var result = session.run("""
+                    MATCH (:Person {userId: $userId})-[r:RELATES_TO]->(:Person {userId: $userId})
+                    WHERE elementId(r) = $id
+                    SET r += $changes
+                    RETURN r
+                    """, Map.of("userId", userId, "id", relationshipId, "changes", changes));
+            if (!result.hasNext()) throw new IllegalArgumentException("无权操作该关系或关系不存在");
+            var stored = result.single().get("r");
             relationship.setId(relationshipId);
+            relationship.setRelationType(stored.get("relationType").asString(null));
+            relationship.setDirection(stored.get("direction").asString(null));
+            relationship.setDescription(stored.get("description").asString(null));
+            relationship.setTags(stored.get("tags").asString(null));
             return relationship;
         }
     }
 
     @Override
-    public void deleteRelationship(Long userId, String sourcePersonId, String targetPersonId) {
+    public void deleteRelationship(Long userId, String relationshipId) {
         try (Session session = driver.session()) {
-            session.run(
-                """
-                MATCH (source:Person {id: $sourceId, userId: $userId})-[r:RELATES_TO]-(target:Person {id: $targetId})
-                DELETE r
-                """,
-                Map.of(
-                    "sourceId", sourcePersonId,
-                    "targetId", targetPersonId,
-                    "userId", userId
-                )
-            );
+            var result = session.run("""
+                    MATCH (:Person {userId: $userId})-[r:RELATES_TO]->(:Person {userId: $userId})
+                    WHERE elementId(r) = $id
+                    DELETE r
+                    """, Map.of("userId", userId, "id", relationshipId));
+            if (result.consume().counters().relationshipsDeleted() == 0) {
+                throw new IllegalArgumentException("无权操作该关系或关系不存在");
+            }
         }
     }
 }

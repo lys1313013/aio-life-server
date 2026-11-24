@@ -195,11 +195,20 @@ class RelationshipElementIdIntegrationTest {
                             .content("{\"relationType\":\"家人\",\"description\":\"更新\"}"))
                     .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
             assertEquals(id, json.readTree(updated).at("/data/id").asText());
+            var patch = new RelatesToRelationship();
+            patch.setTags("标签");
+            var patched = relationships.updateRelationship(1L, id, patch);
+            assertEquals("家人", patched.getRelationType());
+            assertEquals("更新", patched.getDescription());
             try (var session = driver.session()) {
                 assertEquals("家人", session.run("MATCH ()-[r:RELATES_TO]->() WHERE elementId(r)=$id RETURN r.relationType AS type",
                         Map.of("id", id)).single().get("type").asString());
                 assertEquals("同事", session.run("MATCH ()-[r:RELATES_TO]->() WHERE elementId(r)=$id RETURN r.relationType AS type",
                         Map.of("id", otherId)).single().get("type").asString());
+                assertThrows(IllegalArgumentException.class, () -> relationships.deleteRelationship(2L, id));
+                mvc.perform(delete("/relationships/{id}", id)).andExpect(status().isOk());
+                assertEquals(otherId, session.run("MATCH ()-[r:RELATES_TO]->() RETURN elementId(r) AS id")
+                        .single().get("id").asString());
             }
         }
     }

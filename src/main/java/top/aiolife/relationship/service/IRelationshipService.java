@@ -20,5 +20,5 @@ public interface IRelationshipService {
     /**
      * 删除关系
      */
-    void deleteRelationship(Long userId, String sourcePersonId, String targetPersonId);
+    void deleteRelationship(Long userId, String relationshipId);
 }
