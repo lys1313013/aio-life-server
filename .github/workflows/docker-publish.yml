@@ -14,6 +14,10 @@ on:
 env:
   ACR_REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY }}
   ACR_NAMESPACE: ${{ secrets.ALIYUN_ACR_NAMESPACE }}
+  # 在 Maven 下载请求层应对限流，避免重复执行测试或迁移。
+  MAVEN_OPTS: >-
+    -Daether.connector.http.retryHandler.count=4
+    -Daether.connector.http.retryHandler.interval=15000
 
 jobs:
   flyway-migrations:
