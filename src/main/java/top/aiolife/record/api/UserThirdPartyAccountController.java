@@ -14,7 +14,8 @@ import top.aiolife.record.convertor.RecordApiConvertor;
 import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
 import top.aiolife.record.pojo.req.UserThirdPartyAccountCreateReq;
 import top.aiolife.record.pojo.req.UserThirdPartyAccountUpdateReq;
-import top.aiolife.record.pojo.vo.DoubanAccountVO;
+import top.aiolife.record.pojo.req.UserThirdPartyAccountVerifyReq;
+import top.aiolife.record.pojo.vo.UserThirdPartyAccountVerifyVO;
 import top.aiolife.record.pojo.vo.UserThirdPartyAccountVO;
 import top.aiolife.record.service.IUserThirdPartyAccountService;
 
@@ -40,13 +41,11 @@ public class UserThirdPartyAccountController {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toUserThirdPartyAccountVOList(list));
     }
 
-    /**
-     * 根据豆瓣账号 ID 查询公开主页昵称，仅用于辅助用户确认账号。
-     */
-    @Operation(summary = "查询豆瓣账号公开昵称")
-    @GetMapping("/douban/verify")
-    public ApiResponse<DoubanAccountVO> verifyDoubanAccount(@RequestParam String accountId) {
-        return ApiResponse.success(userThirdPartyAccountService.verifyDoubanAccount(accountId));
+    @Operation(summary = "验证第三方账号绑定", description = "查询表单里的账号或凭证是否可用，不保存绑定")
+    @PostMapping("/verify")
+    public ApiResponse<UserThirdPartyAccountVerifyVO> verify(@CurrentUserId String userId,
+                                                           @Valid @RequestBody UserThirdPartyAccountVerifyReq request) {
+        return ApiResponse.success(userThirdPartyAccountService.verifyForUser(IdCodec.decode(userId), request));
     }
 
     /**

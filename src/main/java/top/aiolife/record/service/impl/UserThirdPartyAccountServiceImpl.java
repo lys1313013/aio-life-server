@@ -7,11 +7,12 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import top.aiolife.core.redis.RedisUtil;
-import top.aiolife.record.client.DoubanAccountClient;
+import top.aiolife.record.client.ThirdPartyAccountVerificationClient;
 import top.aiolife.record.mapper.UserThirdPartyAccountMapper;
 import top.aiolife.record.notification.NotificationCryptoService;
 import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
-import top.aiolife.record.pojo.vo.DoubanAccountVO;
+import top.aiolife.record.pojo.req.UserThirdPartyAccountVerifyReq;
+import top.aiolife.record.pojo.vo.UserThirdPartyAccountVerifyVO;
 import top.aiolife.record.service.IUserThirdPartyAccountService;
 import top.aiolife.record.service.IWereadService;
 
@@ -30,7 +31,7 @@ public class UserThirdPartyAccountServiceImpl extends ServiceImpl<UserThirdParty
 
     private final RedisUtil redisUtil;
 
-    private final DoubanAccountClient doubanAccountClient;
+    private final ThirdPartyAccountVerificationClient verificationClient;
 
     private final NotificationCryptoService crypto;
 
@@ -62,8 +63,24 @@ public class UserThirdPartyAccountServiceImpl extends ServiceImpl<UserThirdParty
     }
 
     @Override
-    public DoubanAccountVO verifyDoubanAccount(String accountId) {
-        return doubanAccountClient.verify(accountId);
+    public UserThirdPartyAccountVerifyVO verifyForUser(long userId, UserThirdPartyAccountVerifyReq request) {
+        String platform = request.getPlatform();
+        String username = request.getPlatformUsername() == null ? null : request.getPlatformUsername().strip();
+        String token = null;
+        boolean hasCredential = "github".equals(platform) || "weread".equals(platform);
+        if (hasCredential && StringUtils.hasText(request.getAccessToken())) {
+            token = request.getAccessToken().strip();
+        }
+        if (request.getId() != null) {
+            var binding = getById(request.getId());
+            if (binding == null || !binding.getUserId().equals(userId)) {
+                throw new IllegalArgumentException("记录不存在或无权操作");
+            }
+            if (hasCredential && token == null && platform.equals(binding.getPlatform())) {
+                token = decryptToken(binding).getAccessToken();
+            }
+        }
+        return new UserThirdPartyAccountVerifyVO(verificationClient.verify(platform, username, token));
     }
 
     @Override

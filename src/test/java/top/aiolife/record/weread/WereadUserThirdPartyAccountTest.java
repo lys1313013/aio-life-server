@@ -6,10 +6,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import top.aiolife.core.redis.RedisUtil;
-import top.aiolife.record.client.DoubanAccountClient;
+import top.aiolife.record.client.ThirdPartyAccountVerificationClient;
 import top.aiolife.record.mapper.UserThirdPartyAccountMapper;
 import top.aiolife.record.notification.NotificationCryptoService;
 import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
+import top.aiolife.record.pojo.req.UserThirdPartyAccountVerifyReq;
 import top.aiolife.record.service.IWereadService;
 import top.aiolife.record.service.impl.UserThirdPartyAccountServiceImpl;
 
@@ -22,13 +23,16 @@ class WereadUserThirdPartyAccountTest {
     private UserThirdPartyAccountServiceImpl service;
     private UserThirdPartyAccountMapper mapper;
     private IWereadService weread;
+    private ThirdPartyAccountVerificationClient verificationClient;
+    private NotificationCryptoService crypto;
 
     @BeforeEach
     void setup() {
         mapper = mock(UserThirdPartyAccountMapper.class);
         weread = mock(IWereadService.class);
-        service = new UserThirdPartyAccountServiceImpl(weread, mock(RedisUtil.class), mock(DoubanAccountClient.class),
-                new NotificationCryptoService("synthetic-test-master-key"));
+        verificationClient = mock(ThirdPartyAccountVerificationClient.class);
+        crypto = new NotificationCryptoService("synthetic-test-master-key");
+        service = new UserThirdPartyAccountServiceImpl(weread, mock(RedisUtil.class), verificationClient, crypto);
         ReflectionTestUtils.setField(service, "baseMapper", mapper);
     }
 
@@ -53,6 +57,41 @@ class WereadUserThirdPartyAccountTest {
     void request_绑定请求日志不含Key() {
         assertFalse(JSON.toJSONString(new Object[]{binding()}).contains("wrk-test"));
         assertFalse(binding().toString().contains("wrk-test"));
+    }
+
+    @Test
+    void verify_留空使用本人原密钥且新密钥仅用于本次验证() {
+        var row = binding();
+        row.setAccessTokenCiphertext(crypto.encrypt("user-bind", "wrk-saved", "user_bind:42"));
+        when(mapper.selectById(11L)).thenReturn(row);
+        var request = new UserThirdPartyAccountVerifyReq();
+        request.setId(11L);
+        request.setPlatform("weread");
+        assertNull(service.verifyForUser(42L, request).accountName());
+        verify(verificationClient).verify("weread", null, "wrk-saved");
+
+        request.setAccessToken(" wrk-replacement ");
+        service.verifyForUser(42L, request);
+        verify(verificationClient).verify("weread", null, "wrk-replacement");
+        verify(mapper, times(2)).selectById(11L);
+        verifyNoMoreInteractions(mapper);
+        verifyNoInteractions(weread);
+    }
+
+    @Test
+    void verify_拒绝跨用户借用凭证且切换平台不用原凭证() {
+        var row = binding();
+        row.setAccessTokenCiphertext(crypto.encrypt("user-bind", "wrk-saved", "user_bind:42"));
+        when(mapper.selectById(11L)).thenReturn(row);
+        var request = new UserThirdPartyAccountVerifyReq();
+        request.setId(11L);
+        request.setPlatform("github");
+        request.setPlatformUsername(" demo-user ");
+        assertThrows(IllegalArgumentException.class, () -> service.verifyForUser(43L, request));
+        verifyNoInteractions(verificationClient);
+
+        service.verifyForUser(42L, request);
+        verify(verificationClient).verify("github", "demo-user", null);
     }
 
     @Test

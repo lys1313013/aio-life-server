@@ -133,7 +133,7 @@ class WereadServiceTest {
 
     @Test
     void connect_验证失败不会替换原密钥() {
-        when(client.call(eq("wrk-test"), eq("/shelf/sync"), any())).thenThrow(new IllegalStateException("invalid"));
+        doThrow(new IllegalStateException("invalid")).when(client).verifyKey("wrk-test");
         try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             assertThrows(IllegalStateException.class, () -> service.connect(42L,"wrk-test"));
@@ -178,13 +178,14 @@ class WereadServiceTest {
         verifyNoInteractions(mapper,client);
     }
     @Test
-    void connect_直接保存Key到账号绑定() throws Exception {
-        when(client.call(eq("wrk-test"), eq("/shelf/sync"), any())).thenReturn(json.readTree("{\"books\":[]}"));
+    void connect_直接保存Key到账号绑定() {
         try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             assertTrue(service.connect(42L,"wrk-test").connected());
             ArgumentCaptor<UserThirdPartyAccountEntity> captor = ArgumentCaptor.forClass(UserThirdPartyAccountEntity.class);
-            verify(mapper).insert(captor.capture());
+            var writes = inOrder(client, mapper);
+            writes.verify(client).verifyKey("wrk-test");
+            writes.verify(mapper).insert(captor.capture());
             assertEquals(42L, captor.getValue().getUserId());
             assertEquals("wrk-test", captor.getValue().getAccessToken());
         }
@@ -219,10 +220,9 @@ class WereadServiceTest {
     }
 
     @Test
-    void connect_更换Key只清除同步时间且保留扩展字段() throws Exception {
+    void connect_更换Key只清除同步时间且保留扩展字段() {
         var row = connection(); row.setMetaFields("{\"lastSyncTime\":\"2026-09-11T12:30:00\",\"other\":true}");
         when(mapper.selectOne(any())).thenReturn(row);
-        when(client.call(anyString(),eq("/shelf/sync"),any())).thenReturn(json.readTree("{}"));
         try (MockedStatic<StpUtil> auth = mockStatic(StpUtil.class)) {
             auth.when(StpUtil::getLoginIdAsLong).thenReturn(42L);
             assertNull(service.connect(42L,"wrk-new").lastSyncTime());

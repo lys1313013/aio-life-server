@@ -164,10 +164,7 @@ public class WereadServiceImpl implements IWereadService {
     @Override
     @Transactional
     public WereadConnectionVO connect(long userId, String apiKey) {
-        if (apiKey == null || !apiKey.matches("wrk-[A-Za-z0-9_-]{1,252}")) {
-            throw new IllegalArgumentException("微信读书 Key 格式无效");
-        }
-        client.call(apiKey, "/shelf/sync", Map.of()); // 验证成功后才替换旧连接
+        client.verifyKey(apiKey);
         mapper.lockWereadUser(userId);
         var connection = find(userId);
         if (connection == null) {

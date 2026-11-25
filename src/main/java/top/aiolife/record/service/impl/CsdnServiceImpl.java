@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Ticker;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -54,6 +55,24 @@ public class CsdnServiceImpl implements ICsdnService {
             });
         } catch (UncheckedIOException e) {
             throw e.getCause();
+        }
+    }
+
+    @Override
+    public String verifyAccount(String username) {
+        try {
+            var name = getHomepage(username).selectFirst(".user-profile-head-name");
+            if (name == null || name.text().isBlank()) {
+                throw new IllegalStateException("未能读取 CSDN 个人主页，请检查用户名或稍后重试");
+            }
+            return name.text();
+        } catch (HttpStatusException e) {
+            if (e.getStatusCode() == 404) {
+                throw new IllegalArgumentException("未找到该 CSDN 账号，请检查用户名");
+            }
+            throw new IllegalStateException("CSDN 暂时无法验证，请稍后重试");
+        } catch (IOException e) {
+            throw new IllegalStateException("CSDN 暂时无法验证，请稍后重试");
         }
     }
 

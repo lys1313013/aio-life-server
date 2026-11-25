@@ -9,6 +9,9 @@ import java.util.List;
  * CSDN 数据服务接口
  */
 public interface ICsdnService {
+
+    /** 查询公开主页，返回可用于确认账号的名称。 */
+    String verifyAccount(String username);
     
     /**
      * 获取 CSDN 用户数据统计

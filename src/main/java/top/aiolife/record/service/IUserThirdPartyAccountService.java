@@ -2,7 +2,8 @@ package top.aiolife.record.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import top.aiolife.record.pojo.entity.UserThirdPartyAccountEntity;
-import top.aiolife.record.pojo.vo.DoubanAccountVO;
+import top.aiolife.record.pojo.req.UserThirdPartyAccountVerifyReq;
+import top.aiolife.record.pojo.vo.UserThirdPartyAccountVerifyVO;
 
 import java.util.List;
 
@@ -29,8 +30,8 @@ public interface IUserThirdPartyAccountService extends IService<UserThirdPartyAc
     /** 查询当前用户绑定列表，按需隐藏凭证；微信读书凭证始终隐藏。 */
     List<UserThirdPartyAccountEntity> listForUser(long userId, Boolean includeToken);
 
-    /** 根据豆瓣账号 ID 查询公开主页昵称，仅用于辅助用户确认账号。 */
-    DoubanAccountVO verifyDoubanAccount(String accountId);
+    /** 验证当前表单配置，不写入绑定。 */
+    UserThirdPartyAccountVerifyVO verifyForUser(long userId, UserThirdPartyAccountVerifyReq request);
 
     boolean createForUser(long userId, UserThirdPartyAccountEntity entity);
 

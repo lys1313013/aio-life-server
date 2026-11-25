@@ -26,6 +26,16 @@ public class WereadClient {
         client = builder.clone().requestFactory(factory).build();
     }
 
+    /** 验证凭证能否读取书架。 */
+    public void verifyKey(String apiKey) {
+        if (apiKey == null || !apiKey.matches("wrk-[A-Za-z0-9_-]{1,252}")) {
+            throw new IllegalArgumentException("微信读书 Key 格式无效");
+        }
+        if (!call(apiKey, "/shelf/sync", Map.of()).path("books").isArray()) {
+            throw new IllegalStateException("微信读书书架数据异常，请稍后重试");
+        }
+    }
+
     public JsonNode call(String key, String endpoint, Map<String, Object> params) {
         if (!ENDPOINTS.contains(endpoint)) throw new IllegalArgumentException("不支持的微信读书接口");
         var body = new HashMap<>(params);
