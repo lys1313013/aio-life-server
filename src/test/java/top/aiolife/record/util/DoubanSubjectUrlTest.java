@@ -1,6 +1,8 @@
 package top.aiolife.record.util;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,6 +28,41 @@ class DoubanSubjectUrlTest {
         assertEquals(DoubanSubjectUrl.MediaType.BOOK, subject.mediaType());
         assertEquals("4913064", subject.subjectId());
         assertEquals("https://book.douban.com/subject/4913064/", subject.canonicalUrl());
+    }
+
+    @Test
+    void parse_影视分享链接与网页地址指向同一条目() {
+        String canonicalUrl = "https://movie.douban.com/subject/37100984/";
+        var expected = DoubanSubjectUrl.parse(canonicalUrl);
+
+        assertEquals(expected, DoubanSubjectUrl.parse("https://www.douban.com/doubanapp/dispatch/movie/37100984"));
+        assertEquals(expected, DoubanSubjectUrl.parse(
+                "  https://WWW.douban.com/doubanapp/dispatch/movie/37100984/?from=share#details  "));
+    }
+
+    @Test
+    void parse_图书分享链接与网页地址指向同一条目() {
+        var expected = DoubanSubjectUrl.parse("https://book.douban.com/subject/4913064/");
+
+        assertEquals(expected, DoubanSubjectUrl.parse("https://www.douban.com/doubanapp/dispatch/book/4913064"));
+        assertEquals(expected, DoubanSubjectUrl.parse(
+                "https://www.douban.com/doubanapp/dispatch/book/4913064/?from=share#details"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "https://www.douban.com.evil.test/doubanapp/dispatch/movie/37100984",
+            "https://www.douban.com@127.0.0.1/doubanapp/dispatch/movie/37100984",
+            "https://www.douban.com:443/doubanapp/dispatch/movie/37100984",
+            "https://movie.douban.com/doubanapp/dispatch/movie/37100984",
+            "https://www.douban.com/doubanapp/dispatch/movie/37100984/extra",
+            "https://www.douban.com/doubanapp/dispatch/movie/abc",
+            "https://www.douban.com/doubanapp/dispatch/movie%2F37100984",
+            "https://www.douban.com/doubanapp/dispatch/music/37100984",
+            "https://www.douban.com/doubanapp/dispatch?movie=37100984"
+    })
+    void parse_拒绝不受支持的分享地址(String url) {
+        assertThrows(IllegalArgumentException.class, () -> DoubanSubjectUrl.parse(url));
     }
 
     @Test

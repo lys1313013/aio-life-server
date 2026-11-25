@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 public final class DoubanSubjectUrl {
 
     private static final Pattern SUBJECT_PATH = Pattern.compile("^/subject/(\\d+)/?$");
+    private static final Pattern SHARE_PATH = Pattern.compile("^/doubanapp/dispatch/(movie|book)/(\\d+)/?$");
 
     private DoubanSubjectUrl() {
     }
@@ -42,23 +43,33 @@ public final class DoubanSubjectUrl {
             throw new IllegalArgumentException("豆瓣地址格式不正确");
         }
 
-        MediaType mediaType = switch (host.toLowerCase(Locale.ROOT)) {
-            case "movie.douban.com" -> MediaType.MOVIE;
-            case "book.douban.com" -> MediaType.BOOK;
-            default -> throw new IllegalArgumentException("仅支持 movie.douban.com 或 book.douban.com 的条目地址");
+        return switch (host.toLowerCase(Locale.ROOT)) {
+            case "movie.douban.com" -> parseSubjectPath(uri.getPath(), MediaType.MOVIE);
+            case "book.douban.com" -> parseSubjectPath(uri.getPath(), MediaType.BOOK);
+            case "www.douban.com" -> parseSharePath(uri.getRawPath());
+            default -> throw new IllegalArgumentException("仅支持豆瓣书影条目地址或 App 分享链接");
         };
+    }
 
-        String path = uri.getPath();
-        if (path == null) {
-            throw new IllegalArgumentException("豆瓣地址必须是 /subject/{id}/ 格式");
-        }
+    private static Subject parseSubjectPath(String path, MediaType mediaType) {
         Matcher matcher = SUBJECT_PATH.matcher(path);
         if (!matcher.matches()) {
             throw new IllegalArgumentException("豆瓣地址必须是 /subject/{id}/ 格式");
         }
+        return subject(mediaType, matcher.group(1));
+    }
 
-        String subjectId = matcher.group(1);
-        String canonicalUrl = "https://" + host.toLowerCase(Locale.ROOT) + "/subject/" + subjectId + "/";
+    private static Subject parseSharePath(String path) {
+        Matcher matcher = SHARE_PATH.matcher(path);
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException("豆瓣 App 分享链接必须指向影视或书籍条目");
+        }
+        MediaType mediaType = MediaType.MOVIE.domain.equals(matcher.group(1)) ? MediaType.MOVIE : MediaType.BOOK;
+        return subject(mediaType, matcher.group(2));
+    }
+
+    private static Subject subject(MediaType mediaType, String subjectId) {
+        String canonicalUrl = "https://" + mediaType.domain + ".douban.com/subject/" + subjectId + "/";
         return new Subject(mediaType, subjectId, canonicalUrl);
     }
 
@@ -75,9 +86,11 @@ public final class DoubanSubjectUrl {
         MOVIE("movie"),
         BOOK("book");
 
+        private final String domain;
         private final String resourceType;
 
         MediaType(String domain) {
+            this.domain = domain;
             resourceType = domain + "_subject";
         }
 

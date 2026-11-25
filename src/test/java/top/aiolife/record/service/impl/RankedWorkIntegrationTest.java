@@ -61,19 +61,24 @@ class RankedWorkIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void 更换历史记录链接直接改变榜单且普通保存不创建作品() {
+    void 直接保存分享链接复用同一条目且更换历史链接会改变榜单() {
         jdbc.update("INSERT INTO sys_user(id,username,nickname) VALUES (?,?,?) ON CONFLICT(id) DO NOTHING",
                 TEST_USER_ID, "ranking-test-fixture", "榜单测试");
         var req = new MovieReq();
         req.setTitle("个人片名");
         req.setType(1);
         req.setStatus(ProgressStatusEnum.NOT_STARTED);
-        req.setUrl("https://movie.douban.com/subject/90000123455/");
+        var canonicalUrl = "https://movie.douban.com/subject/90000123455/";
+        req.setUrl("https://www.douban.com/doubanapp/dispatch/movie/90000123455?from=share");
         var id = movies.saveRecord(req);
         var filter = new MovieQuery();
         filter.setRankingListId(24001L);
-        assertEquals("douban", movieMapper.selectById(id).getPlatform());
-        assertEquals("90000123455", movieMapper.selectById(id).getExternalKey());
+        var saved = movieMapper.selectById(id);
+        assertEquals(canonicalUrl, saved.getUrl());
+        assertEquals("douban", saved.getPlatform());
+        assertEquals("90000123455", saved.getExternalKey());
+        req.setUrl(canonicalUrl);
+        assertEquals(id, movies.saveRecord(req));
         assertNull(works.findSubject("movie_subject", "90000123455"));
         assertTrue(movies.getVOById(id).getRankings().isEmpty());
 
@@ -105,7 +110,9 @@ class RankedWorkIntegrationTest extends BaseIntegrationTest {
         assertEquals(first.getId(), second.getId());
         assertNotNull(second.getMetadataReadyTime());
         try (var network = mockStatic(Jsoup.class)) {
-            var parsed = movies.parseDouban(subject.canonicalUrl());
+            var parsed = movies.parseDouban("https://www.douban.com/doubanapp/dispatch/movie/90000123456");
+            assertEquals(subject.canonicalUrl(), parsed.getUrl());
+            assertEquals("测试剧集", parsed.getTitle());
             assertEquals(2, parsed.getType());
             assertEquals(12, parsed.getTotalProgress());
             network.verifyNoInteractions();
@@ -146,11 +153,22 @@ class RankedWorkIntegrationTest extends BaseIntegrationTest {
             movieQuery.setRankingListId(record.getRankings().getFirst().getRankingListId());
             assertTrue(movies.pageList(movieQuery).getRecords().stream().anyMatch(r -> r.getId().equals(id.toString())));
 
-            var reading = books.parseDouban("https://book.douban.com/subject/1007305/?from=library");
+            String bookShareUrl = "https://www.douban.com/doubanapp/dispatch/book/1007305?from=share";
+            String bookUrl = "https://book.douban.com/subject/1007305/";
+            var reading = books.parseDouban(bookShareUrl);
+            assertEquals(bookUrl, reading.getUrl());
+            assertEquals(book.getTitle(), reading.getTitle());
             assertEquals(1600, reading.getTotalProgress());
             assertNull(reading.getCoverImgUrl());
+            assertThrows(IllegalArgumentException.class, () -> movies.parseDouban(bookShareUrl));
+            assertThrows(IllegalArgumentException.class,
+                    () -> books.parseDouban("https://www.douban.com/doubanapp/dispatch/movie/1292052"));
             reading.setStatus(ProgressStatusEnum.NOT_STARTED);
+            reading.setUrl(bookShareUrl);
             var bookId = books.saveRecord(reading);
+            assertEquals(bookUrl, books.getById(bookId).getUrl());
+            reading.setUrl(bookUrl);
+            assertEquals(bookId, books.saveRecord(reading));
             var bookRecord = books.getVOById(bookId);
             assertEquals(book.getId(), bookRecord.getCreativeWorkId());
             var bookQuery = new ReadRecordQuery();
