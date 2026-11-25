@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,10 +29,13 @@ import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
 import top.aiolife.sso.pojo.entity.UserSecondaryLockMenuEntity;
 import top.aiolife.sso.service.IApiKeyService;
+import top.aiolife.sso.service.UserLastActiveStore;
+import top.aiolife.support.CurrentSchema;
 import top.aiolife.sso.util.PasswordUtil;
 import top.aiolife.system.mapper.ISysMenuMapper;
 import top.aiolife.system.pojo.entity.SysMenuEntity;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -45,10 +55,42 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class QueryAccessHttpIntegrationTest {
     private static final String KEY = "fixture-service-key-at-least-32-characters";
+    private static final String FIXTURE_PASSWORD = "isolated-query";
+    private static final GenericContainer<?> POSTGRES = new GenericContainer<>("postgres:18-alpine")
+            .withEnv("POSTGRES_PASSWORD", FIXTURE_PASSWORD)
+            .withEnv("POSTGRES_DB", "fixture")
+            .withExposedPorts(5432)
+            .waitingFor(Wait.forLogMessage(".*database system is ready to accept connections.*\\n", 2))
+            .withStartupTimeout(Duration.ofMinutes(2));
+    private static final GenericContainer<?> REDIS = new GenericContainer<>("redis:7-alpine")
+            .withExposedPorts(6379).waitingFor(Wait.forListeningPort());
+
+    @DynamicPropertySource
+    static void 隔离数据库与Redis(DynamicPropertyRegistry properties) throws Exception {
+        POSTGRES.start();
+        REDIS.start();
+        String url = "jdbc:postgresql://" + POSTGRES.getHost() + ":" + POSTGRES.getMappedPort(5432)
+                + "/fixture?stringtype=unspecified";
+        CurrentSchema.initializePostgresFixture(new JdbcTemplate(
+                new DriverManagerDataSource(url, "postgres", FIXTURE_PASSWORD)));
+        properties.add("spring.datasource.url", () -> url);
+        properties.add("spring.datasource.username", () -> "postgres");
+        properties.add("spring.datasource.password", () -> FIXTURE_PASSWORD);
+        properties.add("spring.data.redis.host", REDIS::getHost);
+        properties.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
+        properties.add("spring.data.redis.password", () -> "");
+    }
+
+    @AfterAll static void 关闭测试容器() {
+        REDIS.stop();
+        POSTGRES.stop();
+    }
+
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
     @Autowired UserMapper users;
     @Autowired QueryGrantStore store;
+    @Autowired UserLastActiveStore lastActive;
     @Autowired IApiKeyService apiKeys;
     @Autowired ISysMenuMapper menus;
     @Autowired UserSecondaryLockMenuMapper locks;
@@ -245,13 +287,30 @@ class QueryAccessHttpIntegrationTest {
         lock.fillCreateCommonField(userId); locks.insert(lock);
         assertEquals(2001, checkToken(session, KEY, dataset).path("code").intValue());
         assertEquals(2001, checkToken(apiKey.getApiKey(), KEY, dataset).path("code").intValue());
-        assertEquals(0, checkToken(session, KEY, "catalog").path("code").intValue());
+        var catalog = checkToken(session, KEY, "catalog");
+        assertEquals(0, catalog.path("code").intValue());
+        var allowed = catalog.at("/data/allowedDatasets");
+        assertEquals(6, allowed.size());
+        assertTrue(java.util.stream.StreamSupport.stream(allowed.spliterator(), false).anyMatch(name -> "time_record".equals(name.asText())));
+        assertFalse(java.util.stream.StreamSupport.stream(allowed.spliterator(), false).anyMatch(name -> dataset.equals(name.asText())));
         assertEquals(0, checkToken(session, KEY, "time_record").path("code").intValue());
     }
 
     @Test void 未发布数据集不能获得查询角色() throws Exception {
         assertNotEquals(0, checkToken(session, KEY, "user").path("code").intValue());
         assertEquals("ai_query_catalog", checkToken(session, KEY, "catalog").at("/data/role").asText());
+    }
+
+    @Test void 确认旧活跃时间不会丢弃Redis中的较新记录() {
+        String id = Long.toString(userId);
+        lastActive.record(id, 1_000, 0);
+        assertTrue(lastActive.pending(500).contains(id));
+        lastActive.record(id, 2_000, 0);
+        lastActive.acknowledge(id, "1000");
+        assertTrue(lastActive.pending(500).contains(id));
+        assertEquals(List.of("2000"), lastActive.timestamps(List.of(id)));
+        lastActive.acknowledge(id, "2000");
+        assertFalse(lastActive.pending(500).contains(id));
     }
 
     private JsonNode checkToken(String token, String key) throws Exception { return checkToken(token, key, "time_record"); }

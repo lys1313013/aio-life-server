@@ -46,8 +46,15 @@ public class TaskDetailImpl extends ServiceImpl<ITaskDetailMapper, TaskDetailEnt
 
     @Override
     public List<TaskDetailEntity> listForTask(long userId, long taskId) {
+        return listForTasks(userId, List.of(taskId));
+    }
+
+    @Override
+    public List<TaskDetailEntity> listForTasks(long userId, List<Long> taskIds) {
+        if (taskIds.isEmpty() || taskIds.size() > 50) throw new IllegalArgumentException("清单数量应在 1 至 50 之间");
         LambdaQueryWrapper<TaskDetailEntity> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(TaskDetailEntity::getTaskId, taskId);
+        queryWrapper.in(TaskDetailEntity::getTaskId, taskIds);
+        queryWrapper.orderByAsc(TaskDetailEntity::getTaskId);
         queryWrapper.eq(TaskDetailEntity::getUserId, userId);
         queryWrapper.orderByAsc(TaskDetailEntity::getIsCompleted);
         QueryOrder.ascNullsFirst(queryWrapper, TaskDetailEntity::getPriority);

@@ -122,6 +122,17 @@ public class FilePreviewGuard {
             if (fileEntity.getBizId() != null && bankCardFileMapper.countOwnedCard(fileEntity.getBizId(), userId) == 0) return AccessDecision.FORBIDDEN;
             return AccessDecision.ALLOW;
         }
+        if ("feedback_comment".equals(fileEntity.getBizType())) {
+            boolean permitted = fileEntity.getBizId() == null
+                    ? userId.equals(fileEntity.getUserId())
+                    : fileEntity.getUserId() != null && bindings.countReadableFeedbackComment(
+                            fileEntity.getBizId(), fileEntity.getUserId(), userId, isAdmin(userId)) > 0;
+            if (!permitted) {
+                return AccessDecision.FORBIDDEN;
+            }
+            secondaryLockGuard.checkMenusForSession(userId, identity.sessionHash(), "/my-hub/feedback");
+            return AccessDecision.ALLOW;
+        }
         if (!userId.equals(fileEntity.getUserId()) && !(isAdmin(userId) && Set.of("feedback","feedback_comment").contains(fileEntity.getBizType()))) {
             return AccessDecision.FORBIDDEN;
         }

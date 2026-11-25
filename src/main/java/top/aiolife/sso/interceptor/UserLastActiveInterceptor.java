@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
-import top.aiolife.core.redis.RedisUtil;
+import top.aiolife.sso.service.UserLastActiveStore;
 
 /**
  * 记录用户最后活跃时间（Token 请求）：写 Redis，低频同步到 DB
@@ -20,10 +20,7 @@ import top.aiolife.core.redis.RedisUtil;
 @RequiredArgsConstructor
 public class UserLastActiveInterceptor implements HandlerInterceptor {
 
-    private static final String LAST_ACTIVE_KEY_PREFIX = "user:last_active:";
-    private static final String DIRTY_SET_KEY = "user:last_active:dirty";
-
-    private final RedisUtil redisUtil;
+    private final UserLastActiveStore active;
 
     /**
      * 同一用户更新活跃时间的最小间隔（秒），避免过于频繁写 Redis / dirty set
@@ -50,35 +47,11 @@ public class UserLastActiveInterceptor implements HandlerInterceptor {
                 return;
             }
 
-            long userId = StpUtil.getLoginIdAsLong();
-            String key = LAST_ACTIVE_KEY_PREFIX + userId;
-
-            long now = System.currentTimeMillis();
-            Long prev = parseLong(redisUtil.get(key));
-            if (prev != null) {
-                long thresholdMs = Math.max(0, thresholdSeconds) * 1000;
-                if (thresholdMs > 0 && now - prev < thresholdMs) {
-                    return;
-                }
-            }
-
-            redisUtil.set(key, String.valueOf(now));
-            redisUtil.sAdd(DIRTY_SET_KEY, String.valueOf(userId));
+            active.record(StpUtil.getLoginIdAsString(), System.currentTimeMillis(),
+                    Math.max(0, thresholdSeconds) * 1000);
         } catch (Exception e) {
             // 记录活跃时间失败不应影响主流程
             log.debug("记录用户最后活跃时间失败", e);
         }
     }
-
-    private Long parseLong(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return Long.parseLong(value);
-        } catch (NumberFormatException ignore) {
-            return null;
-        }
-    }
 }
-

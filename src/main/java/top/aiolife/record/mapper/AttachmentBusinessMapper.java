@@ -24,4 +24,13 @@ public interface AttachmentBusinessMapper {
         </script>
         """)
     long countOwned(String type,long id,long owner);
+    @Select("""
+        SELECT count(*) FROM feedback_comment c JOIN feedback f ON f.id = c.feedback_id
+        WHERE c.id = #{commentId} AND c.user_id = #{uploaderId}
+          AND c.is_deleted = 0 AND f.is_deleted = 0
+          AND (f.user_id = #{viewerId} OR c.user_id = #{viewerId}
+               OR #{admin,typeHandler=org.apache.ibatis.type.BooleanTypeHandler})
+        """)
+    @Options(useCache = false, flushCache = Options.FlushCachePolicy.TRUE)
+    long countReadableFeedbackComment(long commentId, long uploaderId, long viewerId, boolean admin);
 }

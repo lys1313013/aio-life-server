@@ -9,6 +9,13 @@ import top.aiolife.system.pojo.entity.StorageObjectEntity;
 public interface StorageObjectMapper extends BaseMapper<StorageObjectEntity> {
     @Select("SELECT COUNT(*) FROM storage_object WHERE bucket=#{bucket} AND object_key=#{key}")
     long countStoredObject(String bucket,String key);
+    @Select("""
+        <script>
+        SELECT object_key FROM storage_object WHERE bucket=#{bucket} AND object_key IN
+        <foreach collection="keys" item="key" open="(" separator="," close=")">#{key}</foreach>
+        </script>
+        """)
+    List<String> findStoredKeys(String bucket, List<String> keys);
     @Select("SELECT * FROM storage_object WHERE id=#{id} AND is_deleted=0 FOR UPDATE")
     @Options(useCache=false,flushCache=Options.FlushCachePolicy.TRUE)
     StorageObjectEntity lockPresent(long id);

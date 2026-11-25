@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 import top.aiolife.sso.mapper.MessageMapper;
+import top.aiolife.core.util.MinioUtil;
 import top.aiolife.sso.pojo.entity.MessageEntity;
 import top.aiolife.sso.service.impl.MessageServiceImpl;
 
@@ -33,7 +34,7 @@ class MessagePaginationTest {
                 new MapperBuilderAssistant(new MybatisConfiguration(), "message-pagination"),
                 MessageEntity.class);
         MessageMapper mapper = mock(MessageMapper.class);
-        MessageServiceImpl service = new MessageServiceImpl();
+        MessageServiceImpl service = new MessageServiceImpl(mock(MinioUtil.class));
         ReflectionTestUtils.setField(service, "baseMapper", mapper);
         when(mapper.selectPage(anyPage(), anyWrapper()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -99,7 +100,7 @@ class MessagePaginationTest {
     private MessageServiceImpl service() {
         MessageMapper mapper = mock(MessageMapper.class);
         when(mapper.insert(any(MessageEntity.class))).thenReturn(1);
-        MessageServiceImpl service = new MessageServiceImpl();
+        MessageServiceImpl service = new MessageServiceImpl(mock(MinioUtil.class));
         ReflectionTestUtils.setField(service, "baseMapper", mapper);
         return service;
     }

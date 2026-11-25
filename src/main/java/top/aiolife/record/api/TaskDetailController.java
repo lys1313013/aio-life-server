@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -52,6 +53,14 @@ public class TaskDetailController {
     public ApiResponse<List<TaskDetailVO>> list(@CurrentUserId String userId, @RequestParam String taskId) {
         return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVOList(
                 taskDetailService.listForTask(IdCodec.decode(userId), IdCodec.decode(taskId))));
+    }
+
+    @Operation(summary = "批量查询待办子任务")
+    @GetMapping("/batch")
+    public ApiResponse<List<TaskDetailVO>> batch(@CurrentUserId String userId,
+            @RequestParam @NotEmpty @Size(max = 50) List<String> taskIds) {
+        return ApiResponse.success(RecordApiConvertor.INSTANCE.toTaskDetailVOList(
+                taskDetailService.listForTasks(IdCodec.decode(userId), taskIds.stream().map(IdCodec::decode).toList())));
     }
 
     /**

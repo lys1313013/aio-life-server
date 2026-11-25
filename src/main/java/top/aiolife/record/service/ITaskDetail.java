@@ -25,6 +25,8 @@ public interface ITaskDetail extends IService<TaskDetailEntity> {
     /** 查询指定主任务的子任务，按完成状态、优先级和排序展示。 */
     List<TaskDetailEntity> listForTask(long userId, long taskId);
 
+    List<TaskDetailEntity> listForTasks(long userId, List<Long> taskIds);
+
     void reSort(long userId, List<TaskDetailEntity> list);
 
     TaskDetailEntity createForUser(long userId, TaskDetailEntity entity);

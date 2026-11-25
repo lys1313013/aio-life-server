@@ -4,10 +4,16 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import top.aiolife.core.resq.PageResp;
 import top.aiolife.sso.pojo.entity.MessageEntity;
+import top.aiolife.sso.pojo.vo.MessageConversationVO;
 
 import java.util.List;
 
 public interface IMessageService extends IService<MessageEntity> {
+
+    PageResp<MessageConversationVO> conversations(long userId, int page, int pageSize);
+    List<MessageEntity> conversation(long userId, Long peer, Long beforeId, int pageSize);
+    void markConversationRead(long userId, Long peer);
+    void deleteConversation(long userId, Long peer);
 
     List<MessageEntity> listByUserId(Long userId, Boolean isRead);
 

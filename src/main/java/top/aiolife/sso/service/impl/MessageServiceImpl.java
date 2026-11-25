@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import top.aiolife.sso.mapper.MessageMapper;
 import top.aiolife.sso.pojo.entity.MessageEntity;
+import top.aiolife.sso.pojo.vo.MessageConversationVO;
+import top.aiolife.core.util.MinioUtil;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import top.aiolife.sso.service.IMessageService;
 
 import java.time.LocalDateTime;
@@ -20,8 +23,51 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MessageServiceImpl extends ServiceImpl<MessageMapper, MessageEntity> implements IMessageService {
 
+    private final MinioUtil minio;
+
     private static final int USER_PAGE_MAX = 50;
     private static final int ADMIN_PAGE_MAX = PaginationRequest.MAX_PAGE_SIZE;
+
+    @Override
+    public PageResp<MessageConversationVO> conversations(long userId, int page, int pageSize) {
+        requirePagination(page, pageSize, USER_PAGE_MAX);
+        var rows = baseMapper.conversations(userId, pageSize, (page - 1L) * pageSize);
+        rows.forEach(row -> row.setAvatarUrl(minio.getPublicImageUrl(row.getAvatarHash(), row.getAvatarContentType())));
+        return new PageResp<>(rows, null);
+    }
+
+    @Override
+    public List<MessageEntity> conversation(long userId, Long peer, Long beforeId, int pageSize) {
+        requirePagination(1, pageSize, USER_PAGE_MAX);
+        return this.page(new Page<MessageEntity>(1, pageSize, false), conversationQuery(userId, peer)
+                .lt(beforeId != null, MessageEntity::getId, beforeId)
+                .orderByDesc(MessageEntity::getId)).getRecords();
+    }
+
+    private LambdaQueryWrapper<MessageEntity> conversationQuery(long userId, Long peer) {
+        var query = new LambdaQueryWrapper<MessageEntity>();
+        if (peer == null) return query.eq(MessageEntity::getType, 0).eq(MessageEntity::getReceiverId, userId);
+        return query.eq(MessageEntity::getType, 1).and(pair -> pair
+                .nested(sent -> sent.eq(MessageEntity::getSenderId, userId).eq(MessageEntity::getReceiverId, peer))
+                .or(received -> received.eq(MessageEntity::getReceiverId, userId).eq(MessageEntity::getSenderId, peer)));
+    }
+
+    @Override
+    public void markConversationRead(long userId, Long peer) {
+        this.update(new LambdaUpdateWrapper<MessageEntity>()
+                .eq(MessageEntity::getReceiverId, userId)
+                .eq(MessageEntity::getType, peer == null ? 0 : 1)
+                .eq(peer != null, MessageEntity::getSenderId, peer)
+                .eq(MessageEntity::getIsRead, false)
+                .set(MessageEntity::getIsRead, true)
+                .set(MessageEntity::getUpdateTime, LocalDateTime.now())
+                .set(MessageEntity::getUpdateUser, userId));
+    }
+
+    @Override
+    public void deleteConversation(long userId, Long peer) {
+        this.remove(conversationQuery(userId, peer));
+    }
 
     @Override
     public List<MessageEntity> listByUserId(Long userId, Boolean isRead) {

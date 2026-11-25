@@ -27,9 +27,13 @@ public class SecondaryLockMenuResolver {
     }
 
     public Set<String> findLockedMenus(long userId, Set<String> menus) {
+        return findLockedMenus(loadLockedPaths(userId), menus);
+    }
+
+    Set<String> findLockedMenus(Map<String, Set<String>> lockedPaths, Set<String> menus) {
         Set<String> canonical = menus.stream().map(SecondaryLockPolicy::canonicalMenu).collect(Collectors.toSet());
         Set<String> result = new TreeSet<>();
-        loadLockedPaths(userId).forEach((lock, protectedPaths) -> {
+        lockedPaths.forEach((lock, protectedPaths) -> {
             if (protectedPaths.stream().anyMatch(p -> canonical.stream()
                     .anyMatch(m -> SecondaryLockPolicy.under(m, p)))) result.add(lock);
         });
@@ -48,7 +52,7 @@ public class SecondaryLockMenuResolver {
     }
 
 
-    private Map<String, Set<String>> loadLockedPaths(long userId) {
+    Map<String, Set<String>> loadLockedPaths(long userId) {
         List<Long> locks = getLockedMenuIds(userId);
         if (locks.isEmpty()) return Map.of();
         List<SysMenuEntity> menus = menuAccessReader.getMenusForLocks();

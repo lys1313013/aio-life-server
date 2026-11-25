@@ -20,6 +20,7 @@ import top.aiolife.sso.pojo.entity.MessageEntity;
 import top.aiolife.sso.pojo.query.MessagePageQuery;
 import top.aiolife.sso.pojo.req.MessageCreateReq;
 import top.aiolife.sso.pojo.vo.MessageVO;
+import top.aiolife.sso.pojo.vo.MessageConversationVO;
 import top.aiolife.sso.service.IMessageService;
 
 /**
@@ -52,6 +53,39 @@ public class MessageController {
         return ApiResponse.success(SsoApiConvertor.INSTANCE.toMessageVOPage(
                 messageService.pageForUser(IdCodec.decode(userId), query.getIsRead(),
                         query.getPage(), query.getPageSize())));
+    }
+
+    @Operation(summary = "分页查询我的会话")
+    @GetMapping("/conversations")
+    public ApiResponse<PageResp<MessageConversationVO>> conversations(@CurrentUserId String userId,
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "30") int pageSize) {
+        return ApiResponse.success(messageService.conversations(IdCodec.decode(userId), page, pageSize));
+    }
+
+    @Operation(summary = "按消息 ID 游标查询会话历史")
+    @GetMapping("/conversations/{peer}/messages")
+    public ApiResponse<List<MessageVO>> conversation(@CurrentUserId String userId, @PathVariable String peer,
+            @RequestParam(required = false) String beforeId, @RequestParam(defaultValue = "30") int pageSize) {
+        return ApiResponse.success(SsoApiConvertor.INSTANCE.toMessageVOList(messageService.conversation(
+                IdCodec.decode(userId), conversationPeer(peer), beforeId == null ? null : IdCodec.decode(beforeId), pageSize)));
+    }
+
+    @Operation(summary = "标记会话已读")
+    @PutMapping("/conversations/{peer}/read")
+    public ApiResponse<Void> markConversationRead(@CurrentUserId String userId, @PathVariable String peer) {
+        messageService.markConversationRead(IdCodec.decode(userId), conversationPeer(peer));
+        return ApiResponse.success();
+    }
+
+    @Operation(summary = "删除我的会话")
+    @DeleteMapping("/conversations/{peer}")
+    public ApiResponse<Void> deleteConversation(@CurrentUserId String userId, @PathVariable String peer) {
+        messageService.deleteConversation(IdCodec.decode(userId), conversationPeer(peer));
+        return ApiResponse.success();
+    }
+
+    private Long conversationPeer(String peer) {
+        return "system".equals(peer) ? null : IdCodec.decode(peer);
     }
 
     @Operation(summary = "查询未读消息数量")

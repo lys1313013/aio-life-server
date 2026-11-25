@@ -19,6 +19,7 @@ import java.time.ZoneId;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.UUID;
 
 @Service
@@ -26,6 +27,8 @@ import java.util.UUID;
 public class QueryAccessService {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String TOKEN_PATTERN = "aqt_[a-f0-9]{32}\\.[A-Za-z0-9_-]{43}";
+    private static final Set<String> DATASETS = Set.of("time_record", "exercise_record", "read_record",
+            "movie", "b_video", "event_record", "income_month");
     private final QueryAccessProperties properties;
     private final QueryGrantStore store;
     private final AccountStatusGuard accounts;
@@ -59,8 +62,13 @@ public class QueryAccessService {
             expiresAt = timeout == -1 ? Long.MAX_VALUE : Instant.now().getEpochSecond() + timeout;
         }
         if (expiresAt <= Instant.now().getEpochSecond()) throw denied();
+        var allowedDatasets = "catalog".equals(dataset)
+                ? locks.accessibleGroups(userId, sessionHash, DATASETS.stream()
+                        .collect(Collectors.toMap(name -> name, name -> Set.of(policy(name).menus()))))
+                        .stream().sorted().toList()
+                : null;
         return new QueryAccessModels.TokenDecision(Long.toString(userId), "aio-life-query", hash(token).substring(0, 32),
-                apiKey ? "api_key" : "login", policy.role(), Set.of(policy.scope()), expiresAt);
+                apiKey ? "api_key" : "login", policy.role(), Set.of(policy.scope()), expiresAt, allowedDatasets);
     }
 
     public QueryAccessModels.Issued issue(long userId, String sessionToken, String appId) {

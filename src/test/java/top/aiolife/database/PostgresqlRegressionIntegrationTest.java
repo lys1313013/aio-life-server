@@ -53,6 +53,10 @@ import top.aiolife.record.api.ExpController;
 import top.aiolife.record.api.IncomeController;
 import top.aiolife.record.api.MemoController;
 import top.aiolife.record.api.MilestoneController;
+import top.aiolife.record.api.TaskDetailController;
+import top.aiolife.record.mapper.ITaskDetailMapper;
+import top.aiolife.record.service.impl.TaskDetailImpl;
+import top.aiolife.record.mapper.AttachmentBusinessMapper;
 import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.mapper.IDeviceMapper;
 import top.aiolife.record.mapper.IExpenseMapper;
@@ -105,6 +109,8 @@ import top.aiolife.scheduling.mapper.ScheduledJobMapper;
 import top.aiolife.scheduling.pojo.entity.ScheduledJobEntity;
 import top.aiolife.sso.mapper.ApiKeyMapper;
 import top.aiolife.sso.mapper.LoginLogMapper;
+import top.aiolife.sso.mapper.MessageMapper;
+import top.aiolife.sso.service.impl.MessageServiceImpl;
 import top.aiolife.sso.mapper.UserMapper;
 import top.aiolife.sso.mapper.UserSecondaryLockMenuMapper;
 import top.aiolife.sso.pojo.entity.UserEntity;
@@ -149,7 +155,7 @@ class PostgresqlRegressionIntegrationTest {
                 UserThirdPartyAccountMapper.class, UserMapper.class, IDeviceMapper.class, IIncomeMapper.class, IExpenseMapper.class,
                 IMemoMapper.class, IMilestoneMapper.class, IGoalMapper.class, IHonorRecordMapper.class, ITaskMapper.class,
                 top.aiolife.system.mapper.StorageObjectMapper.class, IBVideoMapper.class, IAttachmentMapper.class, RecordImageMapper.class, ImageImportTaskMapper.class, ITimeTrackerCategoryMapper.class,
-                ScheduledJobMapper.class)) configuration.addMapper(mapper);
+                ScheduledJobMapper.class, MessageMapper.class, AttachmentBusinessMapper.class, ITaskDetailMapper.class)) configuration.addMapper(mapper);
         var factory = new MybatisSqlSessionFactoryBean();
         factory.setDataSource(source); factory.setConfiguration(configuration);
         factory.setPlugins(new MybatisPlusConfig().mybatisPlusInterceptor());
@@ -166,6 +172,60 @@ class PostgresqlRegressionIntegrationTest {
     @AfterAll static void 清理数据库() { POSTGRES.stop(); }
 
     private <T> T mapper(Class<T> type) { return session.getMapper(type); }
+
+    @Test void 会话摘要和历史按用户隔离并支持整段已读及删除() {
+        jdbc.update("INSERT INTO sys_user(id,username,nickname) VALUES (43,'peer','好友')");
+        jdbc.update("""
+                INSERT INTO message(id,sender_id,receiver_id,type,title,content,is_read) VALUES
+                (101,43,42,1,'私信','收到的消息',0),
+                (102,42,43,1,'私信','发出的消息',0),
+                (103,NULL,42,0,'系统','系统通知',0),
+                (104,43,44,1,'私信','其他会话',0)
+                """);
+        var service = new MessageServiceImpl(mock(MinioUtil.class));
+        ReflectionTestUtils.setField(service, "baseMapper", mapper(MessageMapper.class));
+        var summaries = service.conversations(42L, 1, 2);
+        assertNull(summaries.getTotal());
+        assertEquals(List.of("system", "43"), summaries.getItems().stream().map(item -> item.getUserId()).toList());
+        assertEquals("好友", summaries.getItems().get(1).getUsername());
+        assertEquals("发出的消息", summaries.getItems().get(1).getLastMessage());
+        assertEquals(1, summaries.getItems().get(1).getUnreadCount());
+
+        assertEquals(102L, service.conversation(42, 43L, null, 1).getFirst().getId());
+        assertEquals(101L, service.conversation(42, 43L, 102L, 1).getFirst().getId());
+        assertEquals(103L, service.conversation(42, null, null, 1).getFirst().getId());
+        service.markConversationRead(42, 43L);
+        assertEquals(1, jdbc.queryForObject("SELECT is_read FROM message WHERE id=101", Integer.class));
+        assertEquals(0, jdbc.queryForObject("SELECT is_read FROM message WHERE id=102", Integer.class));
+        assertEquals(0, jdbc.queryForObject("SELECT is_read FROM message WHERE id=103", Integer.class));
+        service.deleteConversation(42, 43L);
+        assertTrue(service.conversation(42, 43L, null, 2).isEmpty());
+        assertEquals(0, jdbc.queryForObject("SELECT is_deleted FROM message WHERE id=104", Integer.class));
+    }
+
+    @Test void 已绑定回复的附件只允许活跃反馈的参与者和管理员读取() {
+        jdbc.update("INSERT INTO feedback(id,user_id,title,content,feedback_type) VALUES (71,42,'反馈','说明','BUG')");
+        jdbc.update("INSERT INTO feedback_comment(id,feedback_id,user_id,role_type,content) VALUES (72,71,43,'ADMIN','回复')");
+        var bindings = mapper(AttachmentBusinessMapper.class);
+        assertEquals(1, bindings.countReadableFeedbackComment(72, 43, 42, false));
+        assertEquals(1, bindings.countReadableFeedbackComment(72, 43, 43, false));
+        assertEquals(1, bindings.countReadableFeedbackComment(72, 43, 45, true));
+        assertEquals(0, bindings.countReadableFeedbackComment(72, 43, 44, false));
+        assertEquals(0, bindings.countReadableFeedbackComment(72, 44, 42, false));
+        jdbc.update("UPDATE feedback SET is_deleted=1 WHERE id=71");
+        assertEquals(0, bindings.countReadableFeedbackComment(72, 43, 42, false));
+    }
+
+    @Test void 批量待办只读取当前用户的清单明细() {
+        jdbc.update("""
+                INSERT INTO task_detail(id, task_id, user_id, content)
+                VALUES (601, 101, 42, '第一组'), (602, 102, 42, '第二组'), (603, 102, 43, '其他用户')
+                """);
+        var service = new TaskDetailImpl(mapper(ITaskMapper.class));
+        ReflectionTestUtils.setField(service, "baseMapper", mapper(ITaskDetailMapper.class));
+        var rows = new TaskDetailController(service).batch("42", List.of("102", "101", "999")).getData();
+        assertEquals(List.of(601L, 602L), rows.stream().map(row -> row.getId()).toList());
+    }
 
     @Test void 里程碑日期读写更新与清空保持DATE映射() {
         var service = new MilestoneServicesImpl();

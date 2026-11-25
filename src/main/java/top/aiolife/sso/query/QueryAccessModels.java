@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
 import java.util.Set;
 
 public final class QueryAccessModels {
@@ -18,7 +19,7 @@ public final class QueryAccessModels {
                            Set<String> scopes, long expiresAt) {}
     public record CheckTokenRequest(@NotBlank @Pattern(regexp = "catalog|time_record|exercise_record|read_record|movie|b_video|event_record|income_month") String dataset) {}
     public record TokenDecision(String userId, String appId, String credentialId, String credentialType,
-                                String role, Set<String> scopes, long expiresAt) {}
+                                String role, Set<String> scopes, long expiresAt, List<String> allowedDatasets) {}
     // authorizerToken 只保存在受保护 Redis 中，不向客户端或日志序列化。
     record Grant(String tokenHash, String userId, String appId, String authorizerToken, long expiresAt) {}
 }
