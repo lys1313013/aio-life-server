@@ -9,10 +9,15 @@ import top.aiolife.record.pojo.vo.DashboardCardVO;
 import top.aiolife.record.provider.DashboardCardProvider;
 import top.aiolife.record.service.IUserThirdPartyAccountService;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+
 /** 多邻国公开账号概览。 */
 @Component
 @RequiredArgsConstructor
 public class DuolingoCardProvider implements DashboardCardProvider {
+    private static final ZoneId CHECK_IN_ZONE = ZoneId.of("Asia/Shanghai");
+
     private final IUserThirdPartyAccountService accounts;
     private final DuolingoClient client;
 
@@ -52,7 +57,8 @@ public class DuolingoCardProvider implements DashboardCardProvider {
         if (!StringUtils.hasText(username)) {
             return null;
         }
-        var streak = client.getStreak(username);
+        var streak = client.getStreak(username).orElse(null);
+        var status = streak == null ? CheckInStatus.UNKNOWN : checkInStatus(streak, LocalDate.now(CHECK_IN_ZONE));
         var profile = UriComponentsBuilder.fromUriString("https://www.duolingo.com/profile")
                 .pathSegment("{username}").encode().buildAndExpand(username).toUriString();
         var card = new DashboardCardVO();
@@ -60,9 +66,34 @@ public class DuolingoCardProvider implements DashboardCardProvider {
         card.setTitle(getTitle());
         card.setTitleClickUrl(profile);
         card.setIconClickUrl(profile);
-        card.setValue(username);
+        card.setValue(status.label);
+        card.setValueColor(status.color);
         card.setTotalTitle(getTotalTitle());
-        card.setTotalValue(streak.isPresent() ? streak.getAsInt() + " 天" : "未找到公开账号");
+        card.setTotalValue(streak == null ? "未找到公开账号" : streak.days() + " 天");
         return card;
+    }
+
+    static CheckInStatus checkInStatus(DuolingoClient.Streak streak, LocalDate today) {
+        if (streak.days() == 0) {
+            return CheckInStatus.NOT_CHECKED_IN;
+        }
+        if (streak.endDate() == null || streak.endDate().isAfter(today)) {
+            return CheckInStatus.UNKNOWN;
+        }
+        return today.equals(streak.endDate()) ? CheckInStatus.CHECKED_IN : CheckInStatus.NOT_CHECKED_IN;
+    }
+
+    enum CheckInStatus {
+        CHECKED_IN("已打卡", DashboardCardColors.POSITIVE),
+        NOT_CHECKED_IN("未打卡", DashboardCardColors.NEGATIVE),
+        UNKNOWN("状态未知", "");
+
+        private final String label;
+        private final String color;
+
+        CheckInStatus(String label, String color) {
+            this.label = label;
+            this.color = color;
+        }
     }
 }
