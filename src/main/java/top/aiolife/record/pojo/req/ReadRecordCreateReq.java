@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDate;
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -18,8 +17,8 @@ public class ReadRecordCreateReq {
     @Schema(description = "书名或文章标题")
     @NotBlank
     private String title;
-    @Schema(description = "阅读类型：1=书籍，2=文章或网页", allowableValues = {"1", "2"})
-    @NotNull @Min(1) @Max(2)
+    @Schema(description = "阅读类型：1=书籍，2=文章或网页；省略时按书籍保存", allowableValues = {"1", "2"})
+    @Min(1) @Max(2)
     private Integer type;
     @Schema(description = "作者")
     private String author;

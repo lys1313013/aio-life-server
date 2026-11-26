@@ -25,7 +25,6 @@ class ReadRecordServiceImplIntegrationTest extends BaseIntegrationTest {
     void testSaveRecord_审计字段自动填充() {
         ReadRecordReq req = new ReadRecordReq();
         req.setTitle("测试书籍");
-        req.setType(1);
         req.setStatus(ProgressStatusEnum.NOT_STARTED);
 
         readRecordService.saveRecord(req);
@@ -35,6 +34,7 @@ class ReadRecordServiceImplIntegrationTest extends BaseIntegrationTest {
                 .eq(ReadRecordEntity::getTitle, "测试书籍")
                 .one();
         assertNotNull(saved, "保存后应能查询到记录");
+        assertEquals(1, saved.getType());
         assertEquals(TEST_USER_ID, saved.getCreateUser(), "createUser 应为当前登录用户");
         assertEquals(TEST_USER_ID, saved.getUpdateUser(), "updateUser 应为当前登录用户");
         assertNotNull(saved.getCreateTime(), "createTime 不应为空");
@@ -46,7 +46,7 @@ class ReadRecordServiceImplIntegrationTest extends BaseIntegrationTest {
     void testUpdateRecord_更新审计字段() {
         ReadRecordReq saveReq = new ReadRecordReq();
         saveReq.setTitle("待更新书籍");
-        saveReq.setType(1);
+        saveReq.setType(2);
         saveReq.setStatus(ProgressStatusEnum.NOT_STARTED);
         readRecordService.saveRecord(saveReq);
 
@@ -59,12 +59,12 @@ class ReadRecordServiceImplIntegrationTest extends BaseIntegrationTest {
         ReadRecordReq updateReq = new ReadRecordReq();
         updateReq.setId(saved.getId());
         updateReq.setTitle("已更新书籍");
-        updateReq.setType(1);
         updateReq.setStatus(ProgressStatusEnum.IN_PROGRESS);
         readRecordService.updateRecord(updateReq);
 
         ReadRecordEntity updated = readRecordService.getById(saved.getId());
         assertEquals("已更新书籍", updated.getTitle());
+        assertEquals(2, updated.getType());
         assertEquals(TEST_USER_ID, updated.getUpdateUser(), "updateUser 应为当前登录用户");
         assertNotNull(updated.getUpdateTime(), "updateTime 不应为空");
         assertFalse(updated.getUpdateTime().isBefore(updated.getCreateTime()),

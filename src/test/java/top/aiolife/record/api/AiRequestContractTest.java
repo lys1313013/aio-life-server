@@ -58,14 +58,14 @@ class AiRequestContractTest {
     }
 
     @Test
-    void 阅读最小新增校验名称类型并返回精确ID() throws Exception {
+    void 阅读最小新增只需标题并返回精确ID() throws Exception {
         var service = mock(IReadRecordService.class);
         when(service.saveRecord(any())).thenReturn(9007199254740993L);
         var mvc = MockMvcBuilders.standaloneSetup(new ReadRecordController(service)).build();
         mvc.perform(post("/read-record").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"title\":\"模拟书籍\",\"type\":1}"))
+                .content("{\"title\":\"模拟书籍\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data").value("9007199254740993"));
-        for (String body : new String[]{"{}", "{\"title\":\"书名\"}", "{\"title\":\"书名\",\"type\":3}"}) {
+        for (String body : new String[]{"{}", "{\"type\":1}", "{\"title\":\"书名\",\"type\":3}"}) {
             mvc.perform(post("/read-record").contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isBadRequest());
         }

@@ -105,6 +105,7 @@ public class ReadRecordServiceImpl extends ServiceImpl<ReadRecordMapper, ReadRec
         if (source == null) ensureCoverUploaded(req, true);
         ReadRecordEntity entity = new ReadRecordEntity();
         BeanUtil.copyProperties(req, entity);
+        if (entity.getType() == null) entity.setType(1);
         entity.setUserId(userId);
         entity.fillCreateCommonField(userId);
         
