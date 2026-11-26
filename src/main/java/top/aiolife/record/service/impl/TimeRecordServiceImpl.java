@@ -364,10 +364,19 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateTimeRecord(long userId, TimeRecordReq timeRecordReq) {
+        updateTimeRecord(userId, timeRecordReq, true);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateTimeRecordFields(long userId, TimeRecordReq timeRecordReq) {
+        updateTimeRecord(userId, timeRecordReq, false);
+    }
+
+    private void updateTimeRecord(long userId, TimeRecordReq timeRecordReq, boolean replaceExercises) {
         TimeRecordEntity entity = TimeRecordConvertor.INSTANCE.Req2Entity(timeRecordReq);
         entity.setId(IdCodec.decode(timeRecordReq.getId()));
         validateRelate(entity);
-        List<ExerciseRecordReq> exerciseRecordReqs = timeRecordReq.getExercises();
 
         TimeRecordEntity existing = timeRecordMapper.lockOwned(entity.getId(), userId);
         if (existing == null) {
@@ -387,9 +396,30 @@ public class TimeRecordServiceImpl extends ServiceImpl<ITimeRecordMapper, TimeRe
         if (!this.updateById(entity)) throw new IllegalStateException("更新时间记录失败");
         updateRelateStatusIfNecessary(entity, userId);
 
-        syncExercises(userId, entity.getId(),
-                entity.getDate() == null ? existing.getDate() : entity.getDate(), exerciseRecordReqs);
+        LocalDate newDate = entity.getDate();
+        if (replaceExercises) {
+            syncExercises(userId, entity.getId(), newDate == null ? existing.getDate() : newDate,
+                    timeRecordReq.getExercises());
+        } else if (newDate != null && !newDate.equals(existing.getDate())) {
+            moveExercisesToDate(userId, entity.getId(), newDate);
+        }
         invalidateDayCache(userId, existing.getDate(), entity.getDate());
+    }
+
+    private void moveExercisesToDate(long userId, Long timeRecordId, LocalDate date) {
+        if (!exerciseRecordService.exists(new LambdaQueryWrapper<ExerciseRecordEntity>()
+                .eq(ExerciseRecordEntity::getUserId, userId)
+                .eq(ExerciseRecordEntity::getTimeRecordId, timeRecordId))) {
+            return;
+        }
+        secondaryLockGuard.checkMenus(userId, "/record/exercise");
+        boolean updated = exerciseRecordService.update(new LambdaUpdateWrapper<ExerciseRecordEntity>()
+                .eq(ExerciseRecordEntity::getUserId, userId)
+                .eq(ExerciseRecordEntity::getTimeRecordId, timeRecordId)
+                .set(ExerciseRecordEntity::getExerciseDate, date)
+                .set(ExerciseRecordEntity::getUpdateUser, userId)
+                .set(ExerciseRecordEntity::getUpdateTime, LocalDateTime.now()));
+        if (!updated) throw new IllegalStateException("更新运动记录日期失败");
     }
 
     /** 关联类型和关联业务 ID 必须成对提交，单独出现任何一个都会写成无法解释的半关联。 */

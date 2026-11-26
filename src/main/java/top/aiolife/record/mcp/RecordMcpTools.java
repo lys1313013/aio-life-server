@@ -16,6 +16,7 @@ import top.aiolife.record.mcp.req.TaskDetailUpdateMcpReq;
 import top.aiolife.record.mcp.req.TaskListMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.mcp.req.TimeRecordSaveMcpReq;
+import top.aiolife.record.mcp.req.TimeRecordUpdateMcpReq;
 import top.aiolife.record.mcp.vo.TaskDetailMcpVO;
 import top.aiolife.record.mcp.vo.TaskMcpVO;
 import top.aiolife.record.mcp.vo.TimeTrackerCategoryMcpVO;
@@ -93,6 +94,23 @@ public class RecordMcpTools {
         String endTimeStr = String.format("%02d:%02d", endMinute / 60, endMinute % 60);
         return String.format("保存成功！开始时间：%s，结束时间：%s，持续时长：%d分钟",
                 startTimeStr, endTimeStr, endMinute - startMinute + 1);
+    }
+
+    @Tool("修改当前用户已有时迹。id 必填，其余字段至少提供一个非 null 值。只更新提供的非 null 字段。已有运动明细随日期迁移，阅读／观影关联保持原值")
+    public boolean time_record_update(TimeRecordUpdateMcpReq req) {
+        if (req.getCategoryId() == null && req.getDate() == null && req.getStartMinute() == null
+                && req.getEndMinute() == null && req.getTitle() == null && req.getDescription() == null) {
+            throw new IllegalArgumentException("至少提供一个要修改的时迹字段");
+        }
+        if (req.getCategoryId() != null) {
+            // 转换器会忽略无法解析的分类 ID，先拒绝超出 long 范围的值。
+            IdCodec.decode(req.getCategoryId());
+        }
+
+        TimeRecordReq update = new TimeRecordReq();
+        BeanUtil.copyProperties(req, update);
+        timeRecordService.updateTimeRecordFields(StpUtil.getLoginIdAsLong(), update);
+        return true;
     }
 
     @Tool("保存一条想法，并可附带多个关联事件")

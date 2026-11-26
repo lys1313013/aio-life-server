@@ -51,6 +51,9 @@ public interface ITimeRecordService extends IService<TimeRecordEntity> {
      */
     void updateTimeRecord(long userId, TimeRecordReq timeRecordReq);
 
+    /** 更新时迹字段，保留已有运动明细，并在记录日期变化时同步运动日期。 */
+    void updateTimeRecordFields(long userId, TimeRecordReq timeRecordReq);
+
     void removeById(Long id, long userId);
 
     /**

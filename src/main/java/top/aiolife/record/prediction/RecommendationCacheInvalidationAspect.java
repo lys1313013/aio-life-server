@@ -16,6 +16,7 @@ public class RecommendationCacheInvalidationAspect {
 
     @AfterReturning("execution(* top.aiolife.record.service.impl.TimeRecordServiceImpl.saveTimeRecord(..)) || "
             + "execution(* top.aiolife.record.service.impl.TimeRecordServiceImpl.updateTimeRecord(..)) || "
+            + "execution(* top.aiolife.record.service.impl.TimeRecordServiceImpl.updateTimeRecordFields(..)) || "
             + "execution(* top.aiolife.record.service.impl.TimeRecordServiceImpl.removeById(..)) || "
             + "execution(* top.aiolife.record.service.impl.TimeRecordServiceImpl.removeByDate(..)) || "
             + "execution(* top.aiolife.record.service.impl.TimeTrackerCategoryServiceImpl.createCategory(..)) || "

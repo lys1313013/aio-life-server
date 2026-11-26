@@ -101,7 +101,7 @@ public final class SecondaryLockPolicy {
         Set<String> menus = new HashSet<>(switch (name) {
             case "task_list", "task_detail_save", "task_detail_update" -> Set.of("/task/todo");
             case "goal_query", "goal_progress_update" -> Set.of("/task/goal");
-            case "time_record_save", "time_record_queryByDateRange" -> Set.of("/time/time-tracker", "/time/dashboard");
+            case "time_record_save", "time_record_update", "time_record_queryByDateRange" -> Set.of("/time/time-tracker", "/time/dashboard");
             case "time_tracker_category_list" -> Set.of("/time/my-categories");
             case "thought_save" -> Set.of("/record/think");
             case "b_video_query", "b_video_statistics" -> Set.of("/record/videoWatch");

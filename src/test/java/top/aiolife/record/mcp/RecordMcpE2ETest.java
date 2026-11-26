@@ -15,6 +15,7 @@ import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTranspor
 import io.modelcontextprotocol.spec.McpSchema;
 import java.lang.reflect.Proxy;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ import top.aiolife.record.api.*;
 import top.aiolife.record.mapper.IBVideoMapper;
 import top.aiolife.record.mcp.req.TimeRecordDateRangeMcpReq;
 import top.aiolife.record.pojo.entity.TimeRecordEntity;
+import top.aiolife.record.pojo.req.TimeRecordReq;
 import top.aiolife.record.pojo.req.TimeRecordSaveReq;
 import top.aiolife.record.pojo.req.TaskDetailUpdateReq;
 import top.aiolife.record.pojo.vo.TimeRecordDateRangeVO;
@@ -76,6 +78,9 @@ public class RecordMcpE2ETest {
 
     @Autowired
     private ITaskDetail taskDetailService;
+
+    @Autowired
+    private ITimeRecordService timeRecordService;
 
     @Autowired
     private SecondaryLockGuard secondaryLockGuard;
@@ -320,6 +325,48 @@ public class RecordMcpE2ETest {
         Mockito.verify(secondaryLockGuard).checkTool("time_record_save");
         McpSchema.TextContent content = (McpSchema.TextContent) result.content().get(0);
         assertTrue(content.text().contains("保存成功") || content.text().contains("true"));
+    }
+
+    @Test
+    void testTimeRecordUpdate_协议发现及部分更新() {
+        Mockito.clearInvocations(timeRecordService);
+        mcpClient.initialize();
+        var tool = mcpClient.listTools().tools().stream()
+                .filter(value -> value.name().equals("time_record_update")).findFirst().orElseThrow();
+        assertEquals(List.of("id"), tool.inputSchema().required());
+        assertEquals("string", ((Map<?, ?>) tool.inputSchema().properties().get("id")).get("type"));
+
+        var result = mcpClient.callTool(new McpSchema.CallToolRequest(tool.name(),
+                Map.of("id", "9007199254740993", "date", "2026-11-21", "startMinute", 0, "description", "")));
+
+        assertFalse(result.isError(), () -> result.content().toString());
+        assertEquals("true", ((McpSchema.TextContent) result.content().getFirst()).text());
+        Mockito.verify(secondaryLockGuard).checkTool(tool.name());
+        var captured = ArgumentCaptor.forClass(TimeRecordReq.class);
+        Mockito.verify(timeRecordService).updateTimeRecordFields(Mockito.eq(1L), captured.capture());
+        var update = captured.getValue();
+        assertEquals("9007199254740993", update.getId());
+        assertEquals(LocalDate.of(2026, 11, 21), update.getDate());
+        assertEquals(0, update.getStartMinute());
+        assertNull(update.getEndMinute());
+        assertEquals("", update.getDescription());
+    }
+
+    @Test
+    void testTimeRecordUpdate_拒绝无效参数及无修改字段() {
+        Mockito.clearInvocations(timeRecordService);
+        mcpClient.initialize();
+        String id = "9007199254740993";
+        for (Map<String, Object> arguments : List.<Map<String, Object>>of(
+                Map.of("title", "通勤"), Map.of("id", 9007199254740993L, "title", "通勤"),
+                Map.of("id", id), Map.of("id", id, "startMinute", -1), Map.of("id", id, "endMinute", 1440),
+                Map.of("id", id, "startMinute", 0.5), Map.of("id", id, "endMinute", "599"),
+                Map.of("id", id, "categoryId", "9223372036854775808"), Map.of("id", id, "date", "2026-02-30"),
+                Map.of("id", id, "exercises", List.of()))) {
+            var result = mcpClient.callTool(new McpSchema.CallToolRequest("time_record_update", arguments));
+            assertTrue(result.isError(), () -> "应拒绝参数 " + arguments);
+        }
+        Mockito.verifyNoInteractions(timeRecordService);
     }
 
     @Test

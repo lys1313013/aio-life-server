@@ -75,10 +75,12 @@ class RecommendationDataCacheTest {
         assertEquals(2, cache.get("records", () -> 2, 7L));
         proxy.updateTimeRecord(1L, new TimeRecordReq());
         assertEquals(3, cache.get("records", () -> 3, 7L));
-        proxy.removeById(1L, 7L);
+        proxy.updateTimeRecordFields(1L, new TimeRecordReq());
         assertEquals(4, cache.get("records", () -> 4, 7L));
-        proxy.removeByDate(LocalDate.now(), 7L);
+        proxy.removeById(1L, 7L);
         assertEquals(5, cache.get("records", () -> 5, 7L));
+        proxy.removeByDate(LocalDate.now(), 7L);
+        assertEquals(6, cache.get("records", () -> 6, 7L));
     }
 
     @Test

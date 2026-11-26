@@ -319,6 +319,48 @@ class TimeRecordExercisePersistenceTest {
     }
 
     @Test
+    void updateFields_单独修改起点并保留运动和阅读关联() {
+        jdbc.update("UPDATE time_record SET relate_type = 1, relate_id = 8001 WHERE id = 1001");
+        var before = jdbc.queryForList("SELECT * FROM exercise_record ORDER BY id");
+        var request = new TimeRecordReq();
+        request.setId("1001");
+        request.setStartMinute(0);
+
+        service.updateTimeRecordFields(1L, request);
+
+        assertTime(0, 599, 600);
+        assertEquals(8001L, jdbc.queryForObject("SELECT relate_id FROM time_record WHERE id = 1001", Long.class));
+        assertEquals(before, jdbc.queryForList("SELECT * FROM exercise_record ORDER BY id"));
+        verifyNoInteractions(guard);
+    }
+
+    @Test
+    void updateFields_更改日期受运动二级锁保护并只移动本人的有效明细() {
+        addExercise(3L, 2L, 1001L);
+        addExercise(4L, 1L, 1001L);
+        jdbc.update("UPDATE exercise_record SET is_deleted = 1 WHERE id = 4");
+        LocalDate newDate = DATE.plusDays(1);
+        var request = new TimeRecordReq();
+        request.setId("1001");
+        request.setDate(newDate);
+        request.setTitle("迁移时迹");
+
+        assertThrows(RuntimeException.class, () -> service.updateTimeRecordFields(2L, request));
+        doThrow(new IllegalStateException("locked")).doNothing().when(guard).checkMenus(1L, "/record/exercise");
+        assertThrows(IllegalStateException.class, () -> service.updateTimeRecordFields(1L, request));
+        assertOriginal();
+        assertEquals(DATE, jdbc.queryForObject("SELECT date FROM time_record WHERE id = 1001", LocalDate.class));
+
+        service.updateTimeRecordFields(1L, request);
+
+        assertEquals(newDate, jdbc.queryForObject("SELECT date FROM time_record WHERE id = 1001", LocalDate.class));
+        assertEquals(List.of(DATE, DATE, newDate, newDate), jdbc.queryForList(
+                "SELECT exercise_date FROM exercise_record ORDER BY id", LocalDate.class));
+        assertEquals(List.of(FIRST_ID, SECOND_ID), jdbc.queryForList(
+                "SELECT id FROM exercise_record WHERE exercise_date = ? ORDER BY id", Long.class, newDate));
+    }
+
+    @Test
     void update_空列表及未传明细维持清空语义且隔离其他用户时迹() {
         addExercise(3L, 2L, 1001L);
         addExercise(4L, 1L, 1002L);
